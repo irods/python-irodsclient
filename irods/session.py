@@ -48,14 +48,14 @@ class iRODSSession(object):
 
 		# challenge
 		challenge = self._recv()
-		padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, "rods")
+		padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, self.password)
 		m = hashlib.md5()
 		m.update(challenge.msg)
 		m.update(padded_pwd)
 		encoded_pwd = m.digest()
 
 		encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-		pwd_msg = encoded_pwd + 'rods' + '\x00'
+		pwd_msg = encoded_pwd + self.user + '\x00'
 		pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
 		self._send(pwd_request)
 
