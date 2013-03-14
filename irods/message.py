@@ -34,13 +34,26 @@ class iRODSMessage(object):
         return iRODSMessage(type, message, error, bs, int_info)
 
     def pack(self):
-        msg_header = "<MsgHeader_PI><type>%s</type><msgLen>%d</msgLen><errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo></MsgHeader_PI>" % (self.type, len(self.msg) if self.msg else 0, len(self.error) if self.error else 0, len(self.bs) if self.bs else 0, self.int_info if self.int_info else 0)
+        main_msg = self.msg.pack() if self.msg else None
+        msg_header = "<MsgHeader_PI><type>%s</type><msgLen>%d</msgLen>\
+            <errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo>\
+            </MsgHeader_PI>" % (
+                self.type, 
+                len(main_msg) if main_msg else 0, 
+                len(self.error) if self.error else 0, 
+                len(self.bs) if self.bs else 0, 
+                self.int_info if self.int_info else 0
+            )
         msg_header_length = struct.pack(">i", len(msg_header))
-        parts = [x for x in [self.msg, self.error, self.bs] if x is not None]
+        parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
         msg = msg_header_length + msg_header + "".join(parts)
         return msg
 
-class StartupMessage(object):
+class MainMessage(object):
+    def pack(self):
+        raise NotImplementedError("Should be called from a subclass")
+
+class StartupMessage(MainMessage):
     def __init__(self, user=None, zone=None):
         self.user = user
         self.zone = zone
@@ -58,3 +71,11 @@ class StartupMessage(object):
         <option></option>
         </StartupPack_PI>""" % (self.user, self.zone, self.user, self.zone)
         return str
+
+class ChallengeResponseMessage(MainMessage):
+    def __init__(self, encoded_pwd=None, user=None):
+        self.pwd = encoded_pwd
+        self.user = user
+
+    def pack(self):
+        return self.pwd + self.user + '\x00' 

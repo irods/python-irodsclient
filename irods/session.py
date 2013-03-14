@@ -2,7 +2,7 @@ import socket
 import hashlib
 import struct
 import logging
-from message import iRODSMessage, StartupMessage
+from message import iRODSMessage, StartupMessage, ChallengeResponseMessage
 from . import MAX_PASSWORD_LENGTH
 from file import iRODSCollection
 
@@ -30,10 +30,16 @@ class iRODSSession(object):
         return iRODSMessage.recv(self.socket)
 
     def _connect(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.host, self.port))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            s.connect((self.host, self.port))
+        except socket.error:
+            raise Exception("Could not connect to specified host and port")
+
+        self.socket = s
         main_message = StartupMessage(user=self.user, zone=self.zone)
-        msg = iRODSMessage(type='RODS_CONNECT', msg=main_message.pack())
+        msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
         self._send(msg)
         version_msg = self._recv()
 
@@ -56,7 +62,7 @@ class iRODSSession(object):
         encoded_pwd = m.digest()
 
         encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        pwd_msg = encoded_pwd + self.user + '\x00'
+        pwd_msg = ChallengeResponseMessage(encoded_pwd, self.user)
         pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self._send(pwd_request)
 
