@@ -2,6 +2,7 @@ import socket
 import hashlib
 import struct
 from message import iRODSMessage, StartupMessage
+from . import MAX_PASSWORD_LENGTH
 
 class iRODSSession(object):
 	def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -40,9 +41,7 @@ class iRODSSession(object):
 
 		# challenge
 		challenge = self._recv()
-		response_len = 16
-		max_pwd_len = 50
-		padded_pwd = struct.pack("50s", "rods")
+		padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, "rods")
 		m = hashlib.md5()
 		m.update(challenge.msg)
 		m.update(padded_pwd)
