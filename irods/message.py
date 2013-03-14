@@ -1,5 +1,6 @@
 import struct
 import xml.etree.ElementTree as ET
+import logging
 
 class iRODSMessage(object):
 	def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
@@ -14,7 +15,7 @@ class iRODSMessage(object):
 		rsp_header_size = sock.recv(4)
 		rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
 		rsp_header = sock.recv(rsp_header_size)
-		print rsp_header
+		logging.debug(rsp_header)
 			
 		xml_root = ET.fromstring(rsp_header)
 		type = xml_root.find('type').text
@@ -26,6 +27,9 @@ class iRODSMessage(object):
 		message = sock.recv(msg_len) if msg_len != 0 else None
 		error = sock.recv(err_len) if err_len != 0 else None
 		bs = sock.recv(bs_len) if bs_len != 0 else None
+	
+		if message:
+			logging.debug(message)
 
 		return iRODSMessage(type, message, error, bs, int_info)
 

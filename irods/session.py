@@ -1,6 +1,7 @@
 import socket 
 import hashlib
 import struct
+import logging
 from message import iRODSMessage, StartupMessage
 from . import MAX_PASSWORD_LENGTH
 
@@ -16,7 +17,9 @@ class iRODSSession(object):
 		self._connect()
 
 	def _send(self, message):
-		return self.socket.send(message.pack())
+		str = message.pack()
+		logging.debug(str)
+		return self.socket.send(str)
 
 	def _recv(self):
 		return iRODSMessage.recv(self.socket)
@@ -57,5 +60,4 @@ class iRODSSession(object):
 			raise Exception("Unsuccessful login attempt")
 		else:
 			self.authenticated = True
-			print "Successful login"
-
+			logging.debug("Successful login")
