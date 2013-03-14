@@ -35,3 +35,22 @@ class iRODSMessage(object):
 		parts = [x for x in [self.msg, self.error, self.bs] if x is not None]
 		msg = msg_header_length + msg_header + "".join(parts)
 		return msg
+
+class StartupMessage(object):
+	def __init__(self, user=None, zone=None):
+		self.user = user
+		self.zone = zone
+
+	def pack(self):
+		str = """<StartupPack_PI>
+		<irodsProt>0</irodsProt>
+		<connectCnt>0</connectCnt>
+		<proxyUser>%s</proxyUser>
+		<proxyRcatZone>%s</proxyRcatZone>
+		<clientUser>%s</clientUser>
+		<clientRcatZone>%s</clientRcatZone>
+		<relVersion>rods3.2</relVersion>
+		<apiVersion>d</apiVersion>
+		<option></option>
+		</StartupPack_PI>""" % (self.user, self.zone, self.user, self.zone)
+		return str

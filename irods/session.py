@@ -1,7 +1,7 @@
 import socket 
 import hashlib
 import struct
-from message import iRODSMessage
+from message import iRODSMessage, StartupMessage
 
 class iRODSSession(object):
 	def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -23,12 +23,15 @@ class iRODSSession(object):
 	def _connect(self):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.connect((self.host, self.port))
-		main_message = "<StartupPack_PI><irodsProt>0</irodsProt><connectCnt>0</connectCnt><proxyUser>rods</proxyUser><proxyRcatZone>tempZone</proxyRcatZone><clientUser>rods</clientUser><clientRcatZone>tempZone</clientRcatZone><relVersion>rods3.2</relVersion><apiVersion>d</apiVersion><option></option></StartupPack_PI>"
-		msg_header = "<MsgHeader_PI><type>RODS_CONNECT</type><msgLen>%d</msgLen><errorLen>0</errorLen><bsLen>0</bsLen><intInfo>0</intInfo></MsgHeader_PI>" % len(main_message)
-		msg_header_length = struct.pack(">i", len(msg_header))
-		msg = msg_header_length + msg_header + main_message
-		sent = self.socket.send(msg)
+		main_message = StartupMessage(user=self.user, zone=self.zone)
+		msg = iRODSMessage(type='RODS_CONNECT', msg=main_message.pack())
+		self._send(msg)
 		version_msg = self._recv()
+
+	def disconnect(self):
+		disconnect_msg = iRODSMessage(type='RODS_DISCONNECT')
+		self._send(disconnect_msg)
+		self.socket.close()
 
 	def _login(self):
 		# authenticate
@@ -57,7 +60,3 @@ class iRODSSession(object):
 			self.authenticated = True
 			print "Successful login"
 
-	def disconnect(self):
-		disconnect_msg = iRODSMessage(type='RODS_DISCONNECT')
-		self._send(disconnect_msg)
-		self.socket.close()
