@@ -57,22 +57,12 @@ class iRODSMessage(object):
 vesion_msg = iRODSMessage.recv(s)
 
 # authenticate
-#msg_header = "<MsgHeader_PI><type>RODS_API_REQ</type><msgLen>0</msgLen><errorLen>0</errorLen><bsLen>0</bsLen><intInfo>703</intInfo></MsgHeader_PI>"
-#msg_header_length = struct.pack(">i", len(msg_header))
-#msg = msg_header_length + msg_header
-#print msg
 auth_req = iRODSMessage(type='RODS_API_REQ', int_info=703)
 print auth_req.pack()
 sent = s.send(auth_req.pack())
 
 # challenge
 challenge = iRODSMessage.recv(s)
-#print len(challenge.msg)
-#print challenge.msg
-#print bytearray(challenge.msg)
-#decoded = b64decode(bytearray(challenge.msg))
-#print decoded
-
 response_len = 16
 max_pwd_len = 50
 padded_pwd = struct.pack("50s", "rods")
@@ -82,12 +72,15 @@ m.update(padded_pwd)
 encoded_pwd = m.digest()
 
 encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-print len(encoded_pwd)
-pwd_msg = encoded_pwd + 'rods'
-print len(pwd_msg)
+pwd_msg = encoded_pwd + 'rods' + '\x00'
 pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
 s.send(pwd_request.pack())
 
-print s.recv(1024)
+auth_response = iRODSMessage.recv(s)
+if not auth_response.error:
+	print "Successful login"
 
+#disconnect
+disconnect_msg = iRODSMessage(type='RODS_DISCONNECT')
+s.send(disconnect_msg.pack())
 s.close()
