@@ -16,6 +16,10 @@ class iRODSSession(object):
 		self.authenticated = False
 		self._connect()
 
+	def __del__(self):
+		if self.socket:
+			self.disconnect()
+
 	def _send(self, message):
 		str = message.pack()
 		logging.debug(str)
