@@ -16,3 +16,5 @@ logging.debug(q2.criteria)
 
 logging.debug(q3.columns)
 logging.debug(q3.criteria)
+
+logging.debug(q3._select_message().pack())

@@ -1,6 +1,7 @@
 import logging
 from models import Base
 from column import Column
+from message import InxIvalPair
 
 class Query(object):
 
@@ -28,6 +29,16 @@ class Query(object):
     def limit(max):
         pass
 
+    def _select_message(self):
+        dct = dict([(column.icat_id, value) for (column, value) in self.columns.iteritems()])
+        return InxIvalPair(dct)
+
+    def _conds_message(self):
+        pass
+
+    def _kw_message(self):
+        pass
+        
     def all():
         pass
 
