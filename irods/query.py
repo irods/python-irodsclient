@@ -4,12 +4,11 @@ from column import Column
 
 class Query(object):
 
-    def __init__(self, sess, *args):
+    def __init__(self, sess, *args, **kwargs):
         self.sess = sess
-        self.columns = {}
-        self.criteria = []
+        self.columns = kwargs['columns'] if 'columns' in kwargs else {}
+        self.criteria = kwargs['criteria'] if 'criteria' in kwargs else []
 
-        logging.debug(args)
         for arg in args:
             if isinstance(arg, type) and issubclass(arg, Base):
                 for col in arg._columns:
@@ -19,10 +18,9 @@ class Query(object):
             else:
                 raise TypeError("Arguments must be models or columns")
 
-        logging.debug(self.columns)
-
-    def filter(*args):
-        pass
+    def filter(self, criterion):
+        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria + [criterion])
+        return new_q
 
     def order_by(*args):
         pass
