@@ -3,20 +3,22 @@ from models import Base
 from column import Column
 
 class Query(object):
+
     def __init__(self, sess, *args):
-        logging.debug(args)
         self.sess = sess
-        columns = set()
+        self.columns = {}
+        self.criteria = []
+
+        logging.debug(args)
         for arg in args:
             if isinstance(arg, type) and issubclass(arg, Base):
                 for col in arg._columns:
-                    columns.add(col)
+                    self.columns[col] = 1
             elif isinstance(arg, Column):
-                columns.add(arg)
+                self.columns[arg] = 1
             else:
                 raise TypeError("Arguments must be models or columns")
 
-        self.columns = dict([(x,1) for x in columns])
         logging.debug(self.columns)
 
     def filter(*args):
