@@ -5,7 +5,7 @@ class ModelBase(type):
     def __new__(cls, name, bases, attr):
         #logging.debug(name)
         #logging.debug(attr.iteritems())
-        columns = [(x,y) for (x,y) in attr.iteritems() if isinstance(y, Column)]
+        columns = [y for (x,y) in attr.iteritems() if isinstance(y, Column)]
         #logging.debug(columns)
         attr['_columns'] = columns
         #attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
