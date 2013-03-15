@@ -35,7 +35,7 @@ class Column(QueryKey):
 class Keyword(QueryKey):
     def __init__(self, type, icat_key):
         self.icat_key = icat_key
-        super(Column, self).__init__(type)
+        super(Keyword, self).__init__(type)
         
 #consider renaming columnType
 class ColumnType(object):

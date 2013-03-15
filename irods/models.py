@@ -1,5 +1,5 @@
 import logging
-from column import Column, Integer, String, DateTime
+from column import Column, Integer, String, DateTime, Keyword
 
 class ModelBase(type):
     def __new__(cls, name, bases, attr):
@@ -37,3 +37,8 @@ class Collection(Base):
     comments = Column(String, 'COLL_COMMENTS', 507)
     create_time = Column(DateTime, 'COLL_CREATE_TIME', 508)
     modify_time = Column(DateTime, 'COLL_MODIFY_TIME', 509)
+
+# not really a model. Should be dict instead?
+class Keywords(Base):
+    data_type = Keyword(String, 'dataType')
+    chksum = Keyword(String, 'chksum')
