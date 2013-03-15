@@ -93,8 +93,25 @@ class InxIvalPair(MainMessage):
         items.append(struct.pack(">i", length))
         items += [struct.pack(">i", i) for i in (inx + ival)]
         return "".join(items)
-        
 
+class InxValPair(MainMessage):
+    def __init__(self, data):
+        self.data = data
+
+    def pack(self):
+        length = len(self.data)
+        inx = self.data.keys()
+        ival = self.data.values()
+
+        items = []
+        items.append(struct.pack(">i", length))
+        items += [struct.pack(">i", i) for i in inx]
+
+        values = "\x00".join(ival)
+        values += "\x00"
+
+        return "".join(items) + values
+        
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
