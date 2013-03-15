@@ -83,3 +83,4 @@ class ChallengeResponseMessage(MainMessage):
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
+#define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
