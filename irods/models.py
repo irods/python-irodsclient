@@ -1,34 +1,13 @@
 import logging
+from column import Column, Integer, String, DateTime
 
 def model_base(name, bases, attr):
+    #logging.debug(name)
+    #logging.debug(attr.iteritems())
     columns = [(x,y) for (x,y) in attr.iteritems() if y.__class__ == Column]
     attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
+    logging.debug(attr['_icat_column_names'])
     return type(name, bases, attr)
-
-class Column(object):
-    def __init__(self, type, icat_key, icat_id):
-        self.type = type
-        self.icat_key = icat_key
-        self.icat_id = icat_id
-
-class ColumnType(object):
-    def to_python(self):
-        pass
-
-class Integer(ColumnType):
-    @staticmethod
-    def to_python(str):
-        return int(str) 
-
-class String(ColumnType):
-    @staticmethod
-    def to_python(str):
-        return str
-
-class DateTime(ColumnType):
-    @staticmethod
-    def to_python(str):
-        return str
 
 class User(object):
     __metaclass__ = model_base
