@@ -1,16 +1,21 @@
 import logging
 from column import Column, Integer, String, DateTime
 
-def model_base(name, bases, attr):
-    #logging.debug(name)
-    #logging.debug(attr.iteritems())
-    columns = [(x,y) for (x,y) in attr.iteritems() if y.__class__ == Column]
-    attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
-    logging.debug(attr['_icat_column_names'])
-    return type(name, bases, attr)
+class ModelBase(type):
+    def __new__(cls, name, bases, attr):
+        #logging.debug(name)
+        #logging.debug(attr.iteritems())
+        columns = [(x,y) for (x,y) in attr.iteritems() if isinstance(y, Column)]
+        #logging.debug(columns)
+        attr['_columns'] = columns
+        #attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
+        #logging.debug(attr['_icat_column_names'])
+        return type.__new__(cls, name, bases, attr)
 
-class User(object):
-    __metaclass__ = model_base
+class Base(object):
+    __metaclass__ = ModelBase
+
+class User(Base):
     id = Column(Integer, 'USER_ID', 201)
     name = Column(String, 'USER_NAME', 202)
     type = Column(String, 'USER_TYPE', 203)
@@ -21,8 +26,7 @@ class User(object):
     create_time = Column(DateTime, 'USER_CREATE_TIME', 208)
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
-class Collection(object):
-    __metaclass__ = model_base
+class Collection(Base):
     id = Column(Integer, 'COLL_ID', 500)
     name = Column(String, 'COLL_NAME', 501)
     parent_name = Column(String, 'COLL_PARENT_NAME', 502)
