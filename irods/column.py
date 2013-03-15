@@ -1,8 +1,6 @@
-class Column(object):
-    def __init__(self, type, icat_key, icat_id):
+class QueryKey(object):
+    def __init__(self, type):
         self.type = type
-        self.icat_key = icat_key
-        self.icat_id = icat_id
 
     def __lt__(self, other):
         return Criterion('<', self, other)
@@ -23,11 +21,23 @@ class Column(object):
         return Criterion('>=', self, other)
 
 class Criterion(object):
-    def __init__(self, op, col, value):
+    def __init__(self, op, query_key, value):
         self.op = op
-        self.column = col
+        self.query_key = query_key
         self.value = value
+
+class Column(QueryKey):
+    def __init__(self, type, icat_key, icat_id):
+        self.icat_key = icat_key
+        self.icat_id = icat_id
+        super(Column, self).__init__(type)
+
+class Keyword(QueryKey):
+    def __init__(self, type, icat_key):
+        self.icat_key = icat_key
+        super(Column, self).__init__(type)
         
+#consider renaming columnType
 class ColumnType(object):
     def to_python(self):
         pass
