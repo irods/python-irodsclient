@@ -5,6 +5,7 @@ import logging
 from message import iRODSMessage, StartupMessage, ChallengeResponseMessage
 from . import MAX_PASSWORD_LENGTH
 from file import iRODSCollection
+from query import Query
 
 class iRODSSession(object):
     def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -77,6 +78,14 @@ class iRODSSession(object):
         if not self.authenticated:
             self._login()
         return iRODSCollection(self, path)
+
+    def query(self, *args):
+        return Query(self, *args)
+
+    def execute_query(self, query):
+        message_body = query._message()
+        message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=702)
+        self._send(message)
 
     def _collection_exists(self, path):
         #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"

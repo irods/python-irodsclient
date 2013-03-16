@@ -1,7 +1,7 @@
 import logging
 from models import Base
 from column import Column, Keyword
-from message import InxIvalPair, InxValPair, KeyValPair
+from message import InxIvalPair, InxValPair, KeyValPair, GenQueryInp
 
 class Query(object):
 
@@ -49,11 +49,23 @@ class Query(object):
             if isinstance(criterion.query_key, Keyword)
         ])
         return KeyValPair(dct)
-        
-    def all():
-        pass
 
-    def one():
+    def _message(self):
+        args = {
+            'limit': 500,
+            'cond_kw': self._kw_message().pack(),
+            'select': self._select_message().pack(),
+            'cond': self._conds_message().pack(),
+            'options': 33,
+            'offset': 0,
+            'continue_index': 0,
+        }
+        return GenQueryInp(**args)
+        
+    def all(self):
+        return self.sess.execute_query(self)
+
+    def one(self):
         pass
 
     def __getitem__(self, val):
