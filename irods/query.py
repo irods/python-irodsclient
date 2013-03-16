@@ -56,7 +56,8 @@ class Query(object):
             'cond_kw': self._kw_message().pack(),
             'select': self._select_message().pack(),
             'cond': self._conds_message().pack(),
-            'options': 33,
+            #'options': 33,
+            'options': 0,
             'offset': 0,
             'continue_index': 0,
         }

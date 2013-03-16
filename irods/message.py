@@ -111,8 +111,7 @@ class InxValPair(MainMessage):
         items += [struct.pack(">i", i) for i in inx]
         logging.debug(items)
 
-        values = "\x00".join(ival)
-        values += "\x00"
+        values = "\x00".join(ival) + "\x00" if length > 0 else ""
         logging.debug(values)
 
         return "".join(items) + values
@@ -128,9 +127,12 @@ class KeyValPair(MainMessage):
         vals = self.data.values()
 
         len_pack = struct.pack(">i", length)
-        keys_pack = "\x00".join(keys) + "\x00"
-        values_pack = "\x00".join(vals) + "\x00"
-        return len_pack + keys_pack + values_pack
+        if length > 0:
+            keys_pack = "\x00".join(keys) + "\x00"
+            values_pack = "\x00".join(vals) + "\x00"
+            return len_pack + keys_pack + values_pack
+        else:
+            return len_pack
 
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
 class GenQueryInp(MainMessage):
