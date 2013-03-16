@@ -80,6 +80,7 @@ class ChallengeResponseMessage(MainMessage):
     def pack(self):
         return self.pwd + self.user + '\x00' 
 
+#define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 class InxIvalPair(MainMessage):
     def __init__(self, data):
         self.data = data
@@ -95,6 +96,7 @@ class InxIvalPair(MainMessage):
         logging.debug(items)
         return "".join(items)
 
+#define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
 class InxValPair(MainMessage):
     def __init__(self, data):
         self.data = data
@@ -115,6 +117,7 @@ class InxValPair(MainMessage):
 
         return "".join(items) + values
         
+#define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 class KeyValPair(MainMessage):
     def __init__(self, data):
         self.data = data
@@ -128,7 +131,19 @@ class KeyValPair(MainMessage):
         keys_pack = "\x00".join(keys) + "\x00"
         values_pack = "\x00".join(vals) + "\x00"
         return len_pack + keys_pack + values_pack
+
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
-#define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
-#define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
-#define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
+class GenQueryInp(MainMessage):
+    def __init__(self, limit, cond_kw, select, cond, options, offset, continue_index):
+        self.limit = limit
+        self.cond_kw = cond_kw
+        self.select = select
+        self.cond = cond
+        self.options = options
+        self.offset = offset
+        self.continue_index = continue_index
+
+    def pack(self):
+        items = [struct.pack(">i", i) for i in [self.limit, self.continue_index, self.offset, self.options]]
+        items += [self.cond_kw, self.select, self.cond]
+        return "".join(items)
