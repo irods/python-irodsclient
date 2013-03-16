@@ -92,6 +92,7 @@ class InxIvalPair(MainMessage):
         items = []
         items.append(struct.pack(">i", length))
         items += [struct.pack(">i", i) for i in (inx + ival)]
+        logging.debug(items)
         return "".join(items)
 
 class InxValPair(MainMessage):
@@ -106,9 +107,11 @@ class InxValPair(MainMessage):
         items = []
         items.append(struct.pack(">i", length))
         items += [struct.pack(">i", i) for i in inx]
+        logging.debug(items)
 
         values = "\x00".join(ival)
         values += "\x00"
+        logging.debug(values)
 
         return "".join(items) + values
         

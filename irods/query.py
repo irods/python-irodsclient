@@ -1,7 +1,7 @@
 import logging
 from models import Base
 from column import Column
-from message import InxIvalPair
+from message import InxIvalPair, InxValPair
 
 class Query(object):
 
@@ -34,7 +34,12 @@ class Query(object):
         return InxIvalPair(dct)
 
     def _conds_message(self):
-        pass
+        dct = dict([
+            (criterion.query_key.icat_id, criterion.op + ' ' + criterion.value) 
+            for criterion in self.criteria 
+            if isinstance(criterion.query_key, Column)
+        ])
+        return InxValPair(dct)
 
     def _kw_message(self):
         pass

@@ -18,3 +18,9 @@ logging.debug(q3.columns)
 logging.debug(q3.criteria)
 
 logging.debug(q3._select_message().pack())
+
+f = open('select', 'w')
+f.write(q3._select_message().pack())
+
+f = open('conds', 'w')
+f.write(q3._conds_message().pack())
