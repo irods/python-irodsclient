@@ -1,7 +1,7 @@
 import logging
 from models import Base
-from column import Column
-from message import InxIvalPair, InxValPair
+from column import Column, Keyword
+from message import InxIvalPair, InxValPair, KeyValPair
 
 class Query(object):
 
@@ -33,6 +33,7 @@ class Query(object):
         dct = dict([(column.icat_id, value) for (column, value) in self.columns.iteritems()])
         return InxIvalPair(dct)
 
+    #todo store criterion for columns and criterion for keywords in seaparate lists
     def _conds_message(self):
         dct = dict([
             (criterion.query_key.icat_id, criterion.op + ' ' + criterion.value) 
@@ -42,7 +43,12 @@ class Query(object):
         return InxValPair(dct)
 
     def _kw_message(self):
-        pass
+        dct = dict([
+            (criterion.query_key.icat_key, criterion.op + ' ' + criterion.value) 
+            for criterion in self.criteria 
+            if isinstance(criterion.query_key, Keyword)
+        ])
+        return KeyValPair(dct)
         
     def all():
         pass

@@ -24,3 +24,6 @@ f.write(q3._select_message().pack())
 
 f = open('conds', 'w')
 f.write(q3._conds_message().pack())
+
+f = open('condskw', 'w')
+f.write(q3._kw_message().pack())

@@ -115,6 +115,19 @@ class InxValPair(MainMessage):
 
         return "".join(items) + values
         
+class KeyValPair(MainMessage):
+    def __init__(self, data):
+        self.data = data
+
+    def pack(self):
+        length = len(self.data)
+        keys = self.data.keys()
+        vals = self.data.values()
+
+        len_pack = struct.pack(">i", length)
+        keys_pack = "\x00".join(keys) + "\x00"
+        values_pack = "\x00".join(vals) + "\x00"
+        return len_pack + keys_pack + values_pack
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
