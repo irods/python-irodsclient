@@ -83,6 +83,8 @@ class iRODSSession(object):
         return Query(self, *args)
 
     def execute_query(self, query):
+        if not self.authenticated:
+            self._login()
         message_body = query._message()
         message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=702)
         self._send(message)
