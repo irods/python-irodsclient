@@ -153,7 +153,7 @@ class GenQueryInp(MainMessage):
         items = [struct.pack(">i", i) for i in \
             [self.limit, self.continue_index, self.offset, self.options]
         ]
-        items += [self.cond_kw, self.select, self.cond]
+        items += [self.cond_kw.pack(), self.select.pack(), self.cond.pack()]
         return "".join(items)
 
 #define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  

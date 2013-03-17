@@ -53,10 +53,9 @@ class Query(object):
     def _message(self):
         args = {
             'limit': 500,
-            'cond_kw': self._kw_message().pack(),
-            'select': self._select_message().pack(),
-            'cond': self._conds_message().pack(),
-            #'options': 33,
+            'cond_kw': self._kw_message(),
+            'select': self._select_message(),
+            'cond': self._conds_message(),
             'options': 0,
             'offset': 0,
             'continue_index': 0,
