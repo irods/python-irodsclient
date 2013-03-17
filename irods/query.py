@@ -68,5 +68,8 @@ class Query(object):
     def one(self):
         pass
 
+    def first(self):
+        pass
+
     def __getitem__(self, val):
         pass
