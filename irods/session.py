@@ -6,6 +6,7 @@ from message import iRODSMessage, StartupMessage, ChallengeResponseMessage, GenQ
 from . import MAX_PASSWORD_LENGTH
 from file import iRODSCollection
 from query import Query
+from exception import iRODSException
 
 class iRODSSession(object):
     def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -28,7 +29,10 @@ class iRODSSession(object):
         return self.socket.send(str)
 
     def _recv(self):
-        return iRODSMessage.recv(self.socket)
+        msg = iRODSMessage.recv(self.socket)
+	if msg.int_info < 0:
+		raise iRODSException(msg.int_info)
+	return msg
 
     def _connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
