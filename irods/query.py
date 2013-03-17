@@ -1,5 +1,5 @@
 import logging
-from models import Base
+from models import Model
 from column import Column, Keyword
 from message import InxIvalPair, InxValPair, KeyValPair, GenQueryInp
 
@@ -11,7 +11,7 @@ class Query(object):
         self.criteria = kwargs['criteria'] if 'criteria' in kwargs else []
 
         for arg in args:
-            if isinstance(arg, type) and issubclass(arg, Base):
+            if isinstance(arg, type) and issubclass(arg, Model):
                 for col in arg._columns:
                     self.columns[col] = 1
             elif isinstance(arg, Column):

@@ -12,10 +12,14 @@ class ModelBase(type):
         #logging.debug(attr['_icat_column_names'])
         return type.__new__(cls, name, bases, attr)
 
-class Base(object):
+class Model(object):
     __metaclass__ = ModelBase
 
-class User(Base):
+class Zone(Model):
+    id = Column(Integer, 'ZONE_ID', 101)
+    name = Column(String, 'ZONE_NAME', 102)
+
+class User(Model):
     id = Column(Integer, 'USER_ID', 201)
     name = Column(String, 'USER_NAME', 202)
     type = Column(String, 'USER_TYPE', 203)
@@ -26,7 +30,21 @@ class User(Base):
     create_time = Column(DateTime, 'USER_CREATE_TIME', 208)
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
-class DataObject(Base):
+class Resource(Model):
+    id = Column(Integer, 'R_RESC_ID', 301)
+    name = Column(String, 'R_RESC_ID', 302)
+    zone_name = Column(String, 'R_ZONE_NAME', 303)
+    type = Column(String, 'R_TYPE_NAME', 304)
+    class_name = Column(String, 'R_CLASS_NAME', 305)
+    location = Column(String, 'R_LOC', 306)
+    vault_path = Column(String, 'R_VALUT_PATH', 307)
+    free_space = Column(String, 'R_FREE_SPACE', 308)
+    info = Column(String, 'R_RESC_INFO', 309)
+    comment = Column(String, 'R_RESC_COMMENT', 310)
+    create_time = Column(DateTime, 'R_CREATE_TIME', 311)
+    modify_time = Column(DateTime, 'R_MODIFY_TIME', 312)
+
+class DataObject(Model):
     id = Column(Integer, 'D_DATA_ID', 401) 
     collection_id = Column(Integer, 'D_COLL_ID', 402)
     name = Column(String, 'DATA_NAME', 403)
@@ -35,7 +53,7 @@ class DataObject(Base):
     type = Column(String, 'DATA_TYPE_NAME', 406)
     size = Column(Integer, 'DATA_SIZE', 407)
 
-class Collection(Base):
+class Collection(Model):
     id = Column(Integer, 'COLL_ID', 500)
     name = Column(String, 'COLL_NAME', 501)
     parent_name = Column(String, 'COLL_PARENT_NAME', 502)
@@ -48,6 +66,6 @@ class Collection(Base):
     modify_time = Column(DateTime, 'COLL_MODIFY_TIME', 509)
 
 # not really a model. Should be dict instead?
-class Keywords(Base):
+class Keywords(Model):
     data_type = Keyword(String, 'dataType')
     chksum = Keyword(String, 'chksum')
