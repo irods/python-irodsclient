@@ -88,6 +88,7 @@ class iRODSSession(object):
         message_body = query._message()
         message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=702)
         self._send(message)
+        return self._recv()
 
     def _collection_exists(self, path):
         #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"

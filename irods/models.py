@@ -26,6 +26,15 @@ class User(Base):
     create_time = Column(DateTime, 'USER_CREATE_TIME', 208)
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
+class DataObject(Base):
+    id = Column(Integer, 'D_DATA_ID', 401) 
+    collection_id = Column(Integer, 'D_COLL_ID', 402)
+    name = Column(String, 'DATA_NAME', 403)
+    replica_num = Column(Integer, 'DATA_REPL_NUM', 404)
+    version = Column(String, 'DATA_VERSION', 405)
+    type = Column(String, 'DATA_TYPE_NAME', 406)
+    size = Column(Integer, 'DATA_SIZE', 407)
+
 class Collection(Base):
     id = Column(Integer, 'COLL_ID', 500)
     name = Column(String, 'COLL_NAME', 501)
