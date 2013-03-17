@@ -1,6 +1,7 @@
 import struct
 import xml.etree.ElementTree as ET
 import logging
+from . import MAX_SQL_ATTR
 
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
@@ -53,6 +54,7 @@ class MainMessage(object):
     def pack(self):
         raise NotImplementedError("Should be called from a subclass")
 
+#define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
 class StartupMessage(MainMessage):
     def __init__(self, user=None, zone=None):
         self.user = user
@@ -72,6 +74,7 @@ class StartupMessage(MainMessage):
         </StartupPack_PI>""" % (self.user, self.zone, self.user, self.zone)
         return str
 
+#define authResponseInp_PI "bin *response(RESPONSE_LEN); str *username;"
 class ChallengeResponseMessage(MainMessage):
     def __init__(self, encoded_pwd=None, user=None):
         self.pwd = encoded_pwd
@@ -136,7 +139,8 @@ class KeyValPair(MainMessage):
 
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
 class GenQueryInp(MainMessage):
-    def __init__(self, limit, cond_kw, select, cond, options, offset, continue_index):
+    def __init__(self, limit, cond_kw, select, cond, options, offset, \
+        continue_index):
         self.limit = limit
         self.cond_kw = cond_kw
         self.select = select
@@ -146,6 +150,30 @@ class GenQueryInp(MainMessage):
         self.continue_index = continue_index
 
     def pack(self):
-        items = [struct.pack(">i", i) for i in [self.limit, self.continue_index, self.offset, self.options]]
+        items = [struct.pack(">i", i) for i in \
+            [self.limit, self.continue_index, self.offset, self.options]
+        ]
         items += [self.cond_kw, self.select, self.cond]
         return "".join(items)
+
+#define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
+class SqlResult(MainMessage):
+    def __init__(self, attribute_index, result_length, value):
+        pass
+
+#define GenQueryOut_PI "int rowCnt; int attriCnt; int continueInx; int totalRowCount; struct SqlResult_PI[MAX_SQL_ATTR];"
+class GenQueryOut(MainMessage):
+    def __init__(self, row_count, attribute_count, continue_index, \
+        total_row_count, sql_results):
+        self.row_count = row_count
+        self.attribute_count = attribute_count
+        self.continue_index = continue_index
+        self.total_row_count = total_row_count
+        self.sql_results = sql_results
+
+    @staticmethod
+    def unpack(str):
+        row_count, attribute_count, continue_index, total_row_count = \
+            unpack(">iiii", str[:16])
+        return GenQueryOut(row_count, attribute_count, continue_count, \
+            total_row_count, None)

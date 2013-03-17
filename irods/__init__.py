@@ -1,5 +1,6 @@
 import logging
 MAX_PASSWORD_LENGTH = 50
+MAX_SQL_ATTR = 50
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
