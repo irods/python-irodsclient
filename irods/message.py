@@ -29,8 +29,8 @@ class iRODSMessage(object):
         error = sock.recv(err_len) if err_len != 0 else None
         bs = sock.recv(bs_len) if bs_len != 0 else None
     
-        if message:
-            logging.debug(message)
+        #if message:
+            #logging.debug(message)
 
         return iRODSMessage(type, message, error, bs, int_info)
 
@@ -158,8 +158,10 @@ class GenQueryInp(MainMessage):
 
 #define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
 class SqlResult(MainMessage):
-    def __init__(self, attribute_index, result_length, value):
-        pass
+    def __init__(self, attribute_index, result_length, values):
+        self.attribute_index = attribute_index
+        self.result_length = result_length
+        self.values = values
 
 #define GenQueryOut_PI "int rowCnt; int attriCnt; int continueInx; int totalRowCount; struct SqlResult_PI[MAX_SQL_ATTR];"
 class GenQueryOut(MainMessage):
@@ -174,6 +176,24 @@ class GenQueryOut(MainMessage):
     @staticmethod
     def unpack(str):
         row_count, attribute_count, continue_index, total_row_count = \
-            unpack(">iiii", str[:16])
-        return GenQueryOut(row_count, attribute_count, continue_count, \
-            total_row_count, None)
+            struct.unpack(">iiii", str[:16])
+
+        i = 16
+        sql_results = []
+        for col_num in range(attribute_count):
+            logging.debug(col_num)
+            attribute_index, result_length = struct.unpack(">ii", str[i:i+8])
+            i += 8
+            start = i
+            null_count = 0
+            while null_count < row_count:
+                if str[i] == '\x00':
+                    null_count = null_count + 1
+                i = i + 1
+            values = str[start:i-1].split('\x00')
+            sql_results.append(SqlResult(attribute_index, result_length, values))
+
+        logging.debug(sql_results)
+
+        return GenQueryOut(row_count, attribute_count, continue_index, \
+            total_row_count, sql_results)
