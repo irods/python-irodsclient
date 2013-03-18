@@ -55,7 +55,7 @@ class MainMessage(object):
         raise NotImplementedError("Should be called from a subclass")
 
 #define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
-class StartupMessage(MainMessage):
+class StartupPack(MainMessage):
     def __init__(self, user=None, zone=None):
         self.user = user
         self.zone = zone
@@ -75,7 +75,7 @@ class StartupMessage(MainMessage):
         return str
 
 #define authResponseInp_PI "bin *response(RESPONSE_LEN); str *username;"
-class ChallengeResponseMessage(MainMessage):
+class AuthResponseInp(MainMessage):
     def __init__(self, encoded_pwd=None, user=None):
         self.pwd = encoded_pwd
         self.user = user
