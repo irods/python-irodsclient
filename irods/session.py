@@ -7,6 +7,7 @@ from . import MAX_PASSWORD_LENGTH
 from file import iRODSCollection
 from query import Query
 from exception import iRODSException
+from results import ResultSet
 
 class iRODSSession(object):
     def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -94,7 +95,8 @@ class iRODSSession(object):
         self._send(message)
         result_message = self._recv()
         results = GenQueryOut.unpack(result_message.msg)
-        return results
+        result_set = ResultSet(results)
+        return result_set
 
     def _collection_exists(self, path):
         #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
