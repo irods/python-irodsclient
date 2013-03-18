@@ -12,7 +12,7 @@ class QueryKey(object):
         return Criterion('=', self, other)
 
     def __ne__(self, other):
-        return Criterion('!=', self, other)
+        return Criterion('<>', self, other)
 
     def __gt__(self, other):
         return Criterion('>', self, other)
