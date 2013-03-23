@@ -31,9 +31,9 @@ class iRODSSession(object):
 
     def _recv(self):
         msg = iRODSMessage.recv(self.socket)
-	if msg.int_info < 0:
-		raise iRODSException(msg.int_info)
-	return msg
+        if msg.int_info < 0:
+            raise iRODSException(msg.int_info)
+        return msg
 
     def _connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
