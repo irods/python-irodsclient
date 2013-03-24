@@ -4,10 +4,12 @@ import struct
 import logging
 from message import iRODSMessage, StartupPack, AuthResponseInp, GenQueryOut
 from . import MAX_PASSWORD_LENGTH
-from file import iRODSCollection
 from query import Query
 from exception import iRODSException
 from results import ResultSet
+from models import Collection
+from os.path import basename, dirname
+from collection import iRODSCollection
 
 class iRODSSession(object):
     def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -26,7 +28,7 @@ class iRODSSession(object):
 
     def _send(self, message):
         str = message.pack()
-        logging.debug(str)
+        #logging.debug(str)
         return self.socket.send(str)
 
     def _recv(self):
@@ -82,7 +84,11 @@ class iRODSSession(object):
     def get_collection(self, path):
         if not self.authenticated:
             self._login()
-        return iRODSCollection(self, path)
+        query = self.query(Collection)\
+            .filter(Collection.name == path)
+        results = self.execute_query(query)
+        if results.length == 1:
+            return iRODSCollection(results[0])
 
     def query(self, *args):
         return Query(self, *args)
