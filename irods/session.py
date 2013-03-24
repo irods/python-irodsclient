@@ -88,7 +88,7 @@ class iRODSSession(object):
         query = self.query(Collection).filter(Collection.name == path)
         results = self.execute_query(query)
         if results.length == 1:
-            return iRODSCollection(results[0])
+            return iRODSCollection(self, results[0])
 
     def get_data_object(self, path):
         if not self.authenticated:
@@ -99,7 +99,7 @@ class iRODSSession(object):
             .filter(DataObject.collection_id == parent.id)\
             .all()
         if results.length == 1:
-            return iRODSDataObject(results[0])
+            return iRODSDataObject(self, results[0])
 
     def query(self, *args):
         return Query(self, *args)

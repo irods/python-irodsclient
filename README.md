@@ -16,7 +16,7 @@ Working with collections
     
     >>> coll.id
     45798
-    >>> coll.path
+    >>> coll.name
     /tempZone/home/rods
     
     >>> for col in coll.subcollections:
@@ -24,7 +24,7 @@ Working with collections
     <iRODSCollection /tempZone/home/rods/subcol1>
     <iRODSCollection /tempZone/home/rods/subcol2>
     
-    >>> for obj in coll.objects:
+    >>> for obj in coll.data_objects:
     >>>   print obj
     <iRODSDataObject /tempZone/home/rods/file.txt>
     <iRODSDataObject /tempZone/home/rods/file2.txt>
