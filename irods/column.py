@@ -1,4 +1,5 @@
 from datetime import datetime
+from calendar import timegm
 
 class QueryKey(object):
     def __init__(self, type):
@@ -47,12 +48,16 @@ class ColumnType(object):
 
     @staticmethod
     def to_irods(data):
-        return data
+        pass
 
 class Integer(ColumnType):
     @staticmethod
     def to_python(str):
         return int(str) 
+
+    @staticmethod
+    def to_irods(data):
+        return "'%s'" % str(data)
 
 class String(ColumnType):
     @staticmethod
@@ -67,3 +72,7 @@ class DateTime(ColumnType):
     @staticmethod
     def to_python(str):
         return datetime.utcfromtimestamp(int(str))
+
+    @staticmethod
+    def to_irods(data):
+        return "'%011d'" % timegm(data.utctimetuple())
