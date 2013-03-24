@@ -55,7 +55,20 @@ class DataObject(Model):
     version = Column(String, 'DATA_VERSION', 405)
     type = Column(String, 'DATA_TYPE_NAME', 406)
     size = Column(Integer, 'DATA_SIZE', 407)
-
+    resource_group_name = Column(String, 'D_RESC_GROUP_NAME', 408)
+    resource_name = Column(String, 'D_RESC_NAME', 409)
+    path = Column(String, 'D_DATA_PATH', 410)
+    owner_name = Column(String, 'D_OWNER_NAME', 411)
+    owner_zone = Column(String, 'D_OWNER_ZONE', 412)
+    replica_status = Column(String, 'D_REPL_STATUS', 413)
+    status = Column(String, 'D_DATA_STATUS', 414)
+    checksum = Column(String, 'D_DATA_CHECKSUM', 415)
+    expiry = Column(String, 'D_EXPIRY', 416)
+    map_id = Column(Integer, 'D_MAP_ID', 417)
+    comments = Column(String, 'D_COMMENTS', 418)
+    create_time = Column(DateTime, 'D_CREATE_TIME', 419)
+    modify_time = Column(DateTime, 'D_MODIFY_TIME', 420)
+    
 class Collection(Model):
     id = Column(Integer, 'COLL_ID', 500)
     name = Column(String, 'COLL_NAME', 501)
