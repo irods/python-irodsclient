@@ -7,9 +7,10 @@ from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import iRODSException
 from results import ResultSet
-from models import Collection
+from models import Collection, DataObject
 from os.path import basename, dirname
 from collection import iRODSCollection
+from data_object import iRODSDataObject
 
 class iRODSSession(object):
     def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -84,11 +85,21 @@ class iRODSSession(object):
     def get_collection(self, path):
         if not self.authenticated:
             self._login()
-        query = self.query(Collection)\
-            .filter(Collection.name == path)
+        query = self.query(Collection).filter(Collection.name == path)
         results = self.execute_query(query)
         if results.length == 1:
             return iRODSCollection(results[0])
+
+    def get_data_object(self, path):
+        if not self.authenticated:
+            self._login()
+        parent = self.get_collection(dirname(path))
+        results = self.query(DataObject)\
+            .filter(DataObject.name == basename(path))\
+            .filter(DataObject.collection_id == parent.id)\
+            .all()
+        if results.length == 1:
+            return iRODSDataObject(results[0])
 
     def query(self, *args):
         return Query(self, *args)
