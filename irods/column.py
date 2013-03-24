@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class QueryKey(object):
     def __init__(self, type):
         self.type = type
@@ -64,4 +66,4 @@ class String(ColumnType):
 class DateTime(ColumnType):
     @staticmethod
     def to_python(str):
-        return str
+        return datetime.utcfromtimestamp(int(str))
