@@ -26,7 +26,7 @@ class BinaryProperty(MessageProperty):
         super(BinaryProperty, self).__init__()
 
     def format(self, value):
-        return value
+        return pack(">%ds" % self.length, value)
 
 class StringProperty(MessageProperty):
     def __init__(self, length=None):

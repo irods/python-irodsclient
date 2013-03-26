@@ -7,10 +7,10 @@ class MessageMetaclass(OrderedMetaclass):
         super(MessageMetaclass, self).__init__(name, bases, attys)
         for name, property in self._ordered_properties:
             property.dub(name)
-        self._format = "".join(
-            property._format
-            for name, property in self._ordered_properties
-        )
+        #self._format = "".join(
+        #    property._format
+        #    for name, property in self._ordered_properties
+        #)
 
 class Message(OrderedClass):
     __metaclass__ = MessageMetaclass
@@ -19,13 +19,13 @@ class Message(OrderedClass):
         super(Message, self).__init__(*args, **kws)
         self._values = {}
 
-    def unpack(self, value, prefix = None):
-        if prefix is None: prefix = ""
-        for (name, property), value in zip(
-            self._ordered_properties,
-            unpack(prefix + self._format, value)
-        ):
-            self._values[name] = value
+    #def unpack(self, value, prefix = None):
+    #    if prefix is None: prefix = ""
+    #    for (name, property), value in zip(
+    #        self._ordered_properties,
+    #        unpack(prefix + self._format, value)
+    #    ):
+    #        self._values[name] = value
 
     #def pack(self, prefix=None):
     #    if prefix is None: prefix = ""
