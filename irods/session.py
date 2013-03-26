@@ -2,7 +2,7 @@ import socket
 import hashlib
 import struct
 import logging
-from message import iRODSMessage, StartupPack, AuthResponseInp, GenQueryOut
+from message import iRODSMessage, StartupPack, AuthResponseInp, GenQueryOut, DataObjInp
 from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import iRODSException
@@ -101,6 +101,20 @@ class iRODSSession(object):
         if results.length == 1:
             return iRODSDataObject(self, results[0])
 
+    def get_file(self, path):
+        message_body = DataObjInp(
+            path=path,
+            create_mode=0,
+            open_flags=0,
+            offset=0,
+            data_size=0,
+            num_threads=0,
+            opr_type=0,
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=602)
+        self._send(message)
+        response = self._recv()
+
     def query(self, *args):
         return Query(self, *args)
 
@@ -114,27 +128,3 @@ class iRODSSession(object):
         results = GenQueryOut.unpack(result_message.msg)
         result_set = ResultSet(results)
         return result_set
-
-    def _collection_exists(self, path):
-        #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
-        """
-        <GenQueryInp_PI>
-            <maxRows>500</maxRows>
-            <continueInx>0</continueInx>
-            <partialStartIndex>0</partialStartIndex>
-            <options>0</options>
-            <KeyValPair_PI>
-                <ssLen>0</ssLen>
-            </KeyValPair_PI>
-            <InxIvalPair_PI>
-                <iiLen>1</iiLen>
-                <inx>500</inx>
-                <ivalue>1</ivalue>
-            </InxIvalPair_PI>
-            <InxValPair_PI>
-                <isLen>1</isLen>
-                <inx>501</inx>
-                <svalue>= '/tempZone/home/rods'</svalue>
-            </InxValPair_PI>
-        </GenQueryInp_PI>
-        """
