@@ -1,5 +1,5 @@
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
-from struct import unpack
+from struct import unpack, pack
 from ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 
 class MessageMetaclass(OrderedMetaclass):
@@ -27,7 +27,9 @@ class Message(OrderedClass):
         ):
             self._values[name] = value
 
-    #def pack(self):
-    #    for (name, property), value in zip(
-    #        self._ordered_properties,
-            
+    def pack(self, prefix=None):
+        if prefix is None: prefix = ""
+        values = []
+        for (name, property) in self._ordered_properties:
+            values.append(self._values[name])
+        return pack(self._format, *values)
