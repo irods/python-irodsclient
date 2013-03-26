@@ -197,3 +197,28 @@ class GenQueryOut(MainMessage):
 
         return GenQueryOut(row_count, attribute_count, continue_index, \
             total_row_count, sql_results)
+
+#define SpecColl_PI "int collClass; int type; str collection[MAX_NAME_LEN]; str objPath[MAX_NAME_LEN]; str resource[NAME_LEN]; str phyPath[MAX_NAME_LEN]; str cacheDir[MAX_NAME_LEN]; int cacheDirty; int replNum;"
+
+#define DataObjInp_PI "str objPath[MAX_NAME_LEN]; int createMode; int openFlags; double offset; double dataSize; int numThreads; int oprType; struct *SpecColl_PI; struct KeyValPair_PI;"
+# I have no idea what SpecColl_PI means
+class DataObjInp(MainMessage):
+    def __init__(self, path=None, create_mode=0, open_flags=0, offset=0, \
+        data_size=0, num_threads=0, opr_type=0, key_vals=None):
+        self.path = path
+        self.create_mode = create_mode
+        self.open_flags = open_flags
+        self.offset = offset
+        self.data_size = data_size
+        self.num_threads = num_threads
+        self.opr_type = opr_type
+        self.key_vals = key_vals
+
+    def pack(self):
+        parts = []
+        parts.append(self.path + '\x00')
+        parts.append(struct.pack(">iiqqii", self.create_mode, self.open_flags, \
+            self.offset, self.data_size, self.num_threads, self.opr_type))
+        if self.key_vals:
+            parts.append(self.key_vals.pack())
+        return "".join(parts)
