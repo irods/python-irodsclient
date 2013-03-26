@@ -1,4 +1,5 @@
 from ordered import OrderedProperty, OrderedMetaclass, OrderedClass
+from struct import pack
 
 class MessageProperty(OrderedProperty):
     def __get__(self, objekt, klass):
@@ -11,6 +12,12 @@ class MessageProperty(OrderedProperty):
 
 class IntegerProperty(MessageProperty):
     _format = 'i'
+    @staticmethod
+    def format(value):
+        return pack(">i", value)
 
 class LongProperty(MessageProperty):
     _format = 'q'
+    @staticmethod
+    def format(value):
+        return pack(">q", value)

@@ -27,9 +27,15 @@ class Message(OrderedClass):
         ):
             self._values[name] = value
 
-    def pack(self, prefix=None):
-        if prefix is None: prefix = ""
+    #def pack(self, prefix=None):
+    #    if prefix is None: prefix = ""
+    #    values = []
+    #    for (name, property) in self._ordered_properties:
+    #        values.append(self._values[name])
+    #    return pack(self._format, *values)
+
+    def pack(self):
         values = []
         for (name, property) in self._ordered_properties:
-            values.append(self._values[name])
-        return pack(self._format, *values)
+            values.append(property.__class__.format(self._values[name]))
+        return "".join(values)
