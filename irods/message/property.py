@@ -19,3 +19,22 @@ class LongProperty(MessageProperty):
     _format = 'q'
     def format(self, value):
         return pack(">q", value)
+
+class BinaryProperty(MessageProperty):
+    def __init__(self, length):
+        self.length = length
+        super(BinaryProperty, self).__init__()
+
+    def format(self, value):
+        return value
+
+class StringProperty(MessageProperty):
+    def __init__(self, length=None):
+        self.length = length
+        super(StringProperty, self).__init__()
+
+    def format(self, value):
+        if self.length:
+            return struct.pack(">%ds" % length, value)
+        else:
+            return value + '\x00'

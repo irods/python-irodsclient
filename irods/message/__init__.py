@@ -1,4 +1,7 @@
 import xml.etree.ElementTree as ET
+from message import Message
+from property import BinaryProperty, StringProperty
+
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
         self.type = type
@@ -45,3 +48,8 @@ class iRODSMessage(object):
         parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
         msg = msg_header_length + msg_header + "".join(parts)
         return msg
+
+#define authResponseInp_PI "bin *response(RESPONSE_LEN); str *username;"
+class AuthResponseInp(Message):
+    response = BinaryProperty(16)
+    username = StringProperty()
