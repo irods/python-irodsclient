@@ -37,5 +37,5 @@ class Message(OrderedClass):
     def pack(self):
         values = []
         for (name, property) in self._ordered_properties:
-            values.append(property.__class__.format(self._values[name]))
+            values.append(property.format(self._values[name]))
         return "".join(values)

@@ -12,12 +12,10 @@ class MessageProperty(OrderedProperty):
 
 class IntegerProperty(MessageProperty):
     _format = 'i'
-    @staticmethod
-    def format(value):
+    def format(self, value):
         return pack(">i", value)
 
 class LongProperty(MessageProperty):
     _format = 'q'
-    @staticmethod
-    def format(value):
+    def format(self, value):
         return pack(">q", value)
