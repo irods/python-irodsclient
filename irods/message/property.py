@@ -12,12 +12,12 @@ class MessageProperty(OrderedProperty):
 
 class IntegerProperty(MessageProperty):
     _format = 'i'
-    def format(self, value):
+    def format(self, instance, value):
         return pack(">i", value)
 
 class LongProperty(MessageProperty):
     _format = 'q'
-    def format(self, value):
+    def format(self, instance, value):
         return pack(">q", value)
 
 class BinaryProperty(MessageProperty):
@@ -25,7 +25,7 @@ class BinaryProperty(MessageProperty):
         self.length = length
         super(BinaryProperty, self).__init__()
 
-    def format(self, value):
+    def format(self, instance, value):
         return pack(">%ds" % self.length, value)
 
 class StringProperty(MessageProperty):
@@ -33,7 +33,7 @@ class StringProperty(MessageProperty):
         self.length = length
         super(StringProperty, self).__init__()
 
-    def format(self, value):
+    def format(self, instance, value):
         if self.length:
             return struct.pack(">%ds" % length, value)
         else:

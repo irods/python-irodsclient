@@ -49,7 +49,62 @@ class iRODSMessage(object):
         msg = msg_header_length + msg_header + "".join(parts)
         return msg
 
+#define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
+class StartupPack(Message):
+    irodsProt = IntegerProperty()
+    reconnFlag = IntegerProperty()
+    connectCnt = IntegerProperty()
+    proxyUser = StringProperty()
+    proxyRcatZone = StringProperty()
+    clientUser = StringProperty()
+    clientRcatZone = StringProperty()
+    relVersion = StringProperty()
+    apiVersion = StringProperty()
+    option = StringProperty()
+
 #define authResponseInp_PI "bin *response(RESPONSE_LEN); str *username;"
 class AuthResponseInp(Message):
     response = BinaryProperty(16)
     username = StringProperty()
+
+#define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
+class InxIvalPair(Message):
+    iiLen = IntegerProperty()
+    inx = ArrayProperty(IntegerProperty(), 'iiLen')
+    ivalue = ArrayProperty(IntegerProperty(), 'ivalue')
+
+#define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
+class InxValPair(Message):
+    isLen = IntegerProperty()
+    inx = ArrayProperty(IntergerProperty(), 'isLen')
+    svalue = ArrayProperty(StringProperty(), 'isLen')
+
+#define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
+class KeyValPair(Message):
+    ssLen = IntegerProperty()
+    keyWord = ArrayProperty(StringProperty(), 'ssLen')
+    svalue = ArrayProperty(StringProperty(), 'ssLen') 
+
+#define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
+class GenQueryInp(Message):
+    maxRows = IntegerProperty()
+    continueInx = IntegerProperty()
+    partialStartIndex = IntegerProperty()
+    options = IntegerProperty()
+    keyValPair = MessageProperty(KeyValPair)
+    inxIvalPair = MessageProperty(InxIvalPair)
+    inxValPair = MessageProperty(InxValPair)
+
+#define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
+class SqlResult(Message):
+    attriInx = IntegerProperty()
+    reslen = IntegerProperty()
+    value = ArrayProperty(StringProperty())
+
+#define GenQueryOut_PI "int rowCnt; int attriCnt; int continueInx; int totalRowCount; struct SqlResult_PI[MAX_SQL_ATTR];"
+class GenQueryOut(Message):
+    rowCnt = IntegerProperty()
+    attriCnt = IntegerProperty()
+    continueInx = IntegerProperty()
+    totalRowCount = IntegerProperty()
+    sqlResult = SqlResultProperty('rowCnt')
