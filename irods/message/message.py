@@ -38,6 +38,7 @@ class Message(OrderedClass):
         values = []
         values.append("<%s_PI>" % self.__class__.__name__)
         for (name, property) in self._ordered_properties:
-            values.append(property.pack(self._values[name]))
+            if name in self._values:
+                values.append(property.pack(self._values[name]))
         values.append("</%s_PI>" % self.__class__.__name__)
         return "".join(values)

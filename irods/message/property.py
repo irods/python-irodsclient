@@ -19,11 +19,11 @@ class MessageProperty(OrderedProperty):
 
 class IntegerProperty(MessageProperty):
     def format(self, value):
-        return value
+        return str(value)
 
 class LongProperty(MessageProperty):
     def format(self, value):
-        return value
+        return str(value)
 
 class BinaryProperty(MessageProperty):
     def __init__(self, length):
@@ -46,8 +46,9 @@ class ArrayProperty(MessageProperty):
         self.property = property
         super(ArrayProperty, self).__init__()
 
-    def format(self, values):
-        return "".join([self.property.pack(value) for v in values])
+    def pack(self, values):
+        self.property.dub(self.name)
+        return "".join([self.property.pack(v) for v in values])
 
 class SubmessageProperty(MessageProperty):
     def __init__(self, message_cls):
