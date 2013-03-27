@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from message import Message
-from property import BinaryProperty, StringProperty
+from property import BinaryProperty, StringProperty, IntegerProperty, ArrayProperty, SubmessageProperty
 
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
@@ -70,20 +70,20 @@ class AuthResponseInp(Message):
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 class InxIvalPair(Message):
     iiLen = IntegerProperty()
-    inx = ArrayProperty(IntegerProperty(), 'iiLen')
-    ivalue = ArrayProperty(IntegerProperty(), 'ivalue')
+    inx = ArrayProperty(IntegerProperty())
+    ivalue = ArrayProperty(IntegerProperty())
 
 #define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
 class InxValPair(Message):
     isLen = IntegerProperty()
-    inx = ArrayProperty(IntergerProperty(), 'isLen')
-    svalue = ArrayProperty(StringProperty(), 'isLen')
+    inx = ArrayProperty(IntegerProperty())
+    svalue = ArrayProperty(StringProperty())
 
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 class KeyValPair(Message):
     ssLen = IntegerProperty()
-    keyWord = ArrayProperty(StringProperty(), 'ssLen')
-    svalue = ArrayProperty(StringProperty(), 'ssLen') 
+    keyWord = ArrayProperty(StringProperty())
+    svalue = ArrayProperty(StringProperty()) 
 
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
 class GenQueryInp(Message):
@@ -91,9 +91,9 @@ class GenQueryInp(Message):
     continueInx = IntegerProperty()
     partialStartIndex = IntegerProperty()
     options = IntegerProperty()
-    keyValPair = MessageProperty(KeyValPair)
-    inxIvalPair = MessageProperty(InxIvalPair)
-    inxValPair = MessageProperty(InxValPair)
+    keyValPair = SubmessageProperty(KeyValPair)
+    inxIvalPair = SubmessageProperty(InxIvalPair)
+    inxValPair = SubmessageProperty(InxValPair)
 
 #define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
 class SqlResult(Message):
@@ -102,9 +102,9 @@ class SqlResult(Message):
     value = ArrayProperty(StringProperty())
 
 #define GenQueryOut_PI "int rowCnt; int attriCnt; int continueInx; int totalRowCount; struct SqlResult_PI[MAX_SQL_ATTR];"
-class GenQueryOut(Message):
-    rowCnt = IntegerProperty()
-    attriCnt = IntegerProperty()
-    continueInx = IntegerProperty()
-    totalRowCount = IntegerProperty()
-    sqlResult = SqlResultProperty('rowCnt')
+#class GenQueryOut(Message):
+#    rowCnt = IntegerProperty()
+#    attriCnt = IntegerProperty()
+#    continueInx = IntegerProperty()
+#    totalRowCount = IntegerProperty()
+#    sqlResult = SqlResultProperty('rowCnt')

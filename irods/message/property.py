@@ -10,31 +10,49 @@ class MessageProperty(OrderedProperty):
         self.name = name
         return self
 
+    def pack(self, value):
+        values = []
+        values.append("<%s>" % self.name)
+        values.append(self.format(value))
+        values.append("</%s>" % self.name)
+        return "".join(values)
+
 class IntegerProperty(MessageProperty):
-    _format = 'i'
-    def format(self, instance, value):
-        return pack(">i", value)
+    def format(self, value):
+        return value
 
 class LongProperty(MessageProperty):
-    _format = 'q'
-    def format(self, instance, value):
-        return pack(">q", value)
+    def format(self, value):
+        return value
 
 class BinaryProperty(MessageProperty):
     def __init__(self, length):
         self.length = length
         super(BinaryProperty, self).__init__()
 
-    def format(self, instance, value):
-        return pack(">%ds" % self.length, value)
+    def format(self, value):
+        return value
 
 class StringProperty(MessageProperty):
     def __init__(self, length=None):
         self.length = length
         super(StringProperty, self).__init__()
 
-    def format(self, instance, value):
-        if self.length:
-            return struct.pack(">%ds" % length, value)
-        else:
-            return value + '\x00'
+    def format(self, value):
+        return value
+
+class ArrayProperty(MessageProperty):
+    def __init__(self, property):
+        self.property = property
+        super(ArrayProperty, self).__init__()
+
+    def format(self, values):
+        return "".join([self.property.pack(value) for v in values])
+
+class SubmessageProperty(MessageProperty):
+    def __init__(self, message_cls):
+        self.message_cls = message_cls
+        super(SubmessageProperty, self).__init__()
+
+    def format(self, value):
+        return value.pack()
