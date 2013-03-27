@@ -55,5 +55,5 @@ class SubmessageProperty(MessageProperty):
         self.message_cls = message_cls
         super(SubmessageProperty, self).__init__()
 
-    def format(self, value):
+    def pack(self, value):
         return value.pack()
