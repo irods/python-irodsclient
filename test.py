@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import unittest
+from xml.etree import ElementTree as ET
+from base64 import b64encode, b64decode
 from irods.message import StartupPack, AuthResponseInp, InxIvalPair, \
 InxValPair, KeyValPair, GenQueryInp, SqlResult
-from xml.etree import ElementTree as ET
 
 class TestMessages(unittest.TestCase):
     
     def test_startup_pack(self):
-        sup =  StartupPack()
+        sup = StartupPack()
         sup.irodsProt = 2
         sup.reconnFlag = 3
         sup.proxyUser = "rods"
@@ -33,15 +34,30 @@ class TestMessages(unittest.TestCase):
 
         sup2 = StartupPack()
         sup2.unpack(ET.fromstring(expected))
-        self.assertEquals(sup2.irodsProt, 2)
-        self.assertEquals(sup2.reconnFlag, 3)
-        self.assertEquals(sup2.proxyUser, "rods")
-        self.assertEquals(sup2.proxyRcatZone, "tempZone")
-        self.assertEquals(sup2.clientUser, "rods")
-        self.assertEquals(sup2.clientRcatZone, "yoyoyo")
-        self.assertEquals(sup2.relVersion, "irods3.2")
-        self.assertEquals(sup2.apiVersion, "d")
-        self.assertEquals(sup2.option, "hellO")
+        self.assertEqual(sup2.irodsProt, 2)
+        self.assertEqual(sup2.reconnFlag, 3)
+        self.assertEqual(sup2.proxyUser, "rods")
+        self.assertEqual(sup2.proxyRcatZone, "tempZone")
+        self.assertEqual(sup2.clientUser, "rods")
+        self.assertEqual(sup2.clientRcatZone, "yoyoyo")
+        self.assertEqual(sup2.relVersion, "irods3.2")
+        self.assertEqual(sup2.apiVersion, "d")
+        self.assertEqual(sup2.option, "hellO")
+
+    def test_auth_response(self):
+        ar = AuthResponseInp()
+        ar.response = "hello"
+        ar.username = "rods"
+        expected = "<AuthResponseInp_PI>\
+<response>aGVsbG8=</response>\
+<username>rods</username>\
+</AuthResponseInp_PI>"
+        self.assertEqual(ar.pack(), expected)
+
+        ar2 = AuthResponseInp()
+        ar2.unpack(ET.fromstring(expected))
+        self.assertEqual(ar2.response, "hello")
+        self.assertEqual(ar2.username, "rods")
 
 if __name__ == "__main__":
     unittest.main()

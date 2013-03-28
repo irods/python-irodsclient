@@ -1,3 +1,4 @@
+from base64 import b64encode, b64decode
 from ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 
 class MessageProperty(OrderedProperty):
@@ -42,10 +43,10 @@ class BinaryProperty(MessageProperty):
         super(BinaryProperty, self).__init__()
 
     def format(self, value):
-        return value
+        return b64encode(value)
 
     def parse(self, value):
-        return value
+        return b64decode(value)
 
 class StringProperty(MessageProperty):
     def __init__(self, length=None):
