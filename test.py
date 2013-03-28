@@ -79,5 +79,25 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(iip2.inx, [4,5])
         self.assertEqual(iip2.ivalue, [1,2])
 
+    def test_key_val_pair(self):
+        kvp = KeyValPair()
+        kvp.ssLen = 2
+        kvp.keyWord = ["one", "two"]
+        kvp.svalue = ["three", "four"]
+        expected = "<KeyValPair_PI>\
+<ssLen>2</ssLen>\
+<keyWord>one</keyWord>\
+<keyWord>two</keyWord>\
+<svalue>three</svalue>\
+<svalue>four</svalue>\
+</KeyValPair_PI>"
+        self.assertEqual(kvp.pack(), expected)
+
+        kvp2 = KeyValPair()
+        kvp2.unpack(ET.fromstring(expected))
+        self.assertEqual(kvp2.ssLen, 2)
+        self.assertEqual(kvp2.keyWord, ["one", "two"])
+        self.assertEqual(kvp2.svalue, ["three", "four"])
+
 if __name__ == "__main__":
     unittest.main()
