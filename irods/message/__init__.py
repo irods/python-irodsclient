@@ -91,9 +91,9 @@ class GenQueryInp(Message):
     continueInx = IntegerProperty()
     partialStartIndex = IntegerProperty()
     options = IntegerProperty()
-    keyValPair = SubmessageProperty(KeyValPair)
-    inxIvalPair = SubmessageProperty(InxIvalPair)
-    inxValPair = SubmessageProperty(InxValPair)
+    KeyValPair = SubmessageProperty(KeyValPair)
+    InxIvalPair = SubmessageProperty(InxIvalPair)
+    InxValPair = SubmessageProperty(InxValPair)
 
 #define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
 class SqlResult(Message):
