@@ -20,7 +20,7 @@ class MessageProperty(OrderedProperty):
 
     def unpack(self, root):
         el = root.find(self.name)
-        return self.parse(el.text) if el else None
+        return self.parse(el.text) if el is not None else None
 
 class IntegerProperty(MessageProperty):
     def format(self, value):
@@ -69,7 +69,7 @@ class ArrayProperty(MessageProperty):
 
     def unpack(self, root):
         els = root.findall(self.name)
-        return [self.property.parse(el.text) for els in els]
+        return [self.property.parse(el.text) for el in els]
 
 class SubmessageProperty(MessageProperty):
     def __init__(self, message_cls):
@@ -81,5 +81,6 @@ class SubmessageProperty(MessageProperty):
 
     def unpack(self, root):
         el = root.find(self.name + '_PI')
-        msg = message_cls()
-        msg.unpack(root)
+        msg = self.message_cls()
+        msg.unpack(el)
+        return msg
