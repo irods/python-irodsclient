@@ -59,5 +59,25 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(ar2.response, "hello")
         self.assertEqual(ar2.username, "rods")
 
+    def test_inx_ival_pair(self):
+        iip = InxIvalPair()
+        iip.iiLen = 2
+        iip.inx = [4,5]
+        iip.ivalue = [1,2]
+        expected = "<InxIvalPair_PI>\
+<iiLen>2</iiLen>\
+<inx>4</inx>\
+<inx>5</inx>\
+<ivalue>1</ivalue>\
+<ivalue>2</ivalue>\
+</InxIvalPair_PI>"
+        self.assertEqual(iip.pack(), expected)
+
+        iip2 = InxIvalPair()
+        iip2.unpack(ET.fromstring(expected))
+        self.assertEqual(iip2.iiLen, 2)
+        self.assertEqual(iip2.inx, [4,5])
+        self.assertEqual(iip2.ivalue, [1,2])
+
 if __name__ == "__main__":
     unittest.main()
