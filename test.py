@@ -99,5 +99,23 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(kvp2.keyWord, ["one", "two"])
         self.assertEqual(kvp2.svalue, ["three", "four"])
 
+    def test_gen_query_inp(self):
+        gq = GenQueryInp()
+        gq.maxRows = 4
+        gq.continueInx = 3
+        gq.partialStartIndex = 2
+        gq.options = 1
+        gq.KeyValPair = KeyValPair(ssLen=2, keyWord=["one", "two"], svalue=["three", "four"])
+        gq.InxIvalPair = InxIvalPair(iiLen=2, inx=[4,5], ivalue=[1,2])
+        gq.InxValPair = InxValPair(isLen=2, inx=[1,2], ivalue=["five", "six"])
+
+        expected = "<GenQueryInp_PI><maxRows>4</maxRows><continueInx>3</continueInx><partialStartIndex>2</partialStartIndex><options>1</options><KeyValPair_PI><ssLen>2</ssLen><keyWord>one</keyWord><keyWord>two</keyWord><svalue>three</svalue><svalue>four</svalue></KeyValPair_PI><InxIvalPair_PI><iiLen>2</iiLen><inx>4</inx><inx>5</inx><ivalue>1</ivalue><ivalue>2</ivalue></InxIvalPair_PI><InxValPair_PI><isLen>2</isLen><inx>1</inx><inx>2</inx></InxValPair_PI></GenQueryInp_PI>"
+        self.assertEqual(gq.pack(), expected)
+
+        #gq2 = GenQueryInp()
+        #gq2.unpack(ET.fromstring(expected))
+        #self.assertEqual(gq2.KeyValuePair.keyWord, ["one", "two"])
+        #self.assertEqual(gq2.pack(), expected)
+
 if __name__ == "__main__":
     unittest.main()
