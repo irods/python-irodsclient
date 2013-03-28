@@ -12,9 +12,12 @@ class MessageMetaclass(OrderedMetaclass):
 class Message(OrderedClass):
     __metaclass__ = MessageMetaclass
 
-    def __init__(self, *args, **kws):
-        super(Message, self).__init__(*args, **kws)
+    def __init__(self, *args, **kwargs):
+        super(Message, self).__init__()
         self._values = {}
+        for (name, _) in self._ordered_properties:
+            if name in kwargs:
+                self._values[name] = kwargs[name]
 
     def pack(self):
         values = []
