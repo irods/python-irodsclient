@@ -92,6 +92,7 @@ class authRequestOut(Message):
 class InxIvalPair(Message):
     def __init__(self, data=None):
         super(InxIvalPair, self).__init__()
+        self.iiLen = 0
         if data:
             self.iiLen = len(data)
             self.inx = data.keys()
@@ -105,6 +106,7 @@ class InxIvalPair(Message):
 class InxValPair(Message):
     def __init__(self, data=None):
         super(InxValPair, self).__init__()
+        self.isLen = 0
         if data:
             self.isLen = len(data)
             self.inx = data.keys()
@@ -118,6 +120,7 @@ class InxValPair(Message):
 class KeyValPair(Message):
     def __init__(self, data=None):
         super(KeyValPair, self).__init__()
+        self.ssLen = 0
         if data:
             self.ssLen = len(data)
             self.keyWord = data.keys()
