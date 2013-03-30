@@ -14,7 +14,7 @@ def error_code_to_exception(code):
         cls = FileDriverException
     elif code > 880000:
         cls = CatalogLibraryException
-    elif:
+    else:
         return iRODSException(code)
 
     if code in cls.errors:

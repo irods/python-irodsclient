@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from message import Message
-from property import BinaryProperty, StringProperty, IntegerProperty, ArrayProperty, SubmessageProperty
+from property import BinaryProperty, StringProperty, IntegerProperty, LongProperty, ArrayProperty, SubmessageProperty
+import struct
+import logging
 
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
@@ -108,3 +110,14 @@ class GenQueryOut(Message):
     continueInx = IntegerProperty()
     totalRowCount = IntegerProperty()
     SqlResult_PI = ArrayProperty(SubmessageProperty(SqlResult))
+
+#define DataObjInp_PI "str objPath[MAX_NAME_LEN]; int createMode; int openFlags; double offset; double dataSize; int numThreads; int oprType; struct *SpecColl_PI; struct KeyValPair_PI;"
+class DataObjInp(Message):
+    objPath = StringProperty()
+    createMode = IntegerProperty()
+    openFlags = IntegerProperty()
+    offset = LongProperty()
+    dataSize = LongProperty()
+    numThreads = IntegerProperty()
+    oprType = IntegerProperty()
+    KeyValPair_PI = SubmessageProperty(KeyValPair)
