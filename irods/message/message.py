@@ -29,6 +29,5 @@ class Message(OrderedClass):
         return "".join(values)
 
     def unpack(self, root):
-        #root = ET.fromstring(xml_str)
         for (name, property) in self._ordered_properties:
             self._values[name] = property.unpack(root.findall(name))

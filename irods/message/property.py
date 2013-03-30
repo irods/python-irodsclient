@@ -72,7 +72,6 @@ class ArrayProperty(MessageProperty):
 
     def unpack(self, els):
         return [self.property.unpack([el]) for el in els]
-        #return [self.property.parse(el.text) for el in els]
 
 class SubmessageProperty(MessageProperty):
     def __init__(self, message_cls):
