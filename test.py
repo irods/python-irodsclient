@@ -107,15 +107,31 @@ class TestMessages(unittest.TestCase):
         gq.options = 1
         gq.KeyValPair = KeyValPair(ssLen=2, keyWord=["one", "two"], svalue=["three", "four"])
         gq.InxIvalPair = InxIvalPair(iiLen=2, inx=[4,5], ivalue=[1,2])
-        gq.InxValPair = InxValPair(isLen=2, inx=[1,2], ivalue=["five", "six"])
+        gq.InxValPair = InxValPair(isLen=2, inx=[1,2], svalue=["five", "six"])
 
-        expected = "<GenQueryInp_PI><maxRows>4</maxRows><continueInx>3</continueInx><partialStartIndex>2</partialStartIndex><options>1</options><KeyValPair_PI><ssLen>2</ssLen><keyWord>one</keyWord><keyWord>two</keyWord><svalue>three</svalue><svalue>four</svalue></KeyValPair_PI><InxIvalPair_PI><iiLen>2</iiLen><inx>4</inx><inx>5</inx><ivalue>1</ivalue><ivalue>2</ivalue></InxIvalPair_PI><InxValPair_PI><isLen>2</isLen><inx>1</inx><inx>2</inx></InxValPair_PI></GenQueryInp_PI>"
+        expected = "<GenQueryInp_PI><maxRows>4</maxRows><continueInx>3</continueInx><partialStartIndex>2</partialStartIndex><options>1</options><KeyValPair_PI><ssLen>2</ssLen><keyWord>one</keyWord><keyWord>two</keyWord><svalue>three</svalue><svalue>four</svalue></KeyValPair_PI><InxIvalPair_PI><iiLen>2</iiLen><inx>4</inx><inx>5</inx><ivalue>1</ivalue><ivalue>2</ivalue></InxIvalPair_PI><InxValPair_PI><isLen>2</isLen><inx>1</inx><inx>2</inx><svalue>five</svalue><svalue>six</svalue></InxValPair_PI></GenQueryInp_PI>"
         self.assertEqual(gq.pack(), expected)
 
-        #gq2 = GenQueryInp()
-        #gq2.unpack(ET.fromstring(expected))
-        #self.assertEqual(gq2.KeyValuePair.keyWord, ["one", "two"])
-        #self.assertEqual(gq2.pack(), expected)
+        gq2 = GenQueryInp()
+        gq2.unpack(ET.fromstring(expected))
+        self.assertEqual(gq2.maxRows, 4)
+        self.assertEqual(gq2.continueInx, 3)
+        self.assertEqual(gq2.partialStartIndex, 2)
+        self.assertEqual(gq2.options, 1)
+
+        self.assertEqual(gq2.KeyValPair.ssLen, 2)
+        self.assertEqual(gq2.KeyValPair.keyWord, ["one", "two"])
+        self.assertEqual(gq2.KeyValPair.svalue, ["three", "four"])
+
+        self.assertEqual(gq2.InxIvalPair.iiLen, 2)
+        self.assertEqual(gq2.InxIvalPair.inx, [4,5])
+        self.assertEqual(gq2.InxIvalPair.ivalue, [1,2])
+
+        self.assertEqual(gq2.InxValPair.isLen, 2)
+        self.assertEqual(gq2.InxValPair.inx, [1,2])
+        self.assertEqual(gq2.InxValPair.svalue, ["five","six"])
+
+        self.assertEqual(gq2.pack(), expected)
 
 if __name__ == "__main__":
     unittest.main()
