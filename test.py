@@ -133,5 +133,21 @@ class TestMessages(unittest.TestCase):
 
         self.assertEqual(gq2.pack(), expected)
 
+    def test_sql_result(self):
+        sr = SqlResult()
+        sr.attriInx = 504
+        sr.reslen = 64
+        sr.value = ["one", "two"]
+
+        expected = "<SqlResult_PI><attriInx>504</attriInx><reslen>64</reslen><value>one</value><value>two</value></SqlResult_PI>"
+        self.assertEqual(sr.pack(), expected)
+
+        sr2 = SqlResult()
+        sr2.unpack(ET.fromstring(expected))
+        self.assertEqual(sr2.attriInx, 504)
+        self.assertEqual(sr2.reslen, 64)
+        self.assertEqual(sr2.value, ["one", "two"])
+        self.assertEqual(sr2.pack(), expected)
+
 if __name__ == "__main__":
     unittest.main()
