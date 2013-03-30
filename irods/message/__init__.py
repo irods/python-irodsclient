@@ -58,15 +58,16 @@ class iRODSMessage(object):
 
 #define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
 class StartupPack(Message):
-    def __init__(self, user, zone):
+    def __init__(self, user=None, zone=None):
         super(StartupPack, self).__init__()
-        self.irodsProt = 1 
-        self.connectCnt = 0
-        self.proxyUser = self.clientUser = user
-        self.proxyRcatZone = self.clientRcatZone = zone
-        self.relVersion = "rods3.2"
-        self.apiVersion = "d"
-        self.option = ""
+        if user and zone:
+            self.irodsProt = 1 
+            self.connectCnt = 0
+            self.proxyUser = self.clientUser = user
+            self.proxyRcatZone = self.clientRcatZone = zone
+            self.relVersion = "rods3.2"
+            self.apiVersion = "d"
+            self.option = ""
 
     irodsProt = IntegerProperty()
     reconnFlag = IntegerProperty()
@@ -89,11 +90,12 @@ class authRequestOut(Message):
 
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 class InxIvalPair(Message):
-    def __init__(self, data):
+    def __init__(self, data=None):
         super(InxIvalPair, self).__init__()
-        self.iiLen = len(data)
-        self.inx = data.keys()
-        self.ivalue = data.values()
+        if data:
+            self.iiLen = len(data)
+            self.inx = data.keys()
+            self.ivalue = data.values()
 
     iiLen = IntegerProperty()
     inx = ArrayProperty(IntegerProperty())
@@ -101,11 +103,12 @@ class InxIvalPair(Message):
 
 #define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
 class InxValPair(Message):
-    def __init__(self, data):
+    def __init__(self, data=None):
         super(InxValPair, self).__init__()
-        self.isLen = len(data)
-        self.inx = data.keys()
-        self.svalue = data.values()
+        if data:
+            self.isLen = len(data)
+            self.inx = data.keys()
+            self.svalue = data.values()
 
     isLen = IntegerProperty()
     inx = ArrayProperty(IntegerProperty())
@@ -113,11 +116,12 @@ class InxValPair(Message):
 
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 class KeyValPair(Message):
-    def __init__(self, data):
+    def __init__(self, data=None):
         super(KeyValPair, self).__init__()
-        self.ssLen = len(data)
-        self.keyWord = data.keys()
-        self.svalue = data.values()
+        if data:
+            self.ssLen = len(data)
+            self.keyWord = data.keys()
+            self.svalue = data.values()
 
     ssLen = IntegerProperty()
     keyWord = ArrayProperty(StringProperty())

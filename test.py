@@ -2,7 +2,7 @@
 import unittest
 from xml.etree import ElementTree as ET
 from base64 import b64encode, b64decode
-from irods.message import StartupPack, AuthResponseInp, InxIvalPair, \
+from irods.message import StartupPack, authResponseInp, InxIvalPair, \
 InxValPair, KeyValPair, GenQueryInp, SqlResult, GenQueryOut
 
 class TestMessages(unittest.TestCase):
@@ -45,16 +45,16 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(sup2.option, "hellO")
 
     def test_auth_response(self):
-        ar = AuthResponseInp()
+        ar = authResponseInp()
         ar.response = "hello"
         ar.username = "rods"
-        expected = "<AuthResponseInp_PI>\
+        expected = "<authResponseInp_PI>\
 <response>aGVsbG8=</response>\
 <username>rods</username>\
-</AuthResponseInp_PI>"
+</authResponseInp_PI>"
         self.assertEqual(ar.pack(), expected)
 
-        ar2 = AuthResponseInp()
+        ar2 = authResponseInp()
         ar2.unpack(ET.fromstring(expected))
         self.assertEqual(ar2.response, "hello")
         self.assertEqual(ar2.username, "rods")
@@ -105,9 +105,25 @@ class TestMessages(unittest.TestCase):
         gq.continueInx = 3
         gq.partialStartIndex = 2
         gq.options = 1
-        gq.KeyValPair_PI = KeyValPair(ssLen=2, keyWord=["one", "two"], svalue=["three", "four"])
-        gq.InxIvalPair_PI = InxIvalPair(iiLen=2, inx=[4,5], ivalue=[1,2])
-        gq.InxValPair_PI = InxValPair(isLen=2, inx=[1,2], svalue=["five", "six"])
+
+        kvp = KeyValPair()
+        kvp.ssLen = 2
+        kvp.keyWord = ['one', 'two']
+        kvp.svalue = ['three', 'four']
+
+        iip = InxIvalPair()
+        iip.iiLen = 2
+        iip.inx = [4,5]
+        iip.ivalue = [1,2]
+
+        ivp = InxValPair()
+        ivp.isLen = 2
+        ivp.inx = [1,2]
+        ivp.svalue = ['five', 'six']
+
+        gq.KeyValPair_PI = kvp
+        gq.InxIvalPair_PI = iip
+        gq.InxValPair_PI = ivp
 
         expected = "<GenQueryInp_PI><maxRows>4</maxRows><continueInx>3</continueInx><partialStartIndex>2</partialStartIndex><options>1</options><KeyValPair_PI><ssLen>2</ssLen><keyWord>one</keyWord><keyWord>two</keyWord><svalue>three</svalue><svalue>four</svalue></KeyValPair_PI><InxIvalPair_PI><iiLen>2</iiLen><inx>4</inx><inx>5</inx><ivalue>1</ivalue><ivalue>2</ivalue></InxIvalPair_PI><InxValPair_PI><isLen>2</isLen><inx>1</inx><inx>2</inx><svalue>five</svalue><svalue>six</svalue></InxValPair_PI></GenQueryInp_PI>"
         self.assertEqual(gq.pack(), expected)
