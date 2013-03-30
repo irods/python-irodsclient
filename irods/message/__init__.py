@@ -51,8 +51,23 @@ class iRODSMessage(object):
         msg = msg_header_length + msg_header + "".join(parts)
         return msg
 
+    def get_main_message(self, cls):
+        msg = cls()
+        msg.unpack(ET.fromstring(self.msg))
+        return msg
+
 #define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
 class StartupPack(Message):
+    def __init__(self, user, zone):
+        super(StartupPack, self).__init__()
+        self.irodsProt = 1 
+        self.connectCnt = 0
+        self.proxyUser = self.clientUser = user
+        self.proxyRcatZone = self.clientRcatZone = zone
+        self.relVersion = "rods3.2"
+        self.apiVersion = "d"
+        self.option = ""
+
     irodsProt = IntegerProperty()
     reconnFlag = IntegerProperty()
     connectCnt = IntegerProperty()
@@ -65,9 +80,12 @@ class StartupPack(Message):
     option = StringProperty()
 
 #define authResponseInp_PI "bin *response(RESPONSE_LEN); str *username;"
-class AuthResponseInp(Message):
+class authResponseInp(Message):
     response = BinaryProperty(16)
     username = StringProperty()
+
+class authRequestOut(Message):
+    challenge = BinaryProperty(64)
 
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 class InxIvalPair(Message):

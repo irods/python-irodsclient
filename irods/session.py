@@ -2,7 +2,7 @@ import socket
 import hashlib
 import struct
 import logging
-from message import iRODSMessage, StartupPack, AuthResponseInp, GenQueryOut, DataObjInp
+from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut
 from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import iRODSException
@@ -29,7 +29,7 @@ class iRODSSession(object):
 
     def _send(self, message):
         str = message.pack()
-        #logging.debug(str)
+        logging.debug(str)
         return self.socket.send(str)
 
     def _recv(self):
@@ -47,7 +47,7 @@ class iRODSSession(object):
             raise Exception("Could not connect to specified host and port")
 
         self.socket = s
-        main_message = StartupPack(user=self.user, zone=self.zone)
+        main_message = StartupPack(self.user, self.zone)
         msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
         self._send(msg)
         version_msg = self._recv()
@@ -63,15 +63,17 @@ class iRODSSession(object):
         self._send(auth_req)
 
         # challenge
-        challenge = self._recv()
+        challenge_msg = self._recv()
+        logging.debug(challenge_msg.msg)
+        challenge = challenge_msg.get_main_message(authRequestOut).challenge
         padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, self.password)
         m = hashlib.md5()
-        m.update(challenge.msg)
+        m.update(challenge)
         m.update(padded_pwd)
         encoded_pwd = m.digest()
 
         encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        pwd_msg = AuthResponseInp(encoded_pwd, self.user)
+        pwd_msg = authResponseInp(response=encoded_pwd, username=self.user)
         pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self._send(pwd_request)
 
