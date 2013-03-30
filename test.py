@@ -3,7 +3,7 @@ import unittest
 from xml.etree import ElementTree as ET
 from base64 import b64encode, b64decode
 from irods.message import StartupPack, AuthResponseInp, InxIvalPair, \
-InxValPair, KeyValPair, GenQueryInp, SqlResult
+InxValPair, KeyValPair, GenQueryInp, SqlResult, GenQueryOut
 
 class TestMessages(unittest.TestCase):
     
@@ -105,9 +105,9 @@ class TestMessages(unittest.TestCase):
         gq.continueInx = 3
         gq.partialStartIndex = 2
         gq.options = 1
-        gq.KeyValPair = KeyValPair(ssLen=2, keyWord=["one", "two"], svalue=["three", "four"])
-        gq.InxIvalPair = InxIvalPair(iiLen=2, inx=[4,5], ivalue=[1,2])
-        gq.InxValPair = InxValPair(isLen=2, inx=[1,2], svalue=["five", "six"])
+        gq.KeyValPair_PI = KeyValPair(ssLen=2, keyWord=["one", "two"], svalue=["three", "four"])
+        gq.InxIvalPair_PI = InxIvalPair(iiLen=2, inx=[4,5], ivalue=[1,2])
+        gq.InxValPair_PI = InxValPair(isLen=2, inx=[1,2], svalue=["five", "six"])
 
         expected = "<GenQueryInp_PI><maxRows>4</maxRows><continueInx>3</continueInx><partialStartIndex>2</partialStartIndex><options>1</options><KeyValPair_PI><ssLen>2</ssLen><keyWord>one</keyWord><keyWord>two</keyWord><svalue>three</svalue><svalue>four</svalue></KeyValPair_PI><InxIvalPair_PI><iiLen>2</iiLen><inx>4</inx><inx>5</inx><ivalue>1</ivalue><ivalue>2</ivalue></InxIvalPair_PI><InxValPair_PI><isLen>2</isLen><inx>1</inx><inx>2</inx><svalue>five</svalue><svalue>six</svalue></InxValPair_PI></GenQueryInp_PI>"
         self.assertEqual(gq.pack(), expected)
@@ -119,17 +119,17 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(gq2.partialStartIndex, 2)
         self.assertEqual(gq2.options, 1)
 
-        self.assertEqual(gq2.KeyValPair.ssLen, 2)
-        self.assertEqual(gq2.KeyValPair.keyWord, ["one", "two"])
-        self.assertEqual(gq2.KeyValPair.svalue, ["three", "four"])
+        self.assertEqual(gq2.KeyValPair_PI.ssLen, 2)
+        self.assertEqual(gq2.KeyValPair_PI.keyWord, ["one", "two"])
+        self.assertEqual(gq2.KeyValPair_PI.svalue, ["three", "four"])
 
-        self.assertEqual(gq2.InxIvalPair.iiLen, 2)
-        self.assertEqual(gq2.InxIvalPair.inx, [4,5])
-        self.assertEqual(gq2.InxIvalPair.ivalue, [1,2])
+        self.assertEqual(gq2.InxIvalPair_PI.iiLen, 2)
+        self.assertEqual(gq2.InxIvalPair_PI.inx, [4,5])
+        self.assertEqual(gq2.InxIvalPair_PI.ivalue, [1,2])
 
-        self.assertEqual(gq2.InxValPair.isLen, 2)
-        self.assertEqual(gq2.InxValPair.inx, [1,2])
-        self.assertEqual(gq2.InxValPair.svalue, ["five","six"])
+        self.assertEqual(gq2.InxValPair_PI.isLen, 2)
+        self.assertEqual(gq2.InxValPair_PI.inx, [1,2])
+        self.assertEqual(gq2.InxValPair_PI.svalue, ["five","six"])
 
         self.assertEqual(gq2.pack(), expected)
 
@@ -148,6 +148,28 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(sr2.reslen, 64)
         self.assertEqual(sr2.value, ["one", "two"])
         self.assertEqual(sr2.pack(), expected)
+
+    def test_gen_query_out(self):
+        gqo = GenQueryOut()
+        gqo.rowCnt = 2
+        gqo.attriCnt = 2
+        gqo.continueInx = 5
+        gqo.totalRowCount = 7
+
+        sr = SqlResult()
+        sr.attriInx = 504
+        sr.reslen = 64
+        sr.value = ["one", "two"]
+        gqo.SqlResult_PI = [sr, sr]
+
+        expected = "<GenQueryOut_PI><rowCnt>2</rowCnt><attriCnt>2</attriCnt><continueInx>5</continueInx><totalRowCount>7</totalRowCount><SqlResult_PI><attriInx>504</attriInx><reslen>64</reslen><value>one</value><value>two</value></SqlResult_PI><SqlResult_PI><attriInx>504</attriInx><reslen>64</reslen><value>one</value><value>two</value></SqlResult_PI></GenQueryOut_PI>"
+        self.assertEqual(gqo.pack(), expected)
+
+        gqo2 = GenQueryOut()
+        gqo2.unpack(ET.fromstring(expected))
+
+        self.assertEqual(gqo2.rowCnt, 2)
+        self.assertEqual(gqo2.pack(), expected)
 
 if __name__ == "__main__":
     unittest.main()

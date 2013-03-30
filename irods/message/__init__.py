@@ -91,9 +91,9 @@ class GenQueryInp(Message):
     continueInx = IntegerProperty()
     partialStartIndex = IntegerProperty()
     options = IntegerProperty()
-    KeyValPair = SubmessageProperty(KeyValPair)
-    InxIvalPair = SubmessageProperty(InxIvalPair)
-    InxValPair = SubmessageProperty(InxValPair)
+    KeyValPair_PI = SubmessageProperty(KeyValPair)
+    InxIvalPair_PI = SubmessageProperty(InxIvalPair)
+    InxValPair_PI = SubmessageProperty(InxValPair)
 
 #define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
 class SqlResult(Message):
@@ -102,9 +102,9 @@ class SqlResult(Message):
     value = ArrayProperty(StringProperty())
 
 #define GenQueryOut_PI "int rowCnt; int attriCnt; int continueInx; int totalRowCount; struct SqlResult_PI[MAX_SQL_ATTR];"
-#class GenQueryOut(Message):
-#    rowCnt = IntegerProperty()
-#    attriCnt = IntegerProperty()
-#    continueInx = IntegerProperty()
-#    totalRowCount = IntegerProperty()
-#    sqlResult = SqlResultProperty('rowCnt')
+class GenQueryOut(Message):
+    rowCnt = IntegerProperty()
+    attriCnt = IntegerProperty()
+    continueInx = IntegerProperty()
+    totalRowCount = IntegerProperty()
+    SqlResult_PI = ArrayProperty(SubmessageProperty(SqlResult))

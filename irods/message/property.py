@@ -19,9 +19,11 @@ class MessageProperty(OrderedProperty):
         values.append("</%s>" % self.name)
         return "".join(values)
 
-    def unpack(self, root):
-        el = root.find(self.name)
-        return self.parse(el.text) if el is not None else None
+    def unpack(self, els):
+        if len(els):
+            el = els[0]
+            return self.parse(el.text)
+        return None
 
 class IntegerProperty(MessageProperty):
     def format(self, value):
@@ -68,9 +70,9 @@ class ArrayProperty(MessageProperty):
         self.property.dub(self.name)
         return "".join([self.property.pack(v) for v in values])
 
-    def unpack(self, root):
-        els = root.findall(self.name)
-        return [self.property.parse(el.text) for el in els]
+    def unpack(self, els):
+        return [self.property.unpack([el]) for el in els]
+        #return [self.property.parse(el.text) for el in els]
 
 class SubmessageProperty(MessageProperty):
     def __init__(self, message_cls):
@@ -80,8 +82,10 @@ class SubmessageProperty(MessageProperty):
     def pack(self, value):
         return value.pack()
 
-    def unpack(self, root):
-        el = root.find(self.name + '_PI')
-        msg = self.message_cls()
-        msg.unpack(el)
-        return msg
+    def unpack(self, els):
+        if len(els):
+            el = els[0]
+            msg = self.message_cls()
+            msg.unpack(el)
+            return msg
+        return None
