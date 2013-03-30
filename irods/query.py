@@ -52,13 +52,13 @@ class Query(object):
 
     def _message(self):
         args = {
-            'limit': 500,
-            'cond_kw': self._kw_message(),
-            'select': self._select_message(),
-            'cond': self._conds_message(),
+            'maxRows': 500,
+            'continueInx': 0,
+            'partialStartIndex': 0,
             'options': 0,
-            'offset': 0,
-            'continue_index': 0,
+            'KeyValPair_PI': self._kw_message(),
+            'InxIvalPair_PI': self._select_message(),
+            'InxValPair_PI': self._conds_message()
         }
         return GenQueryInp(**args)
         

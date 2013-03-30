@@ -89,18 +89,36 @@ class authRequestOut(Message):
 
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 class InxIvalPair(Message):
+    def __init__(self, data):
+        super(InxIvalPair, self).__init__()
+        self.iiLen = len(data)
+        self.inx = data.keys()
+        self.ivalue = data.values()
+
     iiLen = IntegerProperty()
     inx = ArrayProperty(IntegerProperty())
     ivalue = ArrayProperty(IntegerProperty())
 
 #define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
 class InxValPair(Message):
+    def __init__(self, data):
+        super(InxValPair, self).__init__()
+        self.isLen = len(data)
+        self.inx = data.keys()
+        self.svalue = data.values()
+
     isLen = IntegerProperty()
     inx = ArrayProperty(IntegerProperty())
     svalue = ArrayProperty(StringProperty())
 
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
 class KeyValPair(Message):
+    def __init__(self, data):
+        super(KeyValPair, self).__init__()
+        self.ssLen = len(data)
+        self.keyWord = data.keys()
+        self.svalue = data.values()
+
     ssLen = IntegerProperty()
     keyWord = ArrayProperty(StringProperty())
     svalue = ArrayProperty(StringProperty()) 
