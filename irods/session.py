@@ -5,7 +5,7 @@ import logging
 from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut, KeyValPair
 from . import MAX_PASSWORD_LENGTH, O_RDONLY
 from query import Query
-from exception import iRODSException
+from exception import get_exception_by_code
 from results import ResultSet
 from models import Collection, DataObject
 from os.path import basename, dirname
@@ -35,7 +35,7 @@ class iRODSSession(object):
     def _recv(self):
         msg = iRODSMessage.recv(self.socket)
         if msg.int_info < 0:
-            raise iRODSException(msg.int_info)
+            raise get_exception_by_code(msg.int_info)()
         return msg
 
     def _connect(self):
