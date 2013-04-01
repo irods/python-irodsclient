@@ -50,14 +50,14 @@ class Resource(Model):
 class DataObject(Model):
     id = Column(Integer, 'D_DATA_ID', 401) 
     collection_id = Column(Integer, 'D_COLL_ID', 402)
-    name = Column(String, 'DATA_NAME', 403)
+    name = Column(String, 'DATA_NAME', 403) # basename
     replica_number = Column(Integer, 'DATA_REPL_NUM', 404)
     version = Column(String, 'DATA_VERSION', 405)
     type = Column(String, 'DATA_TYPE_NAME', 406)
     size = Column(Integer, 'DATA_SIZE', 407)
     resource_group_name = Column(String, 'D_RESC_GROUP_NAME', 408)
     resource_name = Column(String, 'D_RESC_NAME', 409)
-    path = Column(String, 'D_DATA_PATH', 410)
+    path = Column(String, 'D_DATA_PATH', 410) # physical path on resource
     owner_name = Column(String, 'D_OWNER_NAME', 411)
     owner_zone = Column(String, 'D_OWNER_ZONE', 412)
     replica_status = Column(String, 'D_REPL_STATUS', 413)

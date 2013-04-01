@@ -2,8 +2,8 @@ import socket
 import hashlib
 import struct
 import logging
-from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut
-from . import MAX_PASSWORD_LENGTH
+from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut, KeyValPair
+from . import MAX_PASSWORD_LENGTH, O_RDONLY
 from query import Query
 from exception import iRODSException
 from results import ResultSet
@@ -101,17 +101,18 @@ class iRODSSession(object):
             .filter(DataObject.collection_id == parent.id)\
             .all()
         if results.length == 1:
-            return iRODSDataObject(self, results[0])
+            return iRODSDataObject(self, parent, results[0])
 
-    def get_file(self, path):
+    def get_file(self, path, mode):
         message_body = DataObjInp(
-            path=path,
-            create_mode=0,
-            open_flags=0,
+            objPath=path,
+            createMode=0,
+            openFlags=O_RDONLY,
             offset=0,
-            data_size=0,
-            num_threads=0,
-            opr_type=0,
+            dataSize=-1,
+            numThreads=0,
+            oprType=0,
+            KeyValPair_PI=KeyValPair(),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=602)
         self._send(message)

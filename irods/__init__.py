@@ -8,6 +8,11 @@ MAX_NAME_LEN = MAX_PATH_ALLOWED + 64
 RESPONSE_LEN = 16
 CHALLENGE_LEN = 64
 
+# File access modes
+O_RDONLY = 0
+O_WRONLY = 1
+O_RDWR = 2
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 h = logging.StreamHandler()
