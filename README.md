@@ -35,6 +35,13 @@ Working with collections
     
 Working with data objects (files)
 ---------------------------------
+```python
+>>> obj = sess.get_data_object("/tempZone/home/rods/test1")
+>>> obj.id
+12345
+>>> obj.name
+test1
+```
     
 Working with metadata
 ---------------------

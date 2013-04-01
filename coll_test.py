@@ -15,6 +15,6 @@ sess = iRODSSession(host='localhost', port=1247, \
 #    .filter(Collection.owner_name == "'rods'")\
 #    .all()
 
-result = sess.query(DataObject.id, DataObject.collection_id, DataObject.name, DataObject.replica_number, DataObject.version, DataObject.type, DataObject.size, User.id, User.name, Collection.id, Collection.name).all()
+result = sess.query(DataObject.id, DataObject.collection_id, DataObject.name, User.name, Collection.name).all()
 
 print str(result)
