@@ -1,25 +1,30 @@
+import logging
 from models import ModelBase
 
 class ResultSet(object):
     def __init__(self, raw):
-        self._raw = raw #gen query out object
-        self.length = raw.row_count
+        #self._raw = raw #gen query out object
+        self.length = raw.rowCnt
+
+        col_length = raw.attriCnt
+        self.cols = raw.SqlResult_PI[:col_length]
+
         self.rows = [self._format_row(i) for i in range(self.length)]
 
     def __str__(self):
-        columns = [(col, max(len(str(ModelBase.columns[col.attribute_index].icat_key)), max([len(x) for x in col.values]))) for col in self._raw.sql_results]
-        header = " | ".join([str(ModelBase.columns[col.attribute_index].icat_key).ljust(width) for (col, width) in columns])
-        rows = "\n".join([" | ".join( [columns[j][0].values[i].ljust(columns[j][1]) for j in range(len(columns)) ]) for i in range(self._raw.row_count) ])
+        columns = [(col, max(len(str(ModelBase.columns[col.attriInx].icat_key)), max([len(str(x)) for x in col.value]))) for col in self.cols]
+        header = " | ".join([str(ModelBase.columns[col.attriInx].icat_key).ljust(width) for (col, width) in columns])
+        rows = "\n".join([" | ".join( [str(columns[j][0].value[i]).ljust(columns[j][1]) for j in range(len(columns)) ]) for i in range(self.length) ])
         return header + "\n" + rows + "\n"
 
     def _format_row(self, index):
-        values = [(col, col.values[index]) for col in self._raw.sql_results]
+        values = [(col, col.value[index]) for col in self.cols]
 
         def format(attribute_index, value):
             col = ModelBase.columns[attribute_index]
             return (col, col.type.to_python(value))
             
-        return dict([format(col.attribute_index, value) for col, value in values])
+        return dict([format(col.attriInx, value) for col, value in values])
 
     def __getitem__(self, index):
         return self.rows.__getitem__(index)

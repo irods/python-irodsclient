@@ -127,6 +127,6 @@ class iRODSSession(object):
         message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=702)
         self._send(message)
         result_message = self._recv()
-        results = GenQueryOut.unpack(result_message.msg)
+        results = result_message.get_main_message(GenQueryOut)
         result_set = ResultSet(results)
         return result_set
