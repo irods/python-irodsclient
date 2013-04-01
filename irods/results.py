@@ -13,9 +13,10 @@ class ResultSet(object):
 
     def __str__(self):
         columns = [(col, max(len(str(ModelBase.columns[col.attriInx].icat_key)), max([len(str(x)) for x in col.value]))) for col in self.cols]
+        separator = "-+-".join(["-" * width for (_, width) in columns])
         header = " | ".join([str(ModelBase.columns[col.attriInx].icat_key).ljust(width) for (col, width) in columns])
         rows = "\n".join([" | ".join( [str(columns[j][0].value[i]).ljust(columns[j][1]) for j in range(len(columns)) ]) for i in range(self.length) ])
-        return header + "\n" + rows + "\n"
+        return "\n".join([separator, header, separator, rows, separator])
 
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]
