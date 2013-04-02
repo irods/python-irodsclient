@@ -14,4 +14,25 @@ class iRODSDataObject(object):
         return "<iRODSDataObject %d %s>" % (self.id, self.name)
 
     def open(self, mode):
-        return self.sess.get_file(self.full_path, mode)
+        desc = self.sess.get_file(self.full_path, mode)
+        return iRODSDataObjectFile(self.sess, desc)
+
+class iRODSDataObjectFile(object):
+    def __init__(self, session, descriptor):
+        self.sess = session
+        self.desc = descriptor
+
+    def close(self):
+        pass
+
+    def read(self, length):
+        pass
+
+    def write(self, string, length=None):
+        pass
+
+    def seek(self, offset, whence):
+        pass
+
+    def rewind(self):
+        pass

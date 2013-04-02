@@ -117,6 +117,7 @@ class iRODSSession(object):
         message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=602)
         self._send(message)
         response = self._recv()
+        return response.int_info
 
     def query(self, *args):
         return Query(self, *args)
