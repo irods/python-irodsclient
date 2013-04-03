@@ -20,7 +20,7 @@ class iRODSCollection(object):
         query = self.sess.query(DataObject)\
             .filter(DataObject.collection_id == self.id)
         results = self.sess.execute_query(query)
-        return [iRODSDataObject(self.sess, row) for row in results]
+        return [iRODSDataObject(self.sess, self, row) for row in results]
 
     def __repr__(self):
         return "<iRODSCollection %d %s>" % (self.id, self.name)

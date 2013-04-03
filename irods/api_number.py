@@ -1,4 +1,4 @@
-api_numbers = {
+api_number = {
     # 500 - 599 - Internal File I/O API calls
     "FILE_CREATE_AN": 500,
     "FILE_OPEN_AN": 501,

@@ -164,3 +164,8 @@ class DataObjInp(Message):
     numThreads = IntegerProperty()
     oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(KeyValPair)
+
+#define dataObjReadInp_PI "int l1descInx; int len;"
+class dataObjReadInp(Message):
+    l1descInx = IntegerProperty()
+    len = IntegerProperty()

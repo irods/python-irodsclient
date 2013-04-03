@@ -2,15 +2,17 @@ import socket
 import hashlib
 import struct
 import logging
-from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut, KeyValPair
-from . import MAX_PASSWORD_LENGTH, O_RDONLY
+from os.path import basename, dirname
+from os import O_RDONLY, O_WRONLY, O_RDWR
+from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut, KeyValPair, dataObjReadInp
+from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import get_exception_by_code
 from results import ResultSet
 from models import Collection, DataObject
-from os.path import basename, dirname
 from collection import iRODSCollection
 from data_object import iRODSDataObject
+from api_number import api_number
 
 class iRODSSession(object):
     def __init__(self, host=None, port=None, user=None, zone=None, password=None):
@@ -103,7 +105,7 @@ class iRODSSession(object):
         if results.length == 1:
             return iRODSDataObject(self, parent, results[0])
 
-    def get_file(self, path, mode):
+    def open_file(self, path, mode):
         message_body = DataObjInp(
             objPath=path,
             createMode=0,
@@ -114,10 +116,22 @@ class iRODSSession(object):
             oprType=0,
             KeyValPair_PI=KeyValPair(),
         )
-        message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=602)
+        message = iRODSMessage('RODS_API_REQ', msg=message_body, 
+            int_info=api_number['DATA_OBJ_OPEN_AN'])
         self._send(message)
         response = self._recv()
         return response.int_info
+
+    def read_file(self, desc, size):
+        message_body = dataObjReadInp(
+            l1descInx=desc,
+            len=size
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_READ201_AN'])
+        self._send(message)
+        response = self._recv()
+        return message.bs
 
     def query(self, *args):
         return Query(self, *args)
