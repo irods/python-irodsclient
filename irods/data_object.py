@@ -42,10 +42,20 @@ class iRODSDataObjectFile(object):
         self.sess.close_file(self.desc)
         return None
 
-    def read(self, size=1024):
+    def read(self, size=None):
+        if not size:
+            return "".join(self._read_all())
         contents = self.sess.read_file(self.desc, size)
-        self.position += len(contents)
+        if contents:
+            self.position += len(contents)
         return contents
+
+    def _read_all(self):
+        while True:
+            contents = self.read(1024) 
+            if not contents:
+                break
+            yield contents
 
     def write(self, string):
         written = self.sess.write_file(self.desc, string)
