@@ -4,7 +4,8 @@ import struct
 import logging
 from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
-from message import iRODSMessage, StartupPack, authResponseInp, GenQueryOut, DataObjInp, authRequestOut, KeyValPair, dataObjReadInp
+from message import (iRODSMessage, StartupPack, authResponseInp, GenQueryOut, 
+    DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp)
 from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import get_exception_by_code
@@ -37,7 +38,7 @@ class iRODSSession(object):
     def _recv(self):
         msg = iRODSMessage.recv(self.socket)
         if msg.int_info < 0:
-            raise get_exception_by_code(msg.int_info)()
+            raise get_exception_by_code(msg.int_info)
         return msg
 
     def _connect(self):
@@ -132,6 +133,18 @@ class iRODSSession(object):
         self._send(message)
         response = self._recv()
         return response.bs
+
+    def write_file(self, desc, string):
+        message_body = dataObjWriteInp(
+            dataObjInx=desc,
+            len=len(string)
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            bs=string,
+            int_info=api_number['DATA_OBJ_WRITE201_AN'])
+        self._send(message)
+        response = self._recv()
+        return response.int_info
 
     def query(self, *args):
         return Query(self, *args)

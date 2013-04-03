@@ -24,7 +24,7 @@ class iRODSDataObject(object):
             'w': (O_WRONLY, True, False),
             'w+': (O_RDWR, True, False),
             'a': (O_WRONLY, True, True),
-            'a+': (O_WRONLY, True, True),
+            'a+': (O_RDWR, True, True),
         }[mode]
         desc = self.sess.open_file(self.full_path, flag)
         return iRODSDataObjectFile(self.sess, desc)
@@ -33,7 +33,7 @@ class iRODSDataObjectFile(object):
     def __init__(self, session, descriptor):
         self.sess = session
         self.desc = descriptor
-        self.position = None
+        self.position = 0
 
     def tell(self):
         return self.position
@@ -42,10 +42,14 @@ class iRODSDataObjectFile(object):
         pass
 
     def read(self, size=1024):
-        return self.sess.read_file(self.desc, size)
+        contents = self.sess.read_file(self.desc, size)
+        self.position += len(contents)
+        return contents
 
     def write(self, string):
-        pass
+        written = self.sess.write_file(self.desc, string)
+        self.position += written
+        return None
 
     def seek(self, offset, whence):
         pass

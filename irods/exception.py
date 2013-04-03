@@ -12,7 +12,7 @@ class iRODSException(Exception):
     pass
 
 def get_exception_by_code(code):
-    return iRODSExceptionMeta.codes[code]
+    return iRODSExceptionMeta.codes[code]()
 
 class SystemException(iRODSException):
     pass

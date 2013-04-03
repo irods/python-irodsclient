@@ -169,3 +169,8 @@ class DataObjInp(Message):
 class dataObjReadInp(Message):
     l1descInx = IntegerProperty()
     len = IntegerProperty()
+
+#define dataObjWriteInp_PI "int dataObjInx; int len;"
+class dataObjWriteInp(Message):
+    dataObjInx = IntegerProperty()
+    len = IntegerProperty()

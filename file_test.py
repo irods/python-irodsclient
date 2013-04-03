@@ -7,6 +7,8 @@ sess = iRODSSession(host='localhost', port=1247, \
 	user='rods', password='rods', zone='tempZone')
 
 obj = sess.get_data_object("/tempZone/home/rods/test1")
-f = obj.open('r')
-str = f.read(8)
+f = obj.open('w+')
+str = f.read(1024)
 logging.debug(str)
+
+f.write("NEW STRING.py")
