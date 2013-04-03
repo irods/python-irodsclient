@@ -5,7 +5,8 @@ import logging
 from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from message import (iRODSMessage, StartupPack, authResponseInp, GenQueryOut, 
-    DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp)
+    DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp,
+    fileLseekInp, fileLseekOut)
 from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import get_exception_by_code
@@ -145,6 +146,19 @@ class iRODSSession(object):
         self._send(message)
         response = self._recv()
         return response.int_info
+
+    def seek_file(self, desc, offset, whence):
+        message_body = fileLseekInp(
+            fileInx=desc,
+            offset=offset,
+            whence=whence
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_LSEEK201_AN'])
+        self._send(message)
+        response = self._recv()
+        offset = response.get_main_message(fileLseekOut).offset
+        return offset
 
     def query(self, *args):
         return Query(self, *args)

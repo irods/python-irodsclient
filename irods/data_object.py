@@ -51,7 +51,9 @@ class iRODSDataObjectFile(object):
         self.position += written
         return None
 
-    def seek(self, offset, whence):
+    def seek(self, offset, whence=0):
+        pos = self.sess.seek_file(self.desc, offset, whence)
+        self.position = pos
         pass
 
     def readline(self):

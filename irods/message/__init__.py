@@ -174,3 +174,13 @@ class dataObjReadInp(Message):
 class dataObjWriteInp(Message):
     dataObjInx = IntegerProperty()
     len = IntegerProperty()
+
+#define fileLseekInp_PI "int fileInx; double offset; int whence"
+class fileLseekInp(Message):
+    fileInx = IntegerProperty()
+    offset = LongProperty()
+    whence = IntegerProperty()
+
+#define fileLseekOut_PI "double offset;"
+class fileLseekOut(Message):
+    offset = LongProperty()

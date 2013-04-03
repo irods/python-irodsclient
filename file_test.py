@@ -12,3 +12,9 @@ str = f.read(1024)
 logging.debug(str)
 
 f.write("NEW STRING.py")
+f.seek(-6, 2)
+f.write("INTERRUPT")
+
+f.seek(0, 0)
+str = f.read(1024)
+logging.debug(str)
