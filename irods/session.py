@@ -109,7 +109,7 @@ class iRODSSession(object):
         message_body = DataObjInp(
             objPath=path,
             createMode=0,
-            openFlags=O_RDONLY,
+            openFlags=mode,
             offset=0,
             dataSize=-1,
             numThreads=0,

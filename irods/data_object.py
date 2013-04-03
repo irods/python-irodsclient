@@ -32,8 +32,8 @@ class iRODSDataObjectFile(object):
     def close(self):
         pass
 
-    def read(self, size=None):
-        return self.sess.read_file(self.desc, 1024)
+    def read(self, size=1024):
+        return self.sess.read_file(self.desc, size)
 
     def write(self, string):
         pass
