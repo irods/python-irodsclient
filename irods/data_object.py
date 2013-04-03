@@ -1,3 +1,4 @@
+from os import O_RDONLY, O_WRONLY, O_RDWR
 from models import DataObject
 SEEK_SET = 0
 SEEK_CUR = 1
@@ -16,8 +17,16 @@ class iRODSDataObject(object):
     def __repr__(self):
         return "<iRODSDataObject %d %s>" % (self.id, self.name)
 
-    def open(self, mode):
-        desc = self.sess.open_file(self.full_path, mode)
+    def open(self, mode='r'):
+        flag, create_if_not_exists, seek_to_end = {
+            'r': (O_RDONLY, False, False),
+            'r+': (O_RDWR, False, False),
+            'w': (O_WRONLY, True, False),
+            'w+': (O_RDWR, True, False),
+            'a': (O_WRONLY, True, True),
+            'a+': (O_WRONLY, True, True),
+        }[mode]
+        desc = self.sess.open_file(self.full_path, flag)
         return iRODSDataObjectFile(self.sess, desc)
 
 class iRODSDataObjectFile(object):
