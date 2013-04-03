@@ -52,7 +52,7 @@ class iRODSDataObjectFile(object):
 
     def _read_all(self):
         while True:
-            contents = self.read(1024) 
+            contents = self.read(4096) 
             if not contents:
                 break
             yield contents
