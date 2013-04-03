@@ -39,7 +39,8 @@ class iRODSDataObjectFile(object):
         return self.position
 
     def close(self):
-        pass
+        self.sess.close_file(self.desc)
+        return None
 
     def read(self, size=1024):
         contents = self.sess.read_file(self.desc, size)

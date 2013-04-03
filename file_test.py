@@ -18,3 +18,5 @@ f.write("INTERRUPT")
 f.seek(0, 0)
 str = f.read(1024)
 logging.debug(str)
+
+f.close()

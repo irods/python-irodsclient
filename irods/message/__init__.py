@@ -184,3 +184,8 @@ class fileLseekInp(Message):
 #define fileLseekOut_PI "double offset;"
 class fileLseekOut(Message):
     offset = LongProperty()
+
+#define dataObjCloseInp_PI "int l1descInx; double bytesWritten;"
+class dataObjCloseInp(Message):
+    l1descInx = IntegerProperty()
+    bytesWritten = LongProperty()
