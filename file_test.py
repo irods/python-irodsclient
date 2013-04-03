@@ -8,4 +8,5 @@ sess = iRODSSession(host='localhost', port=1247, \
 
 obj = sess.get_data_object("/tempZone/home/rods/test1")
 f = obj.open('r')
-print f.read(1024)
+str = f.read(1024)
+logging.debug(str)

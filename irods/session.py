@@ -131,7 +131,7 @@ class iRODSSession(object):
             int_info=api_number['DATA_OBJ_READ201_AN'])
         self._send(message)
         response = self._recv()
-        return message.bs
+        return response.bs
 
     def query(self, *args):
         return Query(self, *args)
