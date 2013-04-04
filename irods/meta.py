@@ -1,5 +1,5 @@
 class iRODSMeta(object):
-    def __init__(self, name, value, units, id=None):
+    def __init__(self, name, value, units=None, id=None):
         self.id = id
         self.name = name
         self.value = value

@@ -192,3 +192,23 @@ class fileLseekOut(Message):
 class dataObjCloseInp(Message):
     l1descInx = IntegerProperty()
     bytesWritten = LongProperty()
+
+#define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
+class ModAVUMetadataInp(Message):
+    def __init__(self, *args):
+        super(ModAVUMetadataInp, self).__init__()
+        for i in range(len(args)):
+            setattr(self, 'arg%d' % i, args[i] if args[i] else "")
+
+        print self._values
+
+    arg0 = StringProperty()
+    arg1 = StringProperty()
+    arg2 = StringProperty()
+    arg3 = StringProperty()
+    arg4 = StringProperty()
+    arg5 = StringProperty()
+    arg6 = StringProperty()
+    arg7 = StringProperty()
+    arg8 = StringProperty()
+    arg9 = StringProperty()

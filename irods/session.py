@@ -6,7 +6,7 @@ from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from message import (iRODSMessage, StartupPack, authResponseInp, GenQueryOut, 
     DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp,
-    fileLseekInp, fileLseekOut, dataObjCloseInp)
+    fileLseekInp, fileLseekOut, dataObjCloseInp, ModAVUMetadataInp)
 from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import get_exception_by_code
@@ -244,12 +244,50 @@ class iRODSSession(object):
             id=row[model.id]
         ) for row in results]
 
-    def add_meta(self, resource_type, path, name, value, units):
-        pass
+    def add_meta(self, resource_type, path, meta):
+        message_body = ModAVUMetadataInp(
+            "add",
+            "-" + resource_type,
+            path,
+            meta.name,
+            meta.value,
+            meta.units
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+            int_info=api_number['MOD_AVU_METADATA_AN'])
+        self._send(request)
+        response = self._recv()
+        logging.debug(response.int_info)
 
-    def remove_meta(self, resource_type, path, name, value, units):
-        pass
+    def remove_meta(self, resource_type, path, meta):
+        message_body = ModAVUMetadataInp(
+            "rm",
+            "-" + resource_type,
+            path,
+            meta.name,
+            meta.value,
+            meta.units
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+            int_info=api_number['MOD_AVU_METADATA_AN'])
+        self._send(request)
+        response = self._recv()
+        logging.debug(response.int_info)
 
+    def copy_meta(self, src_resource_type, dest_resource_type, src, dest):
+        message_body = ModAVUMetadataInp(
+            "cp",
+            "-" + src_resource_type,
+            "-" + dest_resource_type,
+            src,
+            dest
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+            int_info=api_number['MOD_AVU_METADATA_AN'])
+        self._send(request)
+        response = self._recv()
+        logging.debug(response.int_info)
+        
     def query(self, *args):
         return Query(self, *args)
 
