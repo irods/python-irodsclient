@@ -9,8 +9,13 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Query the collections and data objects within a collection
 - [x] Support read, write, and seek operations for files
 - [x] Delete data objects
+- [ ] Rename data objects
+- [ ] Create collections
 - [ ] Delete collections
+- [ ] Rename collections
 - [ ] Query metadata for collections and data objects
+- [ ] Add, edit, remove metadata
+- [ ] Replicate data objects to different resource servers
 
 Establishing a connection
 -------------------------
