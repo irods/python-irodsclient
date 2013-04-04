@@ -3,7 +3,14 @@ python-irods
 
 [iRODS](https://www.irods.org) is an open-source distributed filesystem manager.  This a client API implemented in python.
 
-This project should be considered pre-alpha. Not a lot works yet, but it's coming along. The following are guidelines for using the API.  Most of it is unimplemented.
+This project should be considered pre-alpha. Here's what works:
+- [x] Establish a connection to iRODS, authenticaate
+- [x] Implement Gen Queries
+- [x] Query the collections and data objects within a collection
+- [x] Support read, write, and seek operations for files
+- [ ] Delete data objects
+- [ ] Delete collections
+- [ ] Query metadata for collections and data objects
 
 Establishing a connection
 -------------------------
@@ -75,7 +82,6 @@ Performing general queries
 >>> from irods.session import iRODSSession
 >>> from irods.models import Collection, User, DataObject
 >>> sess = iRODSSession(host='localhost', port=1247, user='rods', password='rods', zone='tempZone')
->>> results = sess.query(DataObject.id, DataObject.collection_id, DataObject.name, \
-DataObject.replica_number, DataObject.version, DataObject.type, DataObject.size, \
-User.id, User.name, Collection.id, Collection.name).all()
+>>> results = sess.query(DataObject.id, DataObject.name, DataObject.size, \
+User.id, User.name, Collection.name).all()
 ```
