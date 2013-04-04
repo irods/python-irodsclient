@@ -27,7 +27,7 @@ class iRODSMetaCollection(object):
         """
         if not isinstance(key, str):
             raise TypeError
-        return [m for m in self._meta if m.name = key]
+        return [m for m in self._meta if m.name == key]
 
     def get_one(self, key):
         """

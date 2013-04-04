@@ -14,6 +14,7 @@ class iRODSDataObject(object):
             self.id = result[DataObject.id]
             self.name = result[DataObject.name]
             self.full_path = self.collection.name + '/' + self.name
+        self._meta = None
 
     def __repr__(self):
         return "<iRODSDataObject %d %s>" % (self.id, self.name)
@@ -21,7 +22,7 @@ class iRODSDataObject(object):
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(DataObject, self.full_path)
+            self._meta = iRODSMetaCollection(self.sess, DataObject, self.full_path)
         return self._meta
 
     def open(self, mode='r'):
