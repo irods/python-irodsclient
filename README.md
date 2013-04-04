@@ -19,6 +19,8 @@ This project should be considered pre-alpha. Here's what works:
 - [ ] Connection pool management
 - [ ] Implement gen query result sets as lazy queries
 - [ ] Return empty result sets when CAT_NO_ROWS_FOUND is raised
+- [ ] Optimize querying subcollections and data_objects by maintaining a cache 
+and checking last modified timestamps
 
 Establishing a connection
 -------------------------
