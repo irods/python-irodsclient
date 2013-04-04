@@ -1,8 +1,9 @@
+import struct
+import logging
+import socket
 import xml.etree.ElementTree as ET
 from message import Message
 from property import BinaryProperty, StringProperty, IntegerProperty, LongProperty, ArrayProperty, SubmessageProperty
-import struct
-import logging
 
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
@@ -16,7 +17,7 @@ class iRODSMessage(object):
     def recv(sock):
         rsp_header_size = sock.recv(4)
         rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
-        rsp_header = sock.recv(rsp_header_size)
+        rsp_header = sock.recv(rsp_header_size, socket.MSG_WAITALL)
         logging.debug(rsp_header)
             
         xml_root = ET.fromstring(rsp_header)
@@ -26,9 +27,9 @@ class iRODSMessage(object):
         bs_len = int(xml_root.find('bsLen').text)
         int_info = int(xml_root.find('intInfo').text)
 
-        message = sock.recv(msg_len) if msg_len != 0 else None
-        error = sock.recv(err_len) if err_len != 0 else None
-        bs = sock.recv(bs_len) if bs_len != 0 else None
+        message = sock.recv(msg_len, socket.MSG_WAITALL) if msg_len != 0 else None
+        error = sock.recv(err_len, socket.MSG_WAITALL) if err_len != 0 else None
+        bs = sock.recv(bs_len, socket.MSG_WAITALL) if bs_len != 0 else None
     
         #if message:
             #logging.debug(message)
@@ -53,6 +54,8 @@ class iRODSMessage(object):
 
     def get_main_message(self, cls):
         msg = cls()
+        logging.debug(self.msg)
+        logging.debug(len(self.msg))
         msg.unpack(ET.fromstring(self.msg))
         return msg
 
