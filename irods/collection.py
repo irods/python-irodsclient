@@ -1,5 +1,6 @@
 from models import Collection, DataObject
 from data_object import iRODSDataObject
+from meta import iRODSMetaCollection
 
 class iRODSCollection(object):
     def __init__(self, sess, result=None):
@@ -7,6 +8,12 @@ class iRODSCollection(object):
         if result:
             self.id = result[Collection.id]
             self.name = result[Collection.name]
+
+    @property
+    def metadata(self):
+        if not self._meta:
+            self._meta = iRODSMetaCollection(self.sess, Collection, self.name)
+        return self._meta
 
     @property
     def subcollections(self):

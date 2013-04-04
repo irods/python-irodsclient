@@ -1,5 +1,6 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from models import DataObject
+from meta import iRODSMetaCollection
 SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
@@ -16,6 +17,12 @@ class iRODSDataObject(object):
 
     def __repr__(self):
         return "<iRODSDataObject %d %s>" % (self.id, self.name)
+
+    @property
+    def metadata(self):
+        if not self._meta:
+            self._meta = iRODSMetaCollection(DataObject, self.full_path)
+        return self._meta
 
     def open(self, mode='r'):
         flag, create_if_not_exists, seek_to_end = {
