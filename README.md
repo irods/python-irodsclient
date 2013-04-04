@@ -35,6 +35,13 @@ Working with collections
     
 Working with data objects (files)
 ---------------------------------
+Create a new data object:
+```python
+>>> obj = sess.create_data_object("/tempZone/home/rods/test1")
+<iRODSDataObject /tempZone/home/rods/test1>
+```
+
+Get an existing data object:
 ```python
 >>> obj = sess.get_data_object("/tempZone/home/rods/test1")
 >>> obj.id
