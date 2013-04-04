@@ -81,6 +81,30 @@ class Collection(Model):
     create_time = Column(DateTime, 'COLL_CREATE_TIME', 508)
     modify_time = Column(DateTime, 'COLL_MODIFY_TIME', 509)
 
+class DataObjectMeta(Model):
+    id = Column(String, 'COL_META_DATA_ATTR_ID', 603)
+    name = Column(String, 'COL_META_DATA_ATTR_NAME', 600)
+    value = Column(String, 'COL_META_DATA_ATTR_VALUE', 601)
+    units = Column(String, 'COL_META_DATA_ATTR_UNITS', 602)
+
+class CollectionMeta(Model):
+    id = Column(String, 'COL_META_COLL_ATTR_UNITS', 613)
+    name = Column(String, 'COL_META_COLL_ATTR_NAME', 610)
+    value = Column(String, 'COL_META_COLL_ATTR_VALUE', 611)
+    units = Column(String, 'COL_META_COLL_ATTR_UNITS', 612)
+
+class ResourceMeta(Model):
+    id = Column(String, 'COL_META_RESC_ATTR_UNITS', 633)
+    name = Column(String, 'COL_META_RESC_ATTR_NAME', 630)
+    value = Column(String, 'COL_META_RESC_ATTR_VALUE', 631)
+    units = Column(String, 'COL_META_RESC_ATTR_UNITS', 632)
+
+class UserMeta(Model):
+    id = Column(String, 'COL_META_USER_ATTR_ID', 643)
+    name = Column(String, 'COL_META_USER_ATTR_NAME', 640)
+    value = Column(String, 'COL_META_USER_ATTR_VALUE', 641)
+    units = Column(String, 'COL_META_USER_ATTR_UNITS', 642)
+
 # not really a model. Should be dict instead?
 class Keywords(Model):
     data_type = Keyword(String, 'dataType')

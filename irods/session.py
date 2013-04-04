@@ -11,7 +11,8 @@ from . import MAX_PASSWORD_LENGTH
 from query import Query
 from exception import get_exception_by_code
 from results import ResultSet
-from models import Collection, DataObject
+from models import (Collection, DataObject, Resource, User, DataObjectMeta, 
+    CollectionMeta, ResourceMeta, UserMeta)
 from collection import iRODSCollection
 from data_object import iRODSDataObject
 from api_number import api_number
@@ -216,6 +217,31 @@ class iRODSSession(object):
             int_info=api_number['DATA_OBJ_UNLINK_AN'])
         self._send(message)
         response = self._recv()
+
+    def get_meta(self, resource_type, path):
+        model = {
+            'd': DataObjectMeta,
+            'c': CollectionMeta,
+            'r': ResourceMeta,
+            'u': UserMeta
+        }[resource_type]
+        conditions = {
+            'd': [
+                Collection.name == dirname(path), 
+                DataObject.name == basename(path)
+            ],
+            'c': [Collection.name == path],
+            'r': [Resource.name == path],
+            'u': [User.name == path]
+        }[resource_type]
+        return self.query(model.id, model.name, model.value, model.units)\
+            .filter(*conditions).all()
+
+    def add_meta(self, resource_type, path, name, value, units):
+        pass
+
+    def remove_meta(self, resource_type, path, name, value, units):
+        pass
 
     def query(self, *args):
         return Query(self, *args)
