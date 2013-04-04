@@ -17,6 +17,8 @@ This project should be considered pre-alpha. Here's what works:
 - [ ] Add, edit, remove metadata
 - [ ] Replicate data objects to different resource servers
 - [ ] Connection pool management
+- [ ] Implement gen query result sets as lazy queries
+- [ ] Return empty result sets when CAT_NO_ROWS_FOUND is raised
 
 Establishing a connection
 -------------------------
