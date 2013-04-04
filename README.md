@@ -41,6 +41,22 @@ Working with data objects (files)
 12345
 >>> obj.name
 test1
+>>> obj.collection
+<iRODSCollection /tempZone/home/rods>
+```
+
+Reading a writing files
+-----------------------
+python-irods provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writiing files
+```python
+>>> obj = sess.get_data_object("/tempZone/home/rods/test1")
+>>> with obj.open('r+') as f:
+...   f.write('foo\nbar')
+...   f.seek(0,0)
+...   print f.read(1024)
+...
+foo
+bar
 ```
     
 Working with metadata
