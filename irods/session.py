@@ -199,6 +199,24 @@ class iRODSSession(object):
         self._send(message)
         response = self._recv()
 
+    def unlink_data_object(self, path):
+        if not self.authenticated:
+            self._login()
+        message_body = DataObjInp(
+            objPath=path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=-1,
+            numThreads=0,
+            oprType=0,
+            KeyValPair_PI=KeyValPair(),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_UNLINK_AN'])
+        self._send(message)
+        response = self._recv()
+
     def query(self, *args):
         return Query(self, *args)
 

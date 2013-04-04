@@ -8,7 +8,7 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Implement Gen Queries
 - [x] Query the collections and data objects within a collection
 - [x] Support read, write, and seek operations for files
-- [ ] Delete data objects
+- [x] Delete data objects
 - [ ] Delete collections
 - [ ] Query metadata for collections and data objects
 
