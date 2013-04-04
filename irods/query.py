@@ -19,8 +19,8 @@ class Query(object):
             else:
                 raise TypeError("Arguments must be models or columns")
 
-    def filter(self, criterion):
-        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria + [criterion])
+    def filter(self, *criteria):
+        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria + list(criteria))
         return new_q
 
     def order_by(*args):

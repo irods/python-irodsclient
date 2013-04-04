@@ -65,7 +65,7 @@ test1
 <iRODSCollection /tempZone/home/rods>
 ```
 
-Reading a writing files
+Reading and writing files
 -----------------------
 python-irods provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writiing files
 ```python

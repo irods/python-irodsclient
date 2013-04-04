@@ -16,6 +16,7 @@ from models import (Collection, DataObject, Resource, User, DataObjectMeta,
 from collection import iRODSCollection
 from data_object import iRODSDataObject
 from api_number import api_number
+from meta import iRODSMeta
 
 class iRODSSession(object):
     def __init__(self, host=None, port=1247, user=None, zone=None, password=None):
@@ -234,8 +235,14 @@ class iRODSSession(object):
             'r': [Resource.name == path],
             'u': [User.name == path]
         }[resource_type]
-        return self.query(model.id, model.name, model.value, model.units)\
+        results = self.query(model.id, model.name, model.value, model.units)\
             .filter(*conditions).all()
+        return [iRODSMeta(
+            row[model.name], 
+            row[model.value], 
+            row[model.units],
+            id=row[model.id]
+        ) for row in results]
 
     def add_meta(self, resource_type, path, name, value, units):
         pass
