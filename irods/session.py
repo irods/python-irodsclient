@@ -107,7 +107,29 @@ class iRODSSession(object):
         if results.length == 1:
             return iRODSDataObject(self, parent, results[0])
 
+    def create_data_object(self, path):
+        if not self.authenticated:
+            self._login()
+        message_body = DataObjInp(
+            objPath=path,
+            createMode=0644,
+            openFlags=0,
+            offset=0,
+            dataSize=-1,
+            numThreads=0,
+            oprType=0,
+            KeyValPair_PI=KeyValPair({'dataType': 'generic'}),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_CREATE_AN'])
+        self._send(message)
+        response = self._recv()
+        #return response.int_info
+        return self.get_data_object(path)
+
     def open_file(self, path, mode):
+        if not self.authenticated:
+            self._login()
         message_body = DataObjInp(
             objPath=path,
             createMode=0,
@@ -125,6 +147,8 @@ class iRODSSession(object):
         return response.int_info
 
     def read_file(self, desc, size):
+        if not self.authenticated:
+            self._login()
         message_body = dataObjReadInp(
             l1descInx=desc,
             len=size
@@ -136,6 +160,8 @@ class iRODSSession(object):
         return response.bs
 
     def write_file(self, desc, string):
+        if not self.authenticated:
+            self._login()
         message_body = dataObjWriteInp(
             dataObjInx=desc,
             len=len(string)
@@ -148,6 +174,8 @@ class iRODSSession(object):
         return response.int_info
 
     def seek_file(self, desc, offset, whence):
+        if not self.authenticated:
+            self._login()
         message_body = fileLseekInp(
             fileInx=desc,
             offset=offset,
@@ -161,6 +189,8 @@ class iRODSSession(object):
         return offset
 
     def close_file(self, desc):
+        if not self.authenticated:
+            self._login()
         message_body = dataObjCloseInp(
             l1descInx=desc
         )
