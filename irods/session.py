@@ -219,7 +219,16 @@ class iRODSSession(object):
         self._send(message)
         response = self._recv()
 
-    def get_meta(self, resource_type, path):
+    def _model_class_to_resource_type(model_cls):
+        return {
+            DataObject: 'd',
+            Collection: 'c',
+            Resource: 'r',
+            User: 'r',
+        }[model_cls]
+
+    def get_meta(self, model_cls, path):
+        resource_type = _model_class_to_resource_type(model_cls)
         model = {
             'd': DataObjectMeta,
             'c': CollectionMeta,
@@ -244,7 +253,8 @@ class iRODSSession(object):
             id=row[model.id]
         ) for row in results]
 
-    def add_meta(self, resource_type, path, meta):
+    def add_meta(self, model_cls, path, meta):
+        resource_type = _model_class_to_resource_type(model_cls)
         message_body = ModAVUMetadataInp(
             "add",
             "-" + resource_type,
@@ -259,7 +269,8 @@ class iRODSSession(object):
         response = self._recv()
         logging.debug(response.int_info)
 
-    def remove_meta(self, resource_type, path, meta):
+    def remove_meta(self, model_cls, path, meta):
+        resource_type = _model_class_to_resource_type(model_cls)
         message_body = ModAVUMetadataInp(
             "rm",
             "-" + resource_type,
@@ -274,7 +285,9 @@ class iRODSSession(object):
         response = self._recv()
         logging.debug(response.int_info)
 
-    def copy_meta(self, src_resource_type, dest_resource_type, src, dest):
+    def copy_meta(self, src_model_cls, dest_model_cls, src, dest):
+        src_resource_type = _model_class_to_resource_type(src_model_cls)
+        dest_resource_type = _model_class_to_resource_type(dest_model_cls)
         message_body = ModAVUMetadataInp(
             "cp",
             "-" + src_resource_type,
