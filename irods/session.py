@@ -17,7 +17,7 @@ from data_object import iRODSDataObject
 from api_number import api_number
 
 class iRODSSession(object):
-    def __init__(self, host=None, port=None, user=None, zone=None, password=None):
+    def __init__(self, host=None, port=1247, user=None, zone=None, password=None):
         self.host = host
         self.port = port
         self.user = user
