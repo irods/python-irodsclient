@@ -12,7 +12,7 @@ class iRODSDataObject(object):
             self.collection = parent
             self.id = result[DataObject.id]
             self.name = result[DataObject.name]
-            self.path = self.collection.name + '/' + self.name
+            self.path = self.collection.path + '/' + self.name
         self._meta = None
 
     def __repr__(self):
