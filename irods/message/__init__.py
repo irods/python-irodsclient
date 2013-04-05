@@ -212,3 +212,12 @@ class ModAVUMetadataInp(Message):
     arg7 = StringProperty()
     arg8 = StringProperty()
     arg9 = StringProperty()
+
+def empty_gen_query_out(cols):
+    sql_results = [SqlResult(attriInx=col.icat_id, value=[]) for col in cols]
+    gqo = GenQueryOut(
+        rowCnt=0,
+        attriCnt=len(cols),
+        SqlResult_PI=sql_results
+    )  
+    return gqo

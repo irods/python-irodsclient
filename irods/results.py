@@ -2,14 +2,16 @@ import logging
 from models import ModelBase
 
 class ResultSet(object):
-    def __init__(self, raw):
+    def __init__(self, raw=None, cols=None):
         #self._raw = raw #gen query out object
-        self.length = raw.rowCnt
+        if raw:
+            self.length = raw.rowCnt
+            col_length = raw.attriCnt
+            self.cols = raw.SqlResult_PI[:col_length]
 
-        col_length = raw.attriCnt
-        self.cols = raw.SqlResult_PI[:col_length]
-
-        self.rows = [self._format_row(i) for i in range(self.length)]
+            self.rows = [self._format_row(i) for i in range(self.length)]
+        else:
+            return ResultSet.__init__(empty_gen_query_out(cols))
 
     def __str__(self):
         columns = [(col, max(len(str(ModelBase.columns[col.attriInx].icat_key)), max([len(str(x)) for x in col.value]))) for col in self.cols]

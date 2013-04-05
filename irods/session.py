@@ -6,10 +6,11 @@ from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from message import (iRODSMessage, StartupPack, authResponseInp, GenQueryOut, 
     DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp,
-    fileLseekInp, fileLseekOut, dataObjCloseInp, ModAVUMetadataInp)
+    fileLseekInp, fileLseekOut, dataObjCloseInp, ModAVUMetadataInp,
+    empty_gen_query_out)
 from . import MAX_PASSWORD_LENGTH
 from query import Query
-from exception import get_exception_by_code
+from exception import get_exception_by_code, CAT_NO_ROWS_FOUND
 from results import ResultSet
 from models import (Collection, DataObject, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
@@ -311,7 +312,10 @@ class iRODSSession(object):
         message_body = query._message()
         message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=702)
         self._send(message)
-        result_message = self._recv()
-        results = result_message.get_main_message(GenQueryOut)
-        result_set = ResultSet(results)
+        try:
+            result_message = self._recv()
+            results = result_message.get_main_message(GenQueryOut)
+            result_set = ResultSet(results)
+        except CAT_NO_ROWS_FOUND:
+            result_set = ResultSet(empty_gen_query_out(query.columns.keys())) 
         return result_set
