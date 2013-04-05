@@ -1,3 +1,4 @@
+from os.path import basename
 from models import Collection, DataObject
 from data_object import iRODSDataObject
 from meta import iRODSMetaCollection
@@ -7,7 +8,8 @@ class iRODSCollection(object):
         self.sess = sess
         if result:
             self.id = result[Collection.id]
-            self.name = result[Collection.name]
+            self.path = result[Collection.name]
+            self.name = basename(result[Collection.name])
         self._meta = None
 
     @property

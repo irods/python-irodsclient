@@ -8,12 +8,11 @@ SEEK_END = 2
 class iRODSDataObject(object):
     def __init__(self, sess, parent=None, result=None):
         self.sess = sess
-        if parent:
+        if parent and result:
             self.collection = parent
-        if result:
             self.id = result[DataObject.id]
             self.name = result[DataObject.name]
-            self.full_path = self.collection.name + '/' + self.name
+            self.path = self.collection.name + '/' + self.name
         self._meta = None
 
     def __repr__(self):
@@ -22,7 +21,7 @@ class iRODSDataObject(object):
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(self.sess, DataObject, self.full_path)
+            self._meta = iRODSMetaCollection(self.sess, DataObject, self.path)
         return self._meta
 
     def open(self, mode='r'):
@@ -34,7 +33,7 @@ class iRODSDataObject(object):
             'a': (O_WRONLY, True, True),
             'a+': (O_RDWR, True, True),
         }[mode]
-        desc = self.sess.open_file(self.full_path, flag)
+        desc = self.sess.open_file(self.path, flag)
         return iRODSDataObjectFile(self.sess, desc)
 
 class iRODSDataObjectFile(object):
