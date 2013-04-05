@@ -13,8 +13,8 @@ This project should be considered pre-alpha. Here's what works:
 - [ ] Create collections
 - [ ] Delete collections
 - [ ] Rename collections
-- [ ] Query metadata for collections and data objects
-- [ ] Add, edit, remove metadata
+- [X] Query metadata for collections and data objects
+- [X] Add, edit, remove metadata
 - [ ] Replicate data objects to different resource servers
 - [ ] Connection pool management
 - [ ] Implement gen query result sets as lazy queries
