@@ -22,6 +22,10 @@ This project should be considered pre-alpha. Here's what works:
 - [ ] Optimize querying subcollections and data_objects by maintaining a cache 
 and checking last modified timestamps
 
+Installation
+------------
+    pip install git+git://github.com/cjlarose/pycommands.git
+
 Establishing a connection
 -------------------------
 ```python
