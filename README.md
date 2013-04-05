@@ -85,6 +85,24 @@ bar
     
 Working with metadata
 ---------------------
+```python
+>>> from irods.meta import IRODSMeta
+>>> obj = sess.get_data_object("/tempZone/home/rods/test1")
+>>> print obj.metadata.items()
+[]
+>>> obj.metadata.add(iRODSMeta('key1', 'value1', 'units1'))
+>>> obj.metadata.add(iRODSMeta('key1', 'value2'))
+>>> obj.metadata.add(iRODSMeta('key2', 'value3'))
+>>> print obj.metadata.items()
+[<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key2, value3, None, 10017)>, <iRODSMeta (key1, value2, None, 10020)>]
+>>> print obj.metadata.get_all('key1')
+[<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key1, value2, None, 10020)>]
+>>> print obj.metadata.get_one('key2')
+<iRODSMeta (key2, value3, None, 10017)>
+obj.metadata.remove(iRODSMeta('key1', 'value1', 'units1'))
+print obj.metadata.items()
+[<iRODSMeta (key2, value3, None, 10017)>, <iRODSMeta (key1, value2, None, 10020)>]
+```
 
 Performing general queries
 --------------------------

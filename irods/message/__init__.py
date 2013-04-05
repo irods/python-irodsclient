@@ -198,7 +198,8 @@ class ModAVUMetadataInp(Message):
     def __init__(self, *args):
         super(ModAVUMetadataInp, self).__init__()
         for i in range(len(args)):
-            setattr(self, 'arg%d' % i, args[i] if args[i] else "")
+            if args[i]:
+                setattr(self, 'arg%d' % i, args[i])
 
         print self._values
 
