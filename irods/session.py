@@ -4,13 +4,15 @@ import struct
 import logging
 from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
+
 from message import (iRODSMessage, StartupPack, authResponseInp, GenQueryOut, 
     DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp,
     fileLseekInp, fileLseekOut, dataObjCloseInp, ModAVUMetadataInp,
     empty_gen_query_out)
 from . import MAX_PASSWORD_LENGTH
 from query import Query
-from exception import get_exception_by_code, CAT_NO_ROWS_FOUND
+from exception import (get_exception_by_code, CAT_NO_ROWS_FOUND, 
+    CollectionDoesNotExist, DataObjectDoesNotExist)
 from results import ResultSet
 from models import (Collection, DataObject, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
@@ -41,7 +43,7 @@ class iRODSSession(object):
     def _send(self, message):
         str = message.pack()
         logging.debug(str)
-        return self.socket.send(str)
+        return self.socket.sendall(str)
 
     def _recv(self):
         msg = iRODSMessage.recv(self.socket)
@@ -100,8 +102,11 @@ class iRODSSession(object):
             self._login()
         query = self.query(Collection).filter(Collection.name == path)
         results = self.execute_query(query)
+        # todo implement this with .one() on query
         if results.length == 1:
             return iRODSCollection(self, results[0])
+        else:
+            raise CollectionDoesNotExist()
 
     def get_data_object(self, path):
         if not self.authenticated:
@@ -113,6 +118,8 @@ class iRODSSession(object):
             .all()
         if results.length == 1:
             return iRODSDataObject(self, parent, results[0])
+        else:
+            raise DataObjectDoesNotExist()
 
     def create_data_object(self, path):
         if not self.authenticated:

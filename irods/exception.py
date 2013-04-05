@@ -1,6 +1,18 @@
 # if you're copying these from the docs, you might find the following regex helpful:
 # s/\(\w\+\)\s\+\(-\d\+\)/class \1(SystemException):\r    code = \2/g
 
+class PycommandsException(Exception):
+    pass
+
+class DoesNotExist(PycommandsException):
+    pass
+
+class DataObjectDoesNotExist(PycommandsException):
+    pass
+
+class CollectionDoesNotExist(PycommandsException):
+    pass
+
 class iRODSExceptionMeta(type):
     codes = {}
     def __init__(self, name, bases, attrs):

@@ -15,7 +15,8 @@ class iRODSMessage(object):
 
     @staticmethod
     def recv(sock):
-        rsp_header_size = sock.recv(4)
+        rsp_header_size = sock.recv(4, socket.MSG_WAITALL)
+        logging.debug(rsp_header_size)
         rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
         rsp_header = sock.recv(rsp_header_size, socket.MSG_WAITALL)
         logging.debug(rsp_header)
