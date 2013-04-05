@@ -20,14 +20,17 @@ from api_number import api_number
 from meta import iRODSMeta
 
 class iRODSSession(object):
-    def __init__(self, host=None, port=1247, user=None, zone=None, password=None):
+    def __init__(self, *args, **kwargs):
+        self.socket = None
+        self.authenticated = False
+        self.configure(*args, **kwargs)
+
+    def configure(self, host=None, port=1247, user=None, zone=None, password=None):
         self.host = host
         self.port = port
         self.user = user
         self.zone = zone
         self.password = password    
-        self.socket = None
-        self.authenticated = False
         self._connect()
 
     def __del__(self):
