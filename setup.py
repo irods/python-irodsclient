@@ -1,5 +1,5 @@
 from distutils.core import setup
 setup(name='pycommands',
       version='0.0',
-      py_modules='pycommands'
+      py_modules=['pycommands'],
       )
