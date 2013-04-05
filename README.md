@@ -97,7 +97,8 @@ Working with metadata
 >>> obj.metadata.add(iRODSMeta('key1', 'value2'))
 >>> obj.metadata.add(iRODSMeta('key2', 'value3'))
 >>> print obj.metadata.items()
-[<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key2, value3, None, 10017)>, <iRODSMeta (key1, value2, None, 10020)>]
+[<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key2, value3, None, 10017)>, 
+<iRODSMeta (key1, value2, None, 10020)>]
 
 >>> print obj.metadata.get_all('key1')
 [<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key1, value2, None, 10020)>]
