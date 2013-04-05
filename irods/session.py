@@ -127,7 +127,8 @@ class iRODSSession(object):
             int_info=api_number['DATA_OBJ_CREATE_AN'])
         self._send(message)
         response = self._recv()
-        #return response.int_info
+        desc = response.int_info
+        self.close_file(desc)
         return self.get_data_object(path)
 
     def open_file(self, path, mode):
