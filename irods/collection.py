@@ -8,6 +8,7 @@ class iRODSCollection(object):
         if result:
             self.id = result[Collection.id]
             self.name = result[Collection.name]
+        self._meta = None
 
     @property
     def metadata(self):
