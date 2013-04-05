@@ -1,4 +1,4 @@
-picommands
+pycommands
 ============
 
 [iRODS](https://www.irods.org) is an open-source distributed filesystem manager.  This a client API implemented in python.
@@ -71,7 +71,7 @@ test1
 
 Reading and writing files
 -----------------------
-python-irods provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writiing files
+pycommands provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writiing files
 ```python
 >>> obj = sess.get_data_object("/tempZone/home/rods/test1")
 >>> with obj.open('r+') as f:
