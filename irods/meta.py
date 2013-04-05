@@ -77,17 +77,17 @@ class iRODSMetaCollection(object):
             return KeyError 
         return values[0]
 
-    def __setitem__(self):
+    def __setitem__(self, key, meta):
         """
         Deletes all existing values associated with a given key and associates
         the key with a single iRODSMeta tuple
         """
         self._delete_all_values(key)
-        self.add(self, meta)
+        self.add(meta)
 
     def _delete_all_values(self, key):
         for meta in self.get_all(key):
-            self.remove(self, meta)
+            self.remove(meta)
 
     def __delitem__(self, key):
         """
@@ -103,3 +103,8 @@ class iRODSMetaCollection(object):
             raise TypeError
         values = self.get_all(key)
         return len(values) > 0
+
+    def remove_all(self):
+        for meta in self._meta:
+            self._sess.remove_meta(self._model_cls, self._path, meta)
+        self._reset_metadata()
