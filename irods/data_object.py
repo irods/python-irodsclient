@@ -51,15 +51,15 @@ class iRODSDataObjectFile(object):
 
     def read(self, size=None):
         if not size:
-            return "".join(self._read_all())
+            return "".join(self.read_all())
         contents = self.sess.read_file(self.desc, size)
         if contents:
             self.position += len(contents)
         return contents
 
-    def _read_all(self):
+    def read_all(self, chunk_size=4096):
         while True:
-            contents = self.read(4096) 
+            contents = self.read(chunk_size) 
             if not contents:
                 break
             yield contents
