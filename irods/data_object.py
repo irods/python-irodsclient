@@ -10,8 +10,9 @@ class iRODSDataObject(object):
         self.sess = sess
         if parent and result:
             self.collection = parent
-            self.id = result[DataObject.id]
-            self.name = result[DataObject.name]
+            for attr in ['id', 'name', 'size', 'checksum', 'create_time', 
+                'modify_time']:
+                setattr(self, attr, result[getattr(DataObject, attr)])
             self.path = self.collection.path + '/' + self.name
         self._meta = None
 
