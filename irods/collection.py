@@ -15,7 +15,7 @@ class iRODSCollection(object):
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(self.sess, Collection, self.name)
+            self._meta = iRODSMetaCollection(self.sess, Collection, self.path)
         return self._meta
 
     @property
