@@ -52,12 +52,12 @@ class iRODSDataObjectFile(object):
     def read(self, size=None):
         if not size:
             return "".join(self.read_all())
-        contents = self.sess.read_file(self.desc, size)
+        contents = self.sess.read_gen(self.desc, size)
         if contents:
             self.position += len(contents)
         return contents
 
-    def read_all(self, chunk_size=4096):
+    def read_gen(self, chunk_size=4096):
         def make_gen():
             while True:
                 contents = self.read(chunk_size) 
