@@ -42,7 +42,11 @@ class iRODSSession(object):
             raise CollectionDoesNotExist()
 
     def get_data_object(self, path):
-        parent = self.get_collection(dirname(path))
+        try:
+            parent = self.get_collection(dirname(path))
+        except CollectionDoesNotExist:
+            raise DataObjectDoesNotExist()
+
         results = self.query(DataObject)\
             .filter(DataObject.name == basename(path))\
             .filter(DataObject.collection_id == parent.id)\
