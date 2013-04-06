@@ -3,9 +3,10 @@ import logging
 import struct
 import hashlib
 import logging
-from message import iRODSMessage, StartupPack, authRequestOut, authResponseInp
+from message import iRODSMessage, StartupPack, authRequestOut, authResponseInp, dataObjReadInp, dataObjWriteInp, fileLseekInp, fileLseekOut, dataObjCloseInp
 from exception import get_exception_by_code
 from . import MAX_PASSWORD_LENGTH
+from api_number import api_number
 
 class Connection(object):
     def __init__(self, pool, account):
@@ -79,3 +80,52 @@ class Connection(object):
         self.send(pwd_request)
 
         auth_response = self.recv()
+
+    def read_file(self, desc, size):
+        message_body = dataObjReadInp(
+            l1descInx=desc,
+            len=size
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_READ201_AN'])
+
+        logging.debug(desc)
+        self.send(message)
+        response = self.recv()
+        return response.bs
+
+    def write_file(self, desc, string):
+        message_body = dataObjWriteInp(
+            dataObjInx=desc,
+            len=len(string)
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            bs=string,
+            int_info=api_number['DATA_OBJ_WRITE201_AN'])
+        self.send(message)
+        response = self.recv()
+        return response.int_info
+
+    def seek_file(self, desc, offset, whence):
+        message_body = fileLseekInp(
+            fileInx=desc,
+            offset=offset,
+            whence=whence
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_LSEEK201_AN'])
+
+        self.send(message)
+        response = self.recv()
+        offset = response.get_main_message(fileLseekOut).offset
+        return offset
+
+    def close_file(self, desc):
+        message_body = dataObjCloseInp(
+            l1descInx=desc
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_CLOSE201_AN'])
+
+        self.send(message)
+        response = self.recv()

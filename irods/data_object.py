@@ -33,12 +33,12 @@ class iRODSDataObject(object):
             'a': (O_WRONLY, True, True),
             'a+': (O_RDWR, True, True),
         }[mode]
-        desc = self.sess.open_file(self.path, flag)
-        return iRODSDataObjectFile(self.sess, desc)
+        conn, desc = self.sess.open_file(self.path, flag)
+        return iRODSDataObjectFile(conn, desc)
 
 class iRODSDataObjectFile(object):
-    def __init__(self, session, descriptor):
-        self.sess = session
+    def __init__(self, conn, descriptor):
+        self.conn = conn
         self.desc = descriptor
         self.position = 0
 
@@ -46,13 +46,13 @@ class iRODSDataObjectFile(object):
         return self.position
 
     def close(self):
-        self.sess.close_file(self.desc)
+        self.conn.close_file(self.desc)
         return None
 
     def read(self, size=None):
         if not size:
             return "".join(self.read_gen())
-        contents = self.sess.read_file(self.desc, size)
+        contents = self.conn.read_file(self.desc, size)
         if contents:
             self.position += len(contents)
         return contents
@@ -67,12 +67,12 @@ class iRODSDataObjectFile(object):
         return make_gen
 
     def write(self, string):
-        written = self.sess.write_file(self.desc, string)
+        written = self.conn.write_file(self.desc, string)
         self.position += written
         return None
 
     def seek(self, offset, whence=0):
-        pos = self.sess.seek_file(self.desc, offset, whence)
+        pos = self.conn.seek_file(self.desc, offset, whence)
         self.position = pos
         pass
 
