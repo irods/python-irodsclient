@@ -58,11 +58,13 @@ class iRODSDataObjectFile(object):
         return contents
 
     def read_all(self, chunk_size=4096):
-        while True:
-            contents = self.read(chunk_size) 
-            if not contents:
-                break
-            yield contents
+        def make_gen():
+            while True:
+                contents = self.read(chunk_size) 
+                if not contents:
+                    break
+                yield contents
+        return make_gen
 
     def write(self, string):
         written = self.sess.write_file(self.desc, string)
