@@ -10,6 +10,14 @@ class iRODSMeta(object):
             self.name, self.value, self.units, str(self.id)
         )
 
+    @property
+    def __dict__(self):
+        return {
+            'name': self.name,
+            'value': self.value,
+            'units': self.units
+        }
+
 class iRODSMetaCollection(object):
 
     def __init__(self, sess, model_cls, path):
