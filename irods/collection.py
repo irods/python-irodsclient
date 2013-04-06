@@ -21,7 +21,7 @@ class iRODSCollection(object):
     @property
     def subcollections(self):
         query = self.sess.query(Collection)\
-            .filter(Collection.parent_name == self.name)
+            .filter(Collection.parent_name == self.path)
         results = self.sess.execute_query(query)
         return [iRODSCollection(self.sess, row) for row in results]
 
