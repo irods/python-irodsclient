@@ -52,7 +52,7 @@ class iRODSDataObjectFile(object):
 
     def read(self, size=None):
         if not size:
-            return "".join(self.read_gen())
+            return "".join(self.read_gen()())
         contents = self.conn.read_file(self.desc, size)
         if contents:
             self.position += len(contents)
