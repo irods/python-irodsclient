@@ -5,6 +5,7 @@ class Pool(object):
     def __init__(self, account):
         self.account = account
         self.active = set()
+        self.num_released = 0
         
     def get_connection(self):
         conn = Connection(self, self.account)
@@ -13,4 +14,5 @@ class Pool(object):
         return conn
 
     def release_connection(self, conn):
-        logging.debug('release!')
+        self.num_released += 1
+        logging.debug('release %d' % self.num_released)

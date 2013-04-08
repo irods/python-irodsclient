@@ -64,13 +64,15 @@ class iRODSDataObjectFile(object):
             self.position += len(contents)
         return contents
 
-    def read_gen(self, chunk_size=4096):
+    def read_gen(self, chunk_size=4096, close=False):
         def make_gen():
             while True:
                 contents = self.read(chunk_size) 
                 if not contents:
                     break
                 yield contents
+            if close:
+                self.close()
         return make_gen
 
     def write(self, string):
