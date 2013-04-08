@@ -92,9 +92,9 @@ class iRODSSession(object):
         message = iRODSMessage('RODS_API_REQ', msg=message_body, 
             int_info=api_number['DATA_OBJ_OPEN_AN'])
 
-        with self.pool.get_connection() as conn:
-            conn.send(message)
-            response = conn.recv()
+        conn = self.pool.get_connection()
+        conn.send(message)
+        response = conn.recv()
         return (conn, response.int_info)
 
     def unlink_data_object(self, path):

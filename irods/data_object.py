@@ -1,6 +1,7 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from models import DataObject
 from meta import iRODSMetaCollection
+from exception import CAT_NO_ACCESS_PERMISSION
 SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
@@ -47,7 +48,12 @@ class iRODSDataObjectFile(object):
         return self.position
 
     def close(self):
-        self.conn.close_file(self.desc)
+        try:
+            self.conn.close_file(self.desc)
+        except CAT_NO_ACCESS_PERMISSION:
+            pass 
+        finally:
+            self.conn.release()
         return None
 
     def read(self, size=None):

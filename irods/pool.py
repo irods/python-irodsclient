@@ -1,11 +1,16 @@
+import logging
 from connection import Connection
 
 class Pool(object):
     def __init__(self, account):
         self.account = account
+        self.active = set()
         
     def get_connection(self):
-        return Connection(self, self.account)
+        conn = Connection(self, self.account)
+        self.active.add(conn)
+        logging.debug(len(self.active))
+        return conn
 
     def release_connection(self, conn):
-        pass
+        logging.debug('release!')
