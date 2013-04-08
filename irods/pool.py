@@ -5,14 +5,18 @@ class Pool(object):
     def __init__(self, account):
         self.account = account
         self.active = set()
-        self.num_released = 0
+        self.idle = set()
         
     def get_connection(self):
-        conn = Connection(self, self.account)
+        try:
+            conn = self.idle.pop()
+        except KeyError:
+            conn = Connection(self, self.account)
         self.active.add(conn)
-        logging.debug(len(self.active))
+        logging.debug('num active: %d' % len(self.active))
         return conn
 
     def release_connection(self, conn):
-        self.num_released += 1
-        logging.debug('release %d' % self.num_released)
+        self.active.remove(conn)
+        self.idle.add(conn)
+        logging.debug('num idle: %d' % len(self.idle))
