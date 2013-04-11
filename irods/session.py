@@ -6,7 +6,7 @@ from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 
 from message import (iRODSMessage, StartupPack, AuthResponse, GenQueryResponse, 
-    FileOpenRequest, AuthRequest, StringStringMap, FileReadRequest, FileWriteRequest,
+    FileOpenRequest, AuthChallenge, StringStringMap, FileReadRequest, FileWriteRequest,
     FileSeekRequest, FileSeekResponse, FileCloseRequest, MetadataRequest,
     empty_gen_query_out)
 from query import Query

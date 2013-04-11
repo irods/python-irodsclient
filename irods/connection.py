@@ -3,7 +3,7 @@ import logging
 import struct
 import hashlib
 import logging
-from message import (iRODSMessage, StartupPack, AuthResponse, AuthRequest, 
+from message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge, 
     FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse, 
     FileCloseRequest)
 from exception import get_exception_by_code
@@ -69,7 +69,7 @@ class Connection(object):
         # challenge
         challenge_msg = self.recv()
         logging.debug(challenge_msg.msg)
-        challenge = challenge_msg.get_main_message(AuthResponse).challenge
+        challenge = challenge_msg.get_main_message(AuthChallenge).challenge
         padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, self.account.password)
         m = hashlib.md5()
         m.update(challenge)
@@ -77,7 +77,7 @@ class Connection(object):
         encoded_pwd = m.digest()
 
         encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        pwd_msg = AuthRequest(response=encoded_pwd, username=self.account.user)
+        pwd_msg = AuthResponse(response=encoded_pwd, username=self.account.user)
         pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
 

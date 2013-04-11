@@ -41,7 +41,7 @@ Working with collections
 >>> coll.id
 45798
 
->>> coll.name
+>>> coll.path
 /tempZone/home/rods
 
 >>> for col in coll.subcollections:
