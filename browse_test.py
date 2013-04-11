@@ -12,6 +12,8 @@ class TestMessages(unittest.TestCase):
         coll = sess.get_collection(path)
         self.assertEquals(path, coll.path)
 
+        new_coll = sess.create_collection("/tempZone/home/rods/test_dir")
+        self.assertEquals(new_coll.name, 'test_dir')
 
 if __name__ == "__main__":
     unittest.main()

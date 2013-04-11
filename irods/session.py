@@ -6,9 +6,9 @@ from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 
 from message import (iRODSMessage, StartupPack, AuthResponse, GenQueryResponse, 
-    FileOpenRequest, AuthChallenge, StringStringMap, FileReadRequest, FileWriteRequest,
-    FileSeekRequest, FileSeekResponse, FileCloseRequest, MetadataRequest,
-    empty_gen_query_out)
+    FileOpenRequest, AuthChallenge, StringStringMap, FileReadRequest, 
+    FileWriteRequest, FileSeekRequest, FileSeekResponse, FileCloseRequest, 
+    MetadataRequest, CollectionRequest, empty_gen_query_out)
 from query import Query
 from exception import (get_exception_by_code, CAT_NO_ROWS_FOUND, 
     CollectionDoesNotExist, DataObjectDoesNotExist)
@@ -201,6 +201,27 @@ class iRODSSession(object):
             conn.send(request)
             response = conn.recv()
         logging.debug(response.int_info)
+
+    def create_collection(self, path):
+        message_body = CollectionRequest(
+            collName=path,
+            KeyValPair_PI=StringStringMap()
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body, 
+            int_info=api_number['COLL_CREATE_AN'])
+        with self.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+        return self.get_collection(path)
+
+    def delete_collection(self, path):
+        pass
+
+    def move_collection(self, path):
+        pass
+
+    def move_file(self, path):
+        pass
         
     def query(self, *args):
         return Query(self, *args)

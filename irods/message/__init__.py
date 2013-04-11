@@ -231,6 +231,12 @@ class MetadataRequest(Message):
     arg8 = StringProperty()
     arg9 = StringProperty()
 
+#define CollInp_PI "str collName[MAX_NAME_LEN]; struct KeyValPair_PI;"
+class CollectionRequest(Message):
+    _name = 'CollInp_PI'
+    collName = StringProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
+
 def empty_gen_query_out(cols):
     sql_results = [GenQueryReponseColumn(attriInx=col.icat_id, value=[]) for col in cols]
     gqo = GenQueryRepsonse(
