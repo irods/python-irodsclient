@@ -5,9 +5,9 @@ import logging
 from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 
-from message import (iRODSMessage, StartupPack, authResponseInp, GenQueryOut, 
-    DataObjInp, authRequestOut, KeyValPair, dataObjReadInp, dataObjWriteInp,
-    fileLseekInp, fileLseekOut, dataObjCloseInp, ModAVUMetadataInp,
+from message import (iRODSMessage, StartupPack, AuthResponse, GenQueryResponse, 
+    FileOpenRequest, AuthRequest, StringStringMap, FileReadRequest, FileWriteRequest,
+    FileSeekRequest, FileSeekResponse, FileCloseRequest, MetadataRequest,
     empty_gen_query_out)
 from query import Query
 from exception import (get_exception_by_code, CAT_NO_ROWS_FOUND, 
@@ -57,7 +57,7 @@ class iRODSSession(object):
             raise DataObjectDoesNotExist()
 
     def create_data_object(self, path):
-        message_body = DataObjInp(
+        message_body = FileOpenRequest(
             objPath=path,
             createMode=0644,
             openFlags=0,
@@ -65,7 +65,7 @@ class iRODSSession(object):
             dataSize=-1,
             numThreads=0,
             oprType=0,
-            KeyValPair_PI=KeyValPair({'dataType': 'generic'}),
+            KeyValPair_PI=StringStringMap({'dataType': 'generic'}),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_CREATE_AN'])
@@ -79,7 +79,7 @@ class iRODSSession(object):
         return self.get_data_object(path)
 
     def open_file(self, path, mode):
-        message_body = DataObjInp(
+        message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
             openFlags=mode,
@@ -87,7 +87,7 @@ class iRODSSession(object):
             dataSize=-1,
             numThreads=0,
             oprType=0,
-            KeyValPair_PI=KeyValPair(),
+            KeyValPair_PI=StringStringMap(),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body, 
             int_info=api_number['DATA_OBJ_OPEN_AN'])
@@ -98,7 +98,7 @@ class iRODSSession(object):
         return (conn, response.int_info)
 
     def unlink_data_object(self, path):
-        message_body = DataObjInp(
+        message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
             openFlags=0,
@@ -106,7 +106,7 @@ class iRODSSession(object):
             dataSize=-1,
             numThreads=0,
             oprType=0,
-            KeyValPair_PI=KeyValPair(),
+            KeyValPair_PI=StringStringMap(),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_UNLINK_AN'])
@@ -152,7 +152,7 @@ class iRODSSession(object):
 
     def add_meta(self, model_cls, path, meta):
         resource_type = self._model_class_to_resource_type(model_cls)
-        message_body = ModAVUMetadataInp(
+        message_body = MetadataRequest(
             "add",
             "-" + resource_type,
             path,
@@ -169,7 +169,7 @@ class iRODSSession(object):
 
     def remove_meta(self, model_cls, path, meta):
         resource_type = self._model_class_to_resource_type(model_cls)
-        message_body = ModAVUMetadataInp(
+        message_body = MetadataRequest(
             "rm",
             "-" + resource_type,
             path,
@@ -187,7 +187,7 @@ class iRODSSession(object):
     def copy_meta(self, src_model_cls, dest_model_cls, src, dest):
         src_resource_type = self._model_class_to_resource_type(src_model_cls)
         dest_resource_type = self._model_class_to_resource_type(dest_model_cls)
-        message_body = ModAVUMetadataInp(
+        message_body = MetadataRequest(
             "cp",
             "-" + src_resource_type,
             "-" + dest_resource_type,
@@ -212,7 +212,7 @@ class iRODSSession(object):
             conn.send(message)
             try:
                 result_message = conn.recv()
-                results = result_message.get_main_message(GenQueryOut)
+                results = result_message.get_main_message(GenQueryResponse)
                 result_set = ResultSet(results)
             except CAT_NO_ROWS_FOUND:
                 result_set = ResultSet(empty_gen_query_out(query.columns.keys())) 

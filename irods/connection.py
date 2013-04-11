@@ -3,7 +3,9 @@ import logging
 import struct
 import hashlib
 import logging
-from message import iRODSMessage, StartupPack, authRequestOut, authResponseInp, dataObjReadInp, dataObjWriteInp, fileLseekInp, fileLseekOut, dataObjCloseInp
+from message import (iRODSMessage, StartupPack, AuthResponse, AuthRequest, 
+    FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse, 
+    FileCloseRequest)
 from exception import get_exception_by_code
 from . import MAX_PASSWORD_LENGTH
 from api_number import api_number
@@ -67,7 +69,7 @@ class Connection(object):
         # challenge
         challenge_msg = self.recv()
         logging.debug(challenge_msg.msg)
-        challenge = challenge_msg.get_main_message(authRequestOut).challenge
+        challenge = challenge_msg.get_main_message(AuthResponse).challenge
         padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, self.account.password)
         m = hashlib.md5()
         m.update(challenge)
@@ -75,14 +77,14 @@ class Connection(object):
         encoded_pwd = m.digest()
 
         encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        pwd_msg = authResponseInp(response=encoded_pwd, username=self.account.user)
+        pwd_msg = AuthRequest(response=encoded_pwd, username=self.account.user)
         pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
 
         auth_response = self.recv()
 
     def read_file(self, desc, size):
-        message_body = dataObjReadInp(
+        message_body = FileReadRequest(
             l1descInx=desc,
             len=size
         )
@@ -95,7 +97,7 @@ class Connection(object):
         return response.bs
 
     def write_file(self, desc, string):
-        message_body = dataObjWriteInp(
+        message_body = FileWriteRequest(
             dataObjInx=desc,
             len=len(string)
         )
@@ -107,7 +109,7 @@ class Connection(object):
         return response.int_info
 
     def seek_file(self, desc, offset, whence):
-        message_body = fileLseekInp(
+        message_body = FileSeekReqest(
             fileInx=desc,
             offset=offset,
             whence=whence
@@ -117,11 +119,11 @@ class Connection(object):
 
         self.send(message)
         response = self.recv()
-        offset = response.get_main_message(fileLseekOut).offset
+        offset = response.get_main_message(FileSeekResponse).offset
         return offset
 
     def close_file(self, desc):
-        message_body = dataObjCloseInp(
+        message_body = FileCloseRequest(
             l1descInx=desc
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,

@@ -1,7 +1,8 @@
 import logging
 from models import Model
 from column import Column, Keyword
-from message import InxIvalPair, InxValPair, KeyValPair, GenQueryInp
+from message import (IntegerIntegerMap, IntegerStringMap, StringStringMap, 
+    GenQueryRequest)
 
 class Query(object):
 
@@ -31,7 +32,7 @@ class Query(object):
 
     def _select_message(self):
         dct = dict([(column.icat_id, value) for (column, value) in self.columns.iteritems()])
-        return InxIvalPair(dct)
+        return IntegerIntegerMap(dct)
 
     #todo store criterion for columns and criterion for keywords in seaparate lists
     def _conds_message(self):
@@ -40,7 +41,7 @@ class Query(object):
             for criterion in self.criteria 
             if isinstance(criterion.query_key, Column)
         ])
-        return InxValPair(dct)
+        return IntegerStringMap(dct)
 
     def _kw_message(self):
         dct = dict([
@@ -48,7 +49,7 @@ class Query(object):
             for criterion in self.criteria 
             if isinstance(criterion.query_key, Keyword)
         ])
-        return KeyValPair(dct)
+        return StringStringMap(dct)
 
     def _message(self):
         args = {
@@ -60,7 +61,7 @@ class Query(object):
             'InxIvalPair_PI': self._select_message(),
             'InxValPair_PI': self._conds_message()
         }
-        return GenQueryInp(**args)
+        return GenQueryRequest(**args)
         
     def all(self):
         return self.sess.execute_query(self)

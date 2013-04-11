@@ -21,11 +21,11 @@ class Message(OrderedClass):
 
     def pack(self):
         values = []
-        values.append("<%s_PI>" % self.__class__.__name__)
+        values.append("<%s>" % self.__class__._name)
         for (name, property) in self._ordered_properties:
             if name in self._values:
                 values.append(property.pack(self._values[name]))
-        values.append("</%s_PI>" % self.__class__.__name__)
+        values.append("</%s>" % self.__class__._name)
         return "".join(values)
 
     def unpack(self, root):

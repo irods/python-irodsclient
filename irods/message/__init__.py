@@ -62,6 +62,7 @@ class iRODSMessage(object):
 
 #define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
 class StartupPack(Message):
+    _name = 'StartupPack_PI'
     def __init__(self, user=None, zone=None):
         super(StartupPack, self).__init__()
         if user and zone:
@@ -85,17 +86,20 @@ class StartupPack(Message):
     option = StringProperty()
 
 #define authResponseInp_PI "bin *response(RESPONSE_LEN); str *username;"
-class authResponseInp(Message):
+class AuthResponse(Message):
+    _name = 'authResponseInp_PI'
     response = BinaryProperty(16)
     username = StringProperty()
 
-class authRequestOut(Message):
+class AuthChallenge(Message):
+    _name = 'authRequestOut_PI'
     challenge = BinaryProperty(64)
 
 #define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
-class InxIvalPair(Message):
+class IntegerIntegerMap(Message):
+    _name = 'InxIvalPair_PI'
     def __init__(self, data=None):
-        super(InxIvalPair, self).__init__()
+        super(IntegerIntegerMap, self).__init__()
         self.iiLen = 0
         if data:
             self.iiLen = len(data)
@@ -107,9 +111,10 @@ class InxIvalPair(Message):
     ivalue = ArrayProperty(IntegerProperty())
 
 #define InxValPair_PI "int isLen; int *inx(isLen); str *svalue[isLen];" 
-class InxValPair(Message):
+class IntegerStringMap(Message):
+    _name = 'InxValPair_PI'
     def __init__(self, data=None):
-        super(InxValPair, self).__init__()
+        super(IntegerStringMap, self).__init__()
         self.isLen = 0
         if data:
             self.isLen = len(data)
@@ -121,9 +126,10 @@ class InxValPair(Message):
     svalue = ArrayProperty(StringProperty())
 
 #define KeyValPair_PI "int ssLen; str *keyWord[ssLen]; str *svalue[ssLen];"
-class KeyValPair(Message):
+class StringStringMap(Message):
+    _name = 'KeyValPair_PI'
     def __init__(self, data=None):
-        super(KeyValPair, self).__init__()
+        super(StringStringMap, self).__init__()
         self.ssLen = 0
         if data:
             self.ssLen = len(data)
@@ -135,31 +141,35 @@ class KeyValPair(Message):
     svalue = ArrayProperty(StringProperty()) 
 
 #define GenQueryInp_PI "int maxRows; int continueInx; int partialStartIndex; int options; struct KeyValPair_PI; struct InxIvalPair_PI; struct InxValPair_PI;"
-class GenQueryInp(Message):
+class GenQueryRequest(Message):
+    _name = 'GenQueryInp_PI'
     maxRows = IntegerProperty()
     continueInx = IntegerProperty()
     partialStartIndex = IntegerProperty()
     options = IntegerProperty()
-    KeyValPair_PI = SubmessageProperty(KeyValPair)
-    InxIvalPair_PI = SubmessageProperty(InxIvalPair)
-    InxValPair_PI = SubmessageProperty(InxValPair)
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
+    InxIvalPair_PI = SubmessageProperty(IntegerIntegerMap)
+    InxValPair_PI = SubmessageProperty(IntegerStringMap)
 
 #define SqlResult_PI "int attriInx; int reslen; str *value(rowCnt)(reslen);"  
-class SqlResult(Message):
+class GenQueryResponseColumn(Message):
+    _name = 'SqlResult_PI'
     attriInx = IntegerProperty()
     reslen = IntegerProperty()
     value = ArrayProperty(StringProperty())
 
 #define GenQueryOut_PI "int rowCnt; int attriCnt; int continueInx; int totalRowCount; struct SqlResult_PI[MAX_SQL_ATTR];"
-class GenQueryOut(Message):
+class GenQueryResponse(Message):
+    _name = 'GenQueryOut_PI'
     rowCnt = IntegerProperty()
     attriCnt = IntegerProperty()
     continueInx = IntegerProperty()
     totalRowCount = IntegerProperty()
-    SqlResult_PI = ArrayProperty(SubmessageProperty(SqlResult))
+    SqlResult_PI = ArrayProperty(SubmessageProperty(GenQueryResponseColumn))
 
 #define DataObjInp_PI "str objPath[MAX_NAME_LEN]; int createMode; int openFlags; double offset; double dataSize; int numThreads; int oprType; struct *SpecColl_PI; struct KeyValPair_PI;"
-class DataObjInp(Message):
+class FileOpenRequest(Message):
+    _name = 'DataObjInp_PI'
     objPath = StringProperty()
     createMode = IntegerProperty()
     openFlags = IntegerProperty()
@@ -167,35 +177,41 @@ class DataObjInp(Message):
     dataSize = LongProperty()
     numThreads = IntegerProperty()
     oprType = IntegerProperty()
-    KeyValPair_PI = SubmessageProperty(KeyValPair)
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 #define dataObjReadInp_PI "int l1descInx; int len;"
-class dataObjReadInp(Message):
+class FileReadRequest(Message):
+    _name = 'dataObjReadInp_PI'
     l1descInx = IntegerProperty()
     len = IntegerProperty()
 
 #define dataObjWriteInp_PI "int dataObjInx; int len;"
-class dataObjWriteInp(Message):
+class FileWriteRequest(Message):
+    _name = 'dataObjWriteInp_PI'
     dataObjInx = IntegerProperty()
     len = IntegerProperty()
 
 #define fileLseekInp_PI "int fileInx; double offset; int whence"
-class fileLseekInp(Message):
+class FileSeekRequest(Message):
+    _name = 'fileLSeekInp_PI'
     fileInx = IntegerProperty()
     offset = LongProperty()
     whence = IntegerProperty()
 
 #define fileLseekOut_PI "double offset;"
-class fileLseekOut(Message):
+class FileSeekResponse(Message):
+    _name = 'fileLSeekOut_PI'
     offset = LongProperty()
 
 #define dataObjCloseInp_PI "int l1descInx; double bytesWritten;"
-class dataObjCloseInp(Message):
+class FileCloseRequest(Message):
+    _name = 'dataObjCloseInp_PI'
     l1descInx = IntegerProperty()
     bytesWritten = LongProperty()
 
 #define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
-class ModAVUMetadataInp(Message):
+class MetadataRequest(Message):
+    _name = 'ModAVUMetadataInp_PI'
     def __init__(self, *args):
         super(ModAVUMetadataInp, self).__init__()
         for i in range(len(args)):
@@ -216,8 +232,8 @@ class ModAVUMetadataInp(Message):
     arg9 = StringProperty()
 
 def empty_gen_query_out(cols):
-    sql_results = [SqlResult(attriInx=col.icat_id, value=[]) for col in cols]
-    gqo = GenQueryOut(
+    sql_results = [GenQueryReponseColumn(attriInx=col.icat_id, value=[]) for col in cols]
+    gqo = GenQueryRepsonse(
         rowCnt=0,
         attriCnt=len(cols),
         SqlResult_PI=sql_results
