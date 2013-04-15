@@ -238,8 +238,8 @@ class CollectionRequest(Message):
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 def empty_gen_query_out(cols):
-    sql_results = [GenQueryReponseColumn(attriInx=col.icat_id, value=[]) for col in cols]
-    gqo = GenQueryRepsonse(
+    sql_results = [GenQueryResponseColumn(attriInx=col.icat_id, value=[]) for col in cols]
+    gqo = GenQueryResponse(
         rowCnt=0,
         attriCnt=len(cols),
         SqlResult_PI=sql_results
