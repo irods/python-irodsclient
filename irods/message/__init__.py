@@ -193,14 +193,14 @@ class FileWriteRequest(Message):
 
 #define fileLseekInp_PI "int fileInx; double offset; int whence"
 class FileSeekRequest(Message):
-    _name = 'fileLSeekInp_PI'
+    _name = 'fileLseekInp_PI'
     fileInx = IntegerProperty()
     offset = LongProperty()
     whence = IntegerProperty()
 
 #define fileLseekOut_PI "double offset;"
 class FileSeekResponse(Message):
-    _name = 'fileLSeekOut_PI'
+    _name = 'fileLseekOut_PI'
     offset = LongProperty()
 
 #define dataObjCloseInp_PI "int l1descInx; double bytesWritten;"

@@ -109,7 +109,7 @@ class Connection(object):
         return response.int_info
 
     def seek_file(self, desc, offset, whence):
-        message_body = FileSeekReqest(
+        message_body = FileSeekRequest(
             fileInx=desc,
             offset=offset,
             whence=whence
