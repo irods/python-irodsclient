@@ -83,7 +83,8 @@ pycommands provides [file-like objects](http://docs.python.org/2/library/stdtype
 >>> with obj.open('r+') as f:
 ...   f.write('foo\nbar')
 ...   f.seek(0,0)
-...   print f.read(1024)
+...   for line in f:
+...      print line
 ...
 foo
 bar
