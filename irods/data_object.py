@@ -85,6 +85,17 @@ class iRODSDataObjectFile(object):
         self.position = pos
         pass
 
+    def __iter__(self):
+        reader = self.read_gen()
+        chars = []
+        for chunk in reader():
+            for char in chunk:
+                if char == '\n':
+                    yield "".join(chars)
+                    chars = []
+                else:
+                    chars.append(char)
+
     def readline(self):
         pass
 
