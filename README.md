@@ -93,7 +93,7 @@ bar
 Working with metadata
 ---------------------
 ```python
->>> from irods.meta import IRODSMeta
+>>> from irods.meta import iRODSMeta
 >>> obj = sess.get_data_object("/tempZone/home/rods/test1")
 >>> print obj.metadata.items()
 []

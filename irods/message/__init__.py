@@ -213,7 +213,7 @@ class FileCloseRequest(Message):
 class MetadataRequest(Message):
     _name = 'ModAVUMetadataInp_PI'
     def __init__(self, *args):
-        super(ModAVUMetadataInp, self).__init__()
+        super(MetadataRequest, self).__init__()
         for i in range(len(args)):
             if args[i]:
                 setattr(self, 'arg%d' % i, args[i])

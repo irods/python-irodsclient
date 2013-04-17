@@ -73,9 +73,9 @@ class iRODSSession(object):
         with self.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+            desc = response.int_info
+            conn.close_file(desc)
 
-        desc = response.int_info
-        self.close_file(desc)
         return self.get_data_object(path)
 
     def open_file(self, path, mode):
