@@ -5,7 +5,8 @@ pycommands
 
 This project should be considered pre-alpha. Here's what works:
 - [x] Establish a connection to iRODS, authenticaate
-- [x] Implement Gen Queries
+- [x] Implement basic Gen Queries (select columns and filtering)
+- [ ] Support more advanced Gen Queries with limits, offsets, and aggregations
 - [x] Query the collections and data objects within a collection
 - [x] Support read, write, and seek operations for files
 - [x] Delete data objects
