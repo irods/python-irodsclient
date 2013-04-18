@@ -37,7 +37,7 @@ Establishing a connection
 Working with collections
 ------------------------
 ```python
->>> coll = sess.get_collection("/tempZone/home/rods")
+>>> coll = sess.collections.get_collection("/tempZone/home/rods")
 
 >>> coll.id
 45798

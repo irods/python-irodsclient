@@ -149,7 +149,7 @@ class MetadataManager(ResourceManager):
             'r': [Resource.name == path],
             'u': [User.name == path]
         }[resource_type]
-        results = self.query(model.id, model.name, model.value, model.units)\
+        results = self.sess.query(model.id, model.name, model.value, model.units)\
             .filter(*conditions).all()
         return [iRODSMeta(
             row[model.name], 
@@ -170,7 +170,7 @@ class MetadataManager(ResourceManager):
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body, 
             int_info=api_number['MOD_AVU_METADATA_AN'])
-        with self.pool.get_connection() as conn:
+        with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
         logging.debug(response.int_info)
@@ -187,7 +187,7 @@ class MetadataManager(ResourceManager):
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body, 
             int_info=api_number['MOD_AVU_METADATA_AN'])
-        with self.pool.get_connection() as conn:
+        with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
         logging.debug(response.int_info)
@@ -205,7 +205,7 @@ class MetadataManager(ResourceManager):
         request = iRODSMessage("RODS_API_REQ", msg=message_body, 
             int_info=api_number['MOD_AVU_METADATA_AN'])
 
-        with self.pool.get_connection() as conn:
+        with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
         logging.debug(response.int_info)

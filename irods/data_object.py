@@ -1,11 +1,12 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
+
 from models import DataObject
 from meta import iRODSMetaCollection
 from exception import CAT_NO_ACCESS_PERMISSION
 from resource_manager import ResourceManager
 from message import (iRODSMessage, FileReadRequest, FileWriteRequest, 
     FileSeekRequest, FileSeekResponse, FileCloseRequest, StringStringMap)
-from exception import DataObjectDoesNotExist
+from exception import DataObjectDoesNotExist, CollectionDoesNotExist
 from api_number import api_number
 SEEK_SET = 0
 SEEK_CUR = 1
@@ -116,14 +117,15 @@ class iRODSDataObjectFile(object):
 class DataObjectManager(ResourceManager):
     def get_data_object(self, path):
         try:
-            parent = self.get_collection(dirname(path))
+            parent = self.sess.get_collection(dirname(path))
         except CollectionDoesNotExist:
             raise DataObjectDoesNotExist()
 
-        results = self.query(DataObject)\
+        results = self.sess.query(DataObject)\
             .filter(DataObject.name == basename(path))\
             .filter(DataObject.collection_id == parent.id)\
             .all()
+        # reimplement with .one()
         if results.length == 1:
             return iRODSDataObject(self, parent, results[0])
         else:
@@ -143,7 +145,7 @@ class DataObjectManager(ResourceManager):
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_CREATE_AN'])
 
-        with self.pool.get_connection() as conn:
+        with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
             desc = response.int_info
@@ -165,7 +167,7 @@ class DataObjectManager(ResourceManager):
         message = iRODSMessage('RODS_API_REQ', msg=message_body, 
             int_info=api_number['DATA_OBJ_OPEN_AN'])
 
-        conn = self.pool.get_connection()
+        conn = self.sess.pool.get_connection()
         conn.send(message)
         response = conn.recv()
         return (conn, response.int_info)
@@ -184,7 +186,7 @@ class DataObjectManager(ResourceManager):
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_UNLINK_AN'])
 
-        with self.pool.get_connection() as conn:
+        with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
 
