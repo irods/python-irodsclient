@@ -2,6 +2,7 @@ from os.path import basename
 from models import Collection, DataObject
 from data_object import iRODSDataObject
 from meta import iRODSMetaCollection
+from resource_manager import ResourceManager
 
 class iRODSCollection(object):
     def __init__(self, sess, result=None):
@@ -34,3 +35,31 @@ class iRODSCollection(object):
 
     def __repr__(self):
         return "<iRODSCollection %d %s>" % (self.id, self.name)
+
+class CollectionManager(ResourceManager):
+    def get_collection(self, path):
+        query = self.query(Collection).filter(Collection.name == path)
+        results = self.execute_query(query)
+        # todo implement this with .one() on query
+        if results.length == 1:
+            return iRODSCollection(self, results[0])
+        else:
+            raise CollectionDoesNotExist()
+
+    def create_collection(self, path):
+        message_body = CollectionRequest(
+            collName=path,
+            KeyValPair_PI=StringStringMap()
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body, 
+            int_info=api_number['COLL_CREATE_AN'])
+        with self.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+        return self.get_collection(path)
+
+    def delete_collection(self, path):
+        pass
+
+    def move_collection(self, path):
+        pass

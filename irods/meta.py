@@ -1,3 +1,5 @@
+from resource_manager import ResourceManager
+
 class iRODSMeta(object):
     def __init__(self, name, value, units=None, id=None):
         self.id = id
@@ -116,3 +118,91 @@ class iRODSMetaCollection(object):
         for meta in self._meta:
             self._sess.remove_meta(self._model_cls, self._path, meta)
         self._reset_metadata()
+
+class MetadataManager(ResourceManager):
+    @staticmethod
+    def _model_class_to_resource_type(model_cls):
+        return {
+            DataObject: 'd',
+            Collection: 'c',
+            Resource: 'r',
+            User: 'r',
+        }[model_cls]
+
+    def get_meta(self, model_cls, path):
+        resource_type = self._model_class_to_resource_type(model_cls)
+        model = {
+            'd': DataObjectMeta,
+            'c': CollectionMeta,
+            'r': ResourceMeta,
+            'u': UserMeta
+        }[resource_type]
+        conditions = {
+            'd': [
+                Collection.name == dirname(path), 
+                DataObject.name == basename(path)
+            ],
+            'c': [Collection.name == path],
+            'r': [Resource.name == path],
+            'u': [User.name == path]
+        }[resource_type]
+        results = self.query(model.id, model.name, model.value, model.units)\
+            .filter(*conditions).all()
+        return [iRODSMeta(
+            row[model.name], 
+            row[model.value], 
+            row[model.units],
+            id=row[model.id]
+        ) for row in results]
+
+    def add_meta(self, model_cls, path, meta):
+        resource_type = self._model_class_to_resource_type(model_cls)
+        message_body = MetadataRequest(
+            "add",
+            "-" + resource_type,
+            path,
+            meta.name,
+            meta.value,
+            meta.units
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+            int_info=api_number['MOD_AVU_METADATA_AN'])
+        with self.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logging.debug(response.int_info)
+
+    def remove_meta(self, model_cls, path, meta):
+        resource_type = self._model_class_to_resource_type(model_cls)
+        message_body = MetadataRequest(
+            "rm",
+            "-" + resource_type,
+            path,
+            meta.name,
+            meta.value,
+            meta.units
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+            int_info=api_number['MOD_AVU_METADATA_AN'])
+        with self.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logging.debug(response.int_info)
+
+    def copy_meta(self, src_model_cls, dest_model_cls, src, dest):
+        src_resource_type = self._model_class_to_resource_type(src_model_cls)
+        dest_resource_type = self._model_class_to_resource_type(dest_model_cls)
+        message_body = MetadataRequest(
+            "cp",
+            "-" + src_resource_type,
+            "-" + dest_resource_type,
+            src,
+            dest
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+            int_info=api_number['MOD_AVU_METADATA_AN'])
+
+        with self.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logging.debug(response.int_info)
