@@ -37,7 +37,7 @@ Establishing a connection
 Working with collections
 ------------------------
 ```python
->>> coll = sess.collections.get_collection("/tempZone/home/rods")
+>>> coll = sess.collections.get("/tempZone/home/rods")
 
 >>> coll.id
 45798
@@ -60,13 +60,13 @@ Working with data objects (files)
 ---------------------------------
 Create a new data object:
 ```python
->>> obj = sess.data_objects.create_data_object("/tempZone/home/rods/test1")
+>>> obj = sess.data_objects.create("/tempZone/home/rods/test1")
 <iRODSDataObject /tempZone/home/rods/test1>
 ```
 
 Get an existing data object:
 ```python
->>> obj = sess.data_objects.get_data_object("/tempZone/home/rods/test1")
+>>> obj = sess.data_objects.get("/tempZone/home/rods/test1")
 >>> obj.id
 12345
 
@@ -80,7 +80,7 @@ Reading and writing files
 -----------------------
 pycommands provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writiing files
 ```python
->>> obj = sess.data_objects.get_data_object("/tempZone/home/rods/test1")
+>>> obj = sess.data_objects.get("/tempZone/home/rods/test1")
 >>> with obj.open('r+') as f:
 ...   f.write('foo\nbar\n')
 ...   f.seek(0,0)
@@ -95,7 +95,7 @@ Working with metadata
 ---------------------
 ```python
 >>> from irods.meta import iRODSMeta
->>> obj = sess.data_objects.get_data_object("/tempZone/home/rods/test1")
+>>> obj = sess.data_objects.get("/tempZone/home/rods/test1")
 >>> print obj.metadata.items()
 []
 

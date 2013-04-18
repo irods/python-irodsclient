@@ -29,14 +29,14 @@ class iRODSMeta(object):
 
 class iRODSMetaCollection(object):
 
-    def __init__(self, sess, model_cls, path):
-        self._sess = sess
+    def __init__(self, manager, model_cls, path):
+        self._sess = manager
         self._model_cls = model_cls
         self._path = path
         self._reset_metadata()
 
     def _reset_metadata(self):
-        self._meta = self._sess.get_meta(self._model_cls, self._path)
+        self._meta = self._sess.get(self._model_cls, self._path)
 
     def get_all(self, key):
         """
@@ -62,14 +62,14 @@ class iRODSMetaCollection(object):
         """
         Add as iRODSMeta to a key
         """
-        self._sess.add_meta(self._model_cls, self._path, meta)
+        self._sess.add(self._model_cls, self._path, meta)
         self._reset_metadata()
 
     def remove(self, meta):
         """
         Removes an iRODSMeta
         """
-        self._sess.remove_meta(self._model_cls, self._path, meta)
+        self._sess.remove(self._model_cls, self._path, meta)
         self._reset_metadata()
     
     def items(self):
@@ -123,7 +123,7 @@ class iRODSMetaCollection(object):
 
     def remove_all(self):
         for meta in self._meta:
-            self._sess.remove_meta(self._model_cls, self._path, meta)
+            self._sess.remove(self._model_cls, self._path, meta)
         self._reset_metadata()
 
 class MetadataManager(ResourceManager):
@@ -136,7 +136,7 @@ class MetadataManager(ResourceManager):
             User: 'r',
         }[model_cls]
 
-    def get_meta(self, model_cls, path):
+    def get(self, model_cls, path):
         resource_type = self._model_class_to_resource_type(model_cls)
         model = {
             'd': DataObjectMeta,
@@ -162,7 +162,7 @@ class MetadataManager(ResourceManager):
             id=row[model.id]
         ) for row in results]
 
-    def add_meta(self, model_cls, path, meta):
+    def add(self, model_cls, path, meta):
         resource_type = self._model_class_to_resource_type(model_cls)
         message_body = MetadataRequest(
             "add",
@@ -179,7 +179,7 @@ class MetadataManager(ResourceManager):
             response = conn.recv()
         logging.debug(response.int_info)
 
-    def remove_meta(self, model_cls, path, meta):
+    def remove(self, model_cls, path, meta):
         resource_type = self._model_class_to_resource_type(model_cls)
         message_body = MetadataRequest(
             "rm",
@@ -196,7 +196,7 @@ class MetadataManager(ResourceManager):
             response = conn.recv()
         logging.debug(response.int_info)
 
-    def copy_meta(self, src_model_cls, dest_model_cls, src, dest):
+    def copy(self, src_model_cls, dest_model_cls, src, dest):
         src_resource_type = self._model_class_to_resource_type(src_model_cls)
         dest_resource_type = self._model_class_to_resource_type(dest_model_cls)
         message_body = MetadataRequest(

@@ -43,7 +43,7 @@ class iRODSDataObject(object):
             'a': (O_WRONLY, True, True),
             'a+': (O_RDWR, True, True),
         }[mode]
-        conn, desc = self.manager.open_file(self.path, flag)
+        conn, desc = self.manager.open(self.path, flag)
         return iRODSDataObjectFile(conn, desc)
 
 class iRODSDataObjectFile(object):
@@ -117,9 +117,9 @@ class iRODSDataObjectFile(object):
         self.close()
 
 class DataObjectManager(ResourceManager):
-    def get_data_object(self, path):
+    def get(self, path):
         try:
-            parent = self.sess.collections.get_collection(dirname(path))
+            parent = self.sess.collections.get(dirname(path))
         except CollectionDoesNotExist:
             raise DataObjectDoesNotExist()
 
@@ -133,7 +133,7 @@ class DataObjectManager(ResourceManager):
         else:
             raise DataObjectDoesNotExist()
 
-    def create_data_object(self, path):
+    def create(self, path):
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0644,
@@ -153,9 +153,9 @@ class DataObjectManager(ResourceManager):
             desc = response.int_info
             conn.close_file(desc)
 
-        return self.get_data_object(path)
+        return self.get(path)
 
-    def open_file(self, path, mode):
+    def open(self, path, mode):
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -174,7 +174,7 @@ class DataObjectManager(ResourceManager):
         response = conn.recv()
         return (conn, response.int_info)
 
-    def unlink_data_object(self, path):
+    def unlink(self, path):
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -192,5 +192,5 @@ class DataObjectManager(ResourceManager):
             conn.send(message)
             response = conn.recv()
 
-    def move_file(self, path):
+    def move(self, path):
         pass

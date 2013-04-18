@@ -45,7 +45,7 @@ class iRODSCollection(object):
         return "<iRODSCollection %d %s>" % (self.id, self.name)
 
 class CollectionManager(ResourceManager):
-    def get_collection(self, path):
+    def get(self, path):
         query = self.sess.query(Collection).filter(Collection.name == path)
         results = self.sess.execute_query(query)
         # todo implement this with .one() on query
@@ -54,7 +54,7 @@ class CollectionManager(ResourceManager):
         else:
             raise CollectionDoesNotExist()
 
-    def create_collection(self, path):
+    def create(self, path):
         message_body = CollectionRequest(
             collName=path,
             KeyValPair_PI=StringStringMap()
@@ -66,8 +66,8 @@ class CollectionManager(ResourceManager):
             response = conn.recv()
         return self.get_collection(path)
 
-    def delete_collection(self, path):
+    def delete(self, path):
         pass
 
-    def move_collection(self, path):
+    def move(self, path):
         pass
