@@ -1,11 +1,13 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
+from os.path import basename, dirname
 
 from models import DataObject
 from meta import iRODSMetaCollection
 from exception import CAT_NO_ACCESS_PERMISSION
 from resource_manager import ResourceManager
 from message import (iRODSMessage, FileReadRequest, FileWriteRequest, 
-    FileSeekRequest, FileSeekResponse, FileCloseRequest, StringStringMap)
+    FileSeekRequest, FileSeekResponse, FileOpenRequest, FileCloseRequest, 
+    StringStringMap)
 from exception import DataObjectDoesNotExist, CollectionDoesNotExist
 from api_number import api_number
 SEEK_SET = 0
@@ -13,8 +15,8 @@ SEEK_CUR = 1
 SEEK_END = 2
 
 class iRODSDataObject(object):
-    def __init__(self, sess, parent=None, result=None):
-        self.sess = sess
+    def __init__(self, manager, parent=None, result=None):
+        self.manager = manager
         if parent and result:
             self.collection = parent
             for attr in ['id', 'name', 'size', 'checksum', 'create_time', 
@@ -29,7 +31,7 @@ class iRODSDataObject(object):
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(self.sess, DataObject, self.path)
+            self._meta = iRODSMetaCollection(self.manager.sess.metadata, DataObject, self.path)
         return self._meta
 
     def open(self, mode='r'):
@@ -41,7 +43,7 @@ class iRODSDataObject(object):
             'a': (O_WRONLY, True, True),
             'a+': (O_RDWR, True, True),
         }[mode]
-        conn, desc = self.sess.open_file(self.path, flag)
+        conn, desc = self.manager.open_file(self.path, flag)
         return iRODSDataObjectFile(conn, desc)
 
 class iRODSDataObjectFile(object):
@@ -117,7 +119,7 @@ class iRODSDataObjectFile(object):
 class DataObjectManager(ResourceManager):
     def get_data_object(self, path):
         try:
-            parent = self.sess.get_collection(dirname(path))
+            parent = self.sess.collections.get_collection(dirname(path))
         except CollectionDoesNotExist:
             raise DataObjectDoesNotExist()
 

@@ -1,22 +1,15 @@
-import socket 
-import hashlib
-import struct
 import logging
-from os.path import basename, dirname
-from os import O_RDONLY, O_WRONLY, O_RDWR
 
 from message import iRODSMessage, GenQueryResponse, empty_gen_query_out
 from query import Query
 from exception import CAT_NO_ROWS_FOUND
 from results import ResultSet
-from models import (Collection, DataObject, Resource, User, DataObjectMeta, 
-    CollectionMeta, ResourceMeta, UserMeta)
-from collection import CollectionManager
-from data_object import DataObjectManager
-from meta import MetadataManager
 from api_number import api_number
 from pool import Pool
 from account import iRODSAccount
+from collection import CollectionManager
+from data_object import DataObjectManager
+from meta import MetadataManager
 
 class iRODSSession(object):
     def __init__(self, *args, **kwargs):

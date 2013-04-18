@@ -218,8 +218,6 @@ class MetadataRequest(Message):
             if args[i]:
                 setattr(self, 'arg%d' % i, args[i])
 
-        print self._values
-
     arg0 = StringProperty()
     arg1 = StringProperty()
     arg2 = StringProperty()
