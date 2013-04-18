@@ -3,6 +3,9 @@ from models import Collection, DataObject
 from data_object import iRODSDataObject
 from meta import iRODSMetaCollection
 from resource_manager import ResourceManager
+from message import iRODSMessage, CollectionRequest
+from exception import CollectionNodesNotExist
+from api_number import api_number
 
 class iRODSCollection(object):
     def __init__(self, sess, result=None):

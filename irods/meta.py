@@ -1,4 +1,7 @@
 from resource_manager import ResourceManager
+from message import MetadataRequest
+from api_number import api_number
+from models import DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta
 
 class iRODSMeta(object):
     def __init__(self, name, value, units=None, id=None):

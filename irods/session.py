@@ -5,19 +5,15 @@ import logging
 from os.path import basename, dirname
 from os import O_RDONLY, O_WRONLY, O_RDWR
 
-from message import (iRODSMessage, StartupPack, AuthResponse, GenQueryResponse, 
-    FileOpenRequest, AuthChallenge, StringStringMap, FileReadRequest, 
-    FileWriteRequest, FileSeekRequest, FileSeekResponse, FileCloseRequest, 
-    MetadataRequest, CollectionRequest, empty_gen_query_out)
+from message import iRODSMessage, GenQueryResponse, empty_gen_query_out
 from query import Query
-from exception import (get_exception_by_code, CAT_NO_ROWS_FOUND, 
-    CollectionDoesNotExist, DataObjectDoesNotExist)
+from exception import CAT_NO_ROWS_FOUND
 from results import ResultSet
 from models import (Collection, DataObject, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
-from collection import iRODSCollection, CollectionManager
-from data_object import iRODSDataObject, DataObjectManager
-from meta import iRODSMeta, MetadataManager
+from collection import CollectionManager
+from data_object import DataObjectManager
+from meta import MetadataManager
 from api_number import api_number
 from pool import Pool
 from account import iRODSAccount
