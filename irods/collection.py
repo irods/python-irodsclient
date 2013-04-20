@@ -59,11 +59,11 @@ class CollectionManager(ResourceManager):
             KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body, 
-            int_info=api_number['COLL_CREATE_AN'])
+            int_info=api_number['COLL_CREATE201_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
-        return self.get_collection(path)
+        return self.get(path)
 
     def delete(self, path):
         pass

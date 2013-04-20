@@ -55,6 +55,13 @@ Working with collections
 <iRODSDataObject /tempZone/home/rods/file.txt>
 <iRODSDataObject /tempZone/home/rods/file2.txt>
 ```
+
+Create a new collection:
+```python
+>>> coll = sess.collections.create("/tempZone/home/rods/testdir")
+>>> coll.id
+45799
+```
     
 Working with data objects (files)
 ---------------------------------
