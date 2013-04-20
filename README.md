@@ -131,6 +131,7 @@ Performing general queries
 >>> sess = iRODSSession(host='localhost', port=1247, user='rods', password='rods', zone='tempZone')
 >>> results = sess.query(DataObject.id, DataObject.name, DataObject.size, \
 User.id, User.name, Collection.name).all()
+>>> print results
 +---------+-----------+-----------+---------------+--------------------------------+-----------+
 | USER_ID | USER_NAME | D_DATA_ID | DATA_NAME     | COLL_NAME                      | DATA_SIZE |
 +---------+-----------+-----------+---------------+--------------------------------+-----------+
