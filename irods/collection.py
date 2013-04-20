@@ -65,8 +65,22 @@ class CollectionManager(ResourceManager):
             response = conn.recv()
         return self.get(path)
 
-    def delete(self, path):
-        pass
+    def delete(self, path, recurse=True, force=False, additional_flags={}):
+        options = {}
+        if recurse:
+            options['recursiveOpr'] = ''
+        if force:
+            options['forceFlag'] = ''
+        options = dict(options.items() + additional_flags.items())
+        message_body = CollectionRequest(
+            collName=path,
+            KeyValPair_PI=StringStringMap(options)
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['RM_COLL_OLD201_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
 
     def move(self, path):
         pass

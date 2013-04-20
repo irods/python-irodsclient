@@ -10,9 +10,9 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Query the collections and data objects within a collection
 - [x] Support read, write, and seek operations for files
 - [x] Delete data objects
+- [X] Create collections
+- [X] Delete collections
 - [ ] Rename data objects
-- [ ] Create collections
-- [ ] Delete collections
 - [ ] Rename collections
 - [X] Query metadata for collections and data objects
 - [X] Add, edit, remove metadata
