@@ -1,4 +1,5 @@
 import logging
+from prettytable import PrettyTable
 from models import ModelBase
 
 class ResultSet(object):
@@ -10,11 +11,11 @@ class ResultSet(object):
         self.rows = [self._format_row(i) for i in range(self.length)]
 
     def __str__(self):
-        columns = [(col, max(len(str(ModelBase.columns[col.attriInx].icat_key)), max([len(str(x)) for x in col.value]))) for col in self.cols]
-        separator = "-+-".join(["-" * width for (_, width) in columns])
-        header = " | ".join([str(ModelBase.columns[col.attriInx].icat_key).ljust(width) for (col, width) in columns])
-        rows = "\n".join([" | ".join( [str(columns[j][0].value[i]).ljust(columns[j][1]) for j in range(len(columns)) ]) for i in range(self.length) ])
-        return "\n".join([separator, header, separator, rows, separator])
+        table = PrettyTable()
+        for col in self.cols:
+            table.add_column(ModelBase.columns[col.attriInx].icat_key, col.value)
+        table.align = 'l'
+        return table.get_string()
 
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]
