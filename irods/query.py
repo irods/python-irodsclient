@@ -15,6 +15,7 @@ class Query(object):
         self.columns = kwargs['columns'] if 'columns' in kwargs else {}
         self.criteria = kwargs['criteria'] if 'criteria' in kwargs else []
         self._limit = kwargs['limit'] if 'limit' in kwargs else -1
+        self._offset = kwargs['offset'] if 'offset' in kwargs else 0
 
         for arg in args:
             if isinstance(arg, type) and issubclass(arg, Model):
@@ -26,14 +27,18 @@ class Query(object):
                 raise TypeError("Arguments must be models or columns")
 
     def filter(self, *criteria):
-        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria + list(criteria))
+        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria + list(criteria), limit=self._limit, offset=self._offset)
         return new_q
 
     def order_by(*args):
         pass
 
     def limit(self, limit):
-        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria, limit=limit)
+        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria, limit=limit, offset=self._offset)
+        return new_q
+
+    def offset(self, offset):
+        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria, limit=self._limit, offset=offset)
         return new_q
 
     def _select_message(self):
@@ -62,7 +67,7 @@ class Query(object):
         args = {
             'maxRows': max_rows,
             'continueInx': 0,
-            'partialStartIndex': 0,
+            'partialStartIndex': self._offset,
             'options': 0,
             'KeyValPair_PI': self._kw_message(),
             'InxIvalPair_PI': self._select_message(),
