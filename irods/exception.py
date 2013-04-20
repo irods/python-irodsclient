@@ -13,6 +13,15 @@ class DataObjectDoesNotExist(PycommandsException):
 class CollectionDoesNotExist(PycommandsException):
     pass
 
+class QueryException(PycommandsException):
+    pass
+
+class NoResultFound(QueryException):
+    pass
+
+class MultipleResultsFound(QueryException):
+    pass
+
 class iRODSExceptionMeta(type):
     codes = {}
     def __init__(self, name, bases, attrs):

@@ -1,10 +1,6 @@
 import logging
 
-from message import iRODSMessage, GenQueryResponse, empty_gen_query_out
 from query import Query
-from exception import CAT_NO_ROWS_FOUND
-from results import ResultSet
-from api_number import api_number
 from pool import Pool
 from account import iRODSAccount
 from collection import CollectionManager
@@ -26,16 +22,3 @@ class iRODSSession(object):
 
     def query(self, *args):
         return Query(self, *args)
-
-    def execute_query(self, query):
-        message_body = query._message()
-        message = iRODSMessage('RODS_API_REQ', msg=message_body, int_info=702)
-        with self.pool.get_connection() as conn:
-            conn.send(message)
-            try:
-                result_message = conn.recv()
-                results = result_message.get_main_message(GenQueryResponse)
-                result_set = ResultSet(results)
-            except CAT_NO_ROWS_FOUND:
-                result_set = ResultSet(empty_gen_query_out(query.columns.keys())) 
-        return result_set

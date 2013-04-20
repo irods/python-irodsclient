@@ -123,15 +123,14 @@ class DataObjectManager(ResourceManager):
         except CollectionDoesNotExist:
             raise DataObjectDoesNotExist()
 
-        results = self.sess.query(DataObject)\
+        query = self.sess.query(DataObject)\
             .filter(DataObject.name == basename(path))\
-            .filter(DataObject.collection_id == parent.id)\
-            .all()
-        # reimplement with .one()
-        if results.length == 1:
-            return iRODSDataObject(self, parent, results[0])
-        else:
+            .filter(DataObject.collection_id == parent.id)
+        try:
+            result = query.one()
+        except NoResultFound:
             raise DataObjectDoesNotExist()
+        return iRODSDataObject(self, parent, result)
 
     def create(self, path):
         message_body = FileOpenRequest(
