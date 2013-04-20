@@ -1,4 +1,6 @@
 import logging
+from collections import OrderedDict
+
 from models import Model
 from column import Column, Keyword
 from message import (IntegerIntegerMap, IntegerStringMap, StringStringMap, 
@@ -29,7 +31,7 @@ class Query(object):
 
     def __init__(self, sess, *args, **kwargs):
         self.sess = sess
-        self.columns = {}
+        self.columns = OrderedDict()
         self.criteria = []
         self._limit = -1
         self._offset = 0
@@ -58,6 +60,7 @@ class Query(object):
 
     def order_by(self, column, order='asc'):
         new_q = self._clone()
+        del new_q.columns[column]
         if order == 'asc':
             new_q.columns[column] = query_number['ORDER_BY']
         elif order == 'desc':
@@ -77,7 +80,7 @@ class Query(object):
         return new_q
 
     def _select_message(self):
-        dct = dict([(column.icat_id, value) for (column, value) in self.columns.iteritems()])
+        dct = OrderedDict([(column.icat_id, value) for (column, value) in self.columns.iteritems()])
         return IntegerIntegerMap(dct)
 
     #todo store criterion for columns and criterion for keywords in seaparate lists
