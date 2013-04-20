@@ -124,4 +124,18 @@ Performing general queries
 >>> sess = iRODSSession(host='localhost', port=1247, user='rods', password='rods', zone='tempZone')
 >>> results = sess.query(DataObject.id, DataObject.name, DataObject.size, \
 User.id, User.name, Collection.name).all()
++---------+-----------+-----------+---------------+--------------------------------+-----------+
+| USER_ID | USER_NAME | D_DATA_ID | DATA_NAME     | COLL_NAME                      | DATA_SIZE |
++---------+-----------+-----------+---------------+--------------------------------+-----------+
+| 10007   | rods      | 10012     | runDoxygen.rb | /tempZone/home/rods            | 5890      |
+| 10007   | rods      | 10146     | test1         | /tempZone/home/rods            | 0         |
+| 10007   | rods      | 10147     | test2         | /tempZone/home/rods            | 0         |
+| 10007   | rods      | 10148     | test3         | /tempZone/home/rods            | 8         |
+| 10007   | rods      | 10153     | test5         | /tempZone/home/rods            | 0         |
+| 10007   | rods      | 10154     | test6         | /tempZone/home/rods            | 8         |
+| 10007   | rods      | 10049     | .gitignore    | /tempZone/home/rods/pycommands | 12        |
+| 10007   | rods      | 10054     | README.md     | /tempZone/home/rods/pycommands | 3795      |
+| 10007   | rods      | 10052     | coll_test.py  | /tempZone/home/rods/pycommands | 658       |
+| 10007   | rods      | 10014     | file_test.py  | /tempZone/home/rods/pycommands | 465       |
++---------+-----------+-----------+---------------+--------------------------------+-----------+
 ```
