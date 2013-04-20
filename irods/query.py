@@ -12,10 +12,10 @@ class Query(object):
 
     def __init__(self, sess, *args, **kwargs):
         self.sess = sess
-        self.columns = kwargs['columns'] if 'columns' in kwargs else {}
-        self.criteria = kwargs['criteria'] if 'criteria' in kwargs else []
-        self._limit = kwargs['limit'] if 'limit' in kwargs else -1
-        self._offset = kwargs['offset'] if 'offset' in kwargs else 0
+        self.columns = {}
+        self.criteria = []
+        self._limit = -1
+        self._offset = 0
 
         for arg in args:
             if isinstance(arg, type) and issubclass(arg, Model):
@@ -26,19 +26,30 @@ class Query(object):
             else:
                 raise TypeError("Arguments must be models or columns")
 
+    def _clone(self):
+        new_q = Query(self.sess)
+        new_q.columns = self.columns
+        new_q.criteria = self.criteria
+        new_q.limit = self._limit
+        new_q.offset = self._offset
+        return new_q
+
     def filter(self, *criteria):
-        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria + list(criteria), limit=self._limit, offset=self._offset)
+        new_q = self._clone()
+        new_q.criteria += list(criteria)
         return new_q
 
     def order_by(*args):
         pass
 
     def limit(self, limit):
-        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria, limit=limit, offset=self._offset)
+        new_q = self._clone()
+        new_q._limit = limit
         return new_q
 
     def offset(self, offset):
-        new_q = Query(self.sess, columns=self.columns, criteria=self.criteria, limit=self._limit, offset=offset)
+        new_q = self._clone()
+        new_q._offset = offset
         return new_q
 
     def _select_message(self):
