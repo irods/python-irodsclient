@@ -58,17 +58,24 @@ class iRODSMetaCollection(object):
             raise KeyError
         return values[0]
 
-    def add(self, meta):
+    def _get_meta(self, *args):
+        if not len(args):
+            raise ValueError("Must specify an iRODSMeta object or key, value, units)")
+        return args[0] if len(args) == 1 else iRODSMeta(*args)
+
+    def add(self, *args):
         """
         Add as iRODSMeta to a key
         """
+        meta = self._get_meta(*args)
         self._sess.add(self._model_cls, self._path, meta)
         self._reset_metadata()
 
-    def remove(self, meta):
+    def remove(self, *args):
         """
         Removes an iRODSMeta
         """
+        meta = self._get_meta(*args)
         self._sess.remove(self._model_cls, self._path, meta)
         self._reset_metadata()
     
