@@ -8,6 +8,23 @@ from api_number import api_number
 from exception import CAT_NO_ROWS_FOUND, MultipleResultsFound, NoResultFound
 from results import ResultSet
 
+query_number = {
+	'ORDER_BY': 0x400,
+	'ORDER_BY_DESC': 0x800,
+
+	'RETURN_TOTAL_ROW_COUNT': 0x20,
+	'NO_DISTINCT': 0x40,
+	'QUOTA_QUERY': 0x80,
+	'AUTO_CLOSE': 0x100,
+	'UPPER_CASE_WHERE': 0x200,
+
+	'SELECT_MIN': 2,
+	'SELECT_MAX': 3,
+	'SELECT_SUM': 4,
+	'SELECT_AVG': 5,
+	'SELECT_COUNT': 6,
+}
+
 class Query(object):
 
     def __init__(self, sess, *args, **kwargs):
@@ -39,8 +56,15 @@ class Query(object):
         new_q.criteria += list(criteria)
         return new_q
 
-    def order_by(*args):
-        pass
+    def order_by(self, column, order='asc'):
+        new_q = self._clone()
+        if order == 'asc':
+            new_q.columns[column] = query_number['ORDER_BY']
+        elif order == 'desc':
+            new_q.columns[column] = query_number['ORDER_BY_DESC']
+        else:
+            raise ValueError("Ordering must be 'asc' or 'desc'")
+        return new_q
 
     def limit(self, limit):
         new_q = self._clone()
