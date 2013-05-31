@@ -8,7 +8,7 @@ from resource_manager import ResourceManager
 from message import (iRODSMessage, FileReadRequest, FileWriteRequest, 
     FileSeekRequest, FileSeekResponse, FileOpenRequest, FileCloseRequest, 
     StringStringMap)
-from exception import DataObjectDoesNotExist, CollectionDoesNotExist
+from exception import DataObjectDoesNotExist, CollectionDoesNotExist, NoResultFound
 from api_number import api_number
 SEEK_SET = 0
 SEEK_CUR = 1
