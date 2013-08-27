@@ -3,9 +3,9 @@ import logging
 from query import Query
 from pool import Pool
 from account import iRODSAccount
-from collection import CollectionManager
-from data_object import DataObjectManager
-from meta import MetadataManager
+from resource_manager.collection_manager import CollectionManager
+from resource_manager.data_object_manager import DataObjectManager
+from resource_manager.metadata_manager import MetadataManager
 
 class iRODSSession(object):
     def __init__(self, *args, **kwargs):
