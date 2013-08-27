@@ -26,6 +26,7 @@ and checking last modified timestamps
 Installation
 ------------
 pycommands requires Python 2.7. Installation with pip is easy!
+
     pip install git+git://github.com/cjlarose/pycommands.git
 
 Establishing a connection
