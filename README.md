@@ -87,7 +87,7 @@ test1
 
 Reading and writing files
 -----------------------
-pycommands provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writiing files
+pycommands provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writing files
 ```python
 >>> obj = sess.data_objects.get("/tempZone/home/rods/test1")
 >>> with obj.open('r+') as f:

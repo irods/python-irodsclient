@@ -6,6 +6,6 @@ setup(
     author_email='cjlarose@iplantcollaborative.org',
     packages=['irods', 'irods.message'],
     install_requires=[
-        'prettytable==0.7.2'
+        'PrettyTable>=0.7,<1.0'
     ]
 )
