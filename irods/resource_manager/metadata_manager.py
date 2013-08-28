@@ -1,11 +1,12 @@
 import logging
 from os.path import dirname, basename
 
-from resource_manager import ResourceManager
-from message import MetadataRequest, iRODSMessage
-from api_number import api_number
-from models import (DataObject, Collection, Resource, User, DataObjectMeta, 
+from irods.resource_manager import ResourceManager
+from irods.message import MetadataRequest, iRODSMessage
+from irods.api_number import api_number
+from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
+from irods.meta import iRODSMeta
 
 class MetadataManager(ResourceManager):
     @staticmethod

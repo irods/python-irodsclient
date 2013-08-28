@@ -1,12 +1,14 @@
 from os.path import basename, dirname
 
-from models import DataObject
-from resource_manager import ResourceManager
-from message import (iRODSMessage, FileReadRequest, FileWriteRequest, 
+from irods.models import DataObject
+from irods.resource_manager import ResourceManager
+from irods.message import (iRODSMessage, FileReadRequest, FileWriteRequest, 
     FileSeekRequest, FileSeekResponse, FileOpenRequest, FileCloseRequest, 
     StringStringMap)
-from exception import DataObjectDoesNotExist, CollectionDoesNotExist, NoResultFound
-from api_number import api_number
+from irods.exception import (DataObjectDoesNotExist, CollectionDoesNotExist, 
+    NoResultFound)
+from irods.api_number import api_number
+from irods.data_object import iRODSDataObject
 
 SEEK_SET = 0
 SEEK_CUR = 1
