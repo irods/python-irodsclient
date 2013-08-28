@@ -1,14 +1,14 @@
 import logging
 from collections import OrderedDict
 
-from models import Model
-from column import Column, Keyword
-from message import (IntegerIntegerMap, IntegerStringMap, StringStringMap, 
+from irods.models import Model
+from irods.column import Column, Keyword
+from irods.message import (IntegerIntegerMap, IntegerStringMap, StringStringMap, 
     GenQueryRequest, GenQueryResponse, empty_gen_query_out,
     iRODSMessage)
-from api_number import api_number
-from exception import CAT_NO_ROWS_FOUND, MultipleResultsFound, NoResultFound
-from results import ResultSet
+from irods.api_number import api_number
+from irods.exception import CAT_NO_ROWS_FOUND, MultipleResultsFound, NoResultFound
+from irods.results import ResultSet
 
 query_number = {
 	'ORDER_BY': 0x400,

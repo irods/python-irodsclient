@@ -1,5 +1,6 @@
 import logging
-from column import Column, Integer, String, DateTime, Keyword
+
+from irods.column import Column, Integer, String, DateTime, Keyword
 
 class ModelBase(type):
     columns = {}

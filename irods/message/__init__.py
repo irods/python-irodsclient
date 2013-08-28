@@ -2,8 +2,11 @@ import struct
 import logging
 import socket
 import xml.etree.ElementTree as ET
-from message import Message
-from property import BinaryProperty, StringProperty, IntegerProperty, LongProperty, ArrayProperty, SubmessageProperty
+
+from irods.message.message import Message
+from irods.message.property import (BinaryProperty, StringProperty, 
+    IntegerProperty, LongProperty, ArrayProperty, 
+    SubmessageProperty)
 
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):

@@ -1,7 +1,8 @@
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
 from struct import unpack, pack
-from ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 import xml.etree.ElementTree as ET
+
+from irods.message.ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 
 class MessageMetaclass(OrderedMetaclass):
     def __init__(self, name, bases, attys):

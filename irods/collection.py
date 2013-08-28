@@ -1,8 +1,8 @@
 from os.path import basename
 
-from models import Collection, DataObject
-from data_object import iRODSDataObject
-from meta import iRODSMetaCollection
+from irods.models import Collection, DataObject
+from irods.data_object import iRODSDataObject
+from irods.meta import iRODSMetaCollection
 
 class iRODSCollection(object):
     def __init__(self, manager, result=None):

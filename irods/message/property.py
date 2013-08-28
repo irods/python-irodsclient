@@ -1,5 +1,6 @@
 from base64 import b64encode, b64decode
-from ordered import OrderedProperty, OrderedMetaclass, OrderedClass
+
+from irods.message.ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 
 class MessageProperty(OrderedProperty):
     def __get__(self, obj, cls):

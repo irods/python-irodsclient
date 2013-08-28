@@ -1,6 +1,7 @@
 import logging
 from prettytable import PrettyTable
-from models import ModelBase
+
+from irods.models import ModelBase
 
 class ResultSet(object):
     def __init__(self, raw):

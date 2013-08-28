@@ -1,8 +1,8 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
 
-from models import DataObject
-from meta import iRODSMetaCollection
-from exception import CAT_NO_ACCESS_PERMISSION
+from irods.models import DataObject
+from irods.meta import iRODSMetaCollection
+from irods.exception import CAT_NO_ACCESS_PERMISSION
 
 class iRODSDataObject(object):
     def __init__(self, manager, parent=None, result=None):

@@ -1,5 +1,6 @@
 import logging
-from connection import Connection
+
+from irods.connection import Connection
 
 class Pool(object):
     def __init__(self, account):

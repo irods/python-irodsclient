@@ -3,12 +3,13 @@ import logging
 import struct
 import hashlib
 import logging
-from message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge, 
+
+from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge, 
     FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse, 
     FileCloseRequest)
-from exception import get_exception_by_code
-from . import MAX_PASSWORD_LENGTH
-from api_number import api_number
+from irods.exception import get_exception_by_code
+from irods import MAX_PASSWORD_LENGTH
+from irods.api_number import api_number
 
 class Connection(object):
     def __init__(self, pool, account):
