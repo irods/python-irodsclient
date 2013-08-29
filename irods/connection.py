@@ -55,9 +55,10 @@ class Connection(object):
 
         self.socket = s
         if self.proxy_user:
-            main_message = StartupPack(self.proxy_user, self.proxy_zone)
+            proxy_user = (self.proxy_user, self.proxy_zone)
         else:
-            main_message = StartupPack(self.account.user, self.account.zone)
+            proxy_user = (self.account.user, self.account.zone)
+        main_message = StartupPack((self.account.user, self.account.zone), proxy_user)
 
         msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
         self.send(msg)
