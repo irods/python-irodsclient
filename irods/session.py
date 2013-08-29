@@ -16,9 +16,10 @@ class iRODSSession(object):
         self.data_objects = DataObjectManager(self)
         self.metadata = MetadataManager(self)
 
-    def configure(self, host=None, port=1247, user=None, zone=None, password=None):
+    def configure(self, host=None, port=1247, user=None, zone=None, 
+        password=None, proxy_user=None, proxy_zone=None):
         account = iRODSAccount(host, port, user, zone, password)
-        self.pool = Pool(account)
+        self.pool = Pool(account, proxy_user, proxy_zone)
 
     def query(self, *args):
         return Query(self, *args)

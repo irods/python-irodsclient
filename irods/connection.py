@@ -12,10 +12,12 @@ from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
 
 class Connection(object):
-    def __init__(self, pool, account):
+    def __init__(self, pool, account, proxy_user=None, proxy_zone=None):
         self.pool = pool
         self.socket = None
         self.account = account
+        self.proxy_user = proxy_user
+        self.proxy_zone = proxy_zone
         self._connect()
         self._login()
 
@@ -52,7 +54,11 @@ class Connection(object):
             raise Exception("Could not connect to specified host and port: %s:%s" % (self.account.host, self.account.post))
 
         self.socket = s
-        main_message = StartupPack(self.account.user, self.account.zone)
+        if self.proxy_user:
+            main_message = StartupPack(self.proxy_user, self.proxy_zone)
+        else:
+            main_message = StartupPack(self.account.user, self.account.zone)
+
         msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
         self.send(msg)
         version_msg = self.recv()
