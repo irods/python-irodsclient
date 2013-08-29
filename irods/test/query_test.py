@@ -1,11 +1,16 @@
 #! /usr/bin/env python2.6
+import os
+import sys
+if __name__ == '__main__':
+    sys.path.insert(0, os.path.abspath('../..'))
+
 from irods.session import iRODSSession
 from irods.query import Query
 from irods.models import User, Collection, Keywords
 import logging
 
 sess = iRODSSession(host='localhost', port=4444, \
-	user='rods', password='rods', zone='tempZone')
+                                          user='rods', password='rods', zone='tempZone')
 q1 = sess.query(User, Collection.name)
 q2 = q1.filter(User.name == 'cjlarose')
 q3 = q2.filter(Keywords.chksum == '12345')
