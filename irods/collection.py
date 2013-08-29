@@ -37,5 +37,22 @@ class iRODSCollection(object):
             for row in results
         ]
 
+    def walk(self, topdown=True):
+        """
+        Collection tree generator.
+        
+        For each subcollection in the directory tree, starting at the
+        collection, yield a 3-tuple
+        """
+
+        if topdown:
+            yield (self, self.subcollections, self.data_objects)
+        for subcollection in self.subcollections:
+            new_root = subcollection
+            for x in new_root.walk(topdown):
+                yield x
+        if not topdown:
+            yield (self, self.subcollections, self.data_objects)
+
     def __repr__(self):
         return "<iRODSCollection %d %s>" % (self.id, self.name)
