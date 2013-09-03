@@ -1,13 +1,18 @@
 #!/usr/bin/env python
+import os
+import sys
+if __name__ == '__main__':
+    sys.path.insert(0, os.path.abspath('../..'))
+
 import unittest
 from xml.etree import ElementTree as ET
 from base64 import b64encode, b64decode
-from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap, 
-    IntegerStringMap, StringStringMap, GenQueryRequest, 
+from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap,
+    IntegerStringMap, StringStringMap, GenQueryRequest,
     GenQueryResponseColumn, GenQueryResponse)
 
 class TestMessages(unittest.TestCase):
-    
+
     def test_startup_pack(self):
         sup = StartupPack()
         sup.irodsProt = 2

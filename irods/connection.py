@@ -2,10 +2,9 @@ import socket
 import logging
 import struct
 import hashlib
-import logging
 
-from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge, 
-    FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse, 
+from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
+    FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse,
     FileCloseRequest)
 from irods.exception import get_exception_by_code
 from irods import MAX_PASSWORD_LENGTH
