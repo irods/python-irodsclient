@@ -5,6 +5,7 @@ from irods.connection import Connection
 class Pool(object):
     def __init__(self, account):
         self.account = account
+
         self.active = set()
         self.idle = set()
         

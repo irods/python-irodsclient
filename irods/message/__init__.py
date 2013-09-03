@@ -66,13 +66,13 @@ class iRODSMessage(object):
 #define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt; str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; str option[NAME_LEN];"
 class StartupPack(Message):
     _name = 'StartupPack_PI'
-    def __init__(self, user=None, zone=None):
+    def __init__(self, proxy_user, client_user):
         super(StartupPack, self).__init__()
-        if user and zone:
+        if proxy_user and client_user:
             self.irodsProt = 1 
             self.connectCnt = 0
-            self.proxyUser = self.clientUser = user
-            self.proxyRcatZone = self.clientRcatZone = zone
+            self.proxyUser, self.proxyRcatZone = proxy_user
+            self.clientUser, self.clientRcatZone = client_user
             self.relVersion = "rods3.2"
             self.apiVersion = "d"
             self.option = ""

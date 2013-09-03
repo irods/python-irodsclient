@@ -51,7 +51,11 @@ class Connection(object):
             raise Exception("Could not connect to specified host and port: %s:%s" % (self.account.host, self.account.post))
 
         self.socket = s
-        main_message = StartupPack(self.account.user, self.account.zone)
+        main_message = StartupPack(
+            (self.account.proxy_user, self.account.proxy_zone), 
+            (self.account.client_user, self.account.client_zone)
+        )
+
         msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
         self.send(msg)
         version_msg = self.recv()
@@ -77,7 +81,7 @@ class Connection(object):
         encoded_pwd = m.digest()
 
         encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        pwd_msg = AuthResponse(response=encoded_pwd, username=self.account.user)
+        pwd_msg = AuthResponse(response=encoded_pwd, username=self.account.proxy_user)
         pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
 

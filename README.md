@@ -35,6 +35,15 @@ Establishing a connection
 >>> from irods.session import iRODSSession
 >>> sess = iRODSSession(host='localhost', port=1247, user='rods', password='rods', zone='tempZone')
 ```
+
+If you're an administrator acting on behalf of another user:
+```python
+>>> from irods.session import iRODSSession
+>>> sess = iRODSSession(host='localhost', port=1247, user='rods', password='rods', zone='tempZone', 
+           client_user='another_user', client_zone='another_zone')
+```
+
+If no `client_zone` is provided, the `zone` parameter is used in its place.
     
 Working with collections
 ------------------------
