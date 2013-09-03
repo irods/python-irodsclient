@@ -12,12 +12,10 @@ from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
 
 class Connection(object):
-    def __init__(self, pool, account, proxy_user=None, proxy_zone=None):
+    def __init__(self, pool, account):
         self.pool = pool
         self.socket = None
         self.account = account
-        self.proxy_user = proxy_user
-        self.proxy_zone = proxy_zone
         self._connect()
         self._login()
 
@@ -54,11 +52,10 @@ class Connection(object):
             raise Exception("Could not connect to specified host and port: %s:%s" % (self.account.host, self.account.post))
 
         self.socket = s
-        if self.proxy_user:
-            proxy_user = (self.proxy_user, self.proxy_zone)
-        else:
-            proxy_user = (self.account.user, self.account.zone)
-        main_message = StartupPack((self.account.user, self.account.zone), proxy_user)
+        main_message = StartupPack(
+            (self.account.proxy_user, self.account.proxy_zone), 
+            (self.account.client_user, self.account.client_zone)
+        )
 
         msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
         self.send(msg)
@@ -85,7 +82,7 @@ class Connection(object):
         encoded_pwd = m.digest()
 
         encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        pwd_msg = AuthResponse(response=encoded_pwd, username=self.account.user)
+        pwd_msg = AuthResponse(response=encoded_pwd, username=self.account.proxy_user)
         pwd_request = iRODSMessage(type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
 

@@ -3,14 +3,8 @@ import logging
 from irods.connection import Connection
 
 class Pool(object):
-    def __init__(self, account, proxy_user=None, proxy_zone=None):
+    def __init__(self, account):
         self.account = account
-        self.proxy_user = proxy_user
-
-        if proxy_user:
-            self.proxy_zone = proxy_zone if proxy_zone else account.zone
-        else:
-            self.proxy_zone = None
 
         self.active = set()
         self.idle = set()
@@ -19,7 +13,7 @@ class Pool(object):
         try:
             conn = self.idle.pop()
         except KeyError:
-            conn = Connection(self, self.account, self.proxy_user, self.proxy_zone)
+            conn = Connection(self, self.account)
         self.active.add(conn)
         logging.debug('num active: %d' % len(self.active))
         return conn
