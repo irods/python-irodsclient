@@ -36,6 +36,9 @@ class iRODSDataObject(object):
         conn, desc = self.manager.open(self.path, flag)
         return iRODSDataObjectFile(conn, desc)
 
+    def unlink(self):
+        self.manager.unlink(self.path)
+
 class iRODSDataObjectFile(object):
     def __init__(self, conn, descriptor):
         self.conn = conn
