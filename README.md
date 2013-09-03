@@ -21,6 +21,9 @@ This project should be considered pre-alpha. Here's what works:
 - [ ] Implement gen query result sets as lazy queries
 - [X] Return empty result sets when CAT_NO_ROWS_FOUND is raised
 - [ ] Manage permissions
+- [ ] Manage users and groups
+- [ ] Manage zones
+- [ ] Manage resources
 
 Installation
 ------------
