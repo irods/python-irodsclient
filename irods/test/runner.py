@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-from unittest import TestLoader, TextTestRunner, TestSuite
+
 import sys
 import os
+from unittest import TestLoader, TextTestRunner, TestSuite
+
 
 """
 NOTE: "If a test package name (directory with __init__.py) matches the pattern
