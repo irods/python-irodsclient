@@ -15,6 +15,15 @@ You may also run the tests from within the irods/test/ directory:
 python message_test.py
 ```
 
+Run All Tests at Once
+---------------------
+```
+python runner.py
+```
+
+This imports all tests in the `test` directory and runs them. It will not die upon any errors.
+
+
 Test Dependencies
 -----------------
 
