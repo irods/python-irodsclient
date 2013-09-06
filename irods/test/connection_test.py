@@ -27,6 +27,12 @@ class TestConnections(unittest.TestCase):
         coll = self.sess.get_collection('/tempZone/home/rods')
         self.assertTrue(coll, "Connection failed.")
 
+    @unittest.skip("unimplemented")
+    def test_failed_connection(self):
+        """ Test the exception raised by a failed connection """
+        #self.assertRaises()  How to fuddle the config.* to ensure setUp()
+        #                     fails in connecting?
+        pass
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

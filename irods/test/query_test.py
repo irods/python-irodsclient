@@ -40,6 +40,25 @@ class TestQuery(unittest.TestCase):
 
         self.sess.query(Collection.id, Collection.name).all()
 
+        """
+        cut-n-pasted from collection_test...
+        """
+        from irods.models import Collection, User, DataObject
+
+        #q1 = sess.query(Collection.id).filter(Collection.name == "'/tempZone/home/rods'")
+        #q1.all()
+
+        #f = open('collquery', 'w')
+        #f.write(q1._message().pack())
+
+        #result = sess.query(Collection.id, Collection.owner_name, User.id, User.name)\
+        #    .filter(Collection.owner_name == "'rods'")\
+        #    .all()
+
+        result = self.sess.query(DataObject.id, DataObject.collection_id, DataObject.name, User.name, Collection.name).all()
+
+        print str(result)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

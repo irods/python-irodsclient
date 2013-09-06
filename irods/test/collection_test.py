@@ -5,6 +5,7 @@ import unittest
 
 
 class TestCollection(unittest.TestCase):
+    test_coll_path = "/tempZone/home/rods/test_dir"
 
     def setUp(self):
         from irods.session import iRODSSession
@@ -16,23 +17,39 @@ class TestCollection(unittest.TestCase):
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
 
-    def test_collection(self):
-        from irods.models import Collection, User, DataObject
+        self.coll = self.sess.create_collection(self.test_coll_path)
 
-        #q1 = sess.query(Collection.id).filter(Collection.name == "'/tempZone/home/rods'")
-        #q1.all()
+    def tearDown(self):
+        """ Delete the test collection after each test """
+        self.coll.remove()
 
-        #f = open('collquery', 'w')
-        #f.write(q1._message().pack())
+    def test_get_collection(self):
+        #path = "/tempZone/home/rods"
+        coll = self.sess.get_collection(self.test_coll_path)
+        self.assertEquals(self.test_coll_path, coll.path)
 
-        #result = sess.query(Collection.id, Collection.owner_name, User.id, User.name)\
-        #    .filter(Collection.owner_name == "'rods'")\
-        #    .all()
+    #def test_new_collection(self):
+    #    self.assertEquals(self.coll.name, 'test_dir')
 
-        result = self.sess.query(DataObject.id, DataObject.collection_id, DataObject.name, User.name, Collection.name).all()
+    def test_append_to_collection(self):
+        """ Append a new file to the collection"""
+        pass
 
-        print str(result)
+    def test_remove_from_collection(self):
+        """ Delete a file from a collection """
+        pass
 
+    def test_update_in_collection(self):
+        """ Modify a file in a collection """
+        pass
+
+    def test_move_collection(self):
+        new_path = "/tempZone/home/rods/test_dir_moved"
+        self.coll.move(new_path)
+        self.assertEquals(new_path, self.coll.path)
+
+    #def test_delete_collection(self):
+    #    pass
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
