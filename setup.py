@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(
     name='pycommands',
-    version='0.0',
+    version='0.1',
     author='Chris LaRose',
     author_email='cjlarose@iplantcollaborative.org',
     packages=['irods', 'irods.message', 'irods.resource_manager'],
