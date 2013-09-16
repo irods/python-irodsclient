@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 import os
 import sys
+
+# this does not get called when imported from  runner.py
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath('../..'))
 
 import unittest
 from xml.etree import ElementTree as ET
-from base64 import b64encode, b64decode
+#from base64 import b64encode, b64decode
 from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap,
     IntegerStringMap, StringStringMap, GenQueryRequest,
     GenQueryResponseColumn, GenQueryResponse)
 
-class TestMessages(unittest.TestCase):
 
+class TestMessages(unittest.TestCase):
     def test_startup_pack(self):
         sup = StartupPack()
         sup.irodsProt = 2
@@ -68,8 +70,8 @@ class TestMessages(unittest.TestCase):
     def test_inx_ival_pair(self):
         iip = IntegerIntegerMap()
         iip.iiLen = 2
-        iip.inx = [4,5]
-        iip.ivalue = [1,2]
+        iip.inx = [4, 5]
+        iip.ivalue = [1, 2]
         expected = "<InxIvalPair_PI>\
 <iiLen>2</iiLen>\
 <inx>4</inx>\
@@ -82,8 +84,8 @@ class TestMessages(unittest.TestCase):
         iip2 = IntegerIntegerMap()
         iip2.unpack(ET.fromstring(expected))
         self.assertEqual(iip2.iiLen, 2)
-        self.assertEqual(iip2.inx, [4,5])
-        self.assertEqual(iip2.ivalue, [1,2])
+        self.assertEqual(iip2.inx, [4, 5])
+        self.assertEqual(iip2.ivalue, [1, 2])
 
     def test_key_val_pair(self):
         kvp = StringStringMap()
@@ -119,12 +121,12 @@ class TestMessages(unittest.TestCase):
 
         iip = IntegerIntegerMap()
         iip.iiLen = 2
-        iip.inx = [4,5]
-        iip.ivalue = [1,2]
+        iip.inx = [4, 5]
+        iip.ivalue = [1, 2]
 
         ivp = IntegerStringMap()
         ivp.isLen = 2
-        ivp.inx = [1,2]
+        ivp.inx = [1, 2]
         ivp.svalue = ['five', 'six']
 
         gq.KeyValPair_PI = kvp
@@ -146,12 +148,12 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(gq2.KeyValPair_PI.svalue, ["three", "four"])
 
         self.assertEqual(gq2.InxIvalPair_PI.iiLen, 2)
-        self.assertEqual(gq2.InxIvalPair_PI.inx, [4,5])
-        self.assertEqual(gq2.InxIvalPair_PI.ivalue, [1,2])
+        self.assertEqual(gq2.InxIvalPair_PI.inx, [4, 5])
+        self.assertEqual(gq2.InxIvalPair_PI.ivalue, [1, 2])
 
         self.assertEqual(gq2.InxValPair_PI.isLen, 2)
-        self.assertEqual(gq2.InxValPair_PI.inx, [1,2])
-        self.assertEqual(gq2.InxValPair_PI.svalue, ["five","six"])
+        self.assertEqual(gq2.InxValPair_PI.inx, [1, 2])
+        self.assertEqual(gq2.InxValPair_PI.svalue, ["five", "six"])
 
         self.assertEqual(gq2.pack(), expected)
 

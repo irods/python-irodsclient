@@ -20,14 +20,16 @@ This project should be considered pre-alpha. Here's what works:
 - [ ] Connection pool management
 - [ ] Implement gen query result sets as lazy queries
 - [X] Return empty result sets when CAT_NO_ROWS_FOUND is raised
-- [ ] Optimize querying subcollections and data_objects by maintaining a cache 
-and checking last modified timestamps
+- [ ] Manage permissions
+- [ ] Manage users and groups
+- [ ] Manage zones
+- [ ] Manage resources
 
 Installation
 ------------
 pycommands requires Python 2.7. Installation with pip is easy!
 
-    pip install git+git://github.com/cjlarose/pycommands.git
+    pip install git+git://github.com/iPlantCollaborativeOpenSource/pycommands.git
 
 Establishing a connection
 -------------------------

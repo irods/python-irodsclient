@@ -37,6 +37,9 @@ class iRODSCollection(object):
             for row in results
         ]
 
+    def remove(self, recurse=True, force=False, additional_flags={}):
+        self.manager.remove(self.path, recurse, force, additional_flags)
+
     def walk(self, topdown=True):
         """
         Collection tree generator.
