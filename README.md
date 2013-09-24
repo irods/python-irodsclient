@@ -1,4 +1,4 @@
-pycommands
+python-irodsclient
 ============
 
 [iRODS](https://www.irods.org) is an open-source distributed filesystem manager.  This a client API implemented in python.
