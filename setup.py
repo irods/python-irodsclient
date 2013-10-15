@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(
-    name='pycommands',
+    name='python-irodsclient',
     version='0.1',
     author='Chris LaRose',
     author_email='cjlarose@iplantcollaborative.org',
