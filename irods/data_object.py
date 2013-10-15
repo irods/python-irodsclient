@@ -44,6 +44,7 @@ class iRODSDataObjectFile(object):
         self.conn = conn
         self.desc = descriptor
         self.position = 0
+        self.buffer = ""
 
     def tell(self):
         return self.position
@@ -97,11 +98,37 @@ class iRODSDataObjectFile(object):
                 else:
                     chars.append(char)
 
+    # This implementation is very naive. Refactor with io module
+    # An empty buffer indicates we haven't filled the buffer, whereas a null 
+    # buffer indicates that we've reached EOF
     def readline(self):
-        pass
+
+        if self.buffer == None:
+            return ""
+
+        while True:
+            nl = self.buffer.find('\n')
+            if nl == -1:
+                contents = self.read(4096)
+                if contents:
+                    self.buffer += contents
+                else: #EOF
+                    line = self.buffer
+                    self.buffer = None
+                    return line
+            else:
+                line = self.buffer[:(nl+1)]
+                self.buffer = self.buffer[(nl+1):]
+                return line
 
     def readlines(self):
-        pass
+        lines = []
+        while True:
+            line = self.readline()
+            if not line:
+                break
+            lines.append(line)
+        return lines
 
     def __enter__(self):
         return self
