@@ -122,13 +122,11 @@ class iRODSDataObjectFile(object):
                 return line
 
     def readlines(self):
-        lines = []
         while True:
             line = self.readline()
             if not line:
                 break
-            lines.append(line)
-        return lines
+            yield line
 
     def __enter__(self):
         return self
