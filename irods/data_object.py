@@ -103,7 +103,7 @@ class iRODSDataObjectFile(object):
     # buffer indicates that we've reached EOF
     def readline(self):
 
-        if self.buffer == None:
+        if self.buffer is None:
             return ""
 
         while True:
