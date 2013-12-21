@@ -53,6 +53,7 @@ class iRODSDataObjectFileRaw(RawIOBase):
             pass 
         finally:
             self.conn.release()
+        super(iRODSDataObjectFileRaw, self).close()
         return None
 
     def seek(self, offset, whence=0):
