@@ -18,7 +18,7 @@ class iRODSSession(object):
 
     def configure(self, host=None, port=1247, user=None, zone=None, 
         password=None, client_user=None, client_zone=None):
-        account = iRODSAccount(host, port, user, zone, password, client_user, 
+        account = iRODSAccount(host, int(port), user, zone, password, client_user, 
             client_zone)
         self.pool = Pool(account)
 
