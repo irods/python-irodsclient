@@ -1,4 +1,5 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
+from io import RawIOBase, BufferedRandom
 
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
@@ -33,21 +34,17 @@ class iRODSDataObject(object):
             'a': (O_WRONLY, True, True),
             'a+': (O_RDWR, True, True),
         }[mode]
+        # TODO: Actually use create_if_not_exists and seek_to_end
         conn, desc = self.manager.open(self.path, flag)
-        return iRODSDataObjectFile(conn, desc)
+        return BufferedRandom(iRODSDataObjectFileRaw(conn, desc))
 
     def unlink(self):
         self.manager.unlink(self.path)
 
-class iRODSDataObjectFile(object):
+class iRODSDataObjectFileRaw(RawIOBase):
     def __init__(self, conn, descriptor):
         self.conn = conn
         self.desc = descriptor
-        self.position = 0
-        self.buffer = ""
-
-    def tell(self):
-        return self.position
 
     def close(self):
         try:
@@ -56,80 +53,28 @@ class iRODSDataObjectFile(object):
             pass 
         finally:
             self.conn.release()
-        return None
-
-    def read(self, size=None):
-        if not size:
-            return "".join(self.read_gen()())
-        contents = self.conn.read_file(self.desc, size)
-        if contents:
-            self.position += len(contents)
-        return contents
-
-    def read_gen(self, chunk_size=4096, close=False):
-        def make_gen():
-            while True:
-                contents = self.read(chunk_size) 
-                if not contents:
-                    break
-                yield contents
-            if close:
-                self.close()
-        return make_gen
-
-    def write(self, string):
-        written = self.conn.write_file(self.desc, string)
-        self.position += written
+        super(iRODSDataObjectFileRaw, self).close()
         return None
 
     def seek(self, offset, whence=0):
-        pos = self.conn.seek_file(self.desc, offset, whence)
-        self.position = pos
-        pass
+        return self.conn.seek_file(self.desc, offset, whence)
 
-    def __iter__(self):
-        reader = self.read_gen()
-        chars = []
-        for chunk in reader():
-            for char in chunk:
-                if char == '\n':
-                    yield "".join(chars)
-                    chars = []
-                else:
-                    chars.append(char)
+    def readinto(self, b):
+        contents = self.conn.read_file(self.desc, len(b))
+        if contents is None:
+            return 0
+        for i, c in enumerate(contents):
+            b[i] = c
+        return len(contents)
 
-    # This implementation is very naive. Refactor with io module
-    # An empty buffer indicates we haven't filled the buffer, whereas a null 
-    # buffer indicates that we've reached EOF
-    def readline(self):
+    def write(self, b):
+        return self.conn.write_file(self.desc, str(b.tobytes()))
 
-        if self.buffer is None:
-            return ""
+    def readable(self):
+        return True
 
-        while True:
-            nl = self.buffer.find('\n')
-            if nl == -1:
-                contents = self.read(4096)
-                if contents:
-                    self.buffer += contents
-                else: #EOF
-                    line = self.buffer
-                    self.buffer = None
-                    return line
-            else:
-                line = self.buffer[:(nl+1)]
-                self.buffer = self.buffer[(nl+1):]
-                return line
+    def writable(self):
+        return True
 
-    def readlines(self):
-        while True:
-            line = self.readline()
-            if not line:
-                break
-            yield line
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
+    def seekable(self):
+        return True
