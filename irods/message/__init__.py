@@ -8,6 +8,8 @@ from irods.message.property import (BinaryProperty, StringProperty,
     IntegerProperty, LongProperty, ArrayProperty, 
     SubmessageProperty)
 
+logger = logging.getLogger(__name__)
+
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
         self.type = type
@@ -19,10 +21,8 @@ class iRODSMessage(object):
     @staticmethod
     def recv(sock):
         rsp_header_size = sock.recv(4, socket.MSG_WAITALL)
-        logging.debug(rsp_header_size)
         rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
         rsp_header = sock.recv(rsp_header_size, socket.MSG_WAITALL)
-        logging.debug(rsp_header)
             
         xml_root = ET.fromstring(rsp_header)
         type = xml_root.find('type').text
@@ -36,7 +36,7 @@ class iRODSMessage(object):
         bs = sock.recv(bs_len, socket.MSG_WAITALL) if bs_len != 0 else None
     
         #if message:
-            #logging.debug(message)
+            #logger.debug(message)
 
         return iRODSMessage(type, message, error, bs, int_info)
 
@@ -58,8 +58,7 @@ class iRODSMessage(object):
 
     def get_main_message(self, cls):
         msg = cls()
-        logging.debug(self.msg)
-        logging.debug(len(self.msg))
+        logger.debug(self.msg)
         msg.unpack(ET.fromstring(self.msg))
         return msg
 

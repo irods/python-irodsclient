@@ -1,5 +1,3 @@
-import logging
-
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount

@@ -1,4 +1,3 @@
-import logging
 from collections import OrderedDict
 
 from irods.models import Model

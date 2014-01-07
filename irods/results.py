@@ -1,4 +1,3 @@
-import logging
 from prettytable import PrettyTable
 
 from irods.models import ModelBase

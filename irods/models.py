@@ -1,19 +1,13 @@
-import logging
-
 from irods.column import Column, Integer, String, DateTime, Keyword
 
 class ModelBase(type):
     columns = {}
     def __new__(cls, name, bases, attr):
-        #logging.debug(name)
-        #logging.debug(attr.iteritems())
         columns = [y for (x,y) in attr.iteritems() if isinstance(y, Column)]
         for col in columns:
             ModelBase.columns[col.icat_id] = col
-        #logging.debug(columns)
         attr['_columns'] = columns
         #attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
-        #logging.debug(attr['_icat_column_names'])
         return type.__new__(cls, name, bases, attr)
 
 class Model(object):

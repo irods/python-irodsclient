@@ -8,6 +8,8 @@ from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta
     CollectionMeta, ResourceMeta, UserMeta)
 from irods.meta import iRODSMeta
 
+logger = logging.getLogger(__name__)
+
 class MetadataManager(ResourceManager):
     @staticmethod
     def _model_class_to_resource_type(model_cls):
@@ -59,7 +61,7 @@ class MetadataManager(ResourceManager):
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
-        logging.debug(response.int_info)
+        logger.debug(response.int_info)
 
     def remove(self, model_cls, path, meta):
         resource_type = self._model_class_to_resource_type(model_cls)
@@ -76,7 +78,7 @@ class MetadataManager(ResourceManager):
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
-        logging.debug(response.int_info)
+        logger.debug(response.int_info)
 
     def copy(self, src_model_cls, dest_model_cls, src, dest):
         src_resource_type = self._model_class_to_resource_type(src_model_cls)
@@ -94,4 +96,4 @@ class MetadataManager(ResourceManager):
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
-        logging.debug(response.int_info)
+        logger.debug(response.int_info)

@@ -10,6 +10,8 @@ from irods.exception import get_exception_by_code
 from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
 
+logger = logging.getLogger(__name__)
+
 class Connection(object):
     def __init__(self, pool, account):
         self.pool = pool
@@ -24,7 +26,7 @@ class Connection(object):
 
     def send(self, message):
         str = message.pack()
-        logging.debug(str)
+        logger.debug(str)
         return self.socket.sendall(str)
 
     def recv(self):
@@ -72,7 +74,7 @@ class Connection(object):
 
         # challenge
         challenge_msg = self.recv()
-        logging.debug(challenge_msg.msg)
+        logger.debug(challenge_msg.msg)
         challenge = challenge_msg.get_main_message(AuthChallenge).challenge
         padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, self.account.password)
         m = hashlib.md5()
@@ -95,7 +97,7 @@ class Connection(object):
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_READ201_AN'])
 
-        logging.debug(desc)
+        logger.debug(desc)
         self.send(message)
         response = self.recv()
         return response.bs
