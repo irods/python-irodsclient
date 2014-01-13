@@ -50,7 +50,7 @@ class Connection(object):
         try:
             s.connect((self.account.host, self.account.port))
         except socket.error:
-            raise Exception("Could not connect to specified host and port: %s:%s" % (self.account.host, self.account.post))
+            raise Exception("Could not connect to specified host and port: %s:%s" % (self.account.host, self.account.port))
 
         self.socket = s
         main_message = StartupPack(
