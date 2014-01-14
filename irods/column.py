@@ -35,6 +35,14 @@ class Column(QueryKey):
         self.icat_id = icat_id
         super(Column, self).__init__(type)
 
+    def __repr__(self):
+        return "<%s.%s %d %s>" % (
+            self.__class__.__module__, 
+            self.__class__.__name__, 
+            self.icat_id, 
+            self.icat_key
+        )
+
 class Keyword(QueryKey):
     def __init__(self, type, icat_key):
         self.icat_key = icat_key
