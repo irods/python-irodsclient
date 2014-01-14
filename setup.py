@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(
     name='python-irodsclient',
-    version='0.1',
+    version='0.2',
     author='Chris LaRose',
     author_email='cjlarose@iplantcollaborative.org',
     packages=['irods', 'irods.message', 'irods.resource_manager'],
