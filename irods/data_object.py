@@ -5,6 +5,21 @@ from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 from irods.exception import CAT_NO_ACCESS_PERMISSION
 
+class iRODSReplica(object):
+    def __init__(self, status, resource_group_name, resource_name, path):
+        self.status = status
+        self.resource_group_name = resource_group_name
+        self.resource_name = resource_name
+        self.path = path
+
+    def __repr__(self):
+        return "<%s.%s %s %s>" % (
+            self.__class__.__module__,
+            self.__class__.__name__,
+            self.resource_group_name,
+            self.resource_name
+        )
+
 class iRODSDataObject(object):
     def __init__(self, manager, parent=None, results=None):
         self.manager = manager
@@ -15,7 +30,7 @@ class iRODSDataObject(object):
                 setattr(self, attr, results[0][getattr(DataObject, attr)])
             self.path = self.collection.path + '/' + self.name
             replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
-            self.replicas = [(
+            self.replicas = [iRODSReplica(
                 r[DataObject.replica_status],
                 r[DataObject.resource_group_name],
                 r[DataObject.resource_name],
