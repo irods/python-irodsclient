@@ -6,14 +6,21 @@ from irods.meta import iRODSMetaCollection
 from irods.exception import CAT_NO_ACCESS_PERMISSION
 
 class iRODSDataObject(object):
-    def __init__(self, manager, parent=None, result=None):
+    def __init__(self, manager, parent=None, results=None):
         self.manager = manager
-        if parent and result:
+        if parent and results:
             self.collection = parent
             for attr in ['id', 'name', 'size', 'checksum', 'create_time', 
                 'modify_time']:
-                setattr(self, attr, result[getattr(DataObject, attr)])
+                setattr(self, attr, results[0][getattr(DataObject, attr)])
             self.path = self.collection.path + '/' + self.name
+            replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
+            self.replicas = [(
+                r[DataObject.replica_status],
+                r[DataObject.resource_group_name],
+                r[DataObject.resource_name],
+                r[DataObject.path]
+            ) for r in replicas]
         self._meta = None
 
     def __repr__(self):

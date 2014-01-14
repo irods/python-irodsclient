@@ -24,11 +24,10 @@ class DataObjectManager(ResourceManager):
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == basename(path))\
             .filter(DataObject.collection_id == parent.id)
-        try:
-            result = query.one()
-        except NoResultFound:
+        results = query.all()
+        if len(results) < 0:
             raise DataObjectDoesNotExist()
-        return iRODSDataObject(self, parent, result)
+        return iRODSDataObject(self, parent, results)
 
     def create(self, path):
         message_body = FileOpenRequest(
