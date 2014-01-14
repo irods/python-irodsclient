@@ -1,3 +1,5 @@
+import itertools
+import operator
 from os.path import basename
 
 from irods.models import Collection, DataObject
@@ -32,9 +34,10 @@ class iRODSCollection(object):
         query = self.manager.sess.query(DataObject)\
             .filter(DataObject.collection_id == self.id)
         results = query.all()
+        grouped = itertools.groupby(results, operator.itemgetter(DataObject.id))
         return [
-            iRODSDataObject(self.manager.sess.data_objects, self, row) 
-            for row in results
+            iRODSDataObject(self.manager.sess.data_objects, self, list(replicas))
+            for _, replicas in grouped
         ]
 
     def remove(self, recurse=True, force=False, additional_flags={}):
