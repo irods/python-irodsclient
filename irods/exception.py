@@ -4,6 +4,9 @@
 class PycommandsException(Exception):
     pass
 
+class NetworkException(PycommandsException):
+    pass
+
 class DoesNotExist(PycommandsException):
     pass
 

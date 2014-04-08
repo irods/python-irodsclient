@@ -22,8 +22,10 @@ class Pool(object):
         logger.debug('num active: %d' % len(self.active))
         return conn
 
-    def release_connection(self, conn):
+    def release_connection(self, conn, destroy=False):
         with self._lock:
-            self.active.remove(conn)
-            self.idle.add(conn)
+            if conn in self.active:
+                self.active.remove(conn)
+                if not destroy:
+                    self.idle.add(conn)
         logger.debug('num idle: %d' % len(self.idle))

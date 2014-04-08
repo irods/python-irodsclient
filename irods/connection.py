@@ -6,7 +6,7 @@ import hashlib
 from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
     FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse,
     FileCloseRequest)
-from irods.exception import get_exception_by_code
+from irods.exception import get_exception_by_code, NetworkException
 from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
 
@@ -27,7 +27,12 @@ class Connection(object):
     def send(self, message):
         str = message.pack()
         logger.debug(str)
-        return self.socket.sendall(str)
+        try:
+            self.socket.sendall(str)
+        except:
+            logger.error("Unable to send message. Connection to remote host may have closed. Releasing connection from pool.")
+            self.release(True)
+            raise NetworkException("Unable to send message")
 
     def recv(self):
         msg = iRODSMessage.recv(self.socket)
@@ -41,8 +46,8 @@ class Connection(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.release()
 
-    def release(self):
-        self.pool.release_connection(self)
+    def release(self, destroy=False):
+        self.pool.release_connection(self, destroy)
 
     def _connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
