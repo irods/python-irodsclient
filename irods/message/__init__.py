@@ -233,8 +233,10 @@ class MetadataRequest(Message):
 
 #define CollInp_PI "str collName[MAX_NAME_LEN]; struct KeyValPair_PI;"
 class CollectionRequest(Message):
-    _name = 'CollInp_PI'
+    _name = 'CollInpNew_PI'
     collName = StringProperty()
+    flags = IntegerProperty()
+    oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 def empty_gen_query_out(cols):
