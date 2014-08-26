@@ -37,3 +37,8 @@ nosetests.xml
 Session.vim
 .netrwhist
 *~
+
+# virtualenv
+testenv
+
+

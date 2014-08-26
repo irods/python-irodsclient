@@ -13,6 +13,17 @@ class iRODSSession(object):
         self.collections = CollectionManager(self)
         self.data_objects = DataObjectManager(self)
         self.metadata = MetadataManager(self)
+        
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.cleanup()
+        
+    def cleanup(self):
+        for conn in self.pool.active | self.pool.idle:
+            conn.disconnect()
+            conn.release(True)
 
     def configure(self, host=None, port=1247, user=None, zone=None, 
         password=None, client_user=None, client_zone=None):

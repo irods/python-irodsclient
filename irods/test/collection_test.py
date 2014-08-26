@@ -17,7 +17,7 @@ class TestCollection(unittest.TestCase):
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
 
-        self.coll = self.sess.create_collection(self.test_coll_path)
+        self.coll = self.sess.collections.create(self.test_coll_path)
 
     def tearDown(self):
         """ Delete the test collection after each test """
@@ -25,7 +25,7 @@ class TestCollection(unittest.TestCase):
 
     def test_get_collection(self):
         #path = "/tempZone/home/rods"
-        coll = self.sess.get_collection(self.test_coll_path)
+        coll = self.sess.collections.get(self.test_coll_path)
         self.assertEquals(self.test_coll_path, coll.path)
 
     #def test_new_collection(self):
