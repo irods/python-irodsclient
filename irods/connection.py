@@ -5,7 +5,7 @@ import hashlib
 
 from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
     FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse,
-    FileCloseRequest)
+    FileCloseRequest, StringStringMap)
 from irods.exception import get_exception_by_code, NetworkException
 from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
@@ -135,10 +135,16 @@ class Connection(object):
 
     def close_file(self, desc):
         message_body = FileCloseRequest(
-            l1descInx=desc
+            l1descInx=desc, 
+            len=0, 
+            whence=0, 
+            oprType=0, 
+            offset=0, 
+            bytesWritten=0, 
+            KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['DATA_OBJ_CLOSE201_AN'])
+            int_info=api_number['DATA_OBJ_CLOSE_AN'])
 
         self.send(message)
         response = self.recv()

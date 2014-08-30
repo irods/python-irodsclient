@@ -205,11 +205,16 @@ class FileSeekResponse(Message):
     _name = 'fileLseekOut_PI'
     offset = LongProperty()
 
-#define dataObjCloseInp_PI "int l1descInx; double bytesWritten;"
+#define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
 class FileCloseRequest(Message):
-    _name = 'dataObjCloseInp_PI'
+    _name = 'OpenedDataObjInp_PI'
     l1descInx = IntegerProperty()
+    len = IntegerProperty()
+    whence = IntegerProperty()
+    oprType = IntegerProperty()
+    offset = LongProperty()
     bytesWritten = LongProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 #define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
 class MetadataRequest(Message):
