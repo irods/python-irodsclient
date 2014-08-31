@@ -4,8 +4,7 @@ import struct
 import hashlib
 
 from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
-    FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse,
-    FileCloseRequest, StringStringMap)
+    OpenedDataObjRequest, FileSeekResponse, StringStringMap)
 from irods.exception import get_exception_by_code, NetworkException
 from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
@@ -95,7 +94,7 @@ class Connection(object):
         auth_response = self.recv()
 
     def read_file(self, desc, size):
-        message_body = FileReadRequest(
+        message_body = OpenedDataObjRequest(
             l1descInx=desc, 
             len=size, 
             whence=0, 
@@ -113,7 +112,7 @@ class Connection(object):
         return response.bs
 
     def write_file(self, desc, string):
-        message_body = FileWriteRequest(
+        message_body = OpenedDataObjRequest(
             l1descInx=desc, 
             len=len(string), 
             whence=0, 
@@ -130,7 +129,7 @@ class Connection(object):
         return response.int_info
 
     def seek_file(self, desc, offset, whence):
-        message_body = FileSeekRequest(
+        message_body = OpenedDataObjRequest(
             l1descInx=desc, 
             len=0, 
             whence=whence, 
@@ -148,7 +147,7 @@ class Connection(object):
         return offset
 
     def close_file(self, desc):
-        message_body = FileCloseRequest(
+        message_body = OpenedDataObjRequest(
             l1descInx=desc, 
             len=0, 
             whence=0, 

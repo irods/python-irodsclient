@@ -182,7 +182,7 @@ class FileOpenRequest(Message):
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 #define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
-class FileReadRequest(Message):
+class OpenedDataObjRequest(Message):
     _name = 'OpenedDataObjInp_PI'
     l1descInx = IntegerProperty()
     len = IntegerProperty()
