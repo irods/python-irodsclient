@@ -9,7 +9,9 @@ class TestFiles(unittest.TestCase):
     """
     test_coll_path = '/tempZone/home/rods/test_dir'
     test_obj_name = 'test1'
-    test_content_str = 'blah'
+    content_str = 'blah'
+    write_str = '0123456789'
+    write_str1 = 'INTERRUPT'
     
     test_obj_path = test_coll_path + '/' + test_obj_name
 
@@ -29,7 +31,7 @@ class TestFiles(unittest.TestCase):
         # Create test object and write to it
         self.test_obj = self.sess.data_objects.create(self.test_obj_path)
         with self.test_obj.open('r+') as f:
-            f.write(self.test_content_str)
+            f.write(self.content_str)
 
         
     def tearDown(self):
@@ -44,7 +46,11 @@ class TestFiles(unittest.TestCase):
         obj = self.sess.data_objects.get(self.test_obj_path)
         f = obj.open('r+')
         f.seek(0, 0)  # what does this return?
-        str1 = f.read()
+        
+        # for lack of anything better...
+        assert (f.tell() == 0)
+        
+        #str1 = f.read()
         #self.assertTrue(expr, msg)
         f.close()
 
@@ -55,6 +61,10 @@ class TestFiles(unittest.TestCase):
         f = obj.open('r+')
         str1 = f.read(1024)
         #self.assertTrue(expr, msg)
+        
+        # check content of test file
+        assert(str1 == self.content_str)
+        
         f.close()
 
     def test_file_write(self):
@@ -62,9 +72,17 @@ class TestFiles(unittest.TestCase):
 
         obj = self.sess.data_objects.get(self.test_obj_path)
         f = obj.open('w+')
-        f.write("NEW STRING.py")
+        f.write(self.write_str)
         f.seek(-6, 2)
-        f.write("INTERRUPT")
+        f.write(self.write_str1)
+        
+        # reset stream position for reading
+        f.seek(0, 0)
+        
+        # check new content of file after our write
+        str1 = f.read(1024)
+        assert(str1 == (self.write_str[:-6] + self.write_str1))
+        
         #self.assertTrue(expr, msg)
         f.close()
 
