@@ -181,24 +181,38 @@ class FileOpenRequest(Message):
     oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
-#define dataObjReadInp_PI "int l1descInx; int len;"
+#define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
 class FileReadRequest(Message):
-    _name = 'dataObjReadInp_PI'
+    _name = 'OpenedDataObjInp_PI'
     l1descInx = IntegerProperty()
     len = IntegerProperty()
-
-#define dataObjWriteInp_PI "int dataObjInx; int len;"
-class FileWriteRequest(Message):
-    _name = 'dataObjWriteInp_PI'
-    dataObjInx = IntegerProperty()
-    len = IntegerProperty()
-
-#define fileLseekInp_PI "int fileInx; double offset; int whence"
-class FileSeekRequest(Message):
-    _name = 'fileLseekInp_PI'
-    fileInx = IntegerProperty()
-    offset = LongProperty()
     whence = IntegerProperty()
+    oprType = IntegerProperty()
+    offset = LongProperty()
+    bytesWritten = LongProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
+
+#define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
+class FileWriteRequest(Message):
+    _name = 'OpenedDataObjInp_PI'
+    l1descInx = IntegerProperty()
+    len = IntegerProperty()
+    whence = IntegerProperty()
+    oprType = IntegerProperty()
+    offset = LongProperty()
+    bytesWritten = LongProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
+
+#define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
+class FileSeekRequest(Message):
+    _name = 'OpenedDataObjInp_PI'
+    l1descInx = IntegerProperty()
+    len = IntegerProperty()
+    whence = IntegerProperty()
+    oprType = IntegerProperty()
+    offset = LongProperty()
+    bytesWritten = LongProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 #define fileLseekOut_PI "double offset;"
 class FileSeekResponse(Message):

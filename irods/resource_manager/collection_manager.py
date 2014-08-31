@@ -43,5 +43,4 @@ class CollectionManager(ResourceManager):
             conn.send(message)
             response = conn.recv()
 
-    def move(self, path):
-        pass
+

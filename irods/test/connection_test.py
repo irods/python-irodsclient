@@ -17,6 +17,11 @@ class TestConnections(unittest.TestCase):
                                  user=config.IRODS_USER_USERNAME,
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
+        
+    def tearDown(self):
+        '''Close connections
+        '''
+        self.sess.cleanup()
 
     def test_connection(self):
         """
@@ -24,7 +29,7 @@ class TestConnections(unittest.TestCase):
         There should be a better way to test this...
         Wouldn't the iRODSSession init establish the connection?
         """
-        coll = self.sess.get_collection('/tempZone/home/rods')
+        coll = self.sess.collections.get('/tempZone/home/rods')
         self.assertTrue(coll, "Connection failed.")
 
     @unittest.skip("unimplemented")

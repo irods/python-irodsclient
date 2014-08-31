@@ -21,7 +21,8 @@ class TestCollection(unittest.TestCase):
 
     def tearDown(self):
         """ Delete the test collection after each test """
-        self.coll.remove()
+        self.coll.remove(recurse=True, force=True)
+        self.sess.cleanup()
 
     def test_get_collection(self):
         #path = "/tempZone/home/rods"
@@ -43,6 +44,7 @@ class TestCollection(unittest.TestCase):
         """ Modify a file in a collection """
         pass
 
+    @unittest.skip('Renaming collections is not yet implemented')
     def test_move_collection(self):
         new_path = "/tempZone/home/rods/test_dir_moved"
         self.coll.move(new_path)
