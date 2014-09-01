@@ -17,7 +17,7 @@ class MetadataManager(ResourceManager):
             DataObject: 'd',
             Collection: 'c',
             Resource: 'r',
-            User: 'r',
+            User: 'u',
         }[model_cls]
 
     def get(self, model_cls, path):
