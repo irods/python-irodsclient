@@ -16,7 +16,7 @@ from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap,
 
 class TestMessages(unittest.TestCase):
     def test_startup_pack(self):
-        sup = StartupPack()
+        sup = StartupPack(('rods', 'tempZone'), ('rods', 'tempZone'))
         sup.irodsProt = 2
         sup.reconnFlag = 3
         sup.proxyUser = "rods"
@@ -30,6 +30,7 @@ class TestMessages(unittest.TestCase):
         expected = "<StartupPack_PI>\
 <irodsProt>2</irodsProt>\
 <reconnFlag>3</reconnFlag>\
+<connectCnt>0</connectCnt>\
 <proxyUser>rods</proxyUser>\
 <proxyRcatZone>tempZone</proxyRcatZone>\
 <clientUser>rods</clientUser>\
@@ -40,7 +41,7 @@ class TestMessages(unittest.TestCase):
 </StartupPack_PI>"
         self.assertEqual(xml_str, expected)
 
-        sup2 = StartupPack()
+        sup2 = StartupPack(('rods', 'tempZone'), ('rods', 'tempZone'))
         sup2.unpack(ET.fromstring(expected))
         self.assertEqual(sup2.irodsProt, 2)
         self.assertEqual(sup2.reconnFlag, 3)
