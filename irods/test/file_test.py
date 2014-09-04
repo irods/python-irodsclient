@@ -5,8 +5,8 @@ import sys
 
 
 class TestFiles(unittest.TestCase):
-    """
-    """
+    '''Suite of data object I/O unit tests
+    '''
     test_coll_path = '/tempZone/home/rods/test_dir'
     test_obj_name = 'test1'
     content_str = 'blah'
