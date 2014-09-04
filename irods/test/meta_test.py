@@ -16,7 +16,7 @@ class TestMeta(unittest.TestCase):
     # test data
     coll_path = '/tempZone/home/rods/test_dir'
     obj_name = 'test1'
-    obj_path = coll_path + '/' + obj_name
+    obj_path = '{0}/{1}'.format(coll_path, obj_name)
     
     # test metadata
     (attr0, value0, unit0) = ('attr0', 'value0', 'unit0')
