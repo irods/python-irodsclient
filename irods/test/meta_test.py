@@ -2,13 +2,26 @@
 import unittest
 import os
 import sys
+from irods.meta import iRODSMeta
 from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
 
 
+
+
 class TestMeta(unittest.TestCase):
-    """
-    """
+    '''Suite of tests on metadata operations
+    '''
+    
+    # test data
+    coll_path = '/tempZone/home/rods/test_dir'
+    obj_name = 'test1'
+    obj_path = coll_path + '/' + obj_name
+    
+    # test metadata
+    (attr0, value0, unit0) = ('attr0', 'value0', 'unit0')
+    (attr1, value1, unit1) = ('attr1', 'value1', 'unit1')
+    
 
     def setUp(self):
         from irods.session import iRODSSession
@@ -20,47 +33,92 @@ class TestMeta(unittest.TestCase):
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
         
+        # Create test collection and (empty) test object
+        self.coll = self.sess.collections.create(self.coll_path)
+        self.obj = self.sess.data_objects.create(self.obj_path)
+
+        
     def tearDown(self):
         '''Remove test data and close connections
         '''
-        #self.test_coll.remove(recurse=True, force=True)
+        self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
-    def test_get_meta(self):
+    def test_get_obj_meta(self):
         """
         """
-        #from irods.meta import iRODSMeta
-
-        #obj = self.sess.get_data_object("/tempZone/home/rods/test1")
-        meta = self.sess.metadata.get(DataObject, '/tempZone/home/rods/test1')
-        print meta
+        # get object metadata
+        meta = self.sess.metadata.get(DataObject, self.obj_path)
+        
+        # there should be no metadata at this point
+        assert (len(meta) == 0)
+        
         #self.assertEqual(first, second, msg)
 
-    @unittest.skip('')
-    def test_add_meta(self):
-        """
-        """
-        from irods.meta import iRODSMeta
 
-        self.sess.add_meta('d', '/tempZone/home/rods/test1',
-                           iRODSMeta('key8', 'value5'))
+    def test_add_obj_meta(self):
+        """
+        """
 
-    @unittest.skip('')
-    def test_copy_meta(self):
-        """
-        """
-        #from irods.meta import iRODSMeta
-        self.sess.copy_meta('d', 'd', '/tempZone/home/rods/test1',
-                            '/tempZone/home/rods/test2')
+        # add metadata to test object
+        self.sess.metadata.add(DataObject, self.obj_path,
+                           iRODSMeta(self.attr0, self.value0))
+        self.sess.metadata.add(DataObject, self.obj_path,
+                           iRODSMeta(self.attr1, self.value1, self.unit1))
+        
+        # get object metadata
+        meta = self.sess.metadata.get(DataObject, self.obj_path)
+        
+        # assertions
+        assert(meta[0].name == self.attr0)
+        assert(meta[0].value == self.value0)
+        
+        assert(meta[1].name == self.attr1)
+        assert(meta[1].value == self.value1)
+        assert(meta[1].units == self.unit1)
 
-    @unittest.skip('')
-    def test_remove_meta(self):
-        """
-        """
-        from irods.meta import iRODSMeta
 
-        self.sess.remove_meta('d', '/tempZone/home/rods/test1',
-                              iRODSMeta('key8', 'value5'))
+    def test_copy_obj_meta(self):
+        """
+        """
+        
+        # test destination object for copy
+        dest_obj_path = self.coll_path + '/test2'
+        self.sess.data_objects.create(dest_obj_path)
+        
+        # add metadata to test object
+        self.sess.metadata.add(DataObject, self.obj_path,
+                           iRODSMeta(self.attr0, self.value0))
+        
+        # copy metadata
+        self.sess.metadata.copy(DataObject, DataObject, self.obj_path, dest_obj_path)
+        
+        # get destination object metadata
+        dest_meta = self.sess.metadata.get(DataObject, dest_obj_path)
+        
+        # check metadata
+        assert(dest_meta[0].name == self.attr0)        
+
+
+    def test_remove_obj_meta(self):
+        """
+        """
+        
+        # add metadata to test object
+        self.sess.metadata.add(DataObject, self.obj_path,
+                           iRODSMeta(self.attr0, self.value0))
+        
+        # check that metadata is there
+        meta = self.sess.metadata.get(DataObject, self.obj_path)
+        assert(meta[0].name == self.attr0)
+
+        # remove metadata from object
+        self.sess.metadata.remove(DataObject, self.obj_path,
+                              iRODSMeta(self.attr0, self.value0))
+        
+        # check that metadata is gone
+        meta = self.sess.metadata.get(DataObject, self.obj_path)
+        assert (len(meta) == 0)
 
 
 if __name__ == '__main__':
