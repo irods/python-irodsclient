@@ -5,6 +5,8 @@ import sys
 from irods.meta import iRODSMeta
 from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
+from irods.session import iRODSSession
+import config
 
 
 
@@ -14,7 +16,7 @@ class TestMeta(unittest.TestCase):
     '''
     
     # test data
-    coll_path = '/tempZone/home/rods/test_dir'
+    coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
     obj_name = 'test1'
     obj_path = '{0}/{1}'.format(coll_path, obj_name)
     
@@ -24,9 +26,6 @@ class TestMeta(unittest.TestCase):
     
 
     def setUp(self):
-        from irods.session import iRODSSession
-        import config
-
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
                                  port=config.IRODS_SERVER_PORT,
                                  user=config.IRODS_USER_USERNAME,

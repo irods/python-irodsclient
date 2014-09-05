@@ -2,15 +2,14 @@
 import os
 import sys
 import unittest
+from irods.session import iRODSSession
+import config
 
 
 class TestCollection(unittest.TestCase):
-    test_coll_path = "/tempZone/home/rods/test_dir"
+    test_coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
 
     def setUp(self):
-        from irods.session import iRODSSession
-        import config
-
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
                                  port=config.IRODS_SERVER_PORT,
                                  user=config.IRODS_USER_USERNAME,

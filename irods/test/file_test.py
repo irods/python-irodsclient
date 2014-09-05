@@ -2,12 +2,14 @@
 import unittest
 import os
 import sys
+from irods.session import iRODSSession
+import config
 
 
 class TestFiles(unittest.TestCase):
     '''Suite of data object I/O unit tests
     '''
-    test_coll_path = '/tempZone/home/rods/test_dir'
+    test_coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
     test_obj_name = 'test1'
     content_str = 'blah'
     write_str = '0123456789'
@@ -16,9 +18,6 @@ class TestFiles(unittest.TestCase):
     test_obj_path = test_coll_path + '/' + test_obj_name
 
     def setUp(self):
-        from irods.session import iRODSSession
-        import config
-
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
                                  port=config.IRODS_SERVER_PORT,  # 4444: why?
                                  user=config.IRODS_USER_USERNAME,

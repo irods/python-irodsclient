@@ -3,21 +3,20 @@ import unittest
 import os
 import sys
 from irods.models import User, Collection, Keywords, DataObject
+from irods.session import iRODSSession
+import config
 
 
 class TestQuery(unittest.TestCase):
     """
     """
     # test data
-    coll_path = '/tempZone/home/rods/test_dir'
+    coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
     obj_name = 'test1'
     obj_path = '{0}/{1}'.format(coll_path, obj_name)
     
 
     def setUp(self):
-        from irods.session import iRODSSession
-        import config
-
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
                                  port=config.IRODS_SERVER_PORT,  # 4444 why?
                                  user=config.IRODS_USER_USERNAME,
