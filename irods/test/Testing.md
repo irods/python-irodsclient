@@ -27,7 +27,7 @@ This imports all tests in the `test` directory and runs them. It will not die up
 Test Dependencies
 -----------------
 
-Testing appears to rely on a local irods directory.
+A valid account on a running iRODS grid. See `./config.py`.
 
 Current Test Results
 --------------------
