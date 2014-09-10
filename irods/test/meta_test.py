@@ -120,6 +120,32 @@ class TestMeta(unittest.TestCase):
         assert (len(meta) == 0)
 
 
+    def test_add_coll_meta(self):
+        """
+        """
+
+        # add metadata to test collection
+        self.sess.metadata.add(Collection, self.coll_path,
+                           iRODSMeta(self.attr0, self.value0))
+        
+        # get collection metadata
+        meta = self.sess.metadata.get(Collection, self.coll_path)
+        
+        # assertions
+        assert(meta[0].name == self.attr0)
+        assert(meta[0].value == self.value0)
+        
+        # remove collection metadata
+        self.sess.metadata.remove(Collection, self.coll_path,
+                           iRODSMeta(self.attr0, self.value0))
+        
+        # check that metadata is gone
+        meta = self.sess.metadata.get(Collection, self.coll_path)
+        assert (len(meta) == 0)
+        
+
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
