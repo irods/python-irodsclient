@@ -4,8 +4,7 @@ import struct
 import hashlib
 
 from irods.message import (iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
-    FileReadRequest, FileWriteRequest, FileSeekRequest, FileSeekResponse,
-    FileCloseRequest)
+    OpenedDataObjRequest, FileSeekResponse, StringStringMap)
 from irods.exception import get_exception_by_code, NetworkException
 from irods import MAX_PASSWORD_LENGTH
 from irods.api_number import api_number
@@ -95,12 +94,17 @@ class Connection(object):
         auth_response = self.recv()
 
     def read_file(self, desc, size):
-        message_body = FileReadRequest(
-            l1descInx=desc,
-            len=size
+        message_body = OpenedDataObjRequest(
+            l1descInx=desc, 
+            len=size, 
+            whence=0, 
+            oprType=0, 
+            offset=0, 
+            bytesWritten=0, 
+            KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['DATA_OBJ_READ201_AN'])
+            int_info=api_number['DATA_OBJ_READ_AN'])
 
         logger.debug(desc)
         self.send(message)
@@ -108,25 +112,34 @@ class Connection(object):
         return response.bs
 
     def write_file(self, desc, string):
-        message_body = FileWriteRequest(
-            dataObjInx=desc,
-            len=len(string)
+        message_body = OpenedDataObjRequest(
+            l1descInx=desc, 
+            len=len(string), 
+            whence=0, 
+            oprType=0, 
+            offset=0, 
+            bytesWritten=0, 
+            KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             bs=string,
-            int_info=api_number['DATA_OBJ_WRITE201_AN'])
+            int_info=api_number['DATA_OBJ_WRITE_AN'])
         self.send(message)
         response = self.recv()
         return response.int_info
 
     def seek_file(self, desc, offset, whence):
-        message_body = FileSeekRequest(
-            fileInx=desc,
-            offset=offset,
-            whence=whence
+        message_body = OpenedDataObjRequest(
+            l1descInx=desc, 
+            len=0, 
+            whence=whence, 
+            oprType=0, 
+            offset=offset, 
+            bytesWritten=0, 
+            KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['DATA_OBJ_LSEEK201_AN'])
+            int_info=api_number['DATA_OBJ_LSEEK_AN'])
 
         self.send(message)
         response = self.recv()
@@ -134,11 +147,17 @@ class Connection(object):
         return offset
 
     def close_file(self, desc):
-        message_body = FileCloseRequest(
-            l1descInx=desc
+        message_body = OpenedDataObjRequest(
+            l1descInx=desc, 
+            len=0, 
+            whence=0, 
+            oprType=0, 
+            offset=0, 
+            bytesWritten=0, 
+            KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['DATA_OBJ_CLOSE201_AN'])
+            int_info=api_number['DATA_OBJ_CLOSE_AN'])
 
         self.send(message)
         response = self.recv()

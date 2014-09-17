@@ -20,7 +20,7 @@ class CollectionManager(ResourceManager):
             KeyValPair_PI=StringStringMap()
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body, 
-            int_info=api_number['COLL_CREATE201_AN'])
+            int_info=api_number['COLL_CREATE_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
@@ -38,10 +38,9 @@ class CollectionManager(ResourceManager):
             KeyValPair_PI=StringStringMap(options)
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['RM_COLL_OLD201_AN'])
+            int_info=api_number['RM_COLL_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
 
-    def move(self, path):
-        pass
+

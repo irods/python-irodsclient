@@ -34,3 +34,14 @@ class ResultSet(object):
 
     def __len__(self):
         return self.length
+    
+    # For testing. Might go somewhere else...
+    def has_value(self, value):
+        found = False
+        
+        for row in self.rows:
+            if value in row.values():
+                found = True
+                
+        return found
+        

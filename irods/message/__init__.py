@@ -181,35 +181,21 @@ class FileOpenRequest(Message):
     oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
-#define dataObjReadInp_PI "int l1descInx; int len;"
-class FileReadRequest(Message):
-    _name = 'dataObjReadInp_PI'
+#define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
+class OpenedDataObjRequest(Message):
+    _name = 'OpenedDataObjInp_PI'
     l1descInx = IntegerProperty()
     len = IntegerProperty()
-
-#define dataObjWriteInp_PI "int dataObjInx; int len;"
-class FileWriteRequest(Message):
-    _name = 'dataObjWriteInp_PI'
-    dataObjInx = IntegerProperty()
-    len = IntegerProperty()
-
-#define fileLseekInp_PI "int fileInx; double offset; int whence"
-class FileSeekRequest(Message):
-    _name = 'fileLseekInp_PI'
-    fileInx = IntegerProperty()
-    offset = LongProperty()
     whence = IntegerProperty()
+    oprType = IntegerProperty()
+    offset = LongProperty()
+    bytesWritten = LongProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 #define fileLseekOut_PI "double offset;"
 class FileSeekResponse(Message):
     _name = 'fileLseekOut_PI'
     offset = LongProperty()
-
-#define dataObjCloseInp_PI "int l1descInx; double bytesWritten;"
-class FileCloseRequest(Message):
-    _name = 'dataObjCloseInp_PI'
-    l1descInx = IntegerProperty()
-    bytesWritten = LongProperty()
 
 #define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
 class MetadataRequest(Message):
@@ -233,8 +219,10 @@ class MetadataRequest(Message):
 
 #define CollInp_PI "str collName[MAX_NAME_LEN]; struct KeyValPair_PI;"
 class CollectionRequest(Message):
-    _name = 'CollInp_PI'
+    _name = 'CollInpNew_PI'
     collName = StringProperty()
+    flags = IntegerProperty()
+    oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 def empty_gen_query_out(cols):

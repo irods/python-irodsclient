@@ -40,3 +40,6 @@ Session.vim
 
 # emacs
 \#*\#
+
+# virtualenv
+testenv
