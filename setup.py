@@ -1,11 +1,11 @@
-from distutils.core import setup
-setup(
-    name='python-irodsclient',
-    version='0.3',
-    author='Chris LaRose',
-    author_email='cjlarose@iplantcollaborative.org',
-    packages=['irods', 'irods.message', 'irods.resource_manager'],
-    install_requires=[
-        'PrettyTable>=0.7,<1.0'
-    ]
-)
+import setuptools
+
+
+setuptools.setup(name='python-irodsclient',
+                 version='0.3.1',
+                 author='iPlant Collaborative',
+                 author_email='atmodevs@gmail.com',
+                 packages=['irods',
+                           'irods.message',
+                           'irods.resource_manager'],
+                 install_requires=['PrettyTable>=0.7'])
