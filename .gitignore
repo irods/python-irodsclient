@@ -38,7 +38,8 @@ Session.vim
 .netrwhist
 *~
 
+# emacs
+\#*\#
+
 # virtualenv
 testenv
-
-
