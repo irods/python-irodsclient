@@ -4,7 +4,7 @@ python-irodsclient
 [iRODS](https://www.irods.org) is an open-source distributed filesystem manager.  This a client API implemented in python.
 
 This project should be considered pre-alpha. Here's what works:
-- [x] Establish a connection to iRODS, authenticaate
+- [x] Establish a connection to iRODS, authenticate
 - [x] Implement basic Gen Queries (select columns and filtering)
 - [ ] Support more advanced Gen Queries with limits, offsets, and aggregations
 - [x] Query the collections and data objects within a collection
