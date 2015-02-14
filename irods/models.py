@@ -30,14 +30,13 @@ class User(Model):
 
 class Resource(Model):
     id = Column(Integer, 'R_RESC_ID', 301)
-    name = Column(String, 'R_RESC_ID', 302)
+    name = Column(String, 'R_RESC_NAME', 302)
     zone_name = Column(String, 'R_ZONE_NAME', 303)
     type = Column(String, 'R_TYPE_NAME', 304)
     class_name = Column(String, 'R_CLASS_NAME', 305)
     location = Column(String, 'R_LOC', 306)
-    vault_path = Column(String, 'R_VALUT_PATH', 307)
+    vault_path = Column(String, 'R_VAULT_PATH', 307)
     free_space = Column(String, 'R_FREE_SPACE', 308)
-    info = Column(String, 'R_RESC_INFO', 309)
     comment = Column(String, 'R_RESC_COMMENT', 310)
     create_time = Column(DateTime, 'R_CREATE_TIME', 311)
     modify_time = Column(DateTime, 'R_MODIFY_TIME', 312)
@@ -50,7 +49,6 @@ class DataObject(Model):
     version = Column(String, 'DATA_VERSION', 405)
     type = Column(String, 'DATA_TYPE_NAME', 406)
     size = Column(Integer, 'DATA_SIZE', 407)
-    resource_group_name = Column(String, 'D_RESC_GROUP_NAME', 408)
     resource_name = Column(String, 'D_RESC_NAME', 409)
     path = Column(String, 'D_DATA_PATH', 410) # physical path on resource
     owner_name = Column(String, 'D_OWNER_NAME', 411)

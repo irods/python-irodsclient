@@ -72,7 +72,7 @@ class StartupPack(Message):
             self.connectCnt = 0
             self.proxyUser, self.proxyRcatZone = proxy_user
             self.clientUser, self.clientRcatZone = client_user
-            self.relVersion = "rods3.2"
+            self.relVersion = "rods4.1.0"
             self.apiVersion = "d"
             self.option = ""
 

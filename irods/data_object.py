@@ -6,9 +6,8 @@ from irods.meta import iRODSMetaCollection
 from irods.exception import CAT_NO_ACCESS_PERMISSION
 
 class iRODSReplica(object):
-    def __init__(self, status, resource_group_name, resource_name, path):
+    def __init__(self, status, resource_name, path):
         self.status = status
-        self.resource_group_name = resource_group_name
         self.resource_name = resource_name
         self.path = path
 
@@ -32,7 +31,6 @@ class iRODSDataObject(object):
             replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
             self.replicas = [iRODSReplica(
                 r[DataObject.replica_status],
-                r[DataObject.resource_group_name],
                 r[DataObject.resource_name],
                 r[DataObject.path]
             ) for r in replicas]
