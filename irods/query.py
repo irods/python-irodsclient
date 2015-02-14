@@ -48,8 +48,8 @@ class Query(object):
         new_q = Query(self.sess)
         new_q.columns = self.columns
         new_q.criteria = self.criteria
-        new_q.limit = self._limit
-        new_q.offset = self._offset
+        new_q._limit = self._limit
+        new_q._offset = self._offset
         return new_q
 
     def filter(self, *criteria):
