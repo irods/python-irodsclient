@@ -68,6 +68,11 @@ class TestMeta(unittest.TestCase):
         # get object metadata
         meta = self.sess.metadata.get(DataObject, self.obj_path)
         
+        # sort results by metadata id
+        def getKey(iRODSMeta):
+            return iRODSMeta.id
+        meta = sorted(meta, key=getKey)
+        
         # assertions
         assert(meta[0].name == self.attr0)
         assert(meta[0].value == self.value0)
