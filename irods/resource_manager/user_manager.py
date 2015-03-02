@@ -51,5 +51,4 @@ class UserManager(ResourceManager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
-        
-    
+
