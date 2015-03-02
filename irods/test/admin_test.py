@@ -46,6 +46,7 @@ class TestAdmin(unittest.TestCase):
         
         # retrieve user
         user = self.sess.users.get(self.new_user_name)
+        repr(user)  # for coverage
         
         # assertions
         self.assertEqual(user.name, self.new_user_name)
