@@ -16,6 +16,9 @@ class DataObjectDoesNotExist(PycommandsException):
 class CollectionDoesNotExist(PycommandsException):
     pass
 
+class UserDoesNotExist(PycommandsException):
+    pass
+
 class QueryException(PycommandsException):
     pass
 

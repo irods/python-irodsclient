@@ -224,6 +224,28 @@ class CollectionRequest(Message):
     flags = IntegerProperty()
     oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
+    
+#define generalAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
+class GeneralAdminRequest(Message):
+    _name = 'generalAdminInp_PI'
+    def __init__(self, *args):
+        super(GeneralAdminRequest, self).__init__()
+        for i in range(10):
+            if i < len(args) and args[i]:
+                setattr(self, 'arg%d' % i, args[i])
+            else:
+                setattr(self, 'arg%d' % i, "")
+
+    arg0 = StringProperty()
+    arg1 = StringProperty()
+    arg2 = StringProperty()
+    arg3 = StringProperty()
+    arg4 = StringProperty()
+    arg5 = StringProperty()
+    arg6 = StringProperty()
+    arg7 = StringProperty()
+    arg8 = StringProperty()
+    arg9 = StringProperty()
 
 def empty_gen_query_out(cols):
     sql_results = [GenQueryResponseColumn(attriInx=col.icat_id, value=[]) for col in cols]
