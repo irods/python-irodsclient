@@ -2,7 +2,7 @@
 import unittest
 import os
 import sys
-from irods.models import User, Collection, Keywords, DataObject
+from irods.models import User, Collection, Keywords, DataObject, Resource
 from irods.session import iRODSSession
 import config
 
@@ -94,6 +94,20 @@ class TestQuery(unittest.TestCase):
         # assertions
         self.assertIn('rods', users)
         self.assertIn('public', users)
+    
+        
+    def test_resources_query(self):
+        '''Lists resources
+        '''
+        # query takes model(s) or column(s)
+        results = self.sess.query(Resource).all()
+        repr(results)   # for coverage
+        
+        # get resource list from results
+        resources = [row[Resource.name] for row in results.rows]
+
+        # assertions
+        self.assertIn('demoResc', resources)
 
 
 if __name__ == '__main__':

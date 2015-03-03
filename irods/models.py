@@ -37,9 +37,15 @@ class Resource(Model):
     location = Column(String, 'R_LOC', 306)
     vault_path = Column(String, 'R_VAULT_PATH', 307)
     free_space = Column(String, 'R_FREE_SPACE', 308)
+    free_space_time = Column(String, 'R_FREE_SPACE_TIME', 314)
     comment = Column(String, 'R_RESC_COMMENT', 310)
     create_time = Column(DateTime, 'R_CREATE_TIME', 311)
     modify_time = Column(DateTime, 'R_MODIFY_TIME', 312)
+    status = Column(String, 'R_RESC_STATUS', 313)
+    children = Column(String, 'R_RESC_CHILDREN', 315)
+    context = Column(String, 'R_RESC_CONTEXT', 316)
+    parent = Column(String, 'R_RESC_PARENT', 317)
+    obj_count = Column(Integer, 'R_RESC_OBJCOUNT', 318)
 
 class DataObject(Model):
     id = Column(Integer, 'D_DATA_ID', 401) 
