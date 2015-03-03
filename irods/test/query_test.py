@@ -81,6 +81,20 @@ class TestQuery(unittest.TestCase):
         assert ( result.has_value(self.obj_name) )
 
 
+    def test_users_query(self):
+        '''Lists all users and look for known usernames
+        '''
+        # query takes model(s) or column(s)
+        # only need User.name here
+        results = self.sess.query(User.name).all()
+        
+        # get user list from results
+        users = [row[User.name] for row in results.rows]
+
+        # assertions
+        self.assertIn('rods', users)
+        self.assertIn('public', users)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
