@@ -1,11 +1,11 @@
 from irods.models import Collection
-from irods.resource_manager import ResourceManager
+from irods.manager import Manager
 from irods.message import iRODSMessage, CollectionRequest, StringStringMap
 from irods.exception import CollectionDoesNotExist, NoResultFound
 from irods.api_number import api_number
 from irods.collection import iRODSCollection
 
-class CollectionManager(ResourceManager):
+class CollectionManager(Manager):
     def get(self, path):
         query = self.sess.query(Collection).filter(Collection.name == path)
         try:

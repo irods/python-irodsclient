@@ -1,7 +1,7 @@
 import logging
 from os.path import dirname, basename
 
-from irods.resource_manager import ResourceManager
+from irods.manager import Manager
 from irods.message import MetadataRequest, iRODSMessage
 from irods.api_number import api_number
 from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta, 
@@ -10,7 +10,7 @@ from irods.meta import iRODSMeta
 
 logger = logging.getLogger(__name__)
 
-class MetadataManager(ResourceManager):
+class MetadataManager(Manager):
     @staticmethod
     def _model_class_to_resource_type(model_cls):
         return {

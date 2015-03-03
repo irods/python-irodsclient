@@ -1,10 +1,10 @@
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount
-from irods.resource_manager.collection_manager import CollectionManager
-from irods.resource_manager.data_object_manager import DataObjectManager
-from irods.resource_manager.metadata_manager import MetadataManager
-from irods.resource_manager.user_manager import UserManager
+from irods.manager.collection_manager import CollectionManager
+from irods.manager.data_object_manager import DataObjectManager
+from irods.manager.metadata_manager import MetadataManager
+from irods.manager.user_manager import UserManager
 
 class iRODSSession(object):
     def __init__(self, *args, **kwargs):

@@ -3,6 +3,7 @@ import unittest
 import os
 import sys
 
+from irods.models import User
 from irods.session import iRODSSession
 from irods.exception import UserDoesNotExist
 import config
@@ -34,6 +35,7 @@ class TestAdmin(unittest.TestCase):
         '''Close connections
         '''
         self.sess.cleanup()
+
 
     def test_create_and_delete_local_user(self):
         """
@@ -80,6 +82,46 @@ class TestAdmin(unittest.TestCase):
 
         # user should be gone
         self.assertRaises(UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name, self.new_user_zone))
+    
+    
+    def test_modify_user_type(self):
+        # make new regular user
+        self.sess.users.create(self.new_user_name, self.new_user_type)
+        
+        # check type
+        row = self.sess.query(User.type).filter(User.name == self.new_user_name).one()
+        self.assertEqual(row[User.type], self.new_user_type)
+        
+        # change type to rodsadmin
+        self.sess.users.modify(self.new_user_name, 'type', 'rodsadmin')
+        
+        # check type again
+        row = self.sess.query(User.type).filter(User.name == self.new_user_name).one()
+        self.assertEqual(row[User.type], 'rodsadmin')
+
+        # delete user
+        self.sess.users.remove(self.new_user_name)
+
+        # user should be gone
+        self.assertRaises(UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+
+    
+    @unittest.skip('needs additional massaging in manager')
+    def test_set_user_password(self):
+        # make new regular user
+        self.sess.users.create(self.new_user_name, self.new_user_type)
+        
+        # set password
+        #self.sess.users.modify(self.new_user_name, 'password', 'blah')
+        
+        # try to open new session on behalf of user
+
+
+        # delete user
+        self.sess.users.remove(self.new_user_name)
+
+        # user should be gone
+        self.assertRaises(UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
 
 
 if __name__ == '__main__':

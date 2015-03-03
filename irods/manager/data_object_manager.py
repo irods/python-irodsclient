@@ -1,7 +1,7 @@
 from os.path import basename, dirname
 
 from irods.models import DataObject
-from irods.resource_manager import ResourceManager
+from irods.manager import Manager
 from irods.message import (iRODSMessage, FileOpenRequest, StringStringMap)
 from irods.exception import (DataObjectDoesNotExist, CollectionDoesNotExist)
 from irods.api_number import api_number
@@ -11,7 +11,7 @@ SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
 
-class DataObjectManager(ResourceManager):
+class DataObjectManager(Manager):
     def get(self, path):
         try:
             parent = self.sess.collections.get(dirname(path))
