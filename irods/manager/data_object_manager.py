@@ -6,6 +6,7 @@ from irods.message import (iRODSMessage, FileOpenRequest, StringStringMap)
 from irods.exception import (DataObjectDoesNotExist, CollectionDoesNotExist)
 from irods.api_number import api_number
 from irods.data_object import iRODSDataObject
+import irods.keywords as kw
 
 SEEK_SET = 0
 SEEK_CUR = 1
@@ -26,7 +27,11 @@ class DataObjectManager(Manager):
             raise DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
 
-    def create(self, path):
+    def create(self, path, resource="", options={}):
+        kvp = {kw.DATA_TYPE_KW: 'generic',
+               kw.DEST_RESC_NAME_KW : resource
+               }
+        kvp.update(options)
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0644,
@@ -35,7 +40,7 @@ class DataObjectManager(Manager):
             dataSize=-1,
             numThreads=0,
             oprType=0,
-            KeyValPair_PI=StringStringMap({'dataType': 'generic'}),
+            KeyValPair_PI=StringStringMap(kvp),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_CREATE_AN'])
