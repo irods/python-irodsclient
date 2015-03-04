@@ -10,14 +10,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ResourceManager(Manager):
-    def get(self, resource_name, resource_zone=""):
-        query = self.sess.query(Resource).filter(Resource.name == resource_name)
+    def get(self, name, zone=""):
+        query = self.sess.query(Resource).filter(Resource.name == name)
         
-        if len(resource_zone) > 0:
-            query = query.filter(Resource.zone_name == resource_zone)
+        if len(zone) > 0:
+            query = query.filter(Resource.zone_name == zone)
         
         try:
             result = query.one()
         except NoResultFound:
             raise ResourceDoesNotExist()
         return iRODSResource(self, result)
+    
+
+    def create(self, name, resc_type, host, path, context="", zone=""):
+        message_body = GeneralAdminRequest(
+            "add",
+            "resource",
+            name,
+            resc_type,
+            host + ":" + path,
+            context,
+            zone
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)

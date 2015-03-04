@@ -5,6 +5,7 @@ from irods.manager.collection_manager import CollectionManager
 from irods.manager.data_object_manager import DataObjectManager
 from irods.manager.metadata_manager import MetadataManager
 from irods.manager.user_manager import UserManager
+from irods.manager.resource_manager import ResourceManager
 
 class iRODSSession(object):
     def __init__(self, *args, **kwargs):
@@ -15,6 +16,7 @@ class iRODSSession(object):
         self.data_objects = DataObjectManager(self)
         self.metadata = MetadataManager(self)
         self.users = UserManager(self)
+        self.resources = ResourceManager(self)
         
     def __enter__(self):
         return self
