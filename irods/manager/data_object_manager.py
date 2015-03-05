@@ -27,10 +27,10 @@ class DataObjectManager(Manager):
             raise DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
 
-    def create(self, path, resource="", options={}):
-        kvp = {kw.DATA_TYPE_KW: 'generic',
-               kw.DEST_RESC_NAME_KW : resource
-               }
+    def create(self, path, resource=None, options={}):
+        kvp = {kw.DATA_TYPE_KW: 'generic'}
+        if resource:
+            kvp[kw.DEST_RESC_NAME_KW] = resource
         kvp.update(options)
         message_body = FileOpenRequest(
             objPath=path,

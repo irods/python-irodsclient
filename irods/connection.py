@@ -69,7 +69,9 @@ class Connection(object):
     def disconnect(self):
         disconnect_msg = iRODSMessage(type='RODS_DISCONNECT')
         self.send(disconnect_msg)
+        self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
+        self.socket = None
 
     def _login(self):
         # authenticate

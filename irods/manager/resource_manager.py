@@ -38,4 +38,25 @@ class ResourceManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
+            self.sess.cleanup() # close connections to get new agents with up to date resource manager
+        logger.debug(response.int_info)
+
+
+    def remove(self, name, test=False):
+        if test:
+            mode = "--dryrun"
+        else:
+            mode = ""
+        message_body = GeneralAdminRequest(
+            "rm",
+            "resource",
+            name,
+            mode
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+            self.sess.cleanup() # close connections to get new agents with up to date resource manager
         logger.debug(response.int_info)
