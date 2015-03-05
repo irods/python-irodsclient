@@ -23,7 +23,7 @@ class DataObjectManager(Manager):
             .filter(DataObject.name == basename(path))\
             .filter(DataObject.collection_id == parent.id)
         results = query.all()
-        if len(results) < 0:
+        if len(results) <= 0:
             raise DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
 
