@@ -67,6 +67,7 @@ class DataObject(Model):
     comments = Column(String, 'D_COMMENTS', 418)
     create_time = Column(DateTime, 'D_CREATE_TIME', 419)
     modify_time = Column(DateTime, 'D_MODIFY_TIME', 420)
+    resc_hier = Column(String, 'D_RESC_HIER', 422)
     
 class Collection(Model):
     id = Column(Integer, 'COLL_ID', 500)

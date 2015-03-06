@@ -140,9 +140,12 @@ class TestAdmin(unittest.TestCase):
         f.write(dummy_str)
         f.close()
         
+        # refresh object (size has changed) 
+        obj = self.sess.data_objects.get(obj_path)
+        
         # checks on file
         self.assertEqual(obj.name, obj_name)
-#         self.assertEqual(obj.size, len(dummy_str))
+        self.assertEqual(obj.size, len(dummy_str))
         
         # delete test collection
         self.coll.remove(recurse=True, force=True)

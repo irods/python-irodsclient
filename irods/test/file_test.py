@@ -38,6 +38,14 @@ class TestFiles(unittest.TestCase):
         '''
         self.test_coll.remove(recurse=True, force=True)
         self.sess.cleanup()
+        
+    def test_file_get(self):
+        # get object
+        obj = self.sess.data_objects.get(self.test_obj_path)
+        
+        # assertions
+        self.assertEqual(obj.size, len(self.content_str))
+        
 
     def test_file_open(self):
         #from irods.models import Collection, User, DataObject
