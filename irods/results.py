@@ -7,8 +7,11 @@ class ResultSet(object):
         self.length = raw.rowCnt
         col_length = raw.attriCnt
         self.cols = raw.SqlResult_PI[:col_length]
-
         self.rows = [self._format_row(i) for i in range(self.length)]
+        try:
+            self.continue_index = raw.continueInx
+        except KeyError:
+            self.continue_index = 0
 
     def __str__(self):
         table = PrettyTable()

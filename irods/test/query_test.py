@@ -2,7 +2,7 @@
 import unittest
 import os
 import sys
-from irods.models import User, Collection, Keywords, DataObject, Resource
+from irods.models import User, Collection, DataObject, Resource
 from irods.session import iRODSSession
 import config
 

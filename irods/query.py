@@ -34,6 +34,7 @@ class Query(object):
         self.criteria = []
         self._limit = -1
         self._offset = 0
+        self._continue_index = 0
 
         for arg in args:
             if isinstance(arg, type) and issubclass(arg, Model):
@@ -50,6 +51,7 @@ class Query(object):
         new_q.criteria = self.criteria
         new_q._limit = self._limit
         new_q._offset = self._offset
+        new_q._continue_index = self._continue_index
         return new_q
 
     def filter(self, *criteria):
@@ -77,6 +79,11 @@ class Query(object):
         new_q = self._clone()
         new_q._offset = offset
         return new_q
+    
+    def continue_index(self, continue_index):
+        new_q = self._clone()
+        new_q._continue_index = continue_index
+        return new_q
 
     def _select_message(self):
         dct = OrderedDict([(column.icat_id, value) for (column, value) in self.columns.iteritems()])
@@ -103,7 +110,7 @@ class Query(object):
         max_rows = 500 if self._limit == -1 else self._limit
         args = {
             'maxRows': max_rows,
-            'continueInx': 0,
+            'continueInx': self._continue_index,
             'partialStartIndex': self._offset,
             'options': 0,
             'KeyValPair_PI': self._kw_message(),
@@ -124,10 +131,32 @@ class Query(object):
             except CAT_NO_ROWS_FOUND:
                 result_set = ResultSet(empty_gen_query_out(self.columns.keys())) 
         return result_set
+    
+    def close(self):
+        '''Closes an open query on the server side.
+        self._continue_index must be set to a valid value (returned by a previous query API call).
+        '''
+        self.limit(0).execute()
         
     def all(self):
-        return self.execute()
+        result_set = self.execute()
+        if result_set.continue_index > 0:
+            self.continue_index(result_set.continue_index).close()
+        return result_set
+    
+    def _get_batches(self):
+        result_set = self.execute()
+        yield result_set
+        
+        while result_set.continue_index > 0:
+            result_set = self.continue_index(result_set.continue_index).execute()
+            yield result_set
 
+    def get_results(self):
+        for result_set in self._get_batches():
+            for result in result_set:
+                yield result
+    
     def one(self):
         results = self.execute()
         if not len(results):
