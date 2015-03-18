@@ -44,7 +44,6 @@ class TestContinueQuery(unittest.TestCase):
         
         # Create dummy test collection
         self.coll = make_dummy_collection(self.sess, self.coll_path, self.obj_count)
-        self.coll = self.sess.collections.get(self.coll_path)
 
         
     def tearDown(self):
