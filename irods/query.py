@@ -144,7 +144,7 @@ class Query(object):
             self.continue_index(result_set.continue_index).close()
         return result_set
     
-    def _get_batches(self):
+    def get_batches(self):
         result_set = self.execute()
         yield result_set
         
@@ -153,7 +153,7 @@ class Query(object):
             yield result_set
 
     def get_results(self):
-        for result_set in self._get_batches():
+        for result_set in self.get_batches():
             for result in result_set:
                 yield result
     

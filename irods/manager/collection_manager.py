@@ -4,6 +4,8 @@ from irods.message import iRODSMessage, CollectionRequest, StringStringMap
 from irods.exception import CollectionDoesNotExist, NoResultFound
 from irods.api_number import api_number
 from irods.collection import iRODSCollection
+from irods.constants import SYS_SVR_TO_CLI_COLL_STAT, SYS_CLI_TO_SVR_COLL_STAT_REPLY
+
 
 class CollectionManager(Manager):
     def get(self, path):
@@ -42,5 +44,9 @@ class CollectionManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+            
+            while response.int_info == SYS_SVR_TO_CLI_COLL_STAT:
+                conn.reply(SYS_CLI_TO_SVR_COLL_STAT_REPLY)
+                response = conn.recv()
 
 

@@ -48,6 +48,14 @@ class Connection(object):
     def release(self, destroy=False):
         self.pool.release_connection(self, destroy)
 
+    def reply(self, api_reply_index):
+        value = socket.htonl(api_reply_index)
+        try:
+            self.socket.sendall(struct.pack('I', value))
+        except:
+            self.release(True)
+            raise NetworkException("Unable to send API reply")
+
     def _connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.6
+#! /usr/bin/env python
 import unittest
 import os
 import sys
@@ -37,13 +37,14 @@ class TestContinueQuery(unittest.TestCase):
 
     def setUp(self):
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,  # 4444 why?
+                                 port=config.IRODS_SERVER_PORT,
                                  user=config.IRODS_USER_USERNAME,
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
         
         # Create dummy test collection
         self.coll = make_dummy_collection(self.sess, self.coll_path, self.obj_count)
+        self.coll = self.sess.collections.get(self.coll_path)
 
         
     def tearDown(self):
@@ -51,8 +52,8 @@ class TestContinueQuery(unittest.TestCase):
         '''
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
-        
-        
+
+
     def test_files_generator(self):
         # Query for all files in test collection
         query = self.sess.query(DataObject.name, Collection.name).filter(Collection.name == self.coll_path)
