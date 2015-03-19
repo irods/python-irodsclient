@@ -27,6 +27,9 @@ if __name__ == "__main__":
     loader = TestLoader()
     suite = TestSuite(loader.discover(start_dir='.', pattern='*_test.py',
                                       top_level_dir="."))
-
-    runner = TextTestRunner(verbosity=2)
-    runner.run(suite)
+    
+    result = TextTestRunner(verbosity=2).run(suite)
+    if result.wasSuccessful():
+        sys.exit(0)
+    
+    sys.exit(1)

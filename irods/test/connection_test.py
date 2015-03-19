@@ -1,7 +1,10 @@
 #! /usr/bin/env python2.6
-import unittest
 import os
 import sys
+if (sys.version_info >= (2, 7)):
+    import unittest
+else:
+    import unittest2 as unittest
 from irods.session import iRODSSession
 import config
 

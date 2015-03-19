@@ -1,8 +1,12 @@
 #! /usr/bin/env python
-import unittest
 import os
 import sys
 import socket
+
+if (sys.version_info >= (2, 7)):
+    import unittest
+else:
+    import unittest2 as unittest
 
 from irods.models import User
 from irods.session import iRODSSession

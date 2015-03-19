@@ -1,7 +1,10 @@
 #! /usr/bin/env python
-import unittest
 import os
 import sys
+if (sys.version_info >= (2, 7)):
+    import unittest
+else:
+    import unittest2 as unittest
 from irods.meta import iRODSMeta
 from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta, 
     CollectionMeta, ResourceMeta, UserMeta)
