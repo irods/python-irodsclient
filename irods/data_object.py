@@ -1,5 +1,6 @@
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from io import RawIOBase, BufferedRandom
+import sys
 
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
@@ -88,7 +89,12 @@ class iRODSDataObjectFileRaw(RawIOBase):
         return len(contents)
 
     def write(self, b):
-        return self.conn.write_file(self.desc, str(b.tobytes()))
+        # temporary 2.6 fix.
+        # TODO: revisit, avoid copies if possible
+        if (sys.version_info >= (2, 7)):
+            return self.conn.write_file(self.desc, str(b.tobytes()))
+        else:
+            return self.conn.write_file(self.desc, str(bytes(b)))
 
     def readable(self):
         return True
