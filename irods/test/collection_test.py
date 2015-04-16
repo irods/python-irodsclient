@@ -1,16 +1,17 @@
 #! /usr/bin/env python
 import os
 import sys
-if (sys.version_info >= (2, 7)):
+if sys.version_info >= (2, 7):
     import unittest
 else:
     import unittest2 as unittest
 from irods.session import iRODSSession
-import config
+import irods.test.config as config
 
 
 class TestCollection(unittest.TestCase):
-    test_coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
+    test_coll_path = '/{0}/home/{1}/test_dir'.format(
+        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
 
     def setUp(self):
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
@@ -27,11 +28,11 @@ class TestCollection(unittest.TestCase):
         self.sess.cleanup()
 
     def test_get_collection(self):
-        #path = "/tempZone/home/rods"
+        # path = "/tempZone/home/rods"
         coll = self.sess.collections.get(self.test_coll_path)
         self.assertEquals(self.test_coll_path, coll.path)
 
-    #def test_new_collection(self):
+    # def test_new_collection(self):
     #    self.assertEquals(self.coll.name, 'test_dir')
 
     def test_append_to_collection(self):
@@ -52,7 +53,7 @@ class TestCollection(unittest.TestCase):
         self.coll.move(new_path)
         self.assertEquals(new_path, self.coll.path)
 
-    #def test_delete_collection(self):
+    # def test_delete_collection(self):
     #    pass
 
 if __name__ == "__main__":

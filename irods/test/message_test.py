@@ -6,19 +6,20 @@ import sys
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath('../..'))
 
-if (sys.version_info >= (2, 7)):
+if sys.version_info >= (2, 7):
     import unittest
 else:
     import unittest2 as unittest
-    
+
 from xml.etree import ElementTree as ET
-#from base64 import b64encode, b64decode
+# from base64 import b64encode, b64decode
 from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap,
-    IntegerStringMap, StringStringMap, GenQueryRequest,
-    GenQueryResponseColumn, GenQueryResponse)
+                           IntegerStringMap, StringStringMap, GenQueryRequest,
+                           GenQueryResponseColumn, GenQueryResponse)
 
 
 class TestMessages(unittest.TestCase):
+
     def test_startup_pack(self):
         sup = StartupPack(('rods', 'tempZone'), ('rods', 'tempZone'))
         sup.irodsProt = 2

@@ -18,7 +18,7 @@ class ResultSet(object):
         for col in self.cols:
             table.add_column(ModelBase.columns[col.attriInx].icat_key, col.value)
         table.align = 'l'
-        return table.get_string()
+        return table.get_string().encode('utf-8')
 
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]

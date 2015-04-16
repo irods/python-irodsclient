@@ -8,10 +8,11 @@ MAX_NAME_LEN = MAX_PATH_ALLOWED + 64
 RESPONSE_LEN = 16
 CHALLENGE_LEN = 64
 
-#logger = logging.getLogger()
-#logger.setLevel(logging.DEBUG)
-#h = logging.StreamHandler()
-#f = logging.Formatter("%(asctime)s %(name)s-%(levelname)s [%(pathname)s %(lineno)d] %(message)s")
-#h.setFormatter(f)
-#logger.addHandler(h)
+# Logging
+logger = logging.getLogger()
+logger.setLevel(logging.ERROR)
+h = logging.StreamHandler()
+f = logging.Formatter("%(asctime)s %(name)s-%(levelname)s [%(pathname)s %(lineno)d] %(message)s")
+h.setFormatter(f)
+logger.addHandler(h)
 

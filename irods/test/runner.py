@@ -2,7 +2,7 @@
 
 import os
 import sys
-if (sys.version_info >= (2, 7)):
+if sys.version_info >= (2, 7):
     import unittest
     from unittest import TestLoader
 else:
@@ -27,9 +27,9 @@ if __name__ == "__main__":
     loader = TestLoader()
     suite = TestSuite(loader.discover(start_dir='.', pattern='*_test.py',
                                       top_level_dir="."))
-    
+
     result = TextTestRunner(verbosity=2).run(suite)
     if result.wasSuccessful():
         sys.exit(0)
-    
+
     sys.exit(1)

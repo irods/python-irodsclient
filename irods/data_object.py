@@ -38,7 +38,7 @@ class iRODSDataObject(object):
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSDataObject %d %s>" % (self.id, self.name)
+        return "<iRODSDataObject {id} {name}>".format(id=self.id, name=self.name.encode('utf-8'))
 
     @property
     def metadata(self):
@@ -91,7 +91,7 @@ class iRODSDataObjectFileRaw(RawIOBase):
     def write(self, b):
         # temporary 2.6 fix.
         # TODO: revisit, avoid copies if possible
-        if (sys.version_info >= (2, 7)):
+        if sys.version_info >= (2, 7):
             return self.conn.write_file(self.desc, str(b.tobytes()))
         else:
             return self.conn.write_file(self.desc, str(bytes(b)))

@@ -64,4 +64,4 @@ class iRODSCollection(object):
             yield (self, self.subcollections, self.data_objects)
 
     def __repr__(self):
-        return "<iRODSCollection %d %s>" % (self.id, self.name)
+        return "<iRODSCollection {id} {name}>".format(id=self.id, name=self.name.encode('utf-8'))

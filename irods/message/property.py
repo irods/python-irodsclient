@@ -57,9 +57,13 @@ class StringProperty(MessageProperty):
         super(StringProperty, self).__init__()
 
     def format(self, value):
+        if isinstance(value, unicode):
+            return value.encode('utf-8')
         return value
 
     def parse(self, value):
+        if isinstance(value, str):
+            return value.decode('utf-8')
         return value
 
 class ArrayProperty(MessageProperty):
