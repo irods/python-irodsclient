@@ -2,7 +2,7 @@ from os.path import basename, dirname
 
 from irods.models import DataObject
 from irods.manager import Manager
-from irods.message import (iRODSMessage, FileOpenRequest, StringStringMap)
+from irods.message import (iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap)
 from irods.exception import (DataObjectDoesNotExist, CollectionDoesNotExist)
 from irods.api_number import api_number
 from irods.data_object import iRODSDataObject
@@ -90,5 +90,48 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
-    def move(self, path):
-        pass
+    def move(self, src_path, dest_path):
+        # check if dest is a collection
+        # if so append filename to it
+        if self.sess.collections.exists(dest_path):
+            filename = src_path.rsplit('/',1)[1]
+            target_path = dest_path + '/' + filename
+        else:
+            target_path = dest_path
+            
+        src = FileOpenRequest(
+            objPath=src_path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=0,
+            numThreads=0,
+            oprType=11,   # RENAME_DATA_OBJ
+            KeyValPair_PI=StringStringMap(),
+        )
+        dest = FileOpenRequest(
+            objPath=target_path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=0,
+            numThreads=0,
+            oprType=11,   # RENAME_DATA_OBJ
+            KeyValPair_PI=StringStringMap(),
+        )
+        message_body = ObjCopyRequest(
+            srcDataObjInp_PI = src,
+            destDataObjInp_PI = dest
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+            int_info=api_number['DATA_OBJ_RENAME_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+
+
+
+
+
+

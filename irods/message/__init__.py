@@ -3,6 +3,7 @@ import logging
 import socket
 import xml.etree.ElementTree as ET
 
+from irods import IRODS_VERSION
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty, 
     IntegerProperty, LongProperty, ArrayProperty, 
@@ -72,8 +73,8 @@ class StartupPack(Message):
             self.connectCnt = 0
             self.proxyUser, self.proxyRcatZone = proxy_user
             self.clientUser, self.clientRcatZone = client_user
-            self.relVersion = "rods4.1.0"
-            self.apiVersion = "d"
+            self.relVersion = "rods{major}.{minor}.{patchlevel}".format(**IRODS_VERSION)
+            self.apiVersion = "{api}".format(**IRODS_VERSION)
             self.option = ""
 
     irodsProt = IntegerProperty()
@@ -196,6 +197,12 @@ class OpenedDataObjRequest(Message):
 class FileSeekResponse(Message):
     _name = 'fileLseekOut_PI'
     offset = LongProperty()
+
+#define DataObjCopyInp_PI "struct DataObjInp_PI; struct DataObjInp_PI;"
+class ObjCopyRequest(Message):
+    _name = 'DataObjCopyInp_PI'
+    srcDataObjInp_PI = SubmessageProperty(FileOpenRequest)
+    destDataObjInp_PI = SubmessageProperty(FileOpenRequest)
 
 #define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
 class MetadataRequest(Message):

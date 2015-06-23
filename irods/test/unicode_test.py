@@ -11,6 +11,7 @@ from irods.session import iRODSSession
 import irods.test.config as config
 import xml.etree.ElementTree as ET
 import logging
+import irods.test.helpers as helpers
 
 logger = logging.getLogger(__name__)
 
@@ -18,27 +19,7 @@ UNICODE_TEST_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'unicode_sampler.xml')
 
 
-def make_object(session, path):
-    content = 'blah'
 
-    obj = session.data_objects.create(path)
-    with obj.open('w') as obj_desc:
-        obj_desc.write(content)
-
-    return obj
-
-
-def make_collection(session, path, names):
-    # create collection
-    coll = session.collections.create(path)
-
-    # create objects
-    for name in names:
-        obj_path = os.path.join(path, name)
-        make_object(session, obj_path)
-
-    # return collection
-    return coll
 
 
 def parse_xml_file(path):
@@ -88,7 +69,7 @@ class TestUnicodeNames(unittest.TestCase):
         self.names = parse_xml_file(UNICODE_TEST_FILE)
 
         # Create dummy test collection
-        self.coll = make_collection(
+        self.coll = helpers.make_collection(
             self.sess, self.coll_path, self.names)
 
     def tearDown(self):

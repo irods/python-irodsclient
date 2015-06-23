@@ -1,5 +1,8 @@
 import logging
 
+# iRODS settings
+IRODS_VERSION = {'major':4, 'minor':1, 'patchlevel':3, 'api':'d'}
+
 # Magic Numbers
 MAX_PASSWORD_LENGTH = 50
 MAX_SQL_ATTR = 50

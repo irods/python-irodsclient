@@ -7,6 +7,7 @@ else:
     import unittest2 as unittest
 from irods.session import iRODSSession
 import irods.test.config as config
+import irods.test.helpers as helpers
 
 
 class TestCollection(unittest.TestCase):
@@ -47,11 +48,59 @@ class TestCollection(unittest.TestCase):
         """ Modify a file in a collection """
         pass
 
-    @unittest.skip('Renaming collections is not yet implemented')
-    def test_move_collection(self):
-        new_path = "/tempZone/home/rods/test_dir_moved"
-        self.coll.move(new_path)
-        self.assertEquals(new_path, self.coll.path)
+    def test_rename_collection(self):
+        # test args
+        args = {'collection': self.test_coll_path,
+                'old_name': 'foo',
+                'new_name': 'bar'}
+
+        # make collection
+        path = "{collection}/{old_name}".format(**args)
+        coll = helpers.make_collection(self.sess, path)
+
+        # get collection id
+        saved_id = coll.id
+
+        # rename coll
+        new_path = "{collection}/{new_name}".format(**args)
+        self.sess.collections.move(path, new_path)
+
+        # get updated collection
+        coll = self.sess.collections.get(new_path)
+
+        # compare ids
+        self.assertEqual(coll.id, saved_id)
+
+        # remove collection
+        coll.remove(recurse=True, force=True)
+
+    def test_move_coll_to_coll(self):
+        # test args
+        args = {'base_collection': self.test_coll_path,
+                'collection1': 'foo',
+                'collection2': 'bar'}
+
+        # make collection1 and collection2 in base collection
+        path1 = "{base_collection}/{collection1}".format(**args)
+        coll1 = helpers.make_collection(self.sess, path1)
+        path2 = "{base_collection}/{collection2}".format(**args)
+        coll2 = helpers.make_collection(self.sess, path2)
+
+        # get collection2's id
+        saved_id = coll2.id
+
+        # move collection2 into collection1
+        self.sess.collections.move(path2, path1)
+
+        # get updated collection
+        path2 = "{base_collection}/{collection1}/{collection2}".format(**args)
+        coll2 = self.sess.collections.get(path2)
+
+        # compare ids
+        self.assertEqual(coll2.id, saved_id)
+
+        # remove collection
+        coll1.remove(recurse=True, force=True)
 
     # def test_delete_collection(self):
     #    pass
