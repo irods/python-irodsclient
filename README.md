@@ -10,16 +10,16 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Query the collections and data objects within a collection
 - [x] Support read, write, and seek operations for files
 - [x] Delete data objects
-- [X] Create collections
-- [X] Delete collections
-- [ ] Rename data objects
-- [ ] Rename collections
-- [X] Query metadata for collections and data objects
-- [X] Add, edit, remove metadata
+- [x] Create collections
+- [x] Delete collections
+- [x] Rename data objects
+- [x] Rename collections
+- [x] Query metadata for collections and data objects
+- [x] Add, edit, remove metadata
 - [ ] Replicate data objects to different resource servers
 - [ ] Connection pool management
-- [ ] Implement gen query result sets as lazy queries
-- [X] Return empty result sets when CAT_NO_ROWS_FOUND is raised
+- [x] Implement gen query result sets as lazy queries
+- [x] Return empty result sets when CAT_NO_ROWS_FOUND is raised
 - [ ] Manage permissions
 - [x] Manage users and groups
 - [ ] Manage zones
