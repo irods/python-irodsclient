@@ -231,7 +231,17 @@ class CollectionRequest(Message):
     flags = IntegerProperty()
     oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
-    
+
+#define Version_PI "int status; str relVersion[NAME_LEN]; str apiVersion[NAME_LEN]; int reconnPort; str reconnAddr[LONG_NAME_LEN]; int cookie;"
+class VersionResponse(Message):
+    _name = 'Version_PI'
+    status = IntegerProperty()
+    relVersion = StringProperty()
+    apiVersion = StringProperty()
+    reconnPort = IntegerProperty()
+    reconnAddr = StringProperty()
+    cookie = IntegerProperty()
+
 #define generalAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
 class GeneralAdminRequest(Message):
     _name = 'generalAdminInp_PI'
