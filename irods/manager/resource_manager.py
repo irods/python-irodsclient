@@ -23,19 +23,37 @@ class ResourceManager(Manager):
         return iRODSResource(self, result)
     
 
-    def create(self, name, resc_type, host, path, context="", zone=""):
-        message_body = GeneralAdminRequest(
-            "add",
-            "resource",
-            name,
-            resc_type,
-            host + ":" + path,
-            context,
-            zone
-        )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
+    def create(self, name, resource_type, host, path, context="", zone="", resource_class=""):
         with self.sess.pool.get_connection() as conn:
+            # check server version
+            server_version = tuple(int(token)
+                                   for token in conn.server_version.replace('rods', '').split('.'))
+            if server_version < (4, 0, 0):
+                # make resource, iRODS 3 style
+                message_body = GeneralAdminRequest(
+                    "add",
+                    "resource",
+                    name,
+                    resource_type,
+                    resource_class,
+                    host,
+                    path,
+                    zone
+                )
+            else:
+                message_body = GeneralAdminRequest(
+                    "add",
+                    "resource",
+                    name,
+                    resource_type,
+                    host + ":" + path,
+                    context,
+                    zone
+                )
+
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['GENERAL_ADMIN_AN'])
+
             conn.send(request)
             response = conn.recv()
             self.sess.cleanup() # close connections to get new agents with up to date resource manager

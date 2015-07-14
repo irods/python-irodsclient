@@ -1,9 +1,11 @@
+import sys
 from irods.models import Resource
 
 class iRODSResource(object):
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:
+            '''
             self.id = result[Resource.id]
             self.name = result[Resource.name]
             self.zone_name = result[Resource.zone_name]
@@ -21,6 +23,15 @@ class iRODSResource(object):
             self.context = result[Resource.context]
             self.parent = result[Resource.parent]
             self.obj_count = result[Resource.obj_count]
+            '''
+            for attr, value in Resource.__dict__.iteritems():
+                if not attr.startswith('_'):
+                    try:
+                        setattr(self, attr, result[value])
+                    except KeyError:
+                        # backward compatibility with pre iRODS 4
+                        sys.exc_clear()
+
         self._meta = None
 
     def __repr__(self):

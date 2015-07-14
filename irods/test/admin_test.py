@@ -109,8 +109,13 @@ class TestAdmin(unittest.TestCase):
     def test_make_new_ufs_resource(self):
         # test data
         resc_name = 'temporary_test_resource'
-        resc_type = 'unixfilesystem'
-        resc_host = socket.gethostname()
+        if  config.IRODS_SERVER_VERSION < (4, 0, 0):
+            resc_type = 'unix file system'
+            resc_class = 'cache'
+        else:
+            resc_type = 'unixfilesystem'
+            resc_class = ''
+        resc_host = config.IRODS_SERVER_HOST
         resc_path = '/tmp/' + resc_name
         dummy_str = 'blah'
 
@@ -120,7 +125,7 @@ class TestAdmin(unittest.TestCase):
         obj_path = '{0}/{1}'.format(coll_path, obj_name)
 
         # make new resource
-        self.sess.resources.create(resc_name, resc_type, resc_host, resc_path)
+        self.sess.resources.create(resc_name, resc_type, resc_host, resc_path, resource_class = resc_class)
 
         # retrieve resource
         resource = self.sess.resources.get(resc_name)
