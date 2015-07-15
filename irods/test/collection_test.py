@@ -6,6 +6,7 @@ if sys.version_info >= (2, 7):
 else:
     import unittest2 as unittest
 from irods.session import iRODSSession
+from irods.meta import iRODSMetaCollection
 import irods.test.config as config
 import irods.test.helpers as helpers
 
@@ -110,8 +111,9 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(
             repr(self.test_coll), "<iRODSCollection {coll_id} {coll_name}>".format(**locals()))
 
-    def test_walk_collection(self):
+    def test_walk_collection_topdown(self):
         depth = 20
+        done = False
 
         # files that will be ceated in each subcollection
         filenames = ['foo', 'bar', 'baz']
@@ -126,7 +128,7 @@ class TestCollection(unittest.TestCase):
         # now walk nested collections
         colls = self.test_coll.walk()
         current_coll_name = self.test_coll.name
-        for d in range(depth):
+        for d in range(depth+1):
             # get next result
             collection, subcollections, data_objects = colls.next()
 
@@ -134,8 +136,12 @@ class TestCollection(unittest.TestCase):
             self.assertEqual(collection.name, current_coll_name)
 
             # check subcollection name
-            sub_coll_name = 'sub' + str(d)
-            self.assertEqual(sub_coll_name, subcollections[0].name)
+            if d < depth:
+                sub_coll_name = 'sub' + str(d)
+                self.assertEqual(sub_coll_name, subcollections[0].name)
+            else:
+                # last coll has no subcolls
+                self.assertListEqual(subcollections, [])
 
             # check data object names
             for data_object in data_objects:
@@ -143,7 +149,67 @@ class TestCollection(unittest.TestCase):
 
             # iterate
             current_coll_name = sub_coll_name
+        
+        # that should be it
+        try:
+            colls.next()
+        except StopIteration:
+            done = True
+        
+        self.assertTrue(done)
 
+    def test_walk_collection(self):
+        depth = 20
+        done = False
+
+        # files that will be ceated in each subcollection
+        filenames = ['foo', 'bar', 'baz']
+
+        # make nested collections
+        coll_path = self.test_coll_path
+        for d in range(depth):
+            # create subcollection with files
+            coll_path += '/sub' + str(d)
+            helpers.make_collection(self.sess, coll_path, filenames)
+
+        # now walk nested collections
+        colls = self.test_coll.walk(topdown=False)
+        for d in range(depth-1, -2, -1):
+            # get next result
+            collection, subcollections, data_objects = colls.next()
+
+            # check collection name
+            if d >= 0:
+                coll_name = 'sub'+str(d)
+                self.assertEqual(collection.name, coll_name)
+            else:
+                # root collection
+                self.assertEqual(collection.name, self.test_coll.name)
+  
+            # check subcollection name
+            if d < depth-1:
+                self.assertEqual(sub_coll_name, subcollections[0].name)
+            else:
+                # last coll has no subcolls
+                self.assertListEqual(subcollections, [])
+   
+            # check data object names
+            for data_object in data_objects:
+                self.assertIn(data_object.name, filenames)
+  
+            # iterate
+            sub_coll_name = coll_name
+
+        # that should be it
+        try:
+            colls.next()
+        except StopIteration:
+            done = True
+         
+        self.assertTrue(done)
+
+    def test_collection_metadata(self):
+        self.assertIsInstance(self.test_coll.metadata, iRODSMetaCollection)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
