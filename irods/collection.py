@@ -44,7 +44,7 @@ class iRODSCollection(object):
         self.manager.remove(self.path, recurse, force, additional_flags)
         
     def move(self, path):
-        pass
+        self.manager.move(self.path, path)
 
     def walk(self, topdown=True):
         """

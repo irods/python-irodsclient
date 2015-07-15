@@ -1,5 +1,4 @@
 import os
-import sys
 
 
 def make_object(session, path, content=None):
@@ -13,14 +12,15 @@ def make_object(session, path, content=None):
     return obj
 
 
-def make_collection(session, path, filenames=[]):
+def make_collection(session, path, filenames=None):
     # create collection
     coll = session.collections.create(path)
 
     # create objects
-    for name in filenames:
-        obj_path = os.path.join(path, name)
-        make_object(session, obj_path)
+    if filenames:
+        for name in filenames:
+            obj_path = os.path.join(path, name)
+            make_object(session, obj_path)
 
     # return collection
     return coll
@@ -34,3 +34,4 @@ def make_dummy_collection(session, path, obj_count):
         make_object(session, obj_path)
 
     return coll
+

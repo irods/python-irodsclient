@@ -21,11 +21,11 @@ class TestCollection(unittest.TestCase):
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
 
-        self.coll = self.sess.collections.create(self.test_coll_path)
+        self.test_coll = self.sess.collections.create(self.test_coll_path)
 
     def tearDown(self):
         """ Delete the test collection after each test """
-        self.coll.remove(recurse=True, force=True)
+        self.test_coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
     def test_get_collection(self):
@@ -63,7 +63,8 @@ class TestCollection(unittest.TestCase):
 
         # rename coll
         new_path = "{collection}/{new_name}".format(**args)
-        self.sess.collections.move(path, new_path)
+        coll.move(new_path)
+        # self.sess.collections.move(path, new_path)
 
         # get updated collection
         coll = self.sess.collections.get(new_path)
@@ -102,8 +103,47 @@ class TestCollection(unittest.TestCase):
         # remove collection
         coll1.remove(recurse=True, force=True)
 
-    # def test_delete_collection(self):
-    #    pass
+    def test_repr_coll(self):
+        coll_name = self.test_coll.name.encode('utf-8')
+        coll_id = self.test_coll.id
+
+        self.assertEqual(
+            repr(self.test_coll), "<iRODSCollection {coll_id} {coll_name}>".format(**locals()))
+
+    def test_walk_collection(self):
+        depth = 20
+
+        # files that will be ceated in each subcollection
+        filenames = ['foo', 'bar', 'baz']
+
+        # make nested collections
+        coll_path = self.test_coll_path
+        for d in range(depth):
+            # create subcollection with files
+            coll_path += '/sub' + str(d)
+            helpers.make_collection(self.sess, coll_path, filenames)
+
+        # now walk nested collections
+        colls = self.test_coll.walk()
+        current_coll_name = self.test_coll.name
+        for d in range(depth):
+            # get next result
+            collection, subcollections, data_objects = colls.next()
+
+            # check collection name
+            self.assertEqual(collection.name, current_coll_name)
+
+            # check subcollection name
+            sub_coll_name = 'sub' + str(d)
+            self.assertEqual(sub_coll_name, subcollections[0].name)
+
+            # check data object names
+            for data_object in data_objects:
+                self.assertIn(data_object.name, filenames)
+
+            # iterate
+            current_coll_name = sub_coll_name
+
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
