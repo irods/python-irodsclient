@@ -1,4 +1,4 @@
-python-irodsclient
+python-irodsclient (PiRC)
 ============
 
 [iRODS](https://www.irods.org) is an open-source distributed filesystem manager.  This a client API implemented in python.
@@ -17,7 +17,7 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Query metadata for collections and data objects
 - [x] Add, edit, remove metadata
 - [ ] Replicate data objects to different resource servers
-- [ ] Connection pool management
+- [x] Connection pool management
 - [x] Implement gen query result sets as lazy queries
 - [x] Return empty result sets when CAT_NO_ROWS_FOUND is raised
 - [ ] Manage permissions
