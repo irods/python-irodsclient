@@ -40,7 +40,7 @@ class iRODSMetaCollection(object):
     def get_one(self, key):
         """
         Returns the iRODSMeta defined for a key. If there are none,
-        of if there are more than one defined, raises KeyError
+        or if there are more than one defined, raises KeyError
         """
         values = self.get_all(key)
         if not values:
