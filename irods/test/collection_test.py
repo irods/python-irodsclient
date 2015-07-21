@@ -113,7 +113,6 @@ class TestCollection(unittest.TestCase):
 
     def test_walk_collection_topdown(self):
         depth = 20
-        done = False
 
         # files that will be ceated in each subcollection
         filenames = ['foo', 'bar', 'baz']
@@ -151,16 +150,11 @@ class TestCollection(unittest.TestCase):
             current_coll_name = sub_coll_name
         
         # that should be it
-        try:
+        with self.assertRaises(StopIteration):
             colls.next()
-        except StopIteration:
-            done = True
-        
-        self.assertTrue(done)
 
     def test_walk_collection(self):
         depth = 20
-        done = False
 
         # files that will be ceated in each subcollection
         filenames = ['foo', 'bar', 'baz']
@@ -201,12 +195,8 @@ class TestCollection(unittest.TestCase):
             sub_coll_name = coll_name
 
         # that should be it
-        try:
+        with self.assertRaises(StopIteration):
             colls.next()
-        except StopIteration:
-            done = True
-         
-        self.assertTrue(done)
 
     def test_collection_metadata(self):
         self.assertIsInstance(self.test_coll.metadata, iRODSMetaCollection)

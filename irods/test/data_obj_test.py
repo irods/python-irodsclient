@@ -7,14 +7,12 @@ else:
     import unittest2 as unittest
 from irods.models import Collection, DataObject
 from irods.session import iRODSSession
+from irods.exception import DataObjectDoesNotExist, CollectionDoesNotExist
 import irods.test.config as config
 import irods.test.helpers as helpers
 
 
 class TestDataObjOps(unittest.TestCase):
-    # test data
-    coll_path = '/{0}/home/{1}/test_dir'.format(
-        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
 
     def setUp(self):
         self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
@@ -24,6 +22,7 @@ class TestDataObjOps(unittest.TestCase):
                                  zone=config.IRODS_SERVER_ZONE)
 
         # Create dummy test collection
+        self.coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
 
     def tearDown(self):
@@ -34,19 +33,19 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_rename_obj(self):
         # test args
-        args = {'collection': self.coll_path,
-                'old_name': 'foo',
-                'new_name': 'bar'}
+        collection = self.coll_path
+        old_name = 'foo'
+        new_name = 'bar'
 
         # make object in test collection
-        path = "{collection}/{old_name}".format(**args)
+        path = "{collection}/{old_name}".format(**locals())
         obj = helpers.make_object(self.sess, path)
 
         # get object id
         saved_id = obj.id
 
         # rename object
-        new_path = "{collection}/{new_name}".format(**args)
+        new_path = "{collection}/{new_name}".format(**locals())
         self.sess.data_objects.move(path, new_path)
 
         # get updated object
@@ -60,24 +59,24 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_move_obj_to_coll(self):
         # test args
-        args = {'collection': self.coll_path,
-                'new_coll_name': 'my_coll',
-                'file_name': 'foo'}
+        collection = self.coll_path
+        new_coll_name = 'my_coll'
+        file_name = 'foo'
 
         # make object in test collection
-        path = "{collection}/{file_name}".format(**args)
+        path = "{collection}/{file_name}".format(**locals())
         obj = helpers.make_object(self.sess, path)
 
         # get object id
         saved_id = obj.id
 
         # make new collection and move object to it
-        new_coll_path = "{collection}/{new_coll_name}".format(**args)
+        new_coll_path = "{collection}/{new_coll_name}".format(**locals())
         new_coll = helpers.make_collection(self.sess, new_coll_path)
         self.sess.data_objects.move(path, new_coll_path)
 
         # get new object id
-        new_path = "{collection}/{new_coll_name}/{file_name}".format(**args)
+        new_path = "{collection}/{new_coll_name}/{file_name}".format(**locals())
         obj = self.sess.data_objects.get(new_path)
 
         # compare ids
@@ -86,6 +85,16 @@ class TestDataObjOps(unittest.TestCase):
         # remove new collection
         new_coll.remove(recurse=True, force=True)
 
+    def test_invalid_get(self):
+        # bad paths
+        path_with_invalid_file = self.coll_path + '/hamsalad'
+        path_with_invalid_coll = self.coll_path + '/hamsandwich/foo'
+
+        with self.assertRaises(DataObjectDoesNotExist):
+            obj = self.sess.data_objects.get(path_with_invalid_file)
+
+        with self.assertRaises(DataObjectDoesNotExist):
+            obj = self.sess.data_objects.get(path_with_invalid_coll)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
