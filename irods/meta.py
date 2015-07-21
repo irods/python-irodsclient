@@ -1,4 +1,5 @@
 class iRODSMeta(object):
+
     def __init__(self, name, value, units=None, id=None):
         self.id = id
         self.name = name
@@ -6,9 +7,7 @@ class iRODSMeta(object):
         self.units = units
 
     def __repr__(self):
-        return "<iRODSMeta (%s, %s, %s, %s)>" % (
-            self.name, self.value, self.units, str(self.id)
-        )
+        return "<iRODSMeta {id} {name} {value} {units}>".format(name=self.name, value=self.value, units=self.units, id=str(self.id))
 
     @property
     def __dict__(self):
@@ -17,6 +16,7 @@ class iRODSMeta(object):
             'value': self.value,
             'units': self.units
         }
+
 
 class iRODSMetaCollection(object):
 
@@ -51,7 +51,8 @@ class iRODSMetaCollection(object):
 
     def _get_meta(self, *args):
         if not len(args):
-            raise ValueError("Must specify an iRODSMeta object or key, value, units)")
+            raise ValueError(
+                "Must specify an iRODSMeta object or key, value, units)")
         return args[0] if len(args) == 1 else iRODSMeta(*args)
 
     def add(self, *args):
@@ -69,7 +70,7 @@ class iRODSMetaCollection(object):
         meta = self._get_meta(*args)
         self._sess.remove(self._model_cls, self._path, meta)
         self._reset_metadata()
-    
+
     def items(self):
         """
         Returns a list of iRODSMeta
@@ -81,7 +82,7 @@ class iRODSMetaCollection(object):
         Return a list of keys. Duplicates preserved
         """
         return [m.name for m in self._meta]
-        
+
     def __getitem__(self, key):
         """
         Returns the first iRODSMeta defined on key. Order is
@@ -89,7 +90,7 @@ class iRODSMetaCollection(object):
         """
         values = self.get_all(key)
         if not values:
-            return KeyError 
+            return KeyError
         return values[0]
 
     def __setitem__(self, key, meta):

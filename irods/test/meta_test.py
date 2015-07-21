@@ -11,6 +11,7 @@ from irods.models import (
                          CollectionMeta, ResourceMeta, UserMeta)
 from irods.session import iRODSSession
 import irods.test.config as config
+import irods.test.helpers as helpers
 
 
 class TestMeta(unittest.TestCase):
@@ -146,6 +147,78 @@ class TestMeta(unittest.TestCase):
         # check that metadata is gone
         meta = self.sess.metadata.get(Collection, self.coll_path)
         assert len(meta) == 0
+
+    def test_meta_repr(self):
+        # test obj
+        collection = self.coll_path
+        filename = 'test_meta_repr.txt'
+        test_obj_path = '{collection}/{filename}'.format(**locals())
+
+        # make object
+        obj = helpers.make_object(self.sess, test_obj_path)
+
+        # test AVU
+        attribute, value, units = ('test_attr', 'test_value', 'test_units')
+
+        # add metadata to test object
+        meta = self.sess.metadata.add(DataObject, test_obj_path,
+                               iRODSMeta(attribute, value, units))
+
+        # get metadata
+        meta = self.sess.metadata.get(DataObject, test_obj_path)
+        id = meta[0].id
+
+        # assert
+        self.assertEqual(
+            repr(meta[0]), "<iRODSMeta {id} {attribute} {value} {units}>".format(**locals()))
+
+        # remove test object
+        obj.unlink(force=True)
+
+    def test_meta_dict(self):
+        # test obj
+        collection = self.coll_path
+        filename = 'test_meta_dict.txt'
+        test_obj_path = '{collection}/{filename}'.format(**locals())
+
+        # make object
+        obj = helpers.make_object(self.sess, test_obj_path)
+
+        # test AVU
+        attribute, value, units = ('test_attr', 'test_value', 'test_units')
+
+        # add metadata to test object
+        meta = self.sess.metadata.add(DataObject, test_obj_path,
+                               iRODSMeta(attribute, value, units))
+
+        # get metadata
+        meta = self.sess.metadata.get(DataObject, test_obj_path)
+
+        # assert
+        self.assertEqual(
+            meta[0].__dict__, {'name': meta[0].name,
+                               'value': meta[0].value,
+                               'units': meta[0].units})
+
+        # remove test object
+        obj.unlink(force=True)
+
+    def test_irodsmetacollection(self):
+        # make test collection
+        test_coll_path = self.coll_path + '/test_irodsmetacollection'
+        test_coll = self.sess.collections.create(test_coll_path)
+
+        # get coll meta
+        imc = test_coll.metadata
+        
+        # try invalid key
+        with self.assertRaises(KeyError):
+            imc.get_one('bad_key')
+        
+
+
+        # remove test collection
+        test_coll.remove(recurse=True, force=True)
 
 
 if __name__ == '__main__':
