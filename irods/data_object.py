@@ -25,9 +25,13 @@ class iRODSDataObject(object):
         self.manager = manager
         if parent and results:
             self.collection = parent
-            for attr in ['id', 'name', 'size', 'checksum', 'create_time', 
-                'modify_time']:
-                setattr(self, attr, results[0][getattr(DataObject, attr)])
+            for attr, value in DataObject.__dict__.iteritems():
+                if not attr.startswith('_'):
+                    try:
+                        setattr(self, attr, results[0][value])
+                    except KeyError:
+                        # backward compatibility with pre iRODS 4
+                        sys.exc_clear()
             self.path = self.collection.path + '/' + self.name
             replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
             self.replicas = [iRODSReplica(
@@ -59,8 +63,8 @@ class iRODSDataObject(object):
         conn, desc = self.manager.open(self.path, flag)
         return BufferedRandom(iRODSDataObjectFileRaw(conn, desc))
 
-    def unlink(self):
-        self.manager.unlink(self.path)
+    def unlink(self, force=False):
+        self.manager.unlink(self.path, force)
 
 class iRODSDataObjectFileRaw(RawIOBase):
     def __init__(self, conn, descriptor):

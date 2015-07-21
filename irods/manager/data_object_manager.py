@@ -72,7 +72,10 @@ class DataObjectManager(Manager):
         response = conn.recv()
         return (conn, response.int_info)
 
-    def unlink(self, path):
+    def unlink(self, path, force=False):
+        options = {}
+        if force:
+            options[kw.FORCE_FLAG_KW] = ''
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -81,7 +84,7 @@ class DataObjectManager(Manager):
             dataSize=-1,
             numThreads=0,
             oprType=0,
-            KeyValPair_PI=StringStringMap(),
+            KeyValPair_PI=StringStringMap(options),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
             int_info=api_number['DATA_OBJ_UNLINK_AN'])

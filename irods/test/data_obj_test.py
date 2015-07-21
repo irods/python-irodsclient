@@ -8,6 +8,7 @@ else:
 from irods.models import Collection, DataObject
 from irods.session import iRODSSession
 from irods.exception import DataObjectDoesNotExist, CollectionDoesNotExist
+from irods.column import Column, Criterion
 import irods.test.config as config
 import irods.test.helpers as helpers
 
@@ -95,6 +96,29 @@ class TestDataObjOps(unittest.TestCase):
 
         with self.assertRaises(DataObjectDoesNotExist):
             obj = self.sess.data_objects.get(path_with_invalid_coll)
+
+    def test_force_unlink(self):
+        collection = self.coll_path
+        filename = 'test_force_unlink.txt'
+        file_path = '{collection}/{filename}'.format(**locals())
+        
+        # make object
+        obj = helpers.make_object(self.sess, file_path)
+        
+        # force remove object
+        obj.unlink(force=True)
+
+        # should be gone
+        with self.assertRaises(DataObjectDoesNotExist):
+            obj = self.sess.data_objects.get(file_path)
+
+        # make sure it's not in the trash either
+        conditions = [DataObject.name == filename, 
+                      Criterion('like', Collection.name, "/dev/trash/%%")]
+        query = self.sess.query(DataObject.id, DataObject.name, Collection.name).filter(*conditions)
+        results = query.all()
+        self.assertEqual(len(results), 0)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
