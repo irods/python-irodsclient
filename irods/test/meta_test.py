@@ -273,6 +273,10 @@ class TestMeta(unittest.TestCase):
         # get item
         imc[attr_name]
 
+        # del item with bad key type
+        with self.assertRaises(TypeError):
+            del imc[int()]
+
         # del item
         del imc[attr_name]
         

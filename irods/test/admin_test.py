@@ -106,6 +106,30 @@ class TestAdmin(unittest.TestCase):
         self.assertRaises(
             UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
 
+    def test_modify_user_type_with_zone(self):
+        # make new regular user
+        self.sess.users.create(self.new_user_name, self.new_user_type)
+
+        # check type
+        row = self.sess.query(User.type).filter(
+            User.name == self.new_user_name).one()
+        self.assertEqual(row[User.type], self.new_user_type)
+
+        # change type to rodsadmin
+        self.sess.users.modify(self.new_user_name+'#'+self.new_user_zone, 'type', 'rodsadmin')
+
+        # check type again
+        row = self.sess.query(User.type).filter(
+            User.name == self.new_user_name).one()
+        self.assertEqual(row[User.type], 'rodsadmin')
+
+        # delete user
+        self.sess.users.remove(self.new_user_name)
+
+        # user should be gone
+        self.assertRaises(
+            UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+
     def test_make_new_ufs_resource(self):
         # test data
         resc_name = 'temporary_test_resource'

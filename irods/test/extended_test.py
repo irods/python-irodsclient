@@ -57,6 +57,15 @@ class TestContinueQuery(unittest.TestCase):
         # make sure we got all of them
         self.assertEqual(counter, self.obj_count)
 
+    def test_query_offset_limit_all(self):
+        # settings
+        max_rows = 100
+        offset = 50
+
+        # Query should close after getting max_rows
+        results = self.sess.query(DataObject.name, Collection.name).offset(offset).limit(max_rows).all()
+        self.assertEqual(len(results), max_rows)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

@@ -7,6 +7,7 @@ else:
     import unittest2 as unittest
 from irods.models import User, Collection, DataObject, Resource
 from irods.session import iRODSSession
+from irods.exception import MultipleResultsFound
 import irods.test.config as config
 
 
@@ -105,6 +106,56 @@ class TestQuery(unittest.TestCase):
 
         # assertions
         self.assertIn('demoResc', resources)
+
+    def test_query_first(self):
+        # with no result
+        results = self.sess.query(User.name).filter(User.name == 'boo').first()
+        self.assertIsNone(results)
+
+        # with result
+        results = self.sess.query(User.name).first()
+        self.assertEqual(len(results), 1)
+
+    def test_query_one(self):
+        # with multiple results
+        with self.assertRaises(MultipleResultsFound):
+            results = self.sess.query(User.name).one()
+
+    def test_query_wrong_type(self):
+        with self.assertRaises(TypeError):
+            query = self.sess.query(str())
+
+    def test_query_order_by(self):
+        # query for user names
+        results = self.sess.query(User.name).order_by(User.name).all()
+
+        # get user names from results
+        user_names = []
+        for result in results:
+            user_names.append(result[User.name])
+
+        # make copy before sorting
+        original = list(user_names)
+
+        # check that list was already sorted
+        user_names.sort()
+        self.assertEqual(user_names, original)
+
+    def test_query_order_by_desc(self):
+        # query for user names
+        results = self.sess.query(User.name).order_by(User.name, order='desc').all()
+
+        # get user names from results
+        user_names = []
+        for result in results:
+            user_names.append(result[User.name])
+
+        # make copy before sorting
+        original = list(user_names)
+
+        # check that list was already sorted
+        user_names.sort(reverse=True)
+        self.assertEqual(user_names, original)
 
 
 if __name__ == '__main__':
