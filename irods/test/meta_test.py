@@ -203,22 +203,88 @@ class TestMeta(unittest.TestCase):
         # remove test object
         obj.unlink(force=True)
 
-    def test_irodsmetacollection(self):
-        # make test collection
-        test_coll_path = self.coll_path + '/test_irodsmetacollection'
-        test_coll = self.sess.collections.create(test_coll_path)
+    def test_irodsmetacollection_data_obj(self):
+        '''
+        Tested as data_object metadata
+        '''
+        # test settings
+        avu_count = 5
+        
+        # make test object
+        test_obj_path = self.coll_path + '/test_irodsmetacollection'
+        test_obj = helpers.make_object(self.sess, test_obj_path)
+
+        # test AVUs
+        triplets = [('test_attr'+str(i), 'test_value', 'test_units') for i in range(avu_count)]
 
         # get coll meta
-        imc = test_coll.metadata
+        imc = test_obj.metadata
         
         # try invalid key
         with self.assertRaises(KeyError):
             imc.get_one('bad_key')
-        
 
+        # invalid key type
+        with self.assertRaises(TypeError):
+            imc.get_one(list())
+
+        # try empty update values
+        with self.assertRaises(ValueError):
+            imc.add()
+
+        # add AVUs
+        for triplet in triplets:
+            imc.add(*triplet)
+ 
+        # add another AVU with existing attribute name
+        attr_name = triplets[0][0]
+        duplicate_triplet = (attr_name, 'other_value', 'test_units')
+        imc.add(*duplicate_triplet)
+        
+        # get_one should fail
+        with self.assertRaises(KeyError):
+            imc.get_one(attr_name)
+
+        # remove triplet
+        imc.remove(*duplicate_triplet)
+        imc.get_one(attr_name)
+
+        # get keys
+        for key in imc.keys():
+            self.assertIn(key, [triplet[0] for triplet in triplets])
+
+        # get items
+        for avu in imc.items():
+            self.assertIsInstance(avu, iRODSMeta)
+            self.assertIn(avu.name, [triplet[0] for triplet in triplets])
+            self.assertIn(avu.value, [triplet[1] for triplet in triplets])
+            self.assertIn(avu.units, [triplet[2] for triplet in triplets])
+
+        # try contains
+        self.assertIn(triplets[0][0], imc)
+
+        # try contains with bad key type
+        with self.assertRaises(TypeError):
+            int() in imc
+
+        # set item
+        imc[attr_name] = iRODSMeta(attr_name, 'boo')
+
+        # get item
+        imc[attr_name]
+
+        # del item
+        del imc[attr_name]
+        
+        with self.assertRaises(KeyError):
+            imc[attr_name]
+
+        # remove all metadta
+        imc.remove_all()
+        self.assertEqual(len(imc), 0)
 
         # remove test collection
-        test_coll.remove(recurse=True, force=True)
+        test_obj.unlink(force=True)
 
 
 if __name__ == '__main__':

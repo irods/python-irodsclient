@@ -83,6 +83,9 @@ class iRODSMetaCollection(object):
         """
         return [m.name for m in self._meta]
 
+    def __len__(self):
+        return len(self._meta)
+
     def __getitem__(self, key):
         """
         Returns the first iRODSMeta defined on key. Order is
@@ -90,7 +93,7 @@ class iRODSMetaCollection(object):
         """
         values = self.get_all(key)
         if not values:
-            return KeyError
+            raise KeyError
         return values[0]
 
     def __setitem__(self, key, meta):
