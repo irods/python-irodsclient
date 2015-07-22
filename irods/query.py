@@ -200,5 +200,5 @@ class Query(object):
         else:
             return results[0]
 
-    def __getitem__(self, val):
-        pass
+#     def __getitem__(self, val):
+#         pass

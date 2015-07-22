@@ -8,6 +8,7 @@ else:
 from irods.models import User, Collection, DataObject, Resource
 from irods.session import iRODSSession
 from irods.exception import MultipleResultsFound
+from irods.query import new_icat_keys
 import irods.test.config as config
 
 
@@ -156,6 +157,18 @@ class TestQuery(unittest.TestCase):
         # check that list was already sorted
         user_names.sort(reverse=True)
         self.assertEqual(user_names, original)
+
+    def test_query_order_by_invalid_param(self):
+        with self.assertRaises(ValueError):
+            results = self.sess.query(User.name).order_by(User.name, order='moo').all()
+
+    def test_query_strip(self):
+        query = self.sess.query(Resource)
+        query._strip()
+
+        # should have none of the new stuff
+        for key in new_icat_keys:
+            self.assertNotIn(key, query.columns)
 
 
 if __name__ == '__main__':
