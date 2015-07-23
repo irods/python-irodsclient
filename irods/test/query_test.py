@@ -100,7 +100,9 @@ class TestQuery(unittest.TestCase):
         '''
         # query takes model(s) or column(s)
         results = self.sess.query(Resource).all()
-        repr(results)   # for coverage
+
+        # check ResultSet.__str__()
+        str(results)
 
         # get resource list from results
         resources = [row[Resource.name] for row in results.rows]

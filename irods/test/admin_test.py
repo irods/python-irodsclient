@@ -10,7 +10,7 @@ else:
 
 from irods.models import User
 from irods.session import iRODSSession
-from irods.exception import UserDoesNotExist
+from irods.exception import UserDoesNotExist, ResourceDoesNotExist
 import irods.test.config as config
 
 
@@ -142,14 +142,19 @@ class TestAdmin(unittest.TestCase):
         resc_host = config.IRODS_SERVER_HOST
         resc_path = '/tmp/' + resc_name
         dummy_str = 'blah'
+        zone = config.IRODS_SERVER_ZONE
+        username = config.IRODS_USER_USERNAME
 
-        coll_path = '/{0}/home/{1}/test_dir'.format(
-            config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
+        coll_path = '/{zone}/home/{username}/test_dir'.format(**locals())
         obj_name = 'test1'
-        obj_path = '{0}/{1}'.format(coll_path, obj_name)
+        obj_path = '{coll_path}/{obj_name}'.format(**locals())
 
         # make new resource
         self.sess.resources.create(resc_name, resc_type, resc_host, resc_path, resource_class = resc_class)
+
+        # try invalid params
+        with self.assertRaises(ResourceDoesNotExist):
+            resource = self.sess.resources.get(resc_name, zone='invalid_zone')
 
         # retrieve resource
         resource = self.sess.resources.get(resc_name)
@@ -178,7 +183,10 @@ class TestAdmin(unittest.TestCase):
         # delete test collection
         coll.remove(recurse=True, force=True)
 
-        # delete resource
+        # test delete resource
+        self.sess.resources.remove(resc_name, test=True)
+
+        # delete resource for good
         self.sess.resources.remove(resc_name)
 
     @unittest.skip('needs additional massaging in manager')
