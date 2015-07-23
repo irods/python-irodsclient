@@ -13,10 +13,9 @@ class iRODSReplica(object):
         self.path = path
 
     def __repr__(self):
-        return "<%s.%s %s %s>" % (
+        return "<{0}.{1} {2}>".format(
             self.__class__.__module__,
             self.__class__.__name__,
-            self.resource_group_name,
             self.resource_name
         )
 

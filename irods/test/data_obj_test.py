@@ -41,6 +41,11 @@ class TestDataObjOps(unittest.TestCase):
         # make object in test collection
         path = "{collection}/{old_name}".format(**locals())
         obj = helpers.make_object(self.sess, path)
+        
+        # for coverage
+        repr(obj)
+        for replica in obj.replicas:
+            repr(replica)
 
         # get object id
         saved_id = obj.id
