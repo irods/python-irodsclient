@@ -36,6 +36,17 @@ class TestAdmin(unittest.TestCase):
         '''
         self.sess.cleanup()
 
+    def test_session_with_client_user(self):
+        # stub
+        with iRODSSession(host=config.IRODS_SERVER_HOST,
+                                 port=config.IRODS_SERVER_PORT,
+                                 user=config.IRODS_USER_USERNAME,
+                                 password=config.IRODS_USER_PASSWORD,
+                                 zone=config.IRODS_SERVER_ZONE,
+                                 client_user=config.IRODS_USER_USERNAME,
+                                 client_zone=config.IRODS_SERVER_ZONE) as sess:
+            self.assertTrue(sess)
+
     def test_create_delete_local_user(self):
         # user should not be already present
         self.assertRaises(
