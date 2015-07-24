@@ -28,8 +28,10 @@ class TestConnections(unittest.TestCase):
         with self.sess.pool.get_connection() as conn:
             self.assertTrue(conn)
 
-            # disconnect
-            del conn
+    def test_connection_destructor(self):
+        conn = self.sess.pool.get_connection()
+        conn.__del__()
+        conn.release(destroy=True)
 
     def test_failed_connection(self):
         # mess with the account's port
