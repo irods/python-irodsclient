@@ -6,6 +6,7 @@ if sys.version_info >= (2, 7):
 else:
     import unittest2 as unittest
 from irods.session import iRODSSession
+from irods.exception import NetworkException
 import irods.test.config as config
 
 
@@ -24,22 +25,40 @@ class TestConnections(unittest.TestCase):
         self.sess.cleanup()
 
     def test_connection(self):
-        """
-        @TODO: what does get_collection return?
-        There should be a better way to test this...
-        Wouldn't the iRODSSession init establish the connection?
-        """
-        coll = self.sess.collections.get('/{0}/home/{1}'.format(
-            config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME))
-        self.assertTrue(coll, "Connection failed.")
+        with self.sess.pool.get_connection() as conn:
+            self.assertTrue(conn)
 
-    @unittest.skip("unimplemented")
+            # disconnect
+            del conn
+
     def test_failed_connection(self):
-        """ Test the exception raised by a failed connection """
-        # self.assertRaises()  How to fuddle the config.* to ensure setUp()
-        #                     fails in connecting?
-        pass
+        # mess with the account's port
+        self.sess.pool.account.port = 6666
 
+        # try connecting
+        with self.assertRaises(NetworkException):
+            self.sess.pool.get_connection()
+
+        # set port back
+        self.sess.pool.account.port = config.IRODS_SERVER_PORT
+
+    def test_send_failure(self):
+        with self.sess.pool.get_connection() as conn:
+            # try to close connection twice, 2nd one should fail
+            conn.disconnect()
+            with self.assertRaises(NetworkException):
+                conn.disconnect()
+
+    def test_reply_failure(self):
+        with self.sess.pool.get_connection() as conn:
+            # close connection
+            conn.disconnect()
+
+            # try sending reply
+            with self.assertRaises(NetworkException):
+                conn.reply(0)
+        
+        
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
