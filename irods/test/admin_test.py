@@ -49,8 +49,8 @@ class TestAdmin(unittest.TestCase):
 
     def test_create_delete_local_user(self):
         # user should not be already present
-        self.assertRaises(
-            UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name)
 
         # create user
         self.sess.users.create(self.new_user_name, self.new_user_type)
@@ -67,13 +67,13 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.remove(self.new_user_name)
 
         # user should be gone
-        self.assertRaises(
-            UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name)
 
     def test_create_delete_user_zone(self):
         # user should not be already present
-        self.assertRaises(UserDoesNotExist, lambda: self.sess.users.get(
-            self.new_user_name, self.new_user_zone))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name, self.new_user_zone)
 
         # create user
         self.sess.users.create(
@@ -90,8 +90,8 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.remove(self.new_user_name, self.new_user_zone)
 
         # user should be gone
-        self.assertRaises(UserDoesNotExist, lambda: self.sess.users.get(
-            self.new_user_name, self.new_user_zone))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name, self.new_user_zone)
 
     def test_modify_user_type(self):
         # make new regular user
@@ -114,8 +114,8 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.remove(self.new_user_name)
 
         # user should be gone
-        self.assertRaises(
-            UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name)
 
     def test_modify_user_type_with_zone(self):
         # make new regular user
@@ -138,8 +138,8 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.remove(self.new_user_name)
 
         # user should be gone
-        self.assertRaises(
-            UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name)
 
     def test_make_new_ufs_resource(self):
         # test data
@@ -200,22 +200,23 @@ class TestAdmin(unittest.TestCase):
         # delete resource for good
         self.sess.resources.remove(resc_name)
 
-    @unittest.skip('needs additional massaging in manager')
     def test_set_user_password(self):
         # make new regular user
+        username = self.new_user_name
+        zone = self.new_user_zone
         self.sess.users.create(self.new_user_name, self.new_user_type)
 
-        # set password
-        # self.sess.users.modify(self.new_user_name, 'password', 'blah')
-
-        # try to open new session on behalf of user
+        # set password (not yet supported)
+        test_password = '@?$#'
+        with self.assertRaises(ValueError):
+            self.sess.users.modify(username, 'password', test_password)
 
         # delete user
         self.sess.users.remove(self.new_user_name)
 
         # user should be gone
-        self.assertRaises(
-            UserDoesNotExist, lambda: self.sess.users.get(self.new_user_name))
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name)
 
 
 if __name__ == '__main__':

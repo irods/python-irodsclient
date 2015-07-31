@@ -56,9 +56,14 @@ class UserManager(Manager):
         
     
     def modify(self, user_name, option, new_value, user_zone=""):
+        # checks
+        if option == 'password':
+            raise ValueError('Password modification is not yet supported.')
+
         # must append zone to username for this API call
         if len(user_zone) > 0:
             user_name += "#" + user_zone
+        
         message_body = GeneralAdminRequest(
             "modify",
             "user",
