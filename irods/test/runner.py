@@ -2,12 +2,7 @@
 
 import os
 import sys
-if sys.version_info >= (2, 7):
-    import unittest
-    from unittest import TestLoader
-else:
-    import unittest2 as unittest
-    from discover import DiscoveringTestLoader as TestLoader
+from unittest import TestLoader
 from unittest import TextTestRunner, TestSuite
 
 

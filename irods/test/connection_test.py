@@ -1,10 +1,7 @@
 #! /usr/bin/env python
 import os
 import sys
-if sys.version_info >= (2, 7):
-    import unittest
-else:
-    import unittest2 as unittest
+import unittest
 from irods.session import iRODSSession
 from irods.exception import NetworkException
 import irods.test.config as config

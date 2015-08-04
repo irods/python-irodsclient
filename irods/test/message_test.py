@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 import os
 import sys
+import unittest
 
 # this does not get called when imported from  runner.py
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath('../..'))
-
-if sys.version_info >= (2, 7):
-    import unittest
-else:
-    import unittest2 as unittest
 
 from xml.etree import ElementTree as ET
 # from base64 import b64encode, b64decode
