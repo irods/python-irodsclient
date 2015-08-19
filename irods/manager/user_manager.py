@@ -1,9 +1,9 @@
-from irods.models import User
+from irods.models import User, UserGroup
 from irods.manager import Manager
 from irods.message import GeneralAdminRequest, iRODSMessage
-from irods.exception import UserDoesNotExist, NoResultFound
+from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFound
 from irods.api_number import api_number
-from irods.user import iRODSUser
+from irods.user import iRODSUser, iRODSUserGroup
 
 import logging
 
@@ -38,7 +38,7 @@ class UserManager(Manager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
-        
+        return self.get(user_name, user_zone)
     
     def remove(self, user_name, user_zone=""):
         message_body = GeneralAdminRequest(
@@ -79,3 +79,66 @@ class UserManager(Manager):
             response = conn.recv()
         logger.debug(response.int_info)
 
+
+class UserGroupManager(UserManager):
+    def get(self, name):
+        query = self.sess.query(UserGroup).filter(UserGroup.name == name)
+
+        try:
+            result = query.one()
+        except NoResultFound:
+            raise UserGroupDoesNotExist()
+        return iRODSUserGroup(self, result)
+
+    def create(self, name):
+        message_body = GeneralAdminRequest(
+            "add",
+            "user",
+            name,
+            "rodsgroup",
+            "",
+            ""
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
+        return self.get(name)
+
+    def getmembers(self, name):
+        results = self.sess.query(User).filter(User.type != 'rodsgroup', UserGroup.name == name).get_results()
+        return [iRODSUser(self, row) for row in results]
+
+    def addmember(self, group_name, user_name, user_zone=""):
+        message_body = GeneralAdminRequest(
+            "modify",
+            "group",
+            group_name,
+            "add",
+            user_name,
+            user_zone
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
+ 
+    def removemember(self, group_name, user_name, user_zone=""):
+        message_body = GeneralAdminRequest(
+            "modify",
+            "group",
+            group_name,
+            "remove",
+            user_name,
+            user_zone
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)

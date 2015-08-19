@@ -48,10 +48,7 @@ class TestAdmin(unittest.TestCase):
             self.sess.users.get(self.new_user_name)
 
         # create user
-        self.sess.users.create(self.new_user_name, self.new_user_type)
-
-        # retrieve user
-        user = self.sess.users.get(self.new_user_name)
+        user = self.sess.users.create(self.new_user_name, self.new_user_type)
         repr(user)  # for coverage
 
         # assertions
@@ -59,7 +56,7 @@ class TestAdmin(unittest.TestCase):
         self.assertEqual(user.zone, config.IRODS_SERVER_ZONE)
 
         # delete user
-        self.sess.users.remove(self.new_user_name)
+        user.remove()
 
         # user should be gone
         with self.assertRaises(UserDoesNotExist):
@@ -71,18 +68,15 @@ class TestAdmin(unittest.TestCase):
             self.sess.users.get(self.new_user_name, self.new_user_zone)
 
         # create user
-        self.sess.users.create(
+        user = self.sess.users.create(
             self.new_user_name, self.new_user_type, self.new_user_zone)
-
-        # retrieve user
-        user = self.sess.users.get(self.new_user_name, self.new_user_zone)
 
         # assertions
         self.assertEqual(user.name, self.new_user_name)
         self.assertEqual(user.zone, self.new_user_zone)
 
         # delete user
-        self.sess.users.remove(self.new_user_name, self.new_user_zone)
+        user.remove()
 
         # user should be gone
         with self.assertRaises(UserDoesNotExist):

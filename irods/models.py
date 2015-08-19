@@ -28,6 +28,10 @@ class User(Model):
     create_time = Column(DateTime, 'USER_CREATE_TIME', 208)
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
+class UserGroup(Model):
+    id = Column(Integer, 'USER_GROUP_ID', 900)
+    name = Column(String, 'USER_GROUP_NAME', 901)
+
 class Resource(Model):
     id = Column(Integer, 'R_RESC_ID', 301)
     name = Column(String, 'R_RESC_NAME', 302)

@@ -19,6 +19,9 @@ class CollectionDoesNotExist(PycommandsException):
 class UserDoesNotExist(PycommandsException):
     pass
 
+class UserGroupDoesNotExist(PycommandsException):
+    pass
+
 class ResourceDoesNotExist(PycommandsException):
     pass
 
