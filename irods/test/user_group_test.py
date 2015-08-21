@@ -45,7 +45,7 @@ class TestUserGroup(unittest.TestCase):
 
     def test_add_users_to_group(self):
         group_name = "test_group"
-        group_size = 1
+        group_size = 15
         base_user_name = "test_user"
 
         # group should not be already present
