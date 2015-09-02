@@ -21,13 +21,13 @@ class iRODSMeta(object):
 class iRODSMetaCollection(object):
 
     def __init__(self, manager, model_cls, path):
-        self._sess = manager
+        self._manager = manager
         self._model_cls = model_cls
         self._path = path
         self._reset_metadata()
 
     def _reset_metadata(self):
-        self._meta = self._sess.get(self._model_cls, self._path)
+        self._meta = self._manager.get(self._model_cls, self._path)
 
     def get_all(self, key):
         """
@@ -60,7 +60,7 @@ class iRODSMetaCollection(object):
         Add as iRODSMeta to a key
         """
         meta = self._get_meta(*args)
-        self._sess.add(self._model_cls, self._path, meta)
+        self._manager.add(self._model_cls, self._path, meta)
         self._reset_metadata()
 
     def remove(self, *args):
@@ -68,7 +68,7 @@ class iRODSMetaCollection(object):
         Removes an iRODSMeta
         """
         meta = self._get_meta(*args)
-        self._sess.remove(self._model_cls, self._path, meta)
+        self._manager.remove(self._model_cls, self._path, meta)
         self._reset_metadata()
 
     def items(self):
@@ -125,5 +125,5 @@ class iRODSMetaCollection(object):
 
     def remove_all(self):
         for meta in self._meta:
-            self._sess.remove(self._model_cls, self._path, meta)
+            self._manager.remove(self._model_cls, self._path, meta)
         self._reset_metadata()
