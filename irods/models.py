@@ -109,6 +109,21 @@ class UserMeta(Model):
     value = Column(String, 'COL_META_USER_ATTR_VALUE', 641)
     units = Column(String, 'COL_META_USER_ATTR_UNITS', 642)
 
+class DataAccess(Model):
+    type = Column(Integer, 'DATA_ACCESS_TYPE', 700)
+    name = Column(String, 'COL_DATA_ACCESS_NAME', 701)
+    token_namespace = Column(String, 'COL_DATA_TOKEN_NAMESPACE', 702)
+    user_id = Column(Integer, 'COL_DATA_ACCESS_USER_ID', 703)
+    data_id = Column(Integer, 'COL_DATA_ACCESS_DATA_ID', 704)
+
+class CollectionAccess(Model):
+    type = Column(Integer, 'COL_COLL_ACCESS_TYPE', 710)
+    name = Column(String, 'COL_COLL_ACCESS_NAME', 711)
+    token_namespace = Column(String, 'COL_COLL_TOKEN_NAMESPACE', 712)
+    user_id = Column(Integer, 'COL_COLL_ACCESS_USER_ID', 713)
+    access_id = Column(Integer, 'COL_COLL_ACCESS_COLL_ID', 714)
+
+
 # not really a model. Should be dict instead?
 class Keywords(Model):
     data_type = Keyword(String, 'dataType')

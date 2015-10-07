@@ -4,6 +4,7 @@ from irods.account import iRODSAccount
 from irods.manager.collection_manager import CollectionManager
 from irods.manager.data_object_manager import DataObjectManager
 from irods.manager.metadata_manager import MetadataManager
+from irods.manager.access_manager import AccessManager
 from irods.manager.user_manager import UserManager, UserGroupManager
 from irods.manager.resource_manager import ResourceManager
 
@@ -15,6 +16,7 @@ class iRODSSession(object):
         self.collections = CollectionManager(self)
         self.data_objects = DataObjectManager(self)
         self.metadata = MetadataManager(self)
+        self.permissions = AccessManager(self)
         self.users = UserManager(self)
         self.user_groups = UserGroupManager(self)
         self.resources = ResourceManager(self)
