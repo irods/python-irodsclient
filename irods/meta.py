@@ -7,15 +7,7 @@ class iRODSMeta(object):
         self.units = units
 
     def __repr__(self):
-        return "<iRODSMeta {id} {name} {value} {units}>".format(name=self.name, value=self.value, units=self.units, id=str(self.id))
-
-    @property
-    def __dict__(self):
-        return {
-            'name': self.name,
-            'value': self.value,
-            'units': self.units
-        }
+        return "<iRODSMeta {id} {name} {value} {units}>".format(**vars(self))
 
 
 class iRODSMetaCollection(object):

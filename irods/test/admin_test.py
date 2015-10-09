@@ -49,11 +49,12 @@ class TestAdmin(unittest.TestCase):
 
         # create user
         user = self.sess.users.create(self.new_user_name, self.new_user_type)
-        repr(user)  # for coverage
 
         # assertions
         self.assertEqual(user.name, self.new_user_name)
         self.assertEqual(user.zone, config.IRODS_SERVER_ZONE)
+        self.assertEqual(
+            repr(user), "<iRODSUser {0} {1} {2} {3}>".format(user.id, self.new_user_name, user.type, config.IRODS_SERVER_ZONE))
 
         # delete user
         user.remove()
@@ -158,10 +159,11 @@ class TestAdmin(unittest.TestCase):
 
         # retrieve resource
         resource = self.sess.resources.get(resc_name)
-        repr(resource)  # for coverage
 
         # assertions
         self.assertEqual(resource.name, resc_name)
+        self.assertEqual(
+            repr(resource), "<iRODSResource {0} {1} {2}>".format(resource.id, resc_name, resc_type))
 
         # make test collection
         coll = self.sess.collections.create(coll_path)

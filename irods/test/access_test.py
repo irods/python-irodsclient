@@ -42,14 +42,18 @@ class TestAccess(unittest.TestCase):
         # get object
         obj = self.sess.data_objects.get(path)
 
-        # get object's ACL
-        acl = self.sess.permissions.get(path)[0]
+        # get object's ACLs
+        acl = self.sess.permissions.get(path)[0] # only one for now, the owner's own access
 
-        # checks
+        # check values
         self.assertEqual(acl.data_id, obj.id)
-        self.assertEqual(acl.name, 'own')
+        self.assertEqual(acl.access_name, 'own')
         self.assertEqual(acl.user_id, user.id)
         self.assertEqual(acl.user_name, user.name)
+
+        # check repr()
+        self.assertEqual(
+            repr(acl), "<iRODSAccess {0} {1} {2}>".format('own', user.id, obj.id))
 
         # remove object
         self.sess.data_objects.unlink(path)

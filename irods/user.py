@@ -11,7 +11,7 @@ class iRODSUser(object):
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSUser %d %s %s %s>" % (self.id, self.name, self.type, self.zone)
+        return "<iRODSUser {id} {name} {type} {zone}>".format(**vars(self))
 
     def remove(self):
         self.manager.remove(self.name, self.zone)
@@ -26,7 +26,7 @@ class iRODSUserGroup(object):
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSUserGroup %d %s>" % (self.id, self.name)
+        return "<iRODSUserGroup {id} {name}>".format(**vars(self))
 
     def remove(self):
         self.manager.remove(self.name)

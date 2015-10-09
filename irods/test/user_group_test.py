@@ -31,10 +31,11 @@ class TestUserGroup(unittest.TestCase):
 
         # create group
         group = self.sess.user_groups.create(group_name)
-        repr(group)
 
         # assertions
         self.assertEqual(group.name, group_name)
+        self.assertEqual(
+            repr(group), "<iRODSUserGroup {0} {1}>".format(group.id, group_name))
 
         # delete group
         group.remove()

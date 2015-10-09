@@ -35,4 +35,4 @@ class iRODSResource(object):
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSResource {0} {1} {2}>".format(self.id, self.name, self.type)
+        return "<iRODSResource {id} {name} {type}>".format(**vars(self))

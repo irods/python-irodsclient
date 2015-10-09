@@ -22,7 +22,7 @@ class AccessManager(Manager):
             .filter(*conditions).all()
 
         return [iRODSAccess(
-            name = row[DataAccess.name],
+            access_name = row[DataAccess.name],
             user_id = row[User.id],
             data_id = row[DataObject.id],
             user_name = row[User.name]
