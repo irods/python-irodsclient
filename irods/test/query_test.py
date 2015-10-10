@@ -38,44 +38,16 @@ class TestQuery(unittest.TestCase):
         result = self.sess.query(Collection.id, Collection.name).all()
         assert result.has_value(self.coll_path)
 
-#         q1 = self.sess.query(User, Collection.name)
-#         q2 = q1.filter(User.name == 'cjlarose')
-#         q3 = q2.filter(Keywords.chksum == '12345')
-#
-#         f = open('select', 'w')
-#         f.write(q1._select_message().pack())
-#
-#         f = open('conds', 'w')
-#         f.write(q1._conds_message().pack())
-#
-#         f = open('condskw', 'w')
-#         f.write(q1._kw_message().pack())
-#
-#         f = open('genq', 'w')
-#         f.write(q1._message().pack())
-
-        # print result
-
-#         """
-#         cut-n-pasted from collection_test...
-#         """
-
-        # q1 = sess.query(Collection.id).filter(Collection.name == "'/tempZone/home/rods'")
-        # q1.all()
-
-        # f = open('collquery', 'w')
-        # f.write(q1._message().pack())
-
-        # result = sess.query(Collection.id, Collection.owner_name, User.id, User.name)\
-        #    .filter(Collection.owner_name == "'rods'")\
-        #    .all()
-
-        # print result
-
     def test_files_query(self):
         # file query test
-        result = self.sess.query(
-            DataObject.id, DataObject.collection_id, DataObject.name, User.name, Collection.name).all()
+        query = self.sess.query(
+            DataObject.id, DataObject.collection_id, DataObject.name, User.name, Collection.name)
+
+        # coverage
+        for column in query.columns:
+            repr(column)
+
+        result = query.all()
         assert result.has_value(self.obj_name)
 
     def test_users_query(self):
