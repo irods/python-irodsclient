@@ -224,6 +224,15 @@ class MetadataRequest(Message):
     arg8 = StringProperty()
     arg9 = StringProperty()
 
+#define modAccessControlInp_PI "int recursiveFlag; str *accessLevel; str *userName; str *zone; str *path;"
+class ModAclRequest(Message):
+    _name = 'modAccessControlInp_PI'
+    recursiveFlag = IntegerProperty()
+    accessLevel = StringProperty()
+    userName = StringProperty()
+    zone = StringProperty()
+    path = StringProperty()
+
 #define CollInp_PI "str collName[MAX_NAME_LEN]; struct KeyValPair_PI;"
 class CollectionRequest(Message):
     _name = 'CollInpNew_PI'

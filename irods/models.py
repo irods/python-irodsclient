@@ -28,6 +28,11 @@ class User(Model):
     create_time = Column(DateTime, 'USER_CREATE_TIME', 208)
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
+# R_COLL_USER_MAIN in rodsGenQuery.h
+class CollectionUser(Model):
+    name = Column(String, 'COL_COLL_USER_NAME', 1300)
+    zone = Column(String, 'COL_COLL_USER_ZONE', 1301)
+
 class UserGroup(Model):
     id = Column(Integer, 'USER_GROUP_ID', 900)
     name = Column(String, 'USER_GROUP_NAME', 901)

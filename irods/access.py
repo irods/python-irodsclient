@@ -1,9 +1,10 @@
 class iRODSAccess(object):
-    def __init__(self, access_name, user_id, data_id, user_name=None):
+
+    def __init__(self, access_name, path, user_name, user_zone=''):
         self.access_name = access_name
-        self.user_id = user_id
-        self.data_id = data_id
+        self.path = path
         self.user_name = user_name
+        self.user_zone = user_zone
 
     def __repr__(self):
-        return "<iRODSAccess {access_name} {user_id} {data_id}>".format(**vars(self))
+        return "<iRODSAccess {access_name} {path} {user_name} {user_zone}>".format(**vars(self))
