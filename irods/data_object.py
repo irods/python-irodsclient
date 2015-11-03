@@ -4,7 +4,7 @@ import sys
 
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
-from irods.exception import CAT_NO_ACCESS_PERMISSION
+
 
 class iRODSReplica(object):
     def __init__(self, status, resource_name, path):
@@ -71,12 +71,8 @@ class iRODSDataObjectFileRaw(RawIOBase):
         self.desc = descriptor
 
     def close(self):
-        try:
-            self.conn.close_file(self.desc)
-        except CAT_NO_ACCESS_PERMISSION:
-            pass 
-        finally:
-            self.conn.release()
+        self.conn.close_file(self.desc)
+        self.conn.release()
         super(iRODSDataObjectFileRaw, self).close()
         return None
 

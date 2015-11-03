@@ -48,9 +48,13 @@ class TestAccess(unittest.TestCase):
         # get object
         obj = self.sess.data_objects.get(path)
 
+        # test exception
+        with self.assertRaises(TypeError):
+            self.sess.permissions.get(filename)
+
         # get object's ACLs
-        acl = self.sess.permissions.get(obj)[
-            0]  # only one for now, the owner's own access
+        # only one for now, the owner's own access
+        acl = self.sess.permissions.get(obj)[0]
 
         # check values
         self.assertEqual(acl.access_name, 'own')
