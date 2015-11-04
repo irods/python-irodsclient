@@ -20,16 +20,16 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Connection pool management
 - [x] Implement gen query result sets as lazy queries
 - [x] Return empty result sets when CAT_NO_ROWS_FOUND is raised
-- [ ] Manage permissions
+- [x] Manage permissions
 - [x] Manage users and groups
 - [ ] Manage zones
 - [x] Manage resources
 
 Installation
 ------------
-pycommands requires Python 2.7. Installation with pip is easy!
+PRC requires Python 2.7. Installation with pip is easy!
 
-    pip install git+git://github.com/iPlantCollaborativeOpenSource/pycommands.git
+    pip install git+git://github.com/irods/python-irodsclient.git
 
 Establishing a connection
 -------------------------
@@ -98,7 +98,7 @@ test1
 
 Reading and writing files
 -----------------------
-pycommands provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writing files
+PRC provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writing files
 ```python
 >>> obj = sess.data_objects.get("/tempZone/home/rods/test1")
 >>> with obj.open('r+') as f:
