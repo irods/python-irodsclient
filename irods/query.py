@@ -103,7 +103,7 @@ class Query(object):
                 self.columns[arg] = func
             else:
                 raise TypeError("Arguments must be models or columns")
-        new_q.colmuns = self.columns
+        new_q.columns = self.columns
         return new_q
 
     def min(self, *args):
