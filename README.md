@@ -160,3 +160,14 @@ User.id, User.name, Collection.name).all()
 | 10007   | rods      | 10014     | file_test.py  | /tempZone/home/rods/pycommands | 465       |
 +---------+-----------+-----------+---------------+--------------------------------+-----------+
 ```
+
+Query with aggregation(min, max, sum, avg, count):
+```python
+>>> results = sess.query(User.id, User.name).count(DataObject.id).sum(DataObject.size).all()
+>>> print results
++---------+-----------+-----------+-----------+
+| USER_ID | USER_NAME | D_DATA_ID | DATA_SIZE |
++---------+-----------+-----------+-----------+
+| 10007   | rods      | 10        | 10836     |
++---------+-----------+-----------+-----------+
+```

@@ -92,6 +92,35 @@ class Query(object):
         new_q._continue_index = continue_index
         return new_q
 
+    def _aggregate(self, func, *args):
+        new_q = self._clone()
+        # NOTE(wtakase): Override existing column by aggregation.
+        for arg in args:
+            if isinstance(arg, type) and issubclass(arg, Model):
+                for col in arg._columns:
+                    self.columns[col] = func
+            elif isinstance(arg, Column):
+                self.columns[arg] = func
+            else:
+                raise TypeError("Arguments must be models or columns")
+        new_q.colmuns = self.columns
+        return new_q
+
+    def min(self, *args):
+        return self._aggregate(query_number['SELECT_MIN'], *args)
+
+    def max(self, *args):
+        return self._aggregate(query_number['SELECT_MAX'], *args)
+
+    def sum(self, *args):
+        return self._aggregate(query_number['SELECT_SUM'], *args)
+
+    def avg(self, *args):
+        return self._aggregate(query_number['SELECT_AVG'], *args)
+
+    def count(self, *args):
+        return self._aggregate(query_number['SELECT_COUNT'], *args)
+
     def _select_message(self):
         dct = OrderedDict([(column.icat_id, value)
                            for (column, value) in self.columns.iteritems()])
