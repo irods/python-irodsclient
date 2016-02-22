@@ -31,6 +31,17 @@ class TestContinueQuery(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+    def test_walk_large_collection(self):
+        for current_coll, subcolls, objects in self.coll.walk():
+            # check number of objects
+            self.assertEqual(len(objects), self.obj_count)
+
+            # check object names
+            counter = 0
+            for object in objects:
+                self.assertEqual(object.name, "dummy" + str(counter).zfill(6) + ".txt")
+                counter += 1
+
     def test_files_generator(self):
         # Query for all files in test collection
         query = self.sess.query(DataObject.name, Collection.name).filter(
@@ -60,7 +71,8 @@ class TestContinueQuery(unittest.TestCase):
         offset = 50
 
         # Query should close after getting max_rows
-        results = self.sess.query(DataObject.name, Collection.name).offset(offset).limit(max_rows).all()
+        results = self.sess.query(DataObject.name, Collection.name).offset(
+            offset).limit(max_rows).all()
         self.assertEqual(len(results), max_rows)
 
 

@@ -26,14 +26,14 @@ class iRODSCollection(object):
     def subcollections(self):
         query = self.manager.sess.query(Collection)\
             .filter(Collection.parent_name == self.path)
-        results = query.all()
+        results = query.get_results()
         return [iRODSCollection(self.manager, row) for row in results]
 
     @property
     def data_objects(self):
         query = self.manager.sess.query(DataObject)\
             .filter(DataObject.collection_id == self.id)
-        results = query.all()
+        results = query.get_results()
         grouped = itertools.groupby(results, operator.itemgetter(DataObject.id))
         return [
             iRODSDataObject(self.manager.sess.data_objects, self, list(replicas))
