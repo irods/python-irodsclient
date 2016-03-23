@@ -121,6 +121,21 @@ class TestDataObjOps(unittest.TestCase):
         results = query.all()
         self.assertEqual(len(results), 0)
 
+    def test_multiple_reads(self):
+        collection = self.coll_path
+
+        # make files
+        files = []
+        for filename in ['foo', 'bar', 'baz']:
+            path = '{collection}/{filename}'.format(**locals())
+            helpers.make_object(self.sess, path=path, content=path)
+            files.append(path)
+
+        # read files
+        for file in files:
+            obj = self.sess.data_objects.get(file)
+            with obj.open('r') as f:
+                self.assertEqual(f.read(), obj.path)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
