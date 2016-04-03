@@ -11,6 +11,19 @@ from irods.message.property import (BinaryProperty, StringProperty,
 
 logger = logging.getLogger(__name__)
 
+def _recv_message_in_len(sock, size):
+    size_left = size
+    retbuf = None
+    while(size_left > 0):
+        buf = sock.recv(size_left, socket.MSG_WAITALL)
+        size_left = size_left - len(buf)
+        if retbuf == None:
+            retbuf = buf
+        else:
+            retbuf += buf
+
+    return retbuf
+
 class iRODSMessage(object):
     def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
         self.type = type
@@ -21,9 +34,11 @@ class iRODSMessage(object):
 
     @staticmethod
     def recv(sock):
-        rsp_header_size = sock.recv(4, socket.MSG_WAITALL)
+        #rsp_header_size = sock.recv(4, socket.MSG_WAITALL)
+        rsp_header_size = _recv_message_in_len(sock, 4)
         rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
-        rsp_header = sock.recv(rsp_header_size, socket.MSG_WAITALL)
+        #rsp_header = sock.recv(rsp_header_size, socket.MSG_WAITALL)
+        rsp_header = _recv_message_in_len(sock, rsp_header_size)
             
         xml_root = ET.fromstring(rsp_header)
         type = xml_root.find('type').text
@@ -32,9 +47,12 @@ class iRODSMessage(object):
         bs_len = int(xml_root.find('bsLen').text)
         int_info = int(xml_root.find('intInfo').text)
 
-        message = sock.recv(msg_len, socket.MSG_WAITALL) if msg_len != 0 else None
-        error = sock.recv(err_len, socket.MSG_WAITALL) if err_len != 0 else None
-        bs = sock.recv(bs_len, socket.MSG_WAITALL) if bs_len != 0 else None
+        #message = sock.recv(msg_len, socket.MSG_WAITALL) if msg_len != 0 else None
+        message = _recv_message_in_len(sock, msg_len) if msg_len != 0 else None
+        #error = sock.recv(err_len, socket.MSG_WAITALL) if err_len != 0 else None
+        error = _recv_message_in_len(sock, err_len) if err_len != 0 else None
+        #bs = sock.recv(bs_len, socket.MSG_WAITALL) if bs_len != 0 else None
+        bs = _recv_message_in_len(sock, bs_len) if bs_len != 0 else None
     
         #if message:
             #logger.debug(message)
