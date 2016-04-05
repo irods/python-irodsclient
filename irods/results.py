@@ -25,7 +25,10 @@ class ResultSet(object):
 
         def format(attribute_index, value):
             col = ModelBase.columns[attribute_index]
-            return (col, col.type.to_python(value))
+            try:
+                return (col, col.type.to_python(value))
+            except (TypeError, ValueError):
+                return (col, value)
             
         return dict([format(col.attriInx, value) for col, value in values])
 
