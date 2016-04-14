@@ -7,6 +7,7 @@ from irods.manager.metadata_manager import MetadataManager
 from irods.manager.access_manager import AccessManager
 from irods.manager.user_manager import UserManager, UserGroupManager
 from irods.manager.resource_manager import ResourceManager
+from irods.exception import NetworkException
 
 class iRODSSession(object):
     def __init__(self, *args, **kwargs):
@@ -29,7 +30,10 @@ class iRODSSession(object):
         
     def cleanup(self):
         for conn in self.pool.active | self.pool.idle:
-            conn.disconnect()
+            try:
+                conn.disconnect()
+            except NetworkException:
+                pass
             conn.release(True)
 
     def configure(self, host=None, port=1247, user=None, zone=None, 
