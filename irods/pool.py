@@ -28,4 +28,6 @@ class Pool(object):
                 self.active.remove(conn)
                 if not destroy:
                     self.idle.add(conn)
+            elif conn in self.idle and destroy:
+                self.idle.remove(conn)
         logger.debug('num idle: %d' % len(self.idle))
