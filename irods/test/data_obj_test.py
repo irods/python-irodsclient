@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import os
 import sys
+import socket
 import unittest
 from irods.models import Collection, DataObject
 from irods.session import iRODSSession
@@ -8,6 +9,10 @@ from irods.exception import DataObjectDoesNotExist, CollectionDoesNotExist
 from irods.column import Column, Criterion
 import irods.test.config as config
 import irods.test.helpers as helpers
+import json
+import errno
+import hashlib
+import base64
 
 
 class TestDataObjOps(unittest.TestCase):
@@ -19,6 +24,11 @@ class TestDataObjOps(unittest.TestCase):
                                  password=config.IRODS_USER_PASSWORD,
                                  zone=config.IRODS_SERVER_ZONE)
 
+        # get server version
+        with self.sess.pool.get_connection() as conn:
+            self.server_version = tuple(int(token)
+                                        for token in conn.server_version.replace('rods', '').split('.'))
+
         # Create dummy test collection
         self.coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
@@ -29,6 +39,18 @@ class TestDataObjOps(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+    def make_new_server_config_json(self, server_config_filename):
+        # load server_config.json to inject a new rule base
+        with open(server_config_filename) as f:
+            svr_cfg = json.load(f)
+
+        # inject a new rule base into the native rule engine
+        svr_cfg['rule_engines'][1]['plugin_specific_configuration'][
+            're_rulebase_set'] = [{"filename": "test"}, {"filename": "core"}]
+
+        # dump to a string to repave the existing server_config.json
+        return json.dumps(svr_cfg, sort_keys=True, indent=4, separators=(',', ': '))
+
     def test_rename_obj(self):
         # test args
         collection = self.coll_path
@@ -38,7 +60,7 @@ class TestDataObjOps(unittest.TestCase):
         # make object in test collection
         path = "{collection}/{old_name}".format(**locals())
         obj = helpers.make_object(self.sess, path)
-        
+
         # for coverage
         repr(obj)
         for replica in obj.replicas:
@@ -103,10 +125,10 @@ class TestDataObjOps(unittest.TestCase):
         collection = self.coll_path
         filename = 'test_force_unlink.txt'
         file_path = '{collection}/{filename}'.format(**locals())
-        
+
         # make object
         obj = helpers.make_object(self.sess, file_path)
-        
+
         # force remove object
         obj.unlink(force=True)
 
@@ -115,9 +137,10 @@ class TestDataObjOps(unittest.TestCase):
             obj = self.sess.data_objects.get(file_path)
 
         # make sure it's not in the trash either
-        conditions = [DataObject.name == filename, 
+        conditions = [DataObject.name == filename,
                       Criterion('like', Collection.name, "/dev/trash/%%")]
-        query = self.sess.query(DataObject.id, DataObject.name, Collection.name).filter(*conditions)
+        query = self.sess.query(
+            DataObject.id, DataObject.name, Collection.name).filter(*conditions)
         results = query.all()
         self.assertEqual(len(results), 0)
 
@@ -136,6 +159,68 @@ class TestDataObjOps(unittest.TestCase):
             obj = self.sess.data_objects.get(file)
             with obj.open('r') as f:
                 self.assertEqual(f.read(), obj.path)
+
+
+    @unittest.skipIf(config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(),
+                     "Cannot modify remote server configuration")
+    def test_create_with_checksum(self):
+        # skip if server is older than 4.2
+        if self.server_version < (4, 2, 0):
+            self.skipTest('Expects iRODS 4.2 server-side configuration')
+
+        # server config
+        server_config_dir = '/etc/irods'
+        test_re_file = os.path.join(server_config_dir, 'test.re')
+        server_config_file = os.path.join(
+            server_config_dir, 'server_config.json')
+
+        try:
+            with helpers.file_backed_up(server_config_file):
+                # make pep rule
+                test_rule = "acPostProcForPut { msiDataObjChksum ($objPath, 'forceChksum=', *out )}"
+
+                # write pep rule into test_re
+                with open(test_re_file, 'w') as f:
+                    f.write(test_rule)
+
+                # make new server configuration with additional re file
+                new_server_config = self.make_new_server_config_json(
+                    server_config_file)
+
+                # repave the existing server_config.json to add test_re
+                with open(server_config_file, 'w') as f:
+                    f.write(new_server_config)
+
+                # must make a new connection for the agent to pick up the
+                # updated configuration
+                self.sess.cleanup()
+
+                # test object
+                collection = self.coll_path
+                filename = 'checksum_test_file'
+                obj_path = "{collection}/{filename}".format(**locals())
+                contents = 'blah' * 100
+                checksum = base64.b64encode(
+                    hashlib.sha256(contents).digest()).decode()
+
+                # make object in test collection
+                obj = helpers.make_object(self.sess, obj_path, contents)
+
+                # verify object's checksum
+                self.assertEqual(
+                    obj.checksum, "sha2:{checksum}".format(**locals()))
+
+                # cleanup
+                os.unlink(test_re_file)
+
+        except IOError as e:
+            # a likely fail scenario
+            if e.errno == 13:
+                self.fail("No permission to modify server configuration")
+            raise
+        except:
+            raise
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

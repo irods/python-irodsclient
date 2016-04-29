@@ -1,4 +1,7 @@
 import os
+import tempfile
+import contextlib
+import shutil
 
 
 def make_object(session, path, content=None):
@@ -9,7 +12,8 @@ def make_object(session, path, content=None):
     with obj.open('w') as obj_desc:
         obj_desc.write(content)
 
-    return obj
+    # refresh object after write
+    return session.data_objects.get(path)
 
 
 def make_collection(session, path, filenames=None):
@@ -35,3 +39,12 @@ def make_dummy_collection(session, path, obj_count):
 
     return coll
 
+
+@contextlib.contextmanager
+def file_backed_up(filename):
+    with tempfile.NamedTemporaryFile(prefix=os.path.basename(filename)) as f:
+        shutil.copyfile(filename, f.name)
+        try:
+            yield filename
+        finally:
+            shutil.copyfile(f.name, filename)
