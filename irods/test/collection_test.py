@@ -4,6 +4,7 @@ import sys
 import unittest
 from irods.session import iRODSSession
 from irods.meta import iRODSMetaCollection
+from irods.exception import CollectionDoesNotExist
 import irods.test.config as config
 import irods.test.helpers as helpers
 
@@ -45,6 +46,21 @@ class TestCollection(unittest.TestCase):
     def test_update_in_collection(self):
         """ Modify a file in a collection """
         pass
+
+    def test_remove_deep_collection(self):
+        #depth = 100
+        depth = 20  # placeholder
+        root_coll_path = self.test_coll_path + "/deep_collection"
+
+        # make test collection
+        helpers.make_deep_collection(self.sess, root_coll_path, depth=depth, objects_per_level=1, object_content=None)
+
+        # delete test collection
+        self.sess.collections.remove(root_coll_path, recurse=True, force=True)
+
+        # confirm delete
+        with self.assertRaises(CollectionDoesNotExist):
+            self.sess.collections.get(root_coll_path)
 
     def test_rename_collection(self):
         # test args
