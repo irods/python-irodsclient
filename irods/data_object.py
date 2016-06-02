@@ -65,6 +65,9 @@ class iRODSDataObject(object):
     def unlink(self, force=False):
         self.manager.unlink(self.path, force)
 
+    def truncate(self, size):
+        self.manager.truncate(self.path, size)
+
 class iRODSDataObjectFileRaw(RawIOBase):
     def __init__(self, conn, descriptor):
         self.conn = conn
