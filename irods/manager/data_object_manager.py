@@ -133,6 +133,25 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
+    def truncate(self, path, size):
+        options = {}
+        message_body = FileOpenRequest(
+            objPath=path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=size,
+            numThreads=0,
+            oprType=0,
+            KeyValPair_PI=StringStringMap(options),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['DATA_OBJ_TRUNCATE_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+
 
 
 

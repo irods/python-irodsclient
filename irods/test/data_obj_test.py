@@ -144,6 +144,25 @@ class TestDataObjOps(unittest.TestCase):
         results = query.all()
         self.assertEqual(len(results), 0)
 
+    def test_obj_truncate(self):
+        collection = self.coll_path
+        filename = 'test_obj_truncate.txt'
+        file_path = '{collection}/{filename}'.format(**locals())
+        # random long content
+        content = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
+        truncated_content = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+        # make object
+        obj = helpers.make_object(self.sess, file_path, content)
+
+        # truncate object
+        obj.truncate(len(truncated_content))
+
+        # read file
+        obj = self.sess.data_objects.get(file_path)
+        with obj.open('r') as f:
+            self.assertEqual(f.read(), truncated_content)
+
     def test_multiple_reads(self):
         collection = self.coll_path
 
