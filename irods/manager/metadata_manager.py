@@ -4,7 +4,7 @@ from os.path import dirname, basename
 from irods.manager import Manager
 from irods.message import MetadataRequest, iRODSMessage
 from irods.api_number import api_number
-from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta, 
+from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta,
     CollectionMeta, ResourceMeta, UserMeta)
 from irods.meta import iRODSMeta
 
@@ -30,7 +30,7 @@ class MetadataManager(Manager):
         }[resource_type]
         conditions = {
             'd': [
-                Collection.name == dirname(path), 
+                Collection.name == dirname(path),
                 DataObject.name == basename(path)
             ],
             'c': [Collection.name == path],
@@ -40,8 +40,8 @@ class MetadataManager(Manager):
         results = self.sess.query(model.id, model.name, model.value, model.units)\
             .filter(*conditions).all()
         return [iRODSMeta(
-            row[model.name], 
-            row[model.value], 
+            row[model.name],
+            row[model.value],
             row[model.units],
             id=row[model.id]
         ) for row in results]
@@ -56,7 +56,7 @@ class MetadataManager(Manager):
             meta.value,
             meta.units
         )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
             int_info=api_number['MOD_AVU_METADATA_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
@@ -73,7 +73,7 @@ class MetadataManager(Manager):
             meta.value,
             meta.units
         )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
             int_info=api_number['MOD_AVU_METADATA_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
@@ -90,9 +90,26 @@ class MetadataManager(Manager):
             src,
             dest
         )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body, 
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
             int_info=api_number['MOD_AVU_METADATA_AN'])
 
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
+
+    def set(self, model_cls, path, meta):
+        resource_type = self._model_class_to_resource_type(model_cls)
+        message_body = MetadataRequest(
+            "set",
+            "-" + resource_type,
+            path,
+            meta.name,
+            meta.value,
+            meta.units
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+            int_info=api_number['MOD_AVU_METADATA_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
