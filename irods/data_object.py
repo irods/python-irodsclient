@@ -4,6 +4,7 @@ import sys
 
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
+import irods.keywords as kw
 
 
 class iRODSReplica(object):
@@ -67,6 +68,12 @@ class iRODSDataObject(object):
 
     def truncate(self, size):
         self.manager.truncate(self.path, size)
+
+    def replicate(self, resource):
+        options = {}
+        if resource:
+            options[kw.DEST_RESC_NAME_KW] = resource
+        self.manager.replicate(self.path, options)
 
 class iRODSDataObjectFileRaw(RawIOBase):
     def __init__(self, conn, descriptor):

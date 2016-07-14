@@ -152,8 +152,21 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
+    def replicate(self, path, options={}):
+        message_body = FileOpenRequest(
+            objPath=path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=-1,
+            numThreads=0,
+            oprType=6,
+            KeyValPair_PI=StringStringMap(options),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['DATA_OBJ_REPL_AN'])
 
-
-
-
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
 
