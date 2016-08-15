@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='python-irodsclient',
-      version='0.5.0rc1',
+      version='0.5.0',
       author='iRODS Consortium',
       author_email='support@irods.org',
       description='A python API for iRODS',
