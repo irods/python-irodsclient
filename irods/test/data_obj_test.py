@@ -30,7 +30,8 @@ class TestDataObjOps(unittest.TestCase):
                                         for token in conn.server_version.replace('rods', '').split('.'))
 
         # Create dummy test collection
-        self.coll_path = '/{0}/home/{1}/test_dir'.format(config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
+        self.coll_path = '/{0}/home/{1}/test_dir'.format(
+            config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
 
     def tearDown(self):
@@ -101,7 +102,8 @@ class TestDataObjOps(unittest.TestCase):
         self.sess.data_objects.move(path, new_coll_path)
 
         # get new object id
-        new_path = "{collection}/{new_coll_name}/{file_name}".format(**locals())
+        new_path = "{collection}/{new_coll_name}/{file_name}".format(
+            **locals())
         obj = self.sess.data_objects.get(new_path)
 
         # compare ids
@@ -179,8 +181,9 @@ class TestDataObjOps(unittest.TestCase):
             with obj.open('r') as f:
                 self.assertEqual(f.read(), obj.path)
 
-
-    @unittest.skipIf(config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(),
+    @unittest.skipIf(
+        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
+        ),
                      "Cannot modify remote server configuration")
     def test_create_with_checksum(self):
         # skip if server is older than 4.2
@@ -243,17 +246,18 @@ class TestDataObjOps(unittest.TestCase):
     def test_obj_replicate(self):
         # test data
         resc_name = 'temporary_test_resource'
-        if  config.IRODS_SERVER_VERSION < (4, 0, 0):
+        if config.IRODS_SERVER_VERSION < (4, 0, 0):
             resc_type = 'unix file system'
             resc_class = 'cache'
         else:
             resc_type = 'unixfilesystem'
             resc_class = ''
-        resc_host = config.IRODS_SERVER_HOST # use remote host when available in CI
+        resc_host = config.IRODS_SERVER_HOST  # use remote host when available in CI
         resc_path = '/tmp/' + resc_name
 
         # make second resource
-        self.sess.resources.create(resc_name, resc_type, resc_host, resc_path, resource_class = resc_class)
+        self.sess.resources.create(
+            resc_name, resc_type, resc_host, resc_path, resource_class=resc_class)
 
         # make test object on default resource
         collection = self.coll_path

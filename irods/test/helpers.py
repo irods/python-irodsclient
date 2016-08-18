@@ -46,16 +46,20 @@ def make_deep_collection(session, root_path, depth=10, objects_per_level=50, obj
     # make collections recursively
     for d in range(depth):
         # make list of object names
-        obj_names = ['obj' + str(i).zfill(len(str(objects_per_level))) for i in range(objects_per_level)]
+        obj_names = ['obj' + str(i).zfill(len(str(objects_per_level)))
+                     for i in range(objects_per_level)]
 
         # make subcollection and objects
-        if  d == 0:
-            root_coll = make_collection(session, current_coll_path, obj_names, object_content)
+        if d == 0:
+            root_coll = make_collection(
+                session, current_coll_path, obj_names, object_content)
         else:
-            make_collection(session, current_coll_path, obj_names, object_content)
+            make_collection(
+                session, current_coll_path, obj_names, object_content)
 
         # next level down
-        current_coll_path = os.path.join(current_coll_path, 'subcoll'+ str(d).zfill(len(str(d))))
+        current_coll_path = os.path.join(
+            current_coll_path, 'subcoll' + str(d).zfill(len(str(d))))
 
     return root_coll
 

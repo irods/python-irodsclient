@@ -48,12 +48,13 @@ class TestCollection(unittest.TestCase):
         pass
 
     def test_remove_deep_collection(self):
-        #depth = 100
+        # depth = 100
         depth = 20  # placeholder
         root_coll_path = self.test_coll_path + "/deep_collection"
 
         # make test collection
-        helpers.make_deep_collection(self.sess, root_coll_path, depth=depth, objects_per_level=1, object_content=None)
+        helpers.make_deep_collection(
+            self.sess, root_coll_path, depth=depth, objects_per_level=1, object_content=None)
 
         # delete test collection
         self.sess.collections.remove(root_coll_path, recurse=True, force=True)
@@ -140,7 +141,7 @@ class TestCollection(unittest.TestCase):
         # now walk nested collections
         colls = self.test_coll.walk()
         current_coll_name = self.test_coll.name
-        for d in range(depth+1):
+        for d in range(depth + 1):
             # get next result
             collection, subcollections, data_objects = colls.next()
 
@@ -161,7 +162,7 @@ class TestCollection(unittest.TestCase):
 
             # iterate
             current_coll_name = sub_coll_name
-        
+
         # that should be it
         with self.assertRaises(StopIteration):
             colls.next()
@@ -181,29 +182,29 @@ class TestCollection(unittest.TestCase):
 
         # now walk nested collections
         colls = self.test_coll.walk(topdown=False)
-        for d in range(depth-1, -2, -1):
+        for d in range(depth - 1, -2, -1):
             # get next result
             collection, subcollections, data_objects = colls.next()
 
             # check collection name
             if d >= 0:
-                coll_name = 'sub'+str(d)
+                coll_name = 'sub' + str(d)
                 self.assertEqual(collection.name, coll_name)
             else:
                 # root collection
                 self.assertEqual(collection.name, self.test_coll.name)
-  
+
             # check subcollection name
-            if d < depth-1:
+            if d < depth - 1:
                 self.assertEqual(sub_coll_name, subcollections[0].name)
             else:
                 # last coll has no subcolls
                 self.assertListEqual(subcollections, [])
-   
+
             # check data object names
             for data_object in data_objects:
                 self.assertIn(data_object.name, filenames)
-  
+
             # iterate
             sub_coll_name = coll_name
 

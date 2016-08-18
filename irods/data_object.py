@@ -8,6 +8,7 @@ import irods.keywords as kw
 
 
 class iRODSReplica(object):
+
     def __init__(self, status, resource_name, path):
         self.status = status
         self.resource_name = resource_name
@@ -20,7 +21,9 @@ class iRODSReplica(object):
             self.resource_name
         )
 
+
 class iRODSDataObject(object):
+
     def __init__(self, manager, parent=None, results=None):
         self.manager = manager
         if parent and results:
@@ -33,7 +36,8 @@ class iRODSDataObject(object):
                         # backward compatibility with pre iRODS 4
                         sys.exc_clear()
             self.path = self.collection.path + '/' + self.name
-            replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
+            replicas = sorted(
+                results, key=lambda r: r[DataObject.replica_number])
             self.replicas = [iRODSReplica(
                 r[DataObject.replica_status],
                 r[DataObject.resource_name],
@@ -47,7 +51,8 @@ class iRODSDataObject(object):
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(self.manager.sess.metadata, DataObject, self.path)
+            self._meta = iRODSMetaCollection(
+                self.manager.sess.metadata, DataObject, self.path)
         return self._meta
 
     def open(self, mode='r'):
@@ -75,7 +80,9 @@ class iRODSDataObject(object):
             options[kw.DEST_RESC_NAME_KW] = resource
         self.manager.replicate(self.path, options)
 
+
 class iRODSDataObjectFileRaw(RawIOBase):
+
     def __init__(self, conn, descriptor):
         self.conn = conn
         self.desc = descriptor

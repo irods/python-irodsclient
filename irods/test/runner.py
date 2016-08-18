@@ -23,7 +23,8 @@ if __name__ == "__main__":
     suite = TestSuite(loader.discover(start_dir='.', pattern='*_test.py',
                                       top_level_dir="."))
 
-    result = xmlrunner.XMLTestRunner(verbosity=2, output='test-reports').run(suite)
+    result = xmlrunner.XMLTestRunner(
+        verbosity=2, output='test-reports').run(suite)
     if result.wasSuccessful():
         sys.exit(0)
 
