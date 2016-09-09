@@ -80,6 +80,15 @@ class TestMeta(unittest.TestCase):
         assert meta[1].value == self.value1
         assert meta[1].units == self.unit1
 
+    def test_add_obj_meta_empty(self):
+        '''Should raise exception
+        '''
+
+        # try to add metadata with empty value
+        with self.assertRaises(ValueError):
+            self.sess.metadata.add(DataObject, self.obj_path,
+                                   iRODSMeta('attr_with_empty_value', ''))
+
     def test_copy_obj_meta(self):
         """
         """
