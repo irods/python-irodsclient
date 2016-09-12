@@ -6,6 +6,7 @@ from irods.models import User, Collection, DataObject, Resource
 from irods.session import iRODSSession
 from irods.exception import MultipleResultsFound
 from irods.query import new_icat_keys
+from irods.column import Criterion
 import irods.test.config as config
 
 
@@ -143,6 +144,13 @@ class TestQuery(unittest.TestCase):
         for key in new_icat_keys:
             self.assertNotIn(key, query.columns)
 
+    def test_query_like(self):
+        '''Equivalent to:
+        iquest "select RESC_NAME where RESC_NAME like 'dem%'"
+        '''
+
+        rows = self.sess.query(Resource).filter(Criterion('like', Resource.name, 'dem%')).get_results()
+        self.assertIn('demoResc', [row[Resource.name] for row in rows])
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
