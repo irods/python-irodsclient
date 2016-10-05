@@ -16,7 +16,10 @@ def _recv_message_in_len(sock, size):
     size_left = size
     retbuf = None
     while(size_left > 0):
-        buf = sock.recv(size_left, socket.MSG_WAITALL)
+        try:
+            buf = sock.recv(size_left, socket.MSG_WAITALL)
+        except AttributeError:
+            buf = sock.recv(size_left)
         size_left -= len(buf)
         if retbuf == None:
             retbuf = buf
