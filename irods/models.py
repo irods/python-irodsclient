@@ -63,7 +63,7 @@ class Resource(Model):
     children = Column(String, 'R_RESC_CHILDREN', 315)
     context = Column(String, 'R_RESC_CONTEXT', 316)
     parent = Column(String, 'R_RESC_PARENT', 317)
-    obj_count = Column(Integer, 'R_RESC_OBJCOUNT', 318)
+    parent_context = Column(String, 'R_RESC_PARENT_CONTEXT', 318)
 
 
 class DataObject(Model):

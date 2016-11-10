@@ -93,14 +93,14 @@ class ResourceManager(Manager):
             if server_version < (4, 0, 0):
                 # No resource hierarchies before iRODS 4
                 raise OperationNotSupported
-            else:
-                message_body = GeneralAdminRequest(
-                    "add",
-                    "childtoresc",
-                    parent,
-                    child,
-                    context
-                )
+
+            message_body = GeneralAdminRequest(
+                "add",
+                "childtoresc",
+                parent,
+                child,
+                context
+            )
 
             request = iRODSMessage("RODS_API_REQ", msg=message_body,
                                    int_info=api_number['GENERAL_ADMIN_AN'])
@@ -120,13 +120,13 @@ class ResourceManager(Manager):
             if server_version < (4, 0, 0):
                 # No resource hierarchies before iRODS 4
                 raise OperationNotSupported
-            else:
-                message_body = GeneralAdminRequest(
-                    "rm",
-                    "childfromresc",
-                    parent,
-                    child
-                )
+
+            message_body = GeneralAdminRequest(
+                "rm",
+                "childfromresc",
+                parent,
+                child
+            )
 
             request = iRODSMessage("RODS_API_REQ", msg=message_body,
                                    int_info=api_number['GENERAL_ADMIN_AN'])

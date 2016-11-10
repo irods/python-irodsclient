@@ -24,7 +24,7 @@ class iRODSResource(object):
             self.children = result[Resource.children]
             self.context = result[Resource.context]
             self.parent = result[Resource.parent]
-            self.obj_count = result[Resource.obj_count]
+            self.parent_context = result[Resource.parent_context]
             '''
             for attr, value in Resource.__dict__.iteritems():
                 if not attr.startswith('_'):
