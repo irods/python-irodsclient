@@ -38,3 +38,6 @@ class iRODSResource(object):
 
     def __repr__(self):
         return "<iRODSResource {id} {name} {type}>".format(**vars(self))
+
+    def remove(self, test=False):
+        self.manager.remove(self.name, test)

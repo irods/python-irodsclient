@@ -1,7 +1,7 @@
 from irods.models import Resource
 from irods.manager import Manager
 from irods.message import GeneralAdminRequest, iRODSMessage
-from irods.exception import ResourceDoesNotExist, NoResultFound
+from irods.exception import ResourceDoesNotExist, NoResultFound, OperationNotSupported
 from irods.api_number import api_number
 from irods.resource import iRODSResource
 
@@ -24,7 +24,7 @@ class ResourceManager(Manager):
             raise ResourceDoesNotExist()
         return iRODSResource(self, result)
 
-    def create(self, name, resource_type, host, path, context="", zone="", resource_class=""):
+    def create(self, name, resource_type, host="", path="", context="", zone="", resource_class=""):
         with self.sess.pool.get_connection() as conn:
             # check server version
             server_version = tuple(int(token)
@@ -58,9 +58,11 @@ class ResourceManager(Manager):
             conn.send(request)
             response = conn.recv()
             self.sess.cleanup()
-                              # close connections to get new agents with up to
-                              # date resource manager
+            # close connections to get new agents with up to
+            # date resource manager
+
         logger.debug(response.int_info)
+        return self.get(name, zone)
 
     def remove(self, name, test=False):
         if test:
@@ -82,3 +84,57 @@ class ResourceManager(Manager):
                               # close connections to get new agents with up to
                               # date resource manager
         logger.debug(response.int_info)
+
+    def add_child(self, parent, child, context=""):
+        with self.sess.pool.get_connection() as conn:
+            # check server version
+            server_version = tuple(int(token)
+                                   for token in conn.server_version.replace('rods', '').split('.'))
+            if server_version < (4, 0, 0):
+                # No resource hierarchies before iRODS 4
+                raise OperationNotSupported
+            else:
+                message_body = GeneralAdminRequest(
+                    "add",
+                    "childtoresc",
+                    parent,
+                    child,
+                    context
+                )
+
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['GENERAL_ADMIN_AN'])
+
+            conn.send(request)
+            response = conn.recv()
+            self.sess.cleanup()
+                              # close connections to get new agents with up to
+                              # date resource manager
+        logger.debug(response.int_info)
+
+    def remove_child(self, parent, child):
+        with self.sess.pool.get_connection() as conn:
+            # check server version
+            server_version = tuple(int(token)
+                                   for token in conn.server_version.replace('rods', '').split('.'))
+            if server_version < (4, 0, 0):
+                # No resource hierarchies before iRODS 4
+                raise OperationNotSupported
+            else:
+                message_body = GeneralAdminRequest(
+                    "rm",
+                    "childfromresc",
+                    parent,
+                    child
+                )
+
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['GENERAL_ADMIN_AN'])
+
+            conn.send(request)
+            response = conn.recv()
+            self.sess.cleanup()
+                              # close connections to get new agents with up to
+                              # date resource manager
+        logger.debug(response.int_info)
+

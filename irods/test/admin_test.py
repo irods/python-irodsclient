@@ -132,7 +132,59 @@ class TestAdmin(unittest.TestCase):
         with self.assertRaises(UserDoesNotExist):
             self.sess.users.get(self.new_user_name)
 
-    def test_make_new_ufs_resource(self):
+    @unittest.skipIf(config.IRODS_SERVER_VERSION < (4, 0, 0), "iRODS 4+")
+    def test_make_compound_resource(self):
+        session = self.sess
+        zone = config.IRODS_SERVER_ZONE
+        username = config.IRODS_USER_USERNAME
+        obj_path = '/{zone}/home/{username}/foo.txt'.format(**locals())
+        dummy_str = 'blah'
+
+        # make compound resource
+        comp = session.resources.create('comp_resc', 'compound')
+
+        # make 1st ufs resource
+        resc_name = 'ufs1'
+        resc_type = 'unixfilesystem'
+        resc_host = config.IRODS_SERVER_HOST
+        resc_path = '/tmp/' + resc_name
+        ufs1 = session.resources.create(resc_name, resc_type, resc_host, resc_path)
+
+        # make 2nd ufs resource
+        resc_name = 'ufs2'
+        resc_path = '/tmp/' + resc_name
+        ufs2 = session.resources.create(resc_name, resc_type, resc_host, resc_path)
+
+        # add children to compound
+        session.resources.add_child(comp.name, ufs1.name, 'archive')
+        session.resources.add_child(comp.name, ufs2.name, 'cache')
+
+        # create object on compound resource
+        obj = session.data_objects.create(obj_path, comp.name)
+
+        # write to object
+        with obj.open('w+') as obj_desc:
+            obj_desc.write(dummy_str)
+
+        # refresh object
+        obj = session.data_objects.get(obj_path)
+
+        # check that we have 2 replicas
+        self.assertEqual(len(obj.replicas), 2)
+
+        # remove object
+        obj.unlink(force=True)
+
+        # remove children from compound
+        session.resources.remove_child(comp.name, ufs1.name)
+        session.resources.remove_child(comp.name, ufs2.name)
+
+        # remove resources
+        ufs1.remove()
+        ufs2.remove()
+        comp.remove()
+
+    def test_make_ufs_resource(self):
         # test data
         resc_name = 'temporary_test_resource'
         if config.IRODS_SERVER_VERSION < (4, 0, 0):

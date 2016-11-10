@@ -34,6 +34,10 @@ class ResourceDoesNotExist(PycommandsException):
     pass
 
 
+class OperationNotSupported(PycommandsException):
+    pass
+
+
 class QueryException(PycommandsException):
     pass
 
