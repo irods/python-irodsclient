@@ -184,6 +184,33 @@ class TestAdmin(unittest.TestCase):
         ufs2.remove()
         comp.remove()
 
+    @unittest.skipIf(config.IRODS_SERVER_VERSION < (4, 0, 0), "iRODS 4+")
+    def test_resource_context_string(self):
+        session = self.sess
+        zone = config.IRODS_SERVER_ZONE
+        username = config.IRODS_USER_USERNAME
+        context = {'S3_DEFAULT_HOSTNAME': 'storage.example.com', 'S3_AUTH_FILE': '/path/to/auth/file', 'S3_STSDATE': 'date', 'obj_bucket': 'my_bucket', 'arch_bucket': 'test_archive', 'S3_WAIT_TIME_SEC': '1', 'S3_PROTO': 'HTTPS', 'S3_RETRY_COUNT': '3'}
+
+        # make a resource
+        resc_name = 's3archive'
+        resc_type = 's3'
+        resc_host = config.IRODS_SERVER_HOST
+        resc_path = '/nobucket'
+        s3 = session.resources.create(resc_name, resc_type, resc_host, resc_path, context)
+
+        # verify context fields
+        self.assertEqual(context, s3.context_fields)
+
+        # modify resource context
+        context['S3_PROTO'] = 'HTTP'
+        s3 = session.resources.modify(s3.name, 'context', context)
+
+        # verify context fields again
+        self.assertEqual(context, s3.context_fields)
+
+        # remove resource
+        s3.remove()
+
     def test_make_ufs_resource(self):
         # test data
         resc_name = 'temporary_test_resource'

@@ -36,6 +36,10 @@ class iRODSResource(object):
 
         self._meta = None
 
+    @property
+    def context_fields(self):
+        return dict(pair.split("=") for pair in self.context.split(";"))
+
     def __repr__(self):
         return "<iRODSResource {id} {name} {type}>".format(**vars(self))
 

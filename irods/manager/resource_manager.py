@@ -11,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceManager(Manager):
+    @staticmethod
+    def serialize(context):
+        if isinstance(context, dict):
+            return ';'.join("{}={}".format(key, value) for (key, value) in context.items())
+        return context
 
     def get(self, name, zone=""):
         query = self.sess.query(Resource).filter(Resource.name == name)
@@ -48,7 +53,7 @@ class ResourceManager(Manager):
                     name,
                     resource_type,
                     host + ":" + path,
-                    context,
+                    self.serialize(context),
                     zone
                 )
 
@@ -84,6 +89,25 @@ class ResourceManager(Manager):
                               # close connections to get new agents with up to
                               # date resource manager
         logger.debug(response.int_info)
+
+    def modify(self, name, attribute, value):
+        with self.sess.pool.get_connection() as conn:
+            message_body = GeneralAdminRequest(
+                    "modify",
+                    "resource",
+                    name,
+                    attribute,
+                    self.serialize(value)
+                )
+
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['GENERAL_ADMIN_AN'])
+
+            conn.send(request)
+            response = conn.recv()
+            self.sess.cleanup()
+        logger.debug(response.int_info)
+        return self.get(name)
 
     def add_child(self, parent, child, context=""):
         with self.sess.pool.get_connection() as conn:
