@@ -356,6 +356,50 @@ class GeneralAdminRequest(Message):
     arg9 = StringProperty()
 
 
+#define RHostAddr_PI "str hostAddr[LONG_NAME_LEN]; str rodsZone[NAME_LEN]; int port; int dummyInt;"
+
+class RodsHostAddress(Message):
+    _name = 'RHostAddr_PI'
+    hostAddr = StringProperty()
+    rodsZone = StringProperty()
+    port = IntegerProperty()
+    dummyInt = IntegerProperty()
+
+
+#define MsParam_PI "str *label; piStr *type; ?type *inOutStruct; struct *BinBytesBuf_PI;"
+
+class InOutStruct(Message):
+    _name = 'STR_PI'
+    myStr = StringProperty()
+
+class MsParam(Message):
+    _name = 'MsParam_PI'
+    label = StringProperty()
+    type = StringProperty()
+    inOutStruct = SubmessageProperty(InOutStruct)
+    # no inpOutBuf
+
+
+#define MsParamArray_PI "int paramLen; int oprType; struct *MsParam_PI[paramLen];"
+
+class MsParamArray(Message):
+    _name = 'MsParamArray_PI'
+    paramLen = IntegerProperty()
+    oprType = IntegerProperty()
+    msParam = ArrayProperty(SubmessageProperty(MsParam))
+
+
+#define ExecMyRuleInp_PI "str myRule[META_STR_LEN]; struct RHostAddr_PI; struct KeyValPair_PI; str outParamDesc[LONG_NAME_LEN]; struct *MsParamArray_PI;"
+
+class RuleExecutionRequest(Message):
+    _name = 'ExecMyRuleInp_PI'
+    myRule = StringProperty()
+    addr = SubmessageProperty(RodsHostAddress)
+    condInput = SubmessageProperty(StringStringMap)
+    outParamDesc = StringProperty()
+    inpParamArray = SubmessageProperty(MsParamArray)
+
+
 def empty_gen_query_out(cols):
     sql_results = [GenQueryResponseColumn(attriInx=col.icat_id, value=[])
                    for col in cols]
