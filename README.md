@@ -16,7 +16,7 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Rename collections
 - [x] Query metadata for collections and data objects
 - [x] Add, edit, remove metadata
-- [ ] Replicate data objects to different resource servers
+- [x] Replicate data objects to different resource servers
 - [x] Connection pool management
 - [x] Implement gen query result sets as lazy queries
 - [x] Return empty result sets when CAT_NO_ROWS_FOUND is raised
