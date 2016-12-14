@@ -37,8 +37,8 @@ class Rule(object):
                     if input_header.lower() != 'input':
                         raise ValueError
 
-                    # parse *param0="value0";*param1="value1";...
-                    for pair in input_line.split(';'):
+                    # parse *param0="value0",*param1="value1";...
+                    for pair in input_line.split(','):
                         label, value = pair.split('=')
                         self.params[label] = value
 

@@ -57,7 +57,7 @@ class TestRule(unittest.TestCase):
                                     *attribute.*name = *value;
                                     msiAssociateKeyValuePairsToObj(*attribute, *object, "-d")
                                 }}
-                                INPUT *object="{object_path}";*name="{attr_name}";*value="{attr_value}"
+                                INPUT *object="{object_path}",*name="{attr_name}",*value="{attr_value}"
                                 OUTPUT ruleExecOut'''.format(**locals()))
 
         with open(rule_file_path, "w") as rule_file:
