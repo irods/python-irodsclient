@@ -443,8 +443,11 @@ class ExecCmdOut_PI(Message):
     # need custom unpacking since both buffers have the same element name
     def unpack(self, root):
         for (name, property) in self._ordered_properties:
-            if name == 'stdoutBuf' or name == 'stderrBuf':
-                unpacked_value = property.unpack(root.findall(property.message_cls._name))
+            if name == 'stdoutBuf':
+                unpacked_value = property.unpack(root.findall(property.message_cls._name)[:1])
+
+            elif name == 'stderrBuf':
+                unpacked_value = property.unpack(root.findall(property.message_cls._name)[1:])
 
             else:
                 unpacked_value = property.unpack(root.findall(name))

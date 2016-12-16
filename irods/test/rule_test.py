@@ -129,7 +129,7 @@ class TestRule(unittest.TestCase):
         object.unlink(force=True)
 
 
-    def test_retrieve_stdout_from_rule(self):
+    def test_retrieve_std_streams_from_rule(self):
         '''
         Tests running a rule from a client-side .r file.
         The rule writes things to its stdout that we
@@ -140,6 +140,7 @@ class TestRule(unittest.TestCase):
         # test metadata
         some_string = "foo"
         some_other_string = "bar"
+        err_string = "baz"
 
         # make rule file
         ts = time.time()
@@ -149,9 +150,9 @@ class TestRule(unittest.TestCase):
                                     # write stuff
                                     writeLine("stdout", *some_string);
                                     writeLine("stdout", *some_other_string);
-                                    writeLine("stdout", "boo");
+                                    writeLine("stderr", *err_string);
                                 }}
-                                INPUT *some_string="{some_string}",*some_other_string="{some_other_string}"
+                                INPUT *some_string="{some_string}",*some_other_string="{some_other_string}",*err_string="{err_string}"
                                 OUTPUT ruleExecOut'''.format(**locals()))
 
         with open(rule_file_path, "w") as rule_file:
@@ -161,10 +162,14 @@ class TestRule(unittest.TestCase):
         myrule = Rule(session, rule_file_path)
         out_array = myrule.execute()
 
-        # check that we got our strings back
-        buf = out_array.MsParam_PI[0].inOutStruct.stdoutBuf.buf
-        self.assertIn(some_string, buf)
-        self.assertIn(some_other_string, buf)
+        # check stdout
+        outbuf = out_array.MsParam_PI[0].inOutStruct.stdoutBuf.buf
+        self.assertIn(some_string, outbuf)
+        self.assertIn(some_other_string, outbuf)
+
+        # check stderr
+        errbuf = out_array.MsParam_PI[0].inOutStruct.stderrBuf.buf
+        self.assertIn(err_string, errbuf)
 
         # remove rule file
         os.remove(rule_file_path)
