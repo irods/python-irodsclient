@@ -49,7 +49,7 @@ class LongProperty(MessageProperty):
 
 class BinaryProperty(MessageProperty):
 
-    def __init__(self, length):
+    def __init__(self, length=None):
         self.length = length
         super(BinaryProperty, self).__init__()
 
@@ -93,7 +93,7 @@ class ArrayProperty(MessageProperty):
 
 class SubmessageProperty(MessageProperty):
 
-    def __init__(self, message_cls):
+    def __init__(self, message_cls=None):
         self.message_cls = message_cls
         super(SubmessageProperty, self).__init__()
 

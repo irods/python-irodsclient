@@ -1,5 +1,5 @@
 import cgi
-from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, InOutStruct, MsParam, MsParamArray, RuleExecutionRequest
+from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
 from irods.api_number import api_number
 
 import logging
@@ -27,6 +27,7 @@ class Rule(object):
         self.output = ''
         self.body = '@external\n'
 
+        # parse rule file
         with open(file) as f:
             for line in f:
                 # parse input line
@@ -37,10 +38,10 @@ class Rule(object):
                     if input_header.lower() != 'input':
                         raise ValueError
 
-                    # parse *param0="value0",*param1="value1";...
+                    # parse *param0="value0",*param1="value1",...
                     for pair in input_line.split(','):
                         label, value = pair.split('=')
-                        self.params[label] = value
+                        self.params[label.strip()] = value.strip()
 
                 # parse output line
                 elif line.strip().lower().startswith('output'):
@@ -51,7 +52,7 @@ class Rule(object):
                         raise ValueError
 
                     # use line as is
-                    self.output = output_line
+                    self.output = output_line.strip()
 
                 # parse rule
                 else:
@@ -62,10 +63,10 @@ class Rule(object):
         # rule input
         param_array = []
         for label, value in self.params.items():
-            inOutStruct = InOutStruct(myStr=cgi.escape(value, quote=True))
+            inOutStruct = STR_PI(myStr=cgi.escape(value, quote=True))
             param_array.append(MsParam(label=label, type='STR_PI', inOutStruct=inOutStruct))
 
-        inpParamArray = MsParamArray(paramLen=len(param_array), oprType=0, msParam=param_array)
+        inpParamArray = MsParamArray(paramLen=len(param_array), oprType=0, MsParam_PI=param_array)
 
         # rule body
         addr = RodsHostAddress(hostAddr='', rodsZone='', port=0, dummyInt=0)
@@ -77,4 +78,6 @@ class Rule(object):
         with self.session.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
+            out_param_array = response.get_main_message(MsParamArray)
             self.session.cleanup()
+        return out_param_array

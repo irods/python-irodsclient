@@ -129,6 +129,47 @@ class TestRule(unittest.TestCase):
         object.unlink(force=True)
 
 
+    def test_retrieve_stdout_from_rule(self):
+        '''
+        Tests running a rule from a client-side .r file.
+        The rule writes things to its stdout that we
+        get back on the client side
+        '''
+        session = self.sess
+
+        # test metadata
+        some_string = "foo"
+        some_other_string = "bar"
+
+        # make rule file
+        ts = time.time()
+        rule_file_path = "/tmp/test_{ts}.r".format(**locals())
+        rule = textwrap.dedent('''\
+                                test {{
+                                    # write stuff
+                                    writeLine("stdout", *some_string);
+                                    writeLine("stdout", *some_other_string);
+                                    writeLine("stdout", "boo");
+                                }}
+                                INPUT *some_string="{some_string}",*some_other_string="{some_other_string}"
+                                OUTPUT ruleExecOut'''.format(**locals()))
+
+        with open(rule_file_path, "w") as rule_file:
+            rule_file.write(rule)
+
+        # run test rule
+        myrule = Rule(session, rule_file_path)
+        out_array = myrule.execute()
+
+        # check that we got our strings back
+        buf = out_array.MsParam_PI[0].inOutStruct.stdoutBuf.buf
+        self.assertIn(some_string, buf)
+        self.assertIn(some_other_string, buf)
+
+        # remove rule file
+        os.remove(rule_file_path)
+
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
