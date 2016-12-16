@@ -1,7 +1,7 @@
 Python iRODS Client (PRC)
 ============
 
-[iRODS](https://www.irods.org) is an open-source distributed filesystem manager.  This a client API implemented in python.
+[iRODS](https://www.irods.org) is an open-source distributed data management system. This is a client API implemented in python.
 
 This project should be considered pre-alpha. Here's what works:
 - [x] Establish a connection to iRODS, authenticate
