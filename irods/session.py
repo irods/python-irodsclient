@@ -16,6 +16,7 @@ class iRODSSession(object):
         self.pool = None
         if args or kwargs:
             self.configure(*args, **kwargs)
+
         self.collections = CollectionManager(self)
         self.data_objects = DataObjectManager(self)
         self.metadata = MetadataManager(self)
@@ -38,34 +39,14 @@ class iRODSSession(object):
                 pass
             conn.release(True)
 
-    def configure(self, host=None, port=1247, user=None, zone=None,
-                  password=None, client_user=None, client_zone=None):
+    def configure(self,
+                  host=None, port=1247, user=None, zone=None,
+                  password=None, client_user=None, client_zone=None,
+                  server_dn=None, authentication_scheme='password'):
         account = iRODSAccount(
-            host, int(port), user, zone, password, client_user,
-            client_zone)
+            host, int(port), user, zone, authentication_scheme,
+            password, client_user, server_dn, client_zone)
         self.pool = Pool(account)
 
     def query(self, *args):
         return Query(self, *args)
-
-
-        self.host = host
-        self.port = port
-        self.proxy_user = self.client_user = user
-        self.proxy_zone = self.client_zone = zone
-
-    @property
-    def username(self):
-        return self.pool.account.client_user
-
-    @property
-    def zone(self):
-        return self.pool.account.client_zone
-
-    @property
-    def host(self):
-        return self.pool.account.host
-
-    @property
-    def port(self):
-        return self.pool.account.port
