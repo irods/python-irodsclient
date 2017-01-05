@@ -11,6 +11,12 @@ MAX_NAME_LEN = MAX_PATH_ALLOWED + 64
 RESPONSE_LEN = 16
 CHALLENGE_LEN = 64
 
+# Other variables
+AUTH_SCHEME_KEY = 'a_scheme'
+GSI_AUTH_PLUGIN = 'GSI'
+GSI_AUTH_SCHEME = GSI_AUTH_PLUGIN.lower()
+GSI_OID = "1.3.6.1.4.1.3536.1.1"  # taken from http://j.mp/2hDeczm
+
 # logger = logging.getLogger()
 # logger.setLevel(logging.ERROR)
 # h = logging.StreamHandler()

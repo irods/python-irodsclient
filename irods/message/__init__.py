@@ -63,7 +63,7 @@ class iRODSMessage(object):
         bs = _recv_message_in_len(sock, bs_len) if bs_len != 0 else None
 
         # if message:
-            # logger.debug(message)
+        #     logger.debug(message)
 
         return iRODSMessage(type, message, error, bs, int_info)
 
@@ -73,10 +73,10 @@ class iRODSMessage(object):
             <errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo>\
             </MsgHeader_PI>" % (
             self.type,
-                len(main_msg) if main_msg else 0,
-                len(self.error) if self.error else 0,
-                len(self.bs) if self.bs else 0,
-                self.int_info if self.int_info else 0
+            len(main_msg) if main_msg else 0,
+            len(self.error) if self.error else 0,
+            len(self.bs) if self.bs else 0,
+            self.int_info if self.int_info else 0
         )
         msg_header_length = struct.pack(">i", len(msg_header))
         parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
@@ -134,16 +134,14 @@ class AuthChallenge(Message):
     _name = 'authRequestOut_PI'
     challenge = BinaryProperty(64)
 
-
-#define BinBytesBuf_PI "int buflen; bin *buf(buflen);"
-
-class BinBytesBuf(Message):
-    _name = 'BinBytesBuf_PI'
-    buflen = IntegerProperty()
-    buf = BinaryProperty()
-
-
 # define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
+
+
+class GSIAuthMessage(Message):
+    _name = 'authPlugReqInp_PI'
+    auth_scheme_ = StringProperty()
+    context_ = StringProperty()
+
 
 class IntegerIntegerMap(Message):
     _name = 'InxIvalPair_PI'
@@ -362,107 +360,6 @@ class GeneralAdminRequest(Message):
     arg7 = StringProperty()
     arg8 = StringProperty()
     arg9 = StringProperty()
-
-
-#define RHostAddr_PI "str hostAddr[LONG_NAME_LEN]; str rodsZone[NAME_LEN]; int port; int dummyInt;"
-
-class RodsHostAddress(Message):
-    _name = 'RHostAddr_PI'
-    hostAddr = StringProperty()
-    rodsZone = StringProperty()
-    port = IntegerProperty()
-    dummyInt = IntegerProperty()
-
-
-#define MsParam_PI "str *label; piStr *type; ?type *inOutStruct; struct *BinBytesBuf_PI;"
-
-class MsParam(Message):
-    _name = 'MsParam_PI'
-    label = StringProperty()
-    type = StringProperty()
-
-    # for packing
-    inOutStruct = SubmessageProperty()
-    BinBytesBuf_PI = SubmessageProperty(BinBytesBuf)
-
-    # override Message.unpack() to unpack inOutStruct
-    # depending on the received <type> element
-    def unpack(self, root):
-        for (name, property) in self._ordered_properties:
-            if name == 'inOutStruct':
-                continue
-
-            unpacked_value = property.unpack(root.findall(name))
-            self._values[name] = unpacked_value
-
-            # type tells us what type of data structure we are unpacking
-            # e.g: <type>ExecCmdOut_PI</type>
-            if name == 'type':
-
-                # unpack struct accordingly
-                message_class = globals()[unpacked_value]
-                self._values['inOutStruct'] = SubmessageProperty(message_class).unpack(root.findall(unpacked_value))
-
-
-#define MsParamArray_PI "int paramLen; int oprType; struct *MsParam_PI[paramLen];"
-
-class MsParamArray(Message):
-    _name = 'MsParamArray_PI'
-    paramLen = IntegerProperty()
-    oprType = IntegerProperty()
-    MsParam_PI = ArrayProperty(SubmessageProperty(MsParam))
-
-
-#define ExecMyRuleInp_PI "str myRule[META_STR_LEN]; struct RHostAddr_PI; struct KeyValPair_PI; str outParamDesc[LONG_NAME_LEN]; struct *MsParamArray_PI;"
-
-class RuleExecutionRequest(Message):
-    _name = 'ExecMyRuleInp_PI'
-    myRule = StringProperty()
-    addr = SubmessageProperty(RodsHostAddress)
-    condInput = SubmessageProperty(StringStringMap)
-    outParamDesc = StringProperty()
-    inpParamArray = SubmessageProperty(MsParamArray)
-
-
-#define ExecCmdOut_PI "struct BinBytesBuf_PI; struct BinBytesBuf_PI; int status;"
-
-class ExecCmdOut_PI(Message):
-    '''
-    In this case the above class name must match the name
-    of its root element to be unpacked dynamically,
-    since it is one of the possible types for MsParam.
-    '''
-    _name = 'ExecCmdOut_PI'
-
-    # for packing
-    stdoutBuf = SubmessageProperty(BinBytesBuf)
-    stderrBuf = SubmessageProperty(BinBytesBuf)
-
-    status = IntegerProperty()
-
-    # need custom unpacking since both buffers have the same element name
-    def unpack(self, root):
-        for (name, property) in self._ordered_properties:
-            if name == 'stdoutBuf':
-                unpacked_value = property.unpack(root.findall(property.message_cls._name)[:1])
-
-            elif name == 'stderrBuf':
-                unpacked_value = property.unpack(root.findall(property.message_cls._name)[1:])
-
-            else:
-                unpacked_value = property.unpack(root.findall(name))
-
-            self._values[name] = unpacked_value
-
-
-#define STR_PI "str myStr;"
-
-class STR_PI(Message):
-    '''
-    Another "returnable" MsParam type
-    '''
-    _name = 'STR_PI'
-    myStr = StringProperty()
 
 
 def empty_gen_query_out(cols):
