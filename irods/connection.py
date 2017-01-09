@@ -95,9 +95,9 @@ class Connection(object):
 
         try:
             s.connect((self.account.host, self.account.port))
-        except socket.error as e:
-            print("Error:", e)
-            exit(1)
+        except socket.error:  # as e:
+            # print("Error:", e)
+            # exit(1)
             raise NetworkException(
                 "Could not connect to specified host and port: " +
                 "{host}:{port}".format(
@@ -347,5 +347,4 @@ class Connection(object):
                                int_info=api_number['DATA_OBJ_CLOSE_AN'])
 
         self.send(message)
-        # response = self.recv()
-        self.recv()
+        response = self.recv()
