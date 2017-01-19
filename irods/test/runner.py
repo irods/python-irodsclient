@@ -4,7 +4,14 @@ import os
 import sys
 from unittest import TestLoader, TestSuite
 import xmlrunner
+import logging
 
+logger = logging.getLogger()
+logger.setLevel(logging.ERROR)
+h = logging.StreamHandler()
+f = logging.Formatter("%(asctime)s %(name)s-%(levelname)s [%(pathname)s %(lineno)d] %(message)s")
+h.setFormatter(f)
+logger.addHandler(h)
 
 """
 NOTE: "If a test package name (directory with __init__.py) matches the pattern

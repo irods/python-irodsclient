@@ -44,7 +44,9 @@ class iRODSCollection(object):
             for _, replicas in grouped
         ]
 
-    def remove(self, recurse=True, force=False, additional_flags={}):
+    def remove(self, recurse=True, force=False, additional_flags=None):
+        if additional_flags is None:
+            additional_flags={}
         self.manager.remove(self.path, recurse, force, additional_flags)
 
     def move(self, path):
