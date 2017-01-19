@@ -8,6 +8,7 @@ from irods.exception import MultipleResultsFound
 from irods.query import new_icat_keys
 from irods.column import Criterion
 import irods.test.config as config
+import irods.test.helpers as helpers
 
 
 class TestQuery(unittest.TestCase):
@@ -18,11 +19,7 @@ class TestQuery(unittest.TestCase):
     obj_path = '{0}/{1}'.format(coll_path, obj_name)
 
     def setUp(self):
-        self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,  # 4444 why?
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE)
+        self.sess = helpers.make_session_from_config()
 
         # Create test collection and (empty) test object
         self.coll = self.sess.collections.create(self.coll_path)

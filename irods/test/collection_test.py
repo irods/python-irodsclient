@@ -14,11 +14,7 @@ class TestCollection(unittest.TestCase):
         config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
 
     def setUp(self):
-        self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE)
+        self.sess = helpers.make_session_from_config()
 
         self.test_coll = self.sess.collections.create(self.test_coll_path)
 

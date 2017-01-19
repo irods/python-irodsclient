@@ -4,6 +4,7 @@ import sys
 import unittest
 from irods.session import iRODSSession
 import irods.test.config as config
+import irods.test.helpers as helpers
 
 
 class TestFiles(unittest.TestCase):
@@ -20,11 +21,7 @@ class TestFiles(unittest.TestCase):
     test_obj_path = test_coll_path + '/' + test_obj_name
 
     def setUp(self):
-        self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,  # 4444: why?
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE)
+        self.sess = helpers.make_session_from_config()
 
         # Create test collection
         self.test_coll = self.sess.collections.create(self.test_coll_path)

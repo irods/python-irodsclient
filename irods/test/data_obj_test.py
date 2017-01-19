@@ -18,11 +18,7 @@ import base64
 class TestDataObjOps(unittest.TestCase):
 
     def setUp(self):
-        self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE)
+        self.sess = helpers.make_session_from_config()
 
         # get server version
         with self.sess.pool.get_connection() as conn:

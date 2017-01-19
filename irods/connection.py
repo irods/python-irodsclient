@@ -1,15 +1,9 @@
-# -*- coding: utf-8 -*-
-
 import socket
 import logging
 import struct
 import hashlib
 import gssapi
 
-# try:
-#     from beeprint import pp
-# except:
-#     pp = print
 
 from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
@@ -42,8 +36,6 @@ class Connection(object):
             self._login_gsi()
         else:
             raise ValueError("Unknown authentication scheme %s" % scheme)
-        # print("WORKING CONNECTION")
-        # exit(0)
 
     def __del__(self):
         if self.socket:
@@ -95,9 +87,7 @@ class Connection(object):
 
         try:
             s.connect((self.account.host, self.account.port))
-        except socket.error:  # as e:
-            # print("Error:", e)
-            # exit(1)
+        except socket.error:
             raise NetworkException(
                 "Could not connect to specified host and port: " +
                 "{host}:{port}".format(
@@ -168,9 +158,6 @@ class Connection(object):
 
     def receive_gsi_token(self):
 
-        # NOT WORKING
-        # tmp = iRODSMessage.recv(self.socket)
-
         # Receive client token from iRODS
         data = self.socket.recv(4)
         value = struct.unpack("I", bytearray(data))
@@ -178,7 +165,6 @@ class Connection(object):
         server_token = self.recvall(token_len)
         logger.debug("[GSI handshake] Server: received a new token")
 
-        # print("SERVER sent", token_len, server_token)
         return server_token
 
     def handshake(self, target):
@@ -238,9 +224,6 @@ class Connection(object):
         # auth_response = self.recv()
 
     def _login_gsi(self):
-
-## IF GSI
-
         # Send iRODS server a message to request GSI authentication
         self.gsi_client_auth_request()
 
