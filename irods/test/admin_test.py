@@ -7,6 +7,7 @@ from irods.models import User
 from irods.session import iRODSSession
 from irods.exception import UserDoesNotExist, ResourceDoesNotExist
 import irods.test.config as config
+import irods.test.helpers as helpers
 
 
 class TestAdmin(unittest.TestCase):
@@ -20,11 +21,7 @@ class TestAdmin(unittest.TestCase):
     new_user_zone = config.IRODS_SERVER_ZONE    # use remote zone when creation is supported
 
     def setUp(self):
-        self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE)
+        self.sess = helpers.make_session_from_config()
 
     def tearDown(self):
         '''Close connections
@@ -33,13 +30,8 @@ class TestAdmin(unittest.TestCase):
 
     def test_session_with_client_user(self):
         # stub
-        with iRODSSession(host=config.IRODS_SERVER_HOST,
-                          port=config.IRODS_SERVER_PORT,
-                          user=config.IRODS_USER_USERNAME,
-                          password=config.IRODS_USER_PASSWORD,
-                          zone=config.IRODS_SERVER_ZONE,
-                          client_user=config.IRODS_USER_USERNAME,
-                          client_zone=config.IRODS_SERVER_ZONE) as sess:
+        with helpers.make_session_from_config(client_user=config.IRODS_USER_USERNAME,
+                                              client_zone=config.IRODS_SERVER_ZONE) as sess:
             self.assertTrue(sess)
 
     def test_create_delete_local_user(self):

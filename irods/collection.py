@@ -46,7 +46,7 @@ class iRODSCollection(object):
 
     def remove(self, recurse=True, force=False, additional_flags=None):
         if additional_flags is None:
-            additional_flags={}
+            additional_flags = {}
         self.manager.remove(self.path, recurse, force, additional_flags)
 
     def move(self, path):

@@ -4,9 +4,8 @@ from os.path import dirname, basename
 from irods.manager import Manager
 from irods.message import MetadataRequest, iRODSMessage
 from irods.api_number import api_number
-from irods.models import (
-    DataObject, Collection, Resource, User, DataObjectMeta,
-                         CollectionMeta, ResourceMeta, UserMeta)
+from irods.models import (DataObject, Collection, Resource,
+                          User, DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta)
 from irods.meta import iRODSMeta
 
 logger = logging.getLogger(__name__)

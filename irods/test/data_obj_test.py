@@ -179,8 +179,7 @@ class TestDataObjOps(unittest.TestCase):
 
     @unittest.skipIf(
         config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ),
-                     "Cannot modify remote server configuration")
+        ), "Cannot modify remote server configuration")
     def test_create_with_checksum(self):
         # skip if server is older than 4.2
         if self.server_version < (4, 2, 0):

@@ -6,15 +6,14 @@ import irods.test.config as config
 from irods.session import iRODSSession
 
 
-def make_session_from_config():
-    conf_map = { 'host': 'IRODS_SERVER_HOST',
-               'port': 'IRODS_SERVER_PORT',
-               'zone': 'IRODS_SERVER_ZONE',
-               'user': 'IRODS_USER_USERNAME',
-               'authentication_scheme': 'IRODS_AUTHENTICATION_SCHEME',
-               'password': 'IRODS_USER_PASSWORD',
-               'server_dn': 'IRODS_SERVER_DN' }
-    kwargs = {}
+def make_session_from_config(**kwargs):
+    conf_map = {'host': 'IRODS_SERVER_HOST',
+                'port': 'IRODS_SERVER_PORT',
+                'zone': 'IRODS_SERVER_ZONE',
+                'user': 'IRODS_USER_USERNAME',
+                'authentication_scheme': 'IRODS_AUTHENTICATION_SCHEME',
+                'password': 'IRODS_USER_PASSWORD',
+                'server_dn': 'IRODS_SERVER_DN'}
     for key in conf_map.keys():
         try:
             kwargs[key] = vars(config)[conf_map[key]]

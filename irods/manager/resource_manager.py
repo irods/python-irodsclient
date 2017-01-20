@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceManager(Manager):
+
     @staticmethod
     def serialize(context):
         if isinstance(context, dict):
@@ -93,12 +94,12 @@ class ResourceManager(Manager):
     def modify(self, name, attribute, value):
         with self.sess.pool.get_connection() as conn:
             message_body = GeneralAdminRequest(
-                    "modify",
-                    "resource",
-                    name,
-                    attribute,
-                    self.serialize(value)
-                )
+                "modify",
+                "resource",
+                name,
+                attribute,
+                self.serialize(value)
+            )
 
             request = iRODSMessage("RODS_API_REQ", msg=message_body,
                                    int_info=api_number['GENERAL_ADMIN_AN'])
@@ -161,4 +162,3 @@ class ResourceManager(Manager):
                               # close connections to get new agents with up to
                               # date resource manager
         logger.debug(response.int_info)
-

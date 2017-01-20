@@ -3,9 +3,8 @@ import os
 import sys
 import unittest
 from irods.meta import iRODSMeta
-from irods.models import (
-    DataObject, Collection, Resource, User, DataObjectMeta,
-                         CollectionMeta, ResourceMeta, UserMeta)
+from irods.models import (DataObject, Collection, Resource,
+                          User, DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta)
 from irods.session import iRODSSession
 import irods.test.config as config
 import irods.test.helpers as helpers

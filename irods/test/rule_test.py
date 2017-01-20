@@ -17,16 +17,11 @@ class TestRule(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.sess = iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE)
+        self.sess = helpers.make_session_from_config()
 
     def tearDown(self):
         # close connections
         self.sess.cleanup()
-
 
     def test_add_metadata_from_rule_file(self):
         '''
@@ -46,7 +41,8 @@ class TestRule(unittest.TestCase):
         username = session.username
         object_name = 'foo_{ts}.txt'.format(**locals())
 
-        object_path = "/{zone}/home/{username}/{object_name}".format(**locals())
+        object_path = "/{zone}/home/{username}/{object_name}".format(
+            **locals())
         object = helpers.make_object(session, object_path)
 
         # make rule file
@@ -78,7 +74,6 @@ class TestRule(unittest.TestCase):
         # remove rule file
         os.remove(rule_file_path)
 
-
     def test_add_metadata_from_rule(self):
         '''
         Runs a rule whose body and input parameters are created in our script.
@@ -97,7 +92,8 @@ class TestRule(unittest.TestCase):
         username = session.username
         object_name = 'foo_{ts}.txt'.format(**locals())
 
-        object_path = "/{zone}/home/{username}/{object_name}".format(**locals())
+        object_path = "/{zone}/home/{username}/{object_name}".format(
+            **locals())
         object = helpers.make_object(session, object_path)
 
         # rule body
@@ -109,15 +105,16 @@ class TestRule(unittest.TestCase):
                                 }}''')
 
         # rule parameters
-        input_params = {# extra quotes for string literals
-                  '*object': '"{object_path}"'.format(**locals()),
-                  '*name': '"{attr_name}"'.format(**locals()),
-                  '*value': '"{attr_value}"'.format(**locals())
-                  }
+        input_params = {  # extra quotes for string literals
+            '*object': '"{object_path}"'.format(**locals()),
+            '*name': '"{attr_name}"'.format(**locals()),
+            '*value': '"{attr_value}"'.format(**locals())
+        }
         output = 'ruleExecOut'
 
         # run test rule
-        myrule = Rule(session, body=rule_body, params=input_params, output=output)
+        myrule = Rule(session, body=rule_body,
+                      params=input_params, output=output)
         myrule.execute()
 
         # check that metadata is there
@@ -127,7 +124,6 @@ class TestRule(unittest.TestCase):
 
         # remove test object
         object.unlink(force=True)
-
 
     def test_retrieve_std_streams_from_rule(self):
         '''
@@ -173,7 +169,6 @@ class TestRule(unittest.TestCase):
 
         # remove rule file
         os.remove(rule_file_path)
-
 
 
 if __name__ == '__main__':

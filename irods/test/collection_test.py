@@ -178,6 +178,7 @@ class TestCollection(unittest.TestCase):
 
         # now walk nested collections
         colls = self.test_coll.walk(topdown=False)
+        sub_coll_name = ''
         for d in range(depth - 1, -2, -1):
             # get next result
             collection, subcollections, data_objects = colls.next()
