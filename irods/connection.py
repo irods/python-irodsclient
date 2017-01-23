@@ -2,7 +2,6 @@ import socket
 import logging
 import struct
 import hashlib
-import gssapi
 
 
 from irods.message import (
@@ -128,6 +127,7 @@ class Connection(object):
         return data
 
     def init_sec_context(self):
+        import gssapi
 
         # AUTHORIZATION MECHANISM
         gsi_mech = gssapi.raw.OID.from_int_seq(GSI_OID)
