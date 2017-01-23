@@ -32,6 +32,7 @@ class Connection(object):
         if scheme == 'password':
             self._login_password()
         elif scheme == 'gsi':
+            self.client_ctx = None
             self._login_gsi()
         else:
             raise ValueError("Unknown authentication scheme %s" % scheme)
@@ -41,10 +42,10 @@ class Connection(object):
             self.disconnect()
 
     def send(self, message):
-        str = message.pack()
-        logger.debug(str)
+        string = message.pack()
+        logger.debug(string)
         try:
-            self.socket.sendall(str)
+            self.socket.sendall(string)
         except:
             logger.error(
                 "Unable to send message. " +
@@ -98,7 +99,7 @@ class Connection(object):
             (self.account.client_user, self.account.client_zone)
         )
 
-        msg = iRODSMessage(type='RODS_CONNECT', msg=main_message)
+        msg = iRODSMessage(msg_type='RODS_CONNECT', msg=main_message)
         self.send(msg)
 
         # server responds with version
@@ -110,7 +111,7 @@ class Connection(object):
         return self._server_version.relVersion
 
     def disconnect(self):
-        disconnect_msg = iRODSMessage(type='RODS_DISCONNECT')
+        disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
         self.send(disconnect_msg)
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
@@ -197,7 +198,7 @@ class Connection(object):
         # GSI = 1201
 # https://github.com/irods/irods/blob/master/lib/api/include/apiNumber.h#L158
         auth_req = iRODSMessage(
-            type='RODS_API_REQ', msg=message_body, int_info=1201)
+            msg_type='RODS_API_REQ', msg=message_body, int_info=1201)
         self.send(auth_req)
         # Getting the challenge message
         self.recv()
@@ -218,7 +219,7 @@ class Connection(object):
             username=self.account.proxy_user + '#' + self.account.proxy_zone
         )
         gsi_request = iRODSMessage(
-            type='RODS_API_REQ', int_info=704, msg=gsi_msg)
+            msg_type='RODS_API_REQ', int_info=704, msg=gsi_msg)
         self.send(gsi_request)
         self.recv()
         # auth_response = self.recv()
@@ -258,7 +259,7 @@ class Connection(object):
     def _login_password(self):
 
         # authenticate
-        auth_req = iRODSMessage(type='RODS_API_REQ', int_info=703)
+        auth_req = iRODSMessage(msg_type='RODS_API_REQ', int_info=703)
         self.send(auth_req)
 
         # challenge
@@ -276,7 +277,7 @@ class Connection(object):
         pwd_msg = AuthResponse(
             response=encoded_pwd, username=self.account.proxy_user)
         pwd_request = iRODSMessage(
-            type='RODS_API_REQ', int_info=704, msg=pwd_msg)
+            msg_type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
 
         auth_response = self.recv()

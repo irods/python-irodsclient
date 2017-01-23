@@ -1,10 +1,8 @@
 #! /usr/bin/env python
 import os
 import sys
-import socket
 import unittest
 from irods.models import User
-from irods.session import iRODSSession
 from irods.exception import UserDoesNotExist, ResourceDoesNotExist
 import irods.test.config as config
 import irods.test.helpers as helpers

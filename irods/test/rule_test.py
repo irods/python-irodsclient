@@ -4,9 +4,7 @@ import sys
 import time
 import textwrap
 import unittest
-from irods.session import iRODSSession
 from irods.models import DataObject
-import irods.test.config as config
 import irods.test.helpers as helpers
 from irods.rule import Rule
 
@@ -43,7 +41,7 @@ class TestRule(unittest.TestCase):
 
         object_path = "/{zone}/home/{username}/{object_name}".format(
             **locals())
-        object = helpers.make_object(session, object_path)
+        obj = helpers.make_object(session, object_path)
 
         # make rule file
         rule_file_path = "/tmp/test_{ts}.r".format(**locals())
@@ -69,7 +67,7 @@ class TestRule(unittest.TestCase):
         assert meta[0].value == attr_value
 
         # remove test object
-        object.unlink(force=True)
+        obj.unlink(force=True)
 
         # remove rule file
         os.remove(rule_file_path)
@@ -94,7 +92,7 @@ class TestRule(unittest.TestCase):
 
         object_path = "/{zone}/home/{username}/{object_name}".format(
             **locals())
-        object = helpers.make_object(session, object_path)
+        obj = helpers.make_object(session, object_path)
 
         # rule body
         rule_body = textwrap.dedent('''\
@@ -123,7 +121,7 @@ class TestRule(unittest.TestCase):
         assert meta[0].value == attr_value
 
         # remove test object
-        object.unlink(force=True)
+        obj.unlink(force=True)
 
     def test_retrieve_std_streams_from_rule(self):
         '''

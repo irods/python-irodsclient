@@ -2,14 +2,10 @@
 import os
 import sys
 import unittest
-from irods.models import User
 from irods.access import iRODSAccess
-from irods.session import iRODSSession
 import irods.test.config as config
 import irods.test.helpers as helpers
 
-from irods.models import (
-    DataObject, Collection, User, DataAccess, CollectionAccess)
 
 
 class TestAccess(unittest.TestCase):

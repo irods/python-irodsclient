@@ -4,7 +4,6 @@ import os
 import sys
 import unittest
 from irods.models import Collection, DataObject
-from irods.session import iRODSSession
 import irods.test.config as config
 import xml.etree.ElementTree as ET
 import logging

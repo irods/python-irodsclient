@@ -30,7 +30,9 @@ class DataObjectManager(Manager):
             raise DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
 
-    def create(self, path, resource=None, options={}):
+    def create(self, path, resource=None, options=None):
+        if options is None:
+            options = {}
         kvp = {kw.DATA_TYPE_KW: 'generic'}
         if resource:
             kvp[kw.DEST_RESC_NAME_KW] = resource
@@ -155,7 +157,9 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
-    def replicate(self, path, options={}):
+    def replicate(self, path, options=None):
+        if options is None:
+            options = {}
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,

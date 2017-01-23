@@ -45,7 +45,7 @@ class MetadataManager(Manager):
             row[model.name],
             row[model.value],
             row[model.units],
-            id=row[model.id]
+            avu_id=row[model.id]
         ) for row in results]
 
     def add(self, model_cls, path, meta):

@@ -3,9 +3,7 @@ import os
 import sys
 import unittest
 from irods.meta import iRODSMeta
-from irods.models import (DataObject, Collection, Resource,
-                          User, DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta)
-from irods.session import iRODSSession
+from irods.models import DataObject, Collection
 import irods.test.config as config
 import irods.test.helpers as helpers
 
@@ -63,8 +61,8 @@ class TestMeta(unittest.TestCase):
         meta = self.sess.metadata.get(DataObject, self.obj_path)
 
         # sort results by metadata id
-        def getKey(iRODSMeta):
-            return iRODSMeta.id
+        def getKey(AVU):
+            return AVU.avu_id
         meta = sorted(meta, key=getKey)
 
         # assertions
@@ -167,11 +165,11 @@ class TestMeta(unittest.TestCase):
 
         # get metadata
         meta = self.sess.metadata.get(DataObject, test_obj_path)
-        id = meta[0].id
+        avu_id = meta[0].avu_id
 
         # assert
         self.assertEqual(
-            repr(meta[0]), "<iRODSMeta {id} {attribute} {value} {units}>".format(**locals()))
+            repr(meta[0]), "<iRODSMeta {avu_id} {attribute} {value} {units}>".format(**locals()))
 
         # remove test object
         obj.unlink(force=True)
@@ -239,13 +237,13 @@ class TestMeta(unittest.TestCase):
 
         # try contains with bad key type
         with self.assertRaises(TypeError):
-            int() in imc
+            _ = (int() in imc)
 
         # set item
         imc[attr_name] = iRODSMeta(attr_name, 'boo')
 
         # get item
-        imc[attr_name]
+        _ = imc[attr_name]
 
         # del item with bad key type
         with self.assertRaises(TypeError):
@@ -255,7 +253,7 @@ class TestMeta(unittest.TestCase):
         del imc[attr_name]
 
         with self.assertRaises(KeyError):
-            imc[attr_name]
+            _ = imc[attr_name]
 
         # remove all metadta
         imc.remove_all()

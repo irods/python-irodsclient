@@ -60,7 +60,6 @@ class iRODSExceptionMeta(type):
 
 class iRODSException(Exception):
     __metaclass__ = iRODSExceptionMeta
-    pass
 
 
 def get_exception_by_code(code):

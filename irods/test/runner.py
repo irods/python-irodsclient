@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+NOTE: "If a test package name (directory with __init__.py) matches the pattern
+       then the package will be checked for a load_tests function. If this
+       exists then it will be called with loader, tests, pattern."
+"""
+
 import os
 import sys
 from unittest import TestLoader, TestSuite
@@ -13,15 +19,8 @@ f = logging.Formatter("%(asctime)s %(name)s-%(levelname)s [%(pathname)s %(lineno
 h.setFormatter(f)
 logger.addHandler(h)
 
-"""
-NOTE: "If a test package name (directory with __init__.py) matches the pattern
-       then the package will be checked for a load_tests function. If this
-       exists then it will be called with loader, tests, pattern."
-"""
 
-"""
-Load all tests in the current directory and run them
-"""
+# Load all tests in the current directory and run them
 if __name__ == "__main__":
     # must set the path for the imported tests
     sys.path.insert(0, os.path.abspath('../..'))

@@ -26,14 +26,14 @@ class ResultSet(object):
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]
 
-        def format(attribute_index, value):
+        def _format(attribute_index, value):
             col = ModelBase.columns[attribute_index]
             try:
-                return (col, col.type.to_python(value))
+                return (col, col.column_type.to_python(value))
             except (TypeError, ValueError):
                 return (col, value)
 
-        return dict([format(col.attriInx, value) for col, value in values])
+        return dict([_format(col.attriInx, value) for col, value in values])
 
     def __getitem__(self, index):
         return self.rows.__getitem__(index)

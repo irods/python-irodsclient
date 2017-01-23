@@ -4,13 +4,11 @@ import sys
 import socket
 import unittest
 from irods.models import Collection, DataObject
-from irods.session import iRODSSession
-from irods.exception import DataObjectDoesNotExist, CollectionDoesNotExist
-from irods.column import Column, Criterion
+from irods.exception import DataObjectDoesNotExist
+from irods.column import Criterion
 import irods.test.config as config
 import irods.test.helpers as helpers
 import json
-import errno
 import hashlib
 import base64
 
@@ -165,15 +163,15 @@ class TestDataObjOps(unittest.TestCase):
         collection = self.coll_path
 
         # make files
-        files = []
+        filenames = []
         for filename in ['foo', 'bar', 'baz']:
             path = '{collection}/{filename}'.format(**locals())
             helpers.make_object(self.sess, path=path, content=path)
-            files.append(path)
+            filenames.append(path)
 
         # read files
-        for file in files:
-            obj = self.sess.data_objects.get(file)
+        for filename in filenames:
+            obj = self.sess.data_objects.get(filename)
             with obj.open('r') as f:
                 self.assertEqual(f.read(), obj.path)
 

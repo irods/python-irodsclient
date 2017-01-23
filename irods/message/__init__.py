@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def _recv_message_in_len(sock, size):
     size_left = size
     retbuf = None
-    while(size_left > 0):
+    while size_left > 0:
         try:
             buf = sock.recv(size_left, socket.MSG_WAITALL)
         except AttributeError:
@@ -31,8 +31,8 @@ def _recv_message_in_len(sock, size):
 
 class iRODSMessage(object):
 
-    def __init__(self, type=None, msg=None, error=None, bs=None, int_info=None):
-        self.type = type
+    def __init__(self, msg_type=None, msg=None, error=None, bs=None, int_info=None):
+        self.msg_type = msg_type
         self.msg = msg
         self.error = error
         self.bs = bs
@@ -47,7 +47,7 @@ class iRODSMessage(object):
         rsp_header = _recv_message_in_len(sock, rsp_header_size)
 
         xml_root = ET.fromstring(rsp_header)
-        type = xml_root.find('type').text
+        msg_type = xml_root.find('type').text
         msg_len = int(xml_root.find('msgLen').text)
         err_len = int(xml_root.find('errorLen').text)
         bs_len = int(xml_root.find('bsLen').text)
@@ -65,19 +65,17 @@ class iRODSMessage(object):
         # if message:
         #     logger.debug(message)
 
-        return iRODSMessage(type, message, error, bs, int_info)
+        return iRODSMessage(msg_type, message, error, bs, int_info)
 
     def pack(self):
         main_msg = self.msg.pack() if self.msg else None
         msg_header = "<MsgHeader_PI><type>%s</type><msgLen>%d</msgLen>\
             <errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo>\
-            </MsgHeader_PI>" % (
-            self.type,
-            len(main_msg) if main_msg else 0,
-            len(self.error) if self.error else 0,
-            len(self.bs) if self.bs else 0,
-            self.int_info if self.int_info else 0
-        )
+            </MsgHeader_PI>" % (self.msg_type,
+                                len(main_msg) if main_msg else 0,
+                                len(self.error) if self.error else 0,
+                                len(self.bs) if self.bs else 0,
+                                self.int_info if self.int_info else 0)
         msg_header_length = struct.pack(">i", len(msg_header))
         parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
         msg = msg_header_length + msg_header + "".join(parts)
@@ -392,11 +390,11 @@ class MsParam(Message):
     # override Message.unpack() to unpack inOutStruct
     # depending on the received <type> element
     def unpack(self, root):
-        for (name, property) in self._ordered_properties:
+        for (name, prop) in self._ordered_properties:
             if name == 'inOutStruct':
                 continue
 
-            unpacked_value = property.unpack(root.findall(name))
+            unpacked_value = prop.unpack(root.findall(name))
             self._values[name] = unpacked_value
 
             # type tells us what type of data structure we are unpacking
@@ -446,15 +444,15 @@ class ExecCmdOut_PI(Message):
 
     # need custom unpacking since both buffers have the same element name
     def unpack(self, root):
-        for (name, property) in self._ordered_properties:
+        for (name, prop) in self._ordered_properties:
             if name == 'stdoutBuf':
-                unpacked_value = property.unpack(root.findall(property.message_cls._name)[:1])
+                unpacked_value = prop.unpack(root.findall(prop.message_cls._name)[:1])
 
             elif name == 'stderrBuf':
-                unpacked_value = property.unpack(root.findall(property.message_cls._name)[1:])
+                unpacked_value = prop.unpack(root.findall(prop.message_cls._name)[1:])
 
             else:
-                unpacked_value = property.unpack(root.findall(name))
+                unpacked_value = prop.unpack(root.findall(name))
 
             self._values[name] = unpacked_value
 

@@ -29,7 +29,9 @@ class CollectionManager(Manager):
             response = conn.recv()
         return self.get(path)
 
-    def remove(self, path, recurse=True, force=False, additional_flags={}):
+    def remove(self, path, recurse=True, force=False, additional_flags=None):
+        if additional_flags is None:
+            additional_flags = {}
         options = {}
         if recurse:
             options['recursiveOpr'] = ''

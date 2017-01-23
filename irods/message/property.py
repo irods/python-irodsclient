@@ -1,6 +1,6 @@
 from base64 import b64encode, b64decode
 
-from irods.message.ordered import OrderedProperty, OrderedMetaclass, OrderedClass
+from irods.message.ordered import OrderedProperty
 
 
 class MessageProperty(OrderedProperty):
@@ -79,16 +79,16 @@ class StringProperty(MessageProperty):
 
 class ArrayProperty(MessageProperty):
 
-    def __init__(self, property):
-        self.property = property
+    def __init__(self, prop):
+        self.prop = prop
         super(ArrayProperty, self).__init__()
 
     def pack(self, values):
-        self.property.dub(self.name)
-        return "".join([self.property.pack(v) for v in values])
+        self.prop.dub(self.name)
+        return "".join([self.prop.pack(v) for v in values])
 
     def unpack(self, els):
-        return [self.property.unpack([el]) for el in els]
+        return [self.prop.unpack([el]) for el in els]
 
 
 class SubmessageProperty(MessageProperty):

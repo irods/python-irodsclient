@@ -2,7 +2,6 @@
 import os
 import sys
 import unittest
-from irods.session import iRODSSession
 import irods.test.config as config
 import irods.test.helpers as helpers
 

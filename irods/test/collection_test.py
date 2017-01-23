@@ -2,7 +2,6 @@
 import os
 import sys
 import unittest
-from irods.session import iRODSSession
 from irods.meta import iRODSMetaCollection
 from irods.exception import CollectionDoesNotExist
 import irods.test.config as config

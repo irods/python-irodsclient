@@ -3,7 +3,6 @@ import os
 import sys
 import unittest
 from irods.models import User, Collection, DataObject, Resource
-from irods.session import iRODSSession
 from irods.exception import MultipleResultsFound
 from irods.query import new_icat_keys
 from irods.column import Criterion

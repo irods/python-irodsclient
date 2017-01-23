@@ -3,7 +3,6 @@ import os
 import sys
 import unittest
 from irods.models import Collection, DataObject
-from irods.session import iRODSSession
 import irods.test.config as config
 import irods.test.helpers as helpers
 
@@ -34,9 +33,9 @@ class TestContinueQuery(unittest.TestCase):
 
             # check object names
             counter = 0
-            for object in objects:
+            for obj in objects:
                 self.assertEqual(
-                    object.name, "dummy" + str(counter).zfill(6) + ".txt")
+                    obj.name, "dummy" + str(counter).zfill(6) + ".txt")
                 counter += 1
 
     def test_files_generator(self):

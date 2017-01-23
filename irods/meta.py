@@ -1,13 +1,13 @@
 class iRODSMeta(object):
 
-    def __init__(self, name, value, units=None, id=None):
-        self.id = id
+    def __init__(self, name, value, units=None, avu_id=None):
+        self.avu_id = avu_id
         self.name = name
         self.value = value
         self.units = units
 
     def __repr__(self):
-        return "<iRODSMeta {id} {name} {value} {units}>".format(**vars(self))
+        return "<iRODSMeta {avu_id} {name} {value} {units}>".format(**vars(self))
 
 
 class iRODSMetaCollection(object):

@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class Rule(object):
-    def __init__(self, session, file=None, body='', params=None, output=''):
+    def __init__(self, session, rule_file=None, body='', params=None, output=''):
         self.session = session
 
-        if file:
-            self.load(file)
+        if rule_file:
+            self.load(rule_file)
         else:
             self.body = '@external\n' + cgi.escape(body, quote=True)
             if params is None:
@@ -22,13 +22,13 @@ class Rule(object):
             self.output = output
 
 
-    def load(self, file):
+    def load(self, rule_file):
         self.params = {}
         self.output = ''
         self.body = '@external\n'
 
         # parse rule file
-        with open(file) as f:
+        with open(rule_file) as f:
             for line in f:
                 # parse input line
                 if line.strip().lower().startswith('input'):
