@@ -64,23 +64,24 @@ class iRODSSession(object):
     def miscsvrinfo(self):
         # implementing functionality of imiscsvrinfo.
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print "trying to connect"
         try:
-            s.connect((self.account.host, self.account.port))
+            s.connect((self.host, self.port))
         except socket.error:
             raise NetworkException("Could not connect to specified host and port!")
+        print "Creating message"
         msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
+        print "packing message"
         string = msg.pack()
-        logger.debug(string)
+        print "sending message: ", string
         try:
             self.socket.sendall(string)
         except:
-            logger.error("UNABLE TO SEND MESSAGE, RELEASING CONNECTION FROM POOL")
-            self.pool.release_connection(self.pool.get_connection(),destroy)
+            print "failed to send message!"
             raise NetworkException("Unable to send message")
         try:
             msg = iRODSMEssage.recv(Self.socket)
         except socket.error:
-            logger.error("Could not receive server response")
             exit(1)
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
