@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import os
 import tempfile
 import contextlib
 import shutil
 import irods.test.config as config
 from irods.session import iRODSSession
+from six.moves import range
 
 
 def make_session_from_config(**kwargs):

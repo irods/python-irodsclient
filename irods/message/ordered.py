@@ -1,6 +1,9 @@
 # Ordered property classes stolen from Kris Kowal of Ask a Wizard
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
+from __future__ import absolute_import
 from itertools import count
+import six
+#next_counter = count().__next__
 next_counter = count().next
 
 
@@ -24,9 +27,10 @@ class OrderedMetaclass(type):
                 if isinstance(value, OrderedProperty)
                 or isinstance(value, OrderedMetaclass)
             ),
-            key=lambda (name, property): property._creation_counter,
+            #key=lambda name, property: property._creation_counter,
+            key=lambda name_property: name_property[1]._creation_counter,
         )
 
 
-class OrderedClass(object):
-    __metaclass__ = OrderedMetaclass
+class OrderedClass(six.with_metaclass(OrderedMetaclass, object)):
+    pass

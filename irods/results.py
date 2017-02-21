@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from prettytable import PrettyTable
 
 from irods.models import ModelBase
+from six.moves import range
 
 
 class ResultSet(object):
@@ -49,7 +51,7 @@ class ResultSet(object):
         found = False
 
         for row in self.rows:
-            if value in row.values():
+            if value in list(row.values()):
                 found = True
 
         return found

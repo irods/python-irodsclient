@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 import sys
 from irods.models import Resource
+import six
 
 
 class iRODSResource(object):
@@ -26,7 +28,7 @@ class iRODSResource(object):
         '''
         self.manager = manager
         if result:
-            for attr, value in Resource.__dict__.iteritems():
+            for attr, value in six.iteritems(Resource.__dict__):
                 if not attr.startswith('_'):
                     try:
                         setattr(self, attr, result[value])

@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from base64 import b64encode, b64decode
 
 from irods.message.ordered import OrderedProperty
+import six
 
 
 class MessageProperty(OrderedProperty):
@@ -67,7 +69,7 @@ class StringProperty(MessageProperty):
         super(StringProperty, self).__init__()
 
     def format(self, value):
-        if isinstance(value, unicode):
+        if isinstance(value, six.text_type):
             return value.encode('utf-8')
         return value
 

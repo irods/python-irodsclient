@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount

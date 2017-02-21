@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from os import O_RDONLY, O_WRONLY, O_RDWR
 from io import RawIOBase, BufferedRandom
 import sys
@@ -5,6 +6,7 @@ import sys
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
+import six
 
 
 class iRODSReplica(object):
@@ -28,7 +30,7 @@ class iRODSDataObject(object):
         self.manager = manager
         if parent and results:
             self.collection = parent
-            for attr, value in DataObject.__dict__.iteritems():
+            for attr, value in six.iteritems(DataObject.__dict__):
                 if not attr.startswith('_'):
                     try:
                         setattr(self, attr, results[0][value])
