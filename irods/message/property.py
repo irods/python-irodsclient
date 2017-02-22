@@ -20,7 +20,10 @@ class MessageProperty(OrderedProperty):
     def pack(self, value):
         values = []
         values.append("<%s>" % self.name)
-        values.append(self.format(value))
+        my_value = self.format(value)
+        if six.PY3 and isinstance(my_value, bytes):
+            my_value = my_value.decode("utf-8")
+        values.append(my_value)
         values.append("</%s>" % self.name)
         return "".join(values)
 
@@ -56,9 +59,14 @@ class BinaryProperty(MessageProperty):
         super(BinaryProperty, self).__init__()
 
     def format(self, value):
+        if six.PY3:
+            return b64encode(bytes(value, 'utf-8'))
         return b64encode(value)
 
     def parse(self, value):
+        if six.PY3:
+            s = b64decode(bytes(value, 'utf-8'))
+            return s.decode("utf-8")
         return b64decode(value)
 
 
@@ -69,13 +77,9 @@ class StringProperty(MessageProperty):
         super(StringProperty, self).__init__()
 
     def format(self, value):
-        if isinstance(value, six.text_type):
-            return value.encode('utf-8')
         return value
 
     def parse(self, value):
-        if isinstance(value, str):
-            return value.decode('utf-8')
         return value
 
 

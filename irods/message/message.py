@@ -13,6 +13,7 @@ class MessageMetaclass(OrderedMetaclass):
 
 
 class Message(six.with_metaclass(MessageMetaclass, OrderedClass)):
+
     def __init__(self, *args, **kwargs):
         super(Message, self).__init__()
         self._values = {}

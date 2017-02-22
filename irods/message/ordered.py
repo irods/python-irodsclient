@@ -3,8 +3,11 @@
 from __future__ import absolute_import
 from itertools import count
 import six
-#next_counter = count().__next__
-next_counter = count().next
+
+try:
+    next_counter = count().__next__
+except AttributeError:
+    next_counter = count().next
 
 
 class OrderedProperty(object):
@@ -27,8 +30,7 @@ class OrderedMetaclass(type):
                 if isinstance(value, OrderedProperty)
                 or isinstance(value, OrderedMetaclass)
             ),
-            #key=lambda name, property: property._creation_counter,
-            key=lambda name_property: name_property[1]._creation_counter,
+            key=lambda property: property[1]._creation_counter,
         )
 
 
