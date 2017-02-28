@@ -78,7 +78,7 @@ class iRODSSession(object):
         #msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
         print "packing main message"
         string = msg.pack()
-        print "sending message: ", string
+        print "sending message: "
         try:
             s.sendall(string)
         except:
@@ -94,7 +94,22 @@ class iRODSSession(object):
 
 
         # do the miscsvrrequest here
-        return msg
+        msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
+        string = msg.pack()
+        print "miscsvrionfo request message\n",string
+        try:
+            s.sendall(string)
+        except:
+            print "failed to send message!"
+            raise NetworkException("Unable to send message")
+        try:
+            miscsvrinfo = iRODSMessage.recv(s)
+        except socket.error:
+            exit(1)
+        if msg.int_info < 0:
+            raise get_exception_by_code(msg.int_info)
+        print "miscsvrinfo reply:\n\n",miscsvrinfo.msg
+        return miscsvrinfo
         
 
                     
