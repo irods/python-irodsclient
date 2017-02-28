@@ -30,7 +30,6 @@ class iRODSSession(object):
         self.users = UserManager(self)
         self.user_groups = UserGroupManager(self)
         self.resources = ResourceManager(self)
-
     def __enter__(self):
         return self
 
@@ -69,23 +68,32 @@ class iRODSSession(object):
             s.connect((self.host, self.port))
         except socket.error:
             raise NetworkException("Could not connect to specified host and port!")
-        print "Creating message"
-        msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
-        print "packing message"
+        print "Creating main message"
+        mainMessage = StartupPack(
+                (self.pool.account.proxy_user, self.pool.account.proxy_zone),
+                (self.pool.account.client_user, self.pool.account.client_zone)
+        )
+
+        msg = iRODSMessage(msg_type='RODS_CONNECT',msg=mainMessage)
+        #msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
+        print "packing main message"
         string = msg.pack()
         print "sending message: ", string
         try:
-            self.socket.sendall(string)
+            s.sendall(string)
         except:
             print "failed to send message!"
             raise NetworkException("Unable to send message")
         try:
-            msg = iRODSMEssage.recv(Self.socket)
+            msg = iRODSMessage.recv(s)
         except socket.error:
             exit(1)
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
         print msg
+
+
+        # do the miscsvrrequest here
         return msg
         
 
