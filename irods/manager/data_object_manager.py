@@ -20,7 +20,7 @@ class DataObjectManager(Manager):
         try:
             parent = self.sess.collections.get(dirname(path))
         except CollectionDoesNotExist:
-            raise DataObjectDoesNotExist()
+            raise CollectionDoesNotExist()
 
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == basename(path))\
