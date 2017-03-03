@@ -15,7 +15,8 @@ from irods.message import (
                 OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
                 )
 from irods.exception import get_exception_by_code, NetworkException
-
+import xml.etree.ElementTree as ET
+import time
 class iRODSSession(object):
 
     def __init__(self, *args, **kwargs):
@@ -63,26 +64,20 @@ class iRODSSession(object):
     def miscsvrinfo(self):
         # implementing functionality of imiscsvrinfo.
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print "trying to connect"
         try:
             s.connect((self.host, self.port))
         except socket.error:
             raise NetworkException("Could not connect to specified host and port!")
-        print "Creating main message"
         mainMessage = StartupPack(
                 (self.pool.account.proxy_user, self.pool.account.proxy_zone),
                 (self.pool.account.client_user, self.pool.account.client_zone)
         )
 
         msg = iRODSMessage(msg_type='RODS_CONNECT',msg=mainMessage)
-        #msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
-        print "packing main message"
         string = msg.pack()
-        print "sending message: "
         try:
             s.sendall(string)
         except:
-            print "failed to send message!"
             raise NetworkException("Unable to send message")
         try:
             msg = iRODSMessage.recv(s)
@@ -90,17 +85,15 @@ class iRODSSession(object):
             exit(1)
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
-        print msg
 
 
         # do the miscsvrrequest here
         msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
         string = msg.pack()
-        print "miscsvrionfo request message\n",string
+        #print "miscsvrionfo request message\n",string
         try:
             s.sendall(string)
         except:
-            print "failed to send message!"
             raise NetworkException("Unable to send message")
         try:
             miscsvrinfo = iRODSMessage.recv(s)
@@ -108,8 +101,24 @@ class iRODSSession(object):
             exit(1)
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
-        print "miscsvrinfo reply:\n\n",miscsvrinfo.msg
-        return miscsvrinfo
+        #print "miscsvrinfo reply:\n\n",miscsvrinfo.msg
+        root = ET.fromstring(miscsvrinfo.msg)
+        serverType     = root[0].text
+        serverBootTime = root[1].text
+        relVersion     = root[2].text
+        apiVersion     = root[3].text
+        rodsZone       = root[4].text
+        upSecs = int(time.time()) - int(serverBootTime)
+        mins = upSecs / 60
+        hr = mins/60
+        mins = mins%60
+        day = hr/24
+        hr = hr%24
+        print "serverType:{0}\nrelVersion:{1}\napiVersion:{2}\nzone:{3}\nup {4} days, {5}:{6}".format(
+                serverType,relVersion,apiVersion,rodsZone,day,hr,mins)
+        return (serverType,relVersion,apiVersion,rodsZone,upSecs)
+
+        return miscsvrinfo.msg
         
 
                     
