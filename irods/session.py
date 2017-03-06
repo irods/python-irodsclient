@@ -116,9 +116,9 @@ class iRODSSession(object):
         hr = hr%24
         print "serverType:{0}\nrelVersion:{1}\napiVersion:{2}\nzone:{3}\nup {4} days, {5}:{6}".format(
                 serverType,relVersion,apiVersion,rodsZone,day,hr,mins)
+        s.close()
         return (serverType,relVersion,apiVersion,rodsZone,upSecs)
 
-        return miscsvrinfo.msg
         
 
                     
