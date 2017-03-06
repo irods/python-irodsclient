@@ -29,6 +29,7 @@ def make_object(session, path, content=None):
     if not content:
         content = 'blah'
 
+    content = content.encode('utf-8').strip()
     obj = session.data_objects.create(path)
     with obj.open('w') as obj_desc:
         obj_desc.write(content)

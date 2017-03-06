@@ -23,7 +23,7 @@ class ResultSet(object):
             table.add_column(
                 ModelBase.columns[col.attriInx].icat_key, col.value)
         table.align = 'l'
-        return table.get_string().encode('utf-8')
+        return table.get_string()
 
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]

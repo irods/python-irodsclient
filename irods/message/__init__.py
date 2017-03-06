@@ -2,6 +2,7 @@ import struct
 import logging
 import socket
 import xml.etree.ElementTree as ET
+import six
 
 from irods import IRODS_VERSION
 from irods.message.message import Message
@@ -25,7 +26,6 @@ def _recv_message_in_len(sock, size):
             retbuf = buf
         else:
             retbuf += buf
-
     return retbuf
 
 
@@ -72,13 +72,16 @@ class iRODSMessage(object):
         msg_header = "<MsgHeader_PI><type>%s</type><msgLen>%d</msgLen>\
             <errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo>\
             </MsgHeader_PI>" % (self.msg_type,
-                                len(main_msg) if main_msg else 0,
+                                len(main_msg.encode('utf-8')) if main_msg else 0,
                                 len(self.error) if self.error else 0,
                                 len(self.bs) if self.bs else 0,
                                 self.int_info if self.int_info else 0)
         msg_header_length = struct.pack(">i", len(msg_header))
+        msg_header_length = msg_header_length
         parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
-        msg = str(msg_header_length) + msg_header + "".join(parts)
+        joined_parts = ("".join(parts)).encode('utf-8')
+        msg_header = msg_header.encode('utf-8')
+        msg = msg_header_length + msg_header + joined_parts
         return msg
 
     def get_main_message(self, cls):

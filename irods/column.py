@@ -50,6 +50,9 @@ class Column(QueryKey):
             self.icat_key
         )
 
+    def __hash__(self):
+        return hash((self.column_type, self.icat_key, self.icat_id))
+
 
 class Keyword(QueryKey):
 

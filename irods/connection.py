@@ -3,6 +3,7 @@ import socket
 import logging
 import struct
 import hashlib
+import six
 
 
 from irods.message import (
@@ -44,8 +45,10 @@ class Connection(object):
 
     def send(self, message):
         string = message.pack()
+
         logger.debug(string)
         try:
+            #print(string)
             self.socket.sendall(string)
         except:
             logger.error(
@@ -267,20 +270,30 @@ class Connection(object):
         challenge_msg = self.recv()
         logger.debug(challenge_msg.msg)
         challenge = challenge_msg.get_main_message(AuthChallenge).challenge
-        padded_pwd = struct.pack(
-            "%ds" % MAX_PASSWORD_LENGTH, self.account.password)
+        if six.PY3:
+            challenge = challenge.encode('utf-8').strip()
+            padded_pwd = struct.pack(
+                "%ds" % MAX_PASSWORD_LENGTH, self.account.password.encode(
+                    'utf-8').strip())
+        else:
+            padded_pwd = struct.pack(
+                "%ds" % MAX_PASSWORD_LENGTH, self.account.password)
         m = hashlib.md5()
         m.update(challenge)
         m.update(padded_pwd)
         encoded_pwd = m.digest()
 
-        encoded_pwd = encoded_pwd.replace('\x00', '\x01')
+        if six.PY2:
+            encoded_pwd = encoded_pwd.replace('\x00', '\x01')
+        elif b'\x00' in encoded_pwd:
+            encoded_pwd_array = bytearray(encoded_pwd)
+            encoded_pwd = bytes(encoded_pwd_array.replace(b'\x00', b'\x01'))
+
         pwd_msg = AuthResponse(
             response=encoded_pwd, username=self.account.proxy_user)
         pwd_request = iRODSMessage(
             msg_type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
-
         auth_response = self.recv()
 
     def write_file(self, desc, string):

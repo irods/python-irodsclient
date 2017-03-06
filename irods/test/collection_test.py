@@ -27,7 +27,7 @@ class TestCollection(unittest.TestCase):
     def test_get_collection(self):
         # path = "/tempZone/home/rods"
         coll = self.sess.collections.get(self.test_coll_path)
-        self.assertEquals(self.test_coll_path, coll.path)
+        self.assertEqual(self.test_coll_path, coll.path)
 
     # def test_new_collection(self):
     #    self.assertEquals(self.coll.name, 'test_dir')

@@ -59,15 +59,17 @@ class BinaryProperty(MessageProperty):
         super(BinaryProperty, self).__init__()
 
     def format(self, value):
-        if six.PY3:
-            return b64encode(bytes(value, 'utf-8'))
-        return b64encode(value)
+        if six.PY3 and not isinstance(value, bytes):
+            val = b64encode(value.encode())
+        else:
+            val = b64encode(value)
+        return val
 
     def parse(self, value):
+        val = b64decode(value)
         if six.PY3:
-            s = b64decode(bytes(value, 'utf-8'))
-            return s.decode("utf-8")
-        return b64decode(value)
+            val = val.decode('utf-8')
+        return val
 
 
 class StringProperty(MessageProperty):
@@ -77,6 +79,8 @@ class StringProperty(MessageProperty):
         super(StringProperty, self).__init__()
 
     def format(self, value):
+        if six.PY3 and isinstance(value, bytes):
+            value = value.decode()
         return value
 
     def parse(self, value):

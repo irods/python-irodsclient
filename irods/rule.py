@@ -22,7 +22,6 @@ class Rule(object):
                 self.params = params
             self.output = output
 
-
     def load(self, rule_file):
         self.params = {}
         self.output = ''

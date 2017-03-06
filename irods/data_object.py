@@ -107,7 +107,10 @@ class iRODSDataObjectFileRaw(RawIOBase):
         return len(contents)
 
     def write(self, b):
-        return self.conn.write_file(self.desc, str(b.tobytes()))
+        b = b.tobytes()
+        if six.PY3:
+            b = b.decode('utf-8')
+        return self.conn.write_file(self.desc, str(b))
 
     def readable(self):
         return True

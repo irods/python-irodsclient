@@ -14,9 +14,9 @@ class TestFiles(unittest.TestCase):
     test_coll_path = '/{0}/home/{1}/test_dir'.format(
         config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
     test_obj_name = 'test1'
-    content_str = 'blah'
-    write_str = '0123456789'
-    write_str1 = 'INTERRUPT'
+    content_str = b'blah'
+    write_str = b'0123456789'
+    write_str1 = b'INTERRUPT'
 
     test_obj_path = test_coll_path + '/' + test_obj_name
 
