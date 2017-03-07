@@ -123,7 +123,7 @@ class Connection(object):
 
     def recvall(self, n):
         # Helper function to recv n bytes or return None if EOF is hit
-        data = ''
+        data = b''
         while len(data) < n:
             packet = self.socket.recv(n - len(data))
             if not packet:
