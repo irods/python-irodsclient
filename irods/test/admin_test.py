@@ -129,7 +129,7 @@ class TestAdmin(unittest.TestCase):
         zone = config.IRODS_SERVER_ZONE
         username = config.IRODS_USER_USERNAME
         obj_path = '/{zone}/home/{username}/foo.txt'.format(**locals())
-        dummy_str = 'blah'
+        dummy_str = b'blah'
 
         # make compound resource
         comp = session.resources.create('comp_resc', 'compound')
@@ -139,12 +139,14 @@ class TestAdmin(unittest.TestCase):
         resc_type = 'unixfilesystem'
         resc_host = config.IRODS_SERVER_HOST
         resc_path = '/tmp/' + resc_name
-        ufs1 = session.resources.create(resc_name, resc_type, resc_host, resc_path)
+        ufs1 = session.resources.create(
+            resc_name, resc_type, resc_host, resc_path)
 
         # make 2nd ufs resource
         resc_name = 'ufs2'
         resc_path = '/tmp/' + resc_name
-        ufs2 = session.resources.create(resc_name, resc_type, resc_host, resc_path)
+        ufs2 = session.resources.create(
+            resc_name, resc_type, resc_host, resc_path)
 
         # add children to compound
         session.resources.add_child(comp.name, ufs1.name, 'archive')
@@ -180,14 +182,16 @@ class TestAdmin(unittest.TestCase):
         session = self.sess
         zone = config.IRODS_SERVER_ZONE
         username = config.IRODS_USER_USERNAME
-        context = {'S3_DEFAULT_HOSTNAME': 'storage.example.com', 'S3_AUTH_FILE': '/path/to/auth/file', 'S3_STSDATE': 'date', 'obj_bucket': 'my_bucket', 'arch_bucket': 'test_archive', 'S3_WAIT_TIME_SEC': '1', 'S3_PROTO': 'HTTPS', 'S3_RETRY_COUNT': '3'}
+        context = {'S3_DEFAULT_HOSTNAME': 'storage.example.com', 'S3_AUTH_FILE': '/path/to/auth/file', 'S3_STSDATE': 'date',
+                   'obj_bucket': 'my_bucket', 'arch_bucket': 'test_archive', 'S3_WAIT_TIME_SEC': '1', 'S3_PROTO': 'HTTPS', 'S3_RETRY_COUNT': '3'}
 
         # make a resource
         resc_name = 's3archive'
         resc_type = 's3'
         resc_host = config.IRODS_SERVER_HOST
         resc_path = '/nobucket'
-        s3 = session.resources.create(resc_name, resc_type, resc_host, resc_path, context)
+        s3 = session.resources.create(
+            resc_name, resc_type, resc_host, resc_path, context)
 
         # verify context fields
         self.assertEqual(context, s3.context_fields)
@@ -213,7 +217,7 @@ class TestAdmin(unittest.TestCase):
             resc_class = ''
         resc_host = config.IRODS_SERVER_HOST
         resc_path = '/tmp/' + resc_name
-        dummy_str = 'blah'
+        dummy_str = b'blah'
         zone = config.IRODS_SERVER_ZONE
         username = config.IRODS_USER_USERNAME
 
