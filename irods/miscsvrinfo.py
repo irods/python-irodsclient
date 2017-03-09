@@ -12,11 +12,6 @@ class miscSvrInfo(object):
         self.host=host
         self.port=port
         self.dummycred=""
-        self.serverType = 0
-        self.relVersion = 0
-        self.apiVersion = 0
-        self.rodsZone   = 0
-        self.upSecs     = 0
         self.miscsvrinfo()
         return
 
@@ -62,7 +57,7 @@ class miscSvrInfo(object):
             raise get_exception_by_code(msg.int_info)
         #print "miscsvrinfo reply:\n\n",miscsvrinfo.msg
         root = ET.fromstring(miscsvrinfo.msg)
-        self.serverType     = int(root[0].text)
+        self.serverType     = "RCAT_ENABLED" if int(root[0].text) else "RCAT_DISABLED"
         serverBootTime      = root[1].text
         self.relVersion     = root[2].text
         self.apiVersion     = root[3].text
@@ -79,22 +74,22 @@ class miscSvrInfo(object):
         return 
 
 
-    @property
-    def serverType(self):
-        if self.serverType:
-            return 'RCAT_ENABLED'
-        else:
-            return 'RCAT_DISABLED'
-        
-    @property
-    def relVersion(self):
-        return self.relVersion
-    @property
-    def apiVersion(self):
-        return self.apiVersion
-    @property
-    def rodsZone(self):
-        return self.rodsZone
-    @property
-    def uptime(self):
-        return self.upSecs
+#    @property
+#    def serverType(self):
+#        if int(self.serverType):
+#            return 'RCAT_ENABLED'
+#        else:
+#            return 'RCAT_DISABLED'
+#        
+#    @property
+#    def relVersion(self):
+#        return self.relVersion
+#    @property
+#    def apiVersion(self):
+#        return self.apiVersion
+#    @property
+#    def rodsZone(self):
+#        return self.rodsZone
+#    @property
+#    def uptime(self):
+#        return self.upSecs
