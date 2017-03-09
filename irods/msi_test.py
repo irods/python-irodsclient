@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from irods.session import iRODSSession
+from irods.miscsvrinfo import miscsvrinfo
 
-sess = iRODSSession(host="data.cyverse.org",port=1247,user="dingrod",password='dingrod',zone="ipt")
+m = miscsvrinfo("data.cyverse.org")
 
-sess.miscsvrinfo()
+print m
+

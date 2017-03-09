@@ -6,16 +6,16 @@ from irods.message import (
         iRODSMessage, StartupPack
         )
 from irods.exception import NetworkException, get_exception_by_code
-class miscSvrInfo(object):
+class miscsvrinfo(object):
 
     def __init__(self, host=None, port=1247):
         self.host=host
         self.port=port
         self.dummycred=""
-        self.miscsvrinfo()
+        self.setInfo()
         return
 
-    def miscsvrinfo(self):
+    def setInfo(self):
         # implementing functionality of imiscsvrinfo.
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -62,17 +62,22 @@ class miscSvrInfo(object):
         self.relVersion     = root[2].text
         self.apiVersion     = root[3].text
         self.rodsZone       = root[4].text
-        self.upSecs = int(time.time()) - int(serverBootTime)
-        #mins = upSecs / 60
-        #hr = mins/60
-        #mins = mins%60
-        #day = hr/24
-        #hr = hr%24
-        #print "serverType:{0}\nrelVersion:{1}\napiVersion:{2}\nzone:{3}\nup {4} days, {5}:{6}".format(
-        #        serverType,relVersion,apiVersion,rodsZone,day,hr,mins)
+        self.uptime = int(time.time()) - int(serverBootTime)
         s.close()
         return 
 
+    def update(self):
+        self.setInfo()
+        return
+
+    def __str__(self):
+        mins = self.uptime / 60
+        hr = mins/60
+        mins = mins%60
+        day = hr/24
+        hr = hr%24
+        return "{0}\nrelVersion={1}\napiVersion={2}\nrodsZone={3}\nup {4} days, {5}:{6}".format(
+            self.serverType,self.relVersion,self.apiVersion,self.rodsZone,day,hr,mins)
 
 #    @property
 #    def serverType(self):
