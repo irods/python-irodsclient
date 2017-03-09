@@ -2,13 +2,31 @@ import socket
 import xml.etree.ElementTree as ET
 import time
 from irods.api_number import api_number
-from irods.message import (
-        iRODSMessage, StartupPack
-        )
+from irods.message import (iRODSMessage, StartupPack)
 from irods.exception import NetworkException, get_exception_by_code
+
+# irods.miscsvrinfo by Baran Balkan (github.com/bascibaran)
+#
+# analogue to icommand imiscsvrinfo. 
+# the object is essentially the struct that the icommand uses to get the info.
+# the different components of imiscsvrinfo's return payload, eg serverType, uptime, etc
+# are attributes of the instance. 
+#
+# example usage: 
+# from irods.miscsvrinfo import miscsvrinfo
+# m = miscsvrinfo('myirodshost.domain.net')
+# m.uptime     # the uptime in seconds
+# m.serverType # RCAT enabled or disabled
+# and so on. 
+
+# If you wish to update the information, you can call the method
+# m.update() which then updates all the attributes with current information 
+# print m # yields the same output as imiscsvrinfo
+
 class miscsvrinfo(object):
 
     def __init__(self, host=None, port=1247):
+        self__dict__ = {}
         self.host=host
         self.port=port
         self.dummycred=""
@@ -16,7 +34,6 @@ class miscsvrinfo(object):
         return
 
     def setInfo(self):
-        # implementing functionality of imiscsvrinfo.
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((self.host, self.port))
@@ -40,11 +57,8 @@ class miscsvrinfo(object):
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
 
-
-        # do the miscsvrrequest here
         msg = iRODSMessage(msg_type='RODS_API_REQ',msg=None,int_info=api_number['GET_MISC_SVR_INFO_AN'])
         string = msg.pack()
-        #print "miscsvrionfo request message\n",string
         try:
             s.sendall(string)
         except:
@@ -55,16 +69,22 @@ class miscsvrinfo(object):
             exit(1)
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
-        #print "miscsvrinfo reply:\n\n",miscsvrinfo.msg
+
         root = ET.fromstring(miscsvrinfo.msg)
-        self.serverType     = "RCAT_ENABLED" if int(root[0].text) else "RCAT_DISABLED"
-        serverBootTime      = root[1].text
-        self.relVersion     = root[2].text
-        self.apiVersion     = root[3].text
-        self.rodsZone       = root[4].text
-        self.uptime = int(time.time()) - int(serverBootTime)
+        self.setProps( "RCAT_ENABLED" if int(root[0].text) else "RCAT_DISABLED",
+            root[2].text,
+            root[3].text,
+            root[4].text,
+            (int(time.time()) - int(root[1].text)))
         s.close()
-        return 
+        return
+  
+    def setProps(self, st, rv, av, rz, ut):
+        self._serverType = st
+        self._relVersion = rv
+        self._apiVersion = av
+        self._rodsZone   = rz
+        self._uptime     = ut
 
     def update(self):
         self.setInfo()
@@ -78,23 +98,19 @@ class miscsvrinfo(object):
         hr = hr%24
         return "{0}\nrelVersion={1}\napiVersion={2}\nrodsZone={3}\nup {4} days, {5}:{6}".format(
             self.serverType,self.relVersion,self.apiVersion,self.rodsZone,day,hr,mins)
-
-#    @property
-#    def serverType(self):
-#        if int(self.serverType):
-#            return 'RCAT_ENABLED'
-#        else:
-#            return 'RCAT_DISABLED'
-#        
-#    @property
-#    def relVersion(self):
-#        return self.relVersion
-#    @property
-#    def apiVersion(self):
-#        return self.apiVersion
-#    @property
-#    def rodsZone(self):
-#        return self.rodsZone
-#    @property
-#    def uptime(self):
-#        return self.upSecs
+   
+    @property
+    def serverType(self):
+        return self._serverType
+    @property
+    def relVersion(self):
+        return self._relVersion
+    @property
+    def apiVersion(self):
+        return self._apiVersion
+    @property
+    def rodsZone(self):
+        return self._rodsZone
+    @property
+    def uptime(self):
+        return self._uptime
