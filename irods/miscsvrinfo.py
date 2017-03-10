@@ -26,10 +26,14 @@ from irods.exception import NetworkException, get_exception_by_code
 class miscsvrinfo(object):
 
     def __init__(self, host=None, port=1247):
-        self__dict__ = {}
         self.host=host
         self.port=port
         self.dummycred=""
+        self._rodsZone    = None
+        self._relVerision = None
+        self._apiVersion  = None
+        self._serverType  = None
+        self._uptime      = None
         self.setInfo()
         return
 
