@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from irods.models import User, UserGroup
 from irods.manager import Manager
 from irods.message import GeneralAdminRequest, iRODSMessage

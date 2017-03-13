@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from prettytable import PrettyTable
 
 from irods.models import ModelBase
+from six.moves import range
 
 
 class ResultSet(object):
@@ -21,7 +23,7 @@ class ResultSet(object):
             table.add_column(
                 ModelBase.columns[col.attriInx].icat_key, col.value)
         table.align = 'l'
-        return table.get_string().encode('utf-8')
+        return table.get_string()
 
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]
@@ -49,7 +51,7 @@ class ResultSet(object):
         found = False
 
         for row in self.rows:
-            if value in row.values():
+            if value in list(row.values()):
                 found = True
 
         return found

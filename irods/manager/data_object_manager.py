@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from os.path import basename, dirname
 
 from irods.models import DataObject
@@ -17,10 +18,7 @@ SEEK_END = 2
 class DataObjectManager(Manager):
 
     def get(self, path):
-        try:
-            parent = self.sess.collections.get(dirname(path))
-        except CollectionDoesNotExist:
-            raise DataObjectDoesNotExist()
+        parent = self.sess.collections.get(dirname(path))
 
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == basename(path))\
@@ -39,7 +37,7 @@ class DataObjectManager(Manager):
         kvp.update(options)
         message_body = FileOpenRequest(
             objPath=path,
-            createMode=0644,
+            createMode=0o644,
             openFlags=0,
             offset=0,
             dataSize=-1,

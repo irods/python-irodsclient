@@ -1,9 +1,11 @@
 #! /usr/bin/env python
+from __future__ import absolute_import
 import os
 import sys
 import unittest
 from irods.exception import UserGroupDoesNotExist
 import irods.test.helpers as helpers
+from six.moves import range
 
 
 class TestUserGroup(unittest.TestCase):
