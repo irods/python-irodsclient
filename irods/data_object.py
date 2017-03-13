@@ -1,6 +1,5 @@
 from __future__ import absolute_import
-from os import O_RDONLY, O_WRONLY, O_RDWR
-from io import RawIOBase, BufferedRandom
+from io import RawIOBase
 import sys
 
 from irods.models import DataObject
@@ -58,17 +57,7 @@ class iRODSDataObject(object):
         return self._meta
 
     def open(self, mode='r', options=None):
-        flag, create_if_not_exists, seek_to_end = {
-            'r': (O_RDONLY, False, False),
-            'r+': (O_RDWR, False, False),
-            'w': (O_WRONLY, True, False),
-            'w+': (O_RDWR, True, False),
-            'a': (O_WRONLY, True, True),
-            'a+': (O_RDWR, True, True),
-        }[mode]
-        # TODO: Actually use create_if_not_exists and seek_to_end
-        conn, desc = self.manager.open(self.path, flag, options)
-        return BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
+        return self.manager.open(self.path, mode, options)
 
     def unlink(self, force=False):
         self.manager.unlink(self.path, force)

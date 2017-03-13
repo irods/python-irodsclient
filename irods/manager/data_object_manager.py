@@ -1,13 +1,15 @@
 from __future__ import absolute_import
 from os.path import basename, dirname
+from os import O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
 
 from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap)
-from irods.exception import (DataObjectDoesNotExist, CollectionDoesNotExist)
+from irods.exception import DataObjectDoesNotExist
 from irods.api_number import api_number
-from irods.data_object import iRODSDataObject
+from irods.data_object import iRODSDataObject, iRODSDataObjectFileRaw
+from io import BufferedRandom
 import irods.keywords as kw
 
 SEEK_SET = 0
@@ -57,10 +59,21 @@ class DataObjectManager(Manager):
         return self.get(path)
 
     def open(self, path, mode, options=None):
+
+        flags, seek_to_end = {
+            'r': (O_RDONLY, False),
+            'r+': (O_RDWR, False),
+            'w': (O_WRONLY | O_CREAT, False),
+            'w+': (O_RDWR | O_CREAT, False),
+            'a': (O_WRONLY | O_CREAT, True),
+            'a+': (O_RDWR | O_CREAT, True),
+        }[mode]
+        # TODO: Use seek_to_end
+
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
-            openFlags=mode,
+            openFlags=flags,
             offset=0,
             dataSize=-1,
             numThreads=0,
@@ -72,8 +85,9 @@ class DataObjectManager(Manager):
 
         conn = self.sess.pool.get_connection()
         conn.send(message)
-        response = conn.recv()
-        return (conn, response.int_info)
+        desc = conn.recv().int_info
+
+        return BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
 
     def unlink(self, path, force=False):
         options = {}

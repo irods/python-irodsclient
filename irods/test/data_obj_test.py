@@ -253,18 +253,17 @@ class TestDataObjOps(unittest.TestCase):
         contents = "blah blah " * 10000
         checksum = base64.b64encode(hashlib.sha256(contents).digest()).decode()
 
+        objs = self.sess.data_objects
+
         # make test file
         with open(file_path, 'w') as f:
             f.write(contents)
-
-        # make test object
-        obj = self.sess.data_objects.create(obj_path)
 
         # options for open/close
         options = {kw.REG_CHKSUM_KW: ''}
 
         # write contents of file to object
-        with open(file_path, 'rb') as f, obj.open('w', options) as o:
+        with open(file_path, 'rb') as f, objs.open(obj_path, 'w', options) as o:
             for chunk in helpers.chunks(f):
                 o.write(chunk)
 
