@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import absolute_import
 import os
 import sys
 import socket
@@ -157,7 +158,7 @@ class TestDataObjOps(unittest.TestCase):
         # read file
         obj = self.sess.data_objects.get(file_path)
         with obj.open('r') as f:
-            self.assertEqual(f.read(), truncated_content)
+            self.assertEqual(f.read().decode(), truncated_content)
 
     def test_multiple_reads(self):
         collection = self.coll_path
@@ -173,7 +174,7 @@ class TestDataObjOps(unittest.TestCase):
         for filename in filenames:
             obj = self.sess.data_objects.get(filename)
             with obj.open('r') as f:
-                self.assertEqual(f.read(), obj.path)
+                self.assertEqual(f.read().decode(), obj.path)
 
     @unittest.skipIf(
         config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(

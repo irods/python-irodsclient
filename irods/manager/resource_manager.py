@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from irods.models import Resource
 from irods.manager import Manager
 from irods.message import GeneralAdminRequest, iRODSMessage
@@ -15,7 +16,7 @@ class ResourceManager(Manager):
     @staticmethod
     def serialize(context):
         if isinstance(context, dict):
-            return ';'.join("{}={}".format(key, value) for (key, value) in context.items())
+            return ';'.join("{}={}".format(key, value) for (key, value) in list(context.items()))
         return context
 
     def get(self, name, zone=""):
@@ -87,8 +88,8 @@ class ResourceManager(Manager):
             conn.send(request)
             response = conn.recv()
             self.sess.cleanup()
-                              # close connections to get new agents with up to
-                              # date resource manager
+            # close connections to get new agents with up to
+            # date resource manager
         logger.debug(response.int_info)
 
     def modify(self, name, attribute, value):
@@ -133,8 +134,8 @@ class ResourceManager(Manager):
             conn.send(request)
             response = conn.recv()
             self.sess.cleanup()
-                              # close connections to get new agents with up to
-                              # date resource manager
+            # close connections to get new agents with up to
+            # date resource manager
         logger.debug(response.int_info)
 
     def remove_child(self, parent, child):
@@ -159,6 +160,6 @@ class ResourceManager(Manager):
             conn.send(request)
             response = conn.recv()
             self.sess.cleanup()
-                              # close connections to get new agents with up to
-                              # date resource manager
+            # close connections to get new agents with up to
+            # date resource manager
         logger.debug(response.int_info)

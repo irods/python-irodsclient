@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from datetime import datetime
 from calendar import timegm
 
@@ -48,6 +49,9 @@ class Column(QueryKey):
             self.icat_id,
             self.icat_key
         )
+
+    def __hash__(self):
+        return hash((self.column_type, self.icat_key, self.icat_id))
 
 
 class Keyword(QueryKey):
