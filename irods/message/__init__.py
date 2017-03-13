@@ -2,6 +2,7 @@ import struct
 import logging
 import socket
 import xml.etree.ElementTree as ET
+import six
 
 from irods import IRODS_VERSION
 from irods.message.message import Message
@@ -25,7 +26,6 @@ def _recv_message_in_len(sock, size):
             retbuf = buf
         else:
             retbuf += buf
-
     return retbuf
 
 
@@ -72,13 +72,16 @@ class iRODSMessage(object):
         msg_header = "<MsgHeader_PI><type>%s</type><msgLen>%d</msgLen>\
             <errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo>\
             </MsgHeader_PI>" % (self.msg_type,
-                                len(main_msg) if main_msg else 0,
+                                len(main_msg.encode('utf-8')) if main_msg else 0,
                                 len(self.error) if self.error else 0,
                                 len(self.bs) if self.bs else 0,
                                 self.int_info if self.int_info else 0)
         msg_header_length = struct.pack(">i", len(msg_header))
+        msg_header_length = msg_header_length
         parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
-        msg = msg_header_length + msg_header + "".join(parts)
+        joined_parts = ("".join(parts)).encode('utf-8')
+        msg_header = msg_header.encode('utf-8')
+        msg = msg_header_length + msg_header + joined_parts
         return msg
 
     def get_main_message(self, cls):
@@ -366,7 +369,8 @@ class GeneralAdminRequest(Message):
     arg9 = StringProperty()
 
 
-#define RHostAddr_PI "str hostAddr[LONG_NAME_LEN]; str rodsZone[NAME_LEN]; int port; int dummyInt;"
+# define RHostAddr_PI "str hostAddr[LONG_NAME_LEN]; str
+# rodsZone[NAME_LEN]; int port; int dummyInt;"
 
 class RodsHostAddress(Message):
     _name = 'RHostAddr_PI'
@@ -376,7 +380,8 @@ class RodsHostAddress(Message):
     dummyInt = IntegerProperty()
 
 
-#define MsParam_PI "str *label; piStr *type; ?type *inOutStruct; struct *BinBytesBuf_PI;"
+# define MsParam_PI "str *label; piStr *type; ?type *inOutStruct; struct
+# *BinBytesBuf_PI;"
 
 class MsParam(Message):
     _name = 'MsParam_PI'
@@ -403,10 +408,12 @@ class MsParam(Message):
 
                 # unpack struct accordingly
                 message_class = globals()[unpacked_value]
-                self._values['inOutStruct'] = SubmessageProperty(message_class).unpack(root.findall(unpacked_value))
+                self._values['inOutStruct'] = SubmessageProperty(
+                    message_class).unpack(root.findall(unpacked_value))
 
 
-#define MsParamArray_PI "int paramLen; int oprType; struct *MsParam_PI[paramLen];"
+# define MsParamArray_PI "int paramLen; int oprType; struct
+# *MsParam_PI[paramLen];"
 
 class MsParamArray(Message):
     _name = 'MsParamArray_PI'
@@ -415,7 +422,9 @@ class MsParamArray(Message):
     MsParam_PI = ArrayProperty(SubmessageProperty(MsParam))
 
 
-#define ExecMyRuleInp_PI "str myRule[META_STR_LEN]; struct RHostAddr_PI; struct KeyValPair_PI; str outParamDesc[LONG_NAME_LEN]; struct *MsParamArray_PI;"
+# define ExecMyRuleInp_PI "str myRule[META_STR_LEN]; struct RHostAddr_PI;
+# struct KeyValPair_PI; str outParamDesc[LONG_NAME_LEN]; struct
+# *MsParamArray_PI;"
 
 class RuleExecutionRequest(Message):
     _name = 'ExecMyRuleInp_PI'
@@ -426,7 +435,8 @@ class RuleExecutionRequest(Message):
     inpParamArray = SubmessageProperty(MsParamArray)
 
 
-#define ExecCmdOut_PI "struct BinBytesBuf_PI; struct BinBytesBuf_PI; int status;"
+# define ExecCmdOut_PI "struct BinBytesBuf_PI; struct BinBytesBuf_PI; int
+# status;"
 
 class ExecCmdOut_PI(Message):
     '''
@@ -446,10 +456,12 @@ class ExecCmdOut_PI(Message):
     def unpack(self, root):
         for (name, prop) in self._ordered_properties:
             if name == 'stdoutBuf':
-                unpacked_value = prop.unpack(root.findall(prop.message_cls._name)[:1])
+                unpacked_value = prop.unpack(
+                    root.findall(prop.message_cls._name)[:1])
 
             elif name == 'stderrBuf':
-                unpacked_value = prop.unpack(root.findall(prop.message_cls._name)[1:])
+                unpacked_value = prop.unpack(
+                    root.findall(prop.message_cls._name)[1:])
 
             else:
                 unpacked_value = prop.unpack(root.findall(name))
@@ -457,7 +469,7 @@ class ExecCmdOut_PI(Message):
             self._values[name] = unpacked_value
 
 
-#define STR_PI "str myStr;"
+# define STR_PI "str myStr;"
 
 class STR_PI(Message):
     '''

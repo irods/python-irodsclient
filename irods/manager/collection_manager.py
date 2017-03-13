@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from irods.models import Collection
 from irods.manager import Manager
 from irods.message import iRODSMessage, CollectionRequest, FileOpenRequest, ObjCopyRequest, StringStringMap
@@ -37,7 +38,7 @@ class CollectionManager(Manager):
             options['recursiveOpr'] = ''
         if force:
             options['forceFlag'] = ''
-        options = dict(options.items() + additional_flags.items())
+        options = dict(list(options.items()) + list(additional_flags.items()))
         message_body = CollectionRequest(
             collName=path,
             KeyValPair_PI=StringStringMap(options)
