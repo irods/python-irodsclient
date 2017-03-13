@@ -25,7 +25,6 @@ class iRODSSession(object):
         self.users = UserManager(self)
         self.user_groups = UserGroupManager(self)
         self.resources = ResourceManager(self)
-
     def __enter__(self):
         return self
 
@@ -44,9 +43,7 @@ class iRODSSession(object):
                   host=None, port=1247, user=None, zone=None,
                   password=None, client_user=None, client_zone=None,
                   server_dn=None, authentication_scheme='password'):
-        account = iRODSAccount(
-            host, int(port), user, zone, authentication_scheme,
-            password, client_user, server_dn, client_zone)
+        account = iRODSAccount(host, int(port), user, zone, authentication_scheme, password, client_user, server_dn, client_zone)
         self.pool = Pool(account)
 
     def query(self, *args):
@@ -57,7 +54,8 @@ class iRODSSession(object):
         # self.port = port
         # self.proxy_user = self.client_user = user
         # self.proxy_zone = self.client_zone = zone
-
+    
+                    
     @property
     def username(self):
         return self.pool.account.client_user
