@@ -16,7 +16,7 @@ class TestMiscSvrInfo(unittest.TestCase):
 
     def testObjectFields(self):
         self.assertTrue(self.m.serverType == "RCAT_ENABLED")
-        relString = "rods" + ".".join(map(str,config.IRODS_SERVER_VERSION))
+        relString = "rods" + ".".join([str(x) for x in config.IRODS_SERVER_VERSION])
         self.assertTrue(self.m.relVersion == relString)
         self.assertTrue(self.m.rodsZone   == config.IRODS_SERVER_ZONE)
         
