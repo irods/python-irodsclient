@@ -6,7 +6,6 @@ import os
 import sys
 import unittest
 import irods.test.config  as config
-import irods.test.helpers as helpers
 
 from irods.miscsvrinfo import iMiscSvrInfo
 
@@ -15,7 +14,7 @@ class TestMiscSvrInfo(unittest.TestCase):
     def setUp(self):
         self.m = iMiscSvrInfo(config.IRODS_SERVER_HOST)
 
-    def testObjectFields:
+    def testObjectFields(self):
         self.assertTrue(self.m.serverType == "RCAT_ENABLED")
         relString = "rods" + ".".join(map(str,config.IRODS_SERVER_VERSION))
         self.assertTrue(self.m.relVersion == relString)
