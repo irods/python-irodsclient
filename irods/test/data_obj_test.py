@@ -12,7 +12,7 @@ import irods.test.helpers as helpers
 import json
 import hashlib
 import base64
-
+import irods.keywords as kw
 
 class TestDataObjOps(unittest.TestCase):
 
@@ -236,6 +236,46 @@ class TestDataObjOps(unittest.TestCase):
             raise
         except:
             raise
+
+
+    def test_open_file_with_options(self):
+        '''
+        Similar to checksum test above,
+        except that we use an optional keyword on open
+        instead of a PEP.
+        '''
+
+        # test data
+        collection = self.coll_path
+        filename = 'test_open_file_with_options.txt'
+        file_path = '/tmp/{filename}'.format(**locals())
+        obj_path = '{collection}/{filename}'.format(**locals())
+        contents = "blah blah " * 10000
+        checksum = base64.b64encode(hashlib.sha256(contents).digest()).decode()
+
+        # make test file
+        with open(file_path, 'w') as f:
+            f.write(contents)
+
+        # make test object
+        obj = self.sess.data_objects.create(obj_path)
+
+        # options for open/close
+        options = {kw.REG_CHKSUM_KW: ''}
+
+        # write contents of file to object
+        with open(file_path, 'rb') as f, obj.open('w', options) as o:
+            for chunk in helpers.chunks(f):
+                o.write(chunk)
+
+        # update object and verify checksum
+        obj = self.sess.data_objects.get(obj_path)
+        self.assertEqual(obj.checksum, "sha2:{checksum}".format(**locals()))
+
+        # cleanup
+        obj.unlink(force=True)
+        os.unlink(file_path)
+
 
     def test_obj_replicate(self):
         # test data

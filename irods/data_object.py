@@ -57,7 +57,7 @@ class iRODSDataObject(object):
                 self.manager.sess.metadata, DataObject, self.path)
         return self._meta
 
-    def open(self, mode='r'):
+    def open(self, mode='r', options=None):
         flag, create_if_not_exists, seek_to_end = {
             'r': (O_RDONLY, False, False),
             'r+': (O_RDWR, False, False),
@@ -67,8 +67,8 @@ class iRODSDataObject(object):
             'a+': (O_RDWR, True, True),
         }[mode]
         # TODO: Actually use create_if_not_exists and seek_to_end
-        conn, desc = self.manager.open(self.path, flag)
-        return BufferedRandom(iRODSDataObjectFileRaw(conn, desc))
+        conn, desc = self.manager.open(self.path, flag, options)
+        return BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
 
     def unlink(self, force=False):
         self.manager.unlink(self.path, force)
@@ -85,12 +85,13 @@ class iRODSDataObject(object):
 
 class iRODSDataObjectFileRaw(RawIOBase):
 
-    def __init__(self, conn, descriptor):
+    def __init__(self, conn, descriptor, options):
         self.conn = conn
         self.desc = descriptor
+        self.options = options
 
     def close(self):
-        self.conn.close_file(self.desc)
+        self.conn.close_file(self.desc, self.options)
         self.conn.release()
         super(iRODSDataObjectFileRaw, self).close()
         return None

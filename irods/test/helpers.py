@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import io
 import tempfile
 import contextlib
 import shutil
@@ -36,6 +37,10 @@ def make_object(session, path, content=None):
 
     # refresh object after write
     return session.data_objects.get(path)
+
+
+def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
+    return iter(lambda: f.read(chunksize), b'')
 
 
 def make_collection(session, path, object_names=None, object_content=None):

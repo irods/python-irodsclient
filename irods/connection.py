@@ -331,7 +331,7 @@ class Connection(object):
         offset = response.get_main_message(FileSeekResponse).offset
         return offset
 
-    def close_file(self, desc):
+    def close_file(self, desc, options=None):
         message_body = OpenedDataObjRequest(
             l1descInx=desc,
             len=0,
@@ -339,7 +339,7 @@ class Connection(object):
             oprType=0,
             offset=0,
             bytesWritten=0,
-            KeyValPair_PI=StringStringMap()
+            KeyValPair_PI=StringStringMap(options)
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_CLOSE_AN'])
