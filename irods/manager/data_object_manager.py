@@ -18,10 +18,7 @@ SEEK_END = 2
 class DataObjectManager(Manager):
 
     def get(self, path):
-        try:
-            parent = self.sess.collections.get(dirname(path))
-        except CollectionDoesNotExist:
-            raise DataObjectDoesNotExist()
+        parent = self.sess.collections.get(dirname(path))
 
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == basename(path))\
