@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import absolute_import
 import os
 import sys
 import unittest
@@ -6,6 +7,7 @@ from irods.meta import iRODSMetaCollection
 from irods.exception import CollectionDoesNotExist
 import irods.test.config as config
 import irods.test.helpers as helpers
+from six.moves import range
 
 
 class TestCollection(unittest.TestCase):
@@ -25,7 +27,7 @@ class TestCollection(unittest.TestCase):
     def test_get_collection(self):
         # path = "/tempZone/home/rods"
         coll = self.sess.collections.get(self.test_coll_path)
-        self.assertEquals(self.test_coll_path, coll.path)
+        self.assertEqual(self.test_coll_path, coll.path)
 
     # def test_new_collection(self):
     #    self.assertEquals(self.coll.name, 'test_dir')
@@ -138,7 +140,7 @@ class TestCollection(unittest.TestCase):
         current_coll_name = self.test_coll.name
         for d in range(depth + 1):
             # get next result
-            collection, subcollections, data_objects = colls.next()
+            collection, subcollections, data_objects = next(colls)
 
             # check collection name
             self.assertEqual(collection.name, current_coll_name)
@@ -160,7 +162,7 @@ class TestCollection(unittest.TestCase):
 
         # that should be it
         with self.assertRaises(StopIteration):
-            colls.next()
+            next(colls)
 
     def test_walk_collection(self):
         depth = 20
@@ -180,7 +182,7 @@ class TestCollection(unittest.TestCase):
         sub_coll_name = ''
         for d in range(depth - 1, -2, -1):
             # get next result
-            collection, subcollections, data_objects = colls.next()
+            collection, subcollections, data_objects = next(colls)
 
             # check collection name
             if d >= 0:
@@ -206,7 +208,7 @@ class TestCollection(unittest.TestCase):
 
         # that should be it
         with self.assertRaises(StopIteration):
-            colls.next()
+            next(colls)
 
     def test_collection_metadata(self):
         self.assertIsInstance(self.test_coll.metadata, iRODSMetaCollection)

@@ -2,6 +2,8 @@
 # s/\(\w\+\)\s\+\(-\d\+\)/class \1(SystemException):\r    code = \2/g
 
 
+from __future__ import absolute_import
+import six
 class PycommandsException(Exception):
     pass
 
@@ -58,8 +60,8 @@ class iRODSExceptionMeta(type):
             iRODSExceptionMeta.codes[attrs['code']] = self
 
 
-class iRODSException(Exception):
-    __metaclass__ = iRODSExceptionMeta
+class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
+    pass
 
 
 def get_exception_by_code(code):

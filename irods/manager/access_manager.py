@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from os.path import basename, dirname
 
 from irods.manager import Manager

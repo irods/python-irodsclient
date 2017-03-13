@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import os
 import tempfile
 import contextlib
 import shutil
 import irods.test.config as config
 from irods.session import iRODSSession
+from six.moves import range
 
 
 def make_session_from_config(**kwargs):
@@ -27,6 +29,7 @@ def make_object(session, path, content=None):
     if not content:
         content = 'blah'
 
+    content = content.encode('utf-8').strip()
     obj = session.data_objects.create(path)
     with obj.open('w') as obj_desc:
         obj_desc.write(content)

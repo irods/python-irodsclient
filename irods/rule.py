@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import cgi
 from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
 from irods.api_number import api_number
@@ -20,7 +21,6 @@ class Rule(object):
             else:
                 self.params = params
             self.output = output
-
 
     def load(self, rule_file):
         self.params = {}

@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from base64 import b64encode, b64decode
 
 from irods.message.ordered import OrderedProperty
+import six
 
 
 class MessageProperty(OrderedProperty):
@@ -18,7 +20,10 @@ class MessageProperty(OrderedProperty):
     def pack(self, value):
         values = []
         values.append("<%s>" % self.name)
-        values.append(self.format(value))
+        my_value = self.format(value)
+        if six.PY3 and isinstance(my_value, bytes):
+            my_value = my_value.decode("utf-8")
+        values.append(my_value)
         values.append("</%s>" % self.name)
         return "".join(values)
 
@@ -54,10 +59,17 @@ class BinaryProperty(MessageProperty):
         super(BinaryProperty, self).__init__()
 
     def format(self, value):
-        return b64encode(value)
+        if six.PY3 and not isinstance(value, bytes):
+            val = b64encode(value.encode())
+        else:
+            val = b64encode(value)
+        return val
 
     def parse(self, value):
-        return b64decode(value)
+        val = b64decode(value)
+        if six.PY3:
+            val = val.decode('utf-8')
+        return val
 
 
 class StringProperty(MessageProperty):
@@ -67,13 +79,11 @@ class StringProperty(MessageProperty):
         super(StringProperty, self).__init__()
 
     def format(self, value):
-        if isinstance(value, unicode):
-            return value.encode('utf-8')
+        if six.PY3 and isinstance(value, bytes):
+            value = value.decode()
         return value
 
     def parse(self, value):
-        if isinstance(value, str):
-            return value.decode('utf-8')
         return value
 
 

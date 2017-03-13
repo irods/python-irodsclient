@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import absolute_import
 import os
 import sys
 import unittest
@@ -6,6 +7,7 @@ from irods.meta import iRODSMeta
 from irods.models import DataObject, Collection
 import irods.test.config as config
 import irods.test.helpers as helpers
+from six.moves import range
 
 
 class TestMeta(unittest.TestCase):
