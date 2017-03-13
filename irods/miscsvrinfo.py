@@ -14,7 +14,7 @@ from irods.exception import NetworkException, get_exception_by_code
 #
 # example usage: 
 # from irods.miscsvrinfo import miscsvrinfo
-# m = miscsvrinfo('myirodshost.domain.net')
+# m = iMiscSvrInfo('myirodshost.domain.net')
 # m.uptime     # the uptime in seconds
 # m.serverType # RCAT enabled or disabled
 # and so on. 
@@ -23,14 +23,14 @@ from irods.exception import NetworkException, get_exception_by_code
 # m.update() which then updates all the attributes with current information 
 # print m # yields the same output as imiscsvrinfo
 
-class miscsvrinfo(object):
+class iMiscSvrInfo(object):
 
     def __init__(self, host=None, port=1247):
         self.host=host
         self.port=port
         self.dummycred=""
         self._rodsZone    = None
-        self._relVerision = None
+        self._relVersion  = None
         self._apiVersion  = None
         self._serverType  = None
         self._uptime      = None
