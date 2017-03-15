@@ -245,6 +245,10 @@ class TestDataObjOps(unittest.TestCase):
         instead of a PEP.
         '''
 
+        # skip if server is 4.1.4 or older
+        if self.server_version <= (4, 1, 4):
+            self.skipTest('Not supported')
+
         # test data
         collection = self.coll_path
         filename = 'test_open_file_with_options.txt'
