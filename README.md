@@ -24,6 +24,8 @@ This project should be considered pre-alpha. Here's what works:
 - [x] Manage users and groups
 - [ ] Manage zones
 - [x] Manage resources
+- [x] GSI authentication
+- [x] Python 3 support
 
 Installation
 ------------
