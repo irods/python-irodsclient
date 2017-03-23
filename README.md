@@ -96,6 +96,15 @@ Get an existing data object:
 test1
 >>> obj.collection
 <iRODSCollection /tempZone/home/rods>
+
+>>> for replica in obj.replicas:
+...     print replica.resource_name
+...     print replica.path
+...     print replica.status
+...
+demoResc
+/var/lib/irods/Vault/home/rods/test1
+1
 ```
 
 Reading and writing files
