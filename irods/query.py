@@ -1,15 +1,16 @@
 from __future__ import absolute_import
 from collections import OrderedDict
 
+from irods import MAX_SQL_ROWS
 from irods.models import Model
 from irods.column import Column, Keyword
 from irods.message import (
     IntegerIntegerMap, IntegerStringMap, StringStringMap,
     GenQueryRequest, GenQueryResponse, empty_gen_query_out,
-    iRODSMessage)
+    iRODSMessage, SpecificQueryRequest, GeneralAdminRequest)
 from irods.api_number import api_number
 from irods.exception import CAT_NO_ROWS_FOUND, MultipleResultsFound, NoResultFound
-from irods.results import ResultSet
+from irods.results import ResultSet, SpecificQueryResultSet
 import six
 
 query_number = {'ORDER_BY': 0x400,
@@ -206,9 +207,12 @@ class Query(object):
         yield result_set
 
         while result_set.continue_index > 0:
-            result_set = self.continue_index(
-                result_set.continue_index).execute()
-            yield result_set
+            try:
+                result_set = self.continue_index(
+                    result_set.continue_index).execute()
+                yield result_set
+            except CAT_NO_ROWS_FOUND:
+                break
 
     def get_results(self):
         for result_set in self.get_batches():
@@ -233,3 +237,101 @@ class Query(object):
 
 #     def __getitem__(self, val):
 #         pass
+
+
+class SpecificQuery(object):
+
+    def __init__(self, sess, sql=None, alias=None, columns=None, args=None):
+        if not sql and not alias:
+            raise ValueError('A query or alias must be provided')
+
+        self.session = sess
+        self._sql = sql
+        self._alias = alias
+        self._continue_index = 0
+        self._columns = columns
+        self._args = args or []
+
+
+    def register(self):
+        if not self._sql:
+            raise ValueError('Empty query')
+
+        message_body = GeneralAdminRequest(
+            "add",
+            "specificQuery",
+            self._sql,
+            self._alias
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+
+        with self.session.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        return response
+
+
+    def remove(self):
+        target =  self._alias or self._sql
+
+        message_body = GeneralAdminRequest(
+            "rm",
+            "specificQuery",
+            target
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
+
+        with self.session.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        return response
+
+
+    def execute(self, limit=MAX_SQL_ROWS, offset=0, options=0, conditions=None):
+        target =  self._alias or self._sql
+
+        if conditions is None:
+            conditions = StringStringMap({})
+
+        sql_args = {}
+        for i, arg in enumerate(self._args[:10]):
+            sql_args['arg{}'.format(i)] = arg
+
+        message_body = SpecificQueryRequest(sql=target,
+                                            maxRows=limit,
+                                            continueInx=self._continue_index,
+                                            rowOffset=offset,
+                                            options=0,
+                                            KeyValPair_PI=conditions,
+                                            **sql_args)
+
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['SPECIFIC_QUERY_AN'])
+
+        with self.session.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+
+        results = response.get_main_message(GenQueryResponse)
+        return SpecificQueryResultSet(results, self._columns)
+
+
+    def get_batches(self):
+        result_set = self.execute()
+        yield result_set
+
+        while result_set.continue_index > 0:
+            self._continue_index = result_set.continue_index
+            try:
+                result_set = self.execute()
+                yield result_set
+            except CAT_NO_ROWS_FOUND:
+                break
+
+
+    def get_results(self):
+        for result_set in self.get_batches():
+            for result in result_set:
+                yield result
+

@@ -342,9 +342,9 @@ class VersionResponse(Message):
     reconnAddr = StringProperty()
     cookie = IntegerProperty()
 
+
 # define generalAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
 # str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
-
 
 class GeneralAdminRequest(Message):
     _name = 'generalAdminInp_PI'
@@ -367,6 +367,30 @@ class GeneralAdminRequest(Message):
     arg7 = StringProperty()
     arg8 = StringProperty()
     arg9 = StringProperty()
+
+
+#define specificQueryInp_PI "str *sql; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7; str *arg8; str *arg9; str *arg10; int maxRows; int continueInx; int rowOffset; int options; struct KeyValPair_PI;"
+
+class SpecificQueryRequest(Message):
+    _name = 'specificQueryInp_PI'
+    sql = StringProperty()
+
+    arg1 = StringProperty()
+    arg2 = StringProperty()
+    arg3 = StringProperty()
+    arg4 = StringProperty()
+    arg5 = StringProperty()
+    arg6 = StringProperty()
+    arg7 = StringProperty()
+    arg8 = StringProperty()
+    arg9 = StringProperty()
+    arg10 = StringProperty()
+
+    maxRows = IntegerProperty()
+    continueInx = IntegerProperty()
+    rowOffset = IntegerProperty()
+    options = IntegerProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 
 # define RHostAddr_PI "str hostAddr[LONG_NAME_LEN]; str

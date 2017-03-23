@@ -14,7 +14,7 @@ class TestAccess(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session_from_config()
 
-        # Create dummy test collection
+        # Create test collection
         self.coll_path = '/{0}/home/{1}/test_dir'.format(
             config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
         self.coll = helpers.make_collection(self.sess, self.coll_path)

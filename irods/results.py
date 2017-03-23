@@ -25,17 +25,17 @@ class ResultSet(object):
         table.align = 'l'
         return table.get_string()
 
+    @staticmethod
+    def _format_attribute(attribute_index, value):
+        col = ModelBase.columns[attribute_index]
+        try:
+            return (col, col.column_type.to_python(value))
+        except (TypeError, ValueError):
+            return (col, value)
+
     def _format_row(self, index):
         values = [(col, col.value[index]) for col in self.cols]
-
-        def _format(attribute_index, value):
-            col = ModelBase.columns[attribute_index]
-            try:
-                return (col, col.column_type.to_python(value))
-            except (TypeError, ValueError):
-                return (col, value)
-
-        return dict([_format(col.attriInx, value) for col, value in values])
+        return dict([self._format_attribute(col.attriInx, value) for col, value in values])
 
     def __getitem__(self, index):
         return self.rows.__getitem__(index)
@@ -55,3 +55,33 @@ class ResultSet(object):
                 found = True
 
         return found
+
+
+class SpecificQueryResultSet(ResultSet):
+
+    def __init__(self, raw, columns=None):
+        self._query_columns = columns
+        super(SpecificQueryResultSet, self).__init__(raw)
+
+
+    def _format_row(self, index):
+        values = [col.value[index] for col in self.cols]
+
+        formatted_row = {}
+
+        for i, value in enumerate(values):
+            try:
+                column = self._query_columns[i]
+                result_key = column
+            except TypeError:
+                column = ModelBase.columns[0] # SpecificQueryResult.value
+                result_key = i
+
+            try:
+                formatted_value = column.column_type.to_python(value)
+            except (TypeError, ValueError):
+                formatted_value = value
+
+            formatted_row[result_key] = formatted_value
+
+        return formatted_row

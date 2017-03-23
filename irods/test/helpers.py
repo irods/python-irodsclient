@@ -56,11 +56,11 @@ def make_collection(session, path, object_names=None, object_content=None):
     return coll
 
 
-def make_dummy_collection(session, path, obj_count):
+def make_test_collection(session, path, obj_count):
     coll = session.collections.create(path)
 
     for n in range(obj_count):
-        obj_path = path + "/dummy" + str(n).zfill(6) + ".txt"
+        obj_path = path + "/test" + str(n).zfill(6) + ".txt"
         make_object(session, obj_path)
 
     return coll

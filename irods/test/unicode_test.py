@@ -58,7 +58,7 @@ class TestUnicodeNames(unittest.TestCase):
         # make list of unicode filenames, from file
         self.names = parse_xml_file(UNICODE_TEST_FILE)
 
-        # Create dummy test collection
+        # Create test collection
         self.coll = helpers.make_collection(
             self.sess, self.coll_path, self.names)
 

@@ -17,8 +17,8 @@ class TestContinueQuery(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session_from_config()
 
-        # Create dummy test collection
-        self.coll = helpers.make_dummy_collection(
+        # Create test collection
+        self.coll = helpers.make_test_collection(
             self.sess, self.coll_path, self.obj_count)
 
     def tearDown(self):
@@ -36,7 +36,7 @@ class TestContinueQuery(unittest.TestCase):
             counter = 0
             for obj in objects:
                 self.assertEqual(
-                    obj.name, "dummy" + str(counter).zfill(6) + ".txt")
+                    obj.name, "test" + str(counter).zfill(6) + ".txt")
                 counter += 1
 
     def test_files_generator(self):
@@ -49,7 +49,7 @@ class TestContinueQuery(unittest.TestCase):
         for result in query.get_results():
             # what we should see
             object_path = self.coll_path + \
-                "/dummy" + str(counter).zfill(6) + ".txt"
+                "/test" + str(counter).zfill(6) + ".txt"
 
             # what we see
             result_path = "{0}/{1}".format(

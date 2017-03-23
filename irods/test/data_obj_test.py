@@ -24,7 +24,7 @@ class TestDataObjOps(unittest.TestCase):
             self.server_version = tuple(int(token)
                                         for token in conn.server_version.replace('rods', '').split('.'))
 
-        # Create dummy test collection
+        # Create test collection
         self.coll_path = '/{0}/home/{1}/test_dir'.format(
             config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
         self.coll = helpers.make_collection(self.sess, self.coll_path)

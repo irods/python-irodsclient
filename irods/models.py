@@ -148,6 +148,13 @@ class CollectionAccess(Model):
     access_id = Column(Integer, 'COL_COLL_ACCESS_COLL_ID', 714)
 
 
+class SpecificQueryResult(Model):
+    '''
+    To parse results of specific queries. No corresponding iCAT table.
+    '''
+    value = Column(String, 'SQL_RESULT_VALUE', 0)
+
+
 # not really a model. Should be dict instead?
 class Keywords(Model):
     data_type = Keyword(String, 'dataType')
