@@ -224,6 +224,14 @@ class TestSpecificQuery(unittest.TestCase):
         self.test_collection.remove(recurse=True, force=True)
 
 
+    def test_list_specific_queries(self):
+        query = SpecificQuery(self.session, alias='ls')
+
+        for result in query.get_results():
+            self.assertIsNotNone(result[0])             # query alias
+            self.assertIn('SELECT', result[1].upper())  # query string
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
