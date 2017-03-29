@@ -15,7 +15,7 @@ def main(output_root_directory):
 def run_tests():
     install_testing_dependencies()
     irods_python_ci_utilities.subprocess_get_output(['sudo', 'chmod', '-R', '777', '/etc/irods'], check_rc=True)
-    irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'run', 'irods/test/runner.py'], check_rc=True)
+    irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'run', 'irods/test/runner.py'])
     irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'report'], check_rc=True)
     irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'xml'], check_rc=True)
 
