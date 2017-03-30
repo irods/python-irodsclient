@@ -10,7 +10,8 @@ import six
 
 class iRODSReplica(object):
 
-    def __init__(self, status, resource_name, path):
+    def __init__(self, number, status, resource_name, path):
+        self.number = number
         self.status = status
         self.resource_name = resource_name
         self.path = path
@@ -40,6 +41,7 @@ class iRODSDataObject(object):
             replicas = sorted(
                 results, key=lambda r: r[DataObject.replica_number])
             self.replicas = [iRODSReplica(
+                r[DataObject.replica_number],
                 r[DataObject.replica_status],
                 r[DataObject.resource_name],
                 r[DataObject.path]
@@ -59,8 +61,8 @@ class iRODSDataObject(object):
     def open(self, mode='r', options=None):
         return self.manager.open(self.path, mode, options)
 
-    def unlink(self, force=False):
-        self.manager.unlink(self.path, force)
+    def unlink(self, force=False, options=None):
+        self.manager.unlink(self.path, force, options)
 
     def truncate(self, size):
         self.manager.truncate(self.path, size)

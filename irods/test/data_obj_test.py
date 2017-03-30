@@ -319,6 +319,74 @@ class TestDataObjOps(unittest.TestCase):
         # delete second resource
         self.sess.resources.remove(resc_name)
 
+
+    @unittest.skipIf(config.IRODS_SERVER_VERSION < (4, 0, 0), "iRODS 4+")
+    def test_replica_number(self):
+        session = self.sess
+        zone = session.zone
+        username = session.username
+        obj_path = '/{zone}/home/{username}/foo.txt'.format(**locals())
+        obj_content = b'blah'
+        number_of_replicas = 7
+
+        # make replication resource
+        replication_resource = session.resources.create('repl_resc', 'replication')
+
+        # make 6 ufs resources
+        ufs_resources = []
+        for i in range(number_of_replicas):
+            resource_name = 'ufs{0}'.format(i)
+            resource_type = 'unixfilesystem'
+            resource_host = session.host
+            resource_path = '/tmp/' + resource_name
+            ufs_resources.append(session.resources.create(
+                resource_name, resource_type, resource_host, resource_path))
+
+            # add child to replication resource
+            session.resources.add_child(replication_resource.name, resource_name)
+
+        # create object on compound resource
+        obj = session.data_objects.create(obj_path, replication_resource.name)
+
+        # write to object
+        with obj.open('w+') as obj_desc:
+            obj_desc.write(obj_content)
+
+        # refresh object
+        obj = session.data_objects.get(obj_path)
+
+        # assertions on replicas
+        self.assertEqual(len(obj.replicas), number_of_replicas)
+        for i, replica in enumerate(obj.replicas):
+            self.assertEqual(replica.number, i)
+
+        # now trim odd-numbered replicas
+        for i in [1, 3, 5]:
+            options = {}
+            options[kw.REPL_NUM_KW] = str(i)
+            obj.unlink(options=options)
+
+        # refresh object
+        obj = session.data_objects.get(obj_path)
+
+        # check remaining replica numbers
+        replica_numbers = []
+        for replica in obj.replicas:
+            replica_numbers.append(replica.number)
+        self.assertEqual(replica_numbers, [0, 2, 4, 6])
+
+        # remove object
+        obj.unlink(force=True)
+
+        # remove ufs resources
+        for resource in ufs_resources:
+            session.resources.remove_child(replication_resource.name, resource.name)
+            resource.remove()
+
+        # remove replication resource
+        replication_resource.remove()
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))

@@ -89,8 +89,9 @@ class DataObjectManager(Manager):
 
         return BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
 
-    def unlink(self, path, force=False):
-        options = {}
+    def unlink(self, path, force=False, options=None):
+        if options is None:
+            options = {}
         if force:
             options[kw.FORCE_FLAG_KW] = ''
         message_body = FileOpenRequest(
