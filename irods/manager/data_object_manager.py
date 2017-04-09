@@ -151,7 +151,10 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
-    def copy(self, src_path, dest_path):
+    def copy(self, src_path, dest_path, options=None):
+        if options is None:
+            options = {}
+
         # check if dest is a collection
         # if so append filename to it
         if self.sess.collections.exists(dest_path):
@@ -167,7 +170,7 @@ class DataObjectManager(Manager):
             offset=0,
             dataSize=0,
             numThreads=0,
-            oprType=11,   # RENAME_DATA_OBJ
+            oprType=10,   # COPY_SRC
             KeyValPair_PI=StringStringMap(),
         )
         dest = FileOpenRequest(
@@ -177,8 +180,8 @@ class DataObjectManager(Manager):
             offset=0,
             dataSize=0,
             numThreads=0,
-            oprType=11,   # RENAME_DATA_OBJ
-            KeyValPair_PI=StringStringMap(),
+            oprType=9,   # COPY_DEST
+            KeyValPair_PI=StringStringMap(options),
         )
         message_body = ObjCopyRequest(
             srcDataObjInp_PI=src,
