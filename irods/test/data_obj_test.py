@@ -107,6 +107,47 @@ class TestDataObjOps(unittest.TestCase):
         # remove new collection
         new_coll.remove(recurse=True, force=True)
 
+    def test_copy_obj_to_obj(self):
+        # test args
+        collection = self.coll_path
+        src_file_name = 'foo'
+        dest_file_name = 'bar'
+
+        # make object in test collection
+        src_path = "{collection}/{src_file_name}".format(**locals())
+        src_obj = helpers.make_object(self.sess, src_path, options={kw.REG_CHKSUM_KW: ''})
+
+        # copy object
+        options = {kw.VERIFY_CHKSUM_KW: ''}
+        dest_path = "{collection}/{dest_file_name}".format(**locals())
+        self.sess.data_objects.copy(src_path, dest_path, options)
+
+        # compare checksums
+        dest_obj = self.sess.data_objects.get(dest_path)
+        self.assertEqual(src_obj.checksum, dest_obj.checksum)
+
+    def test_copy_obj_to_coll(self):
+        # test args
+        collection = self.coll_path
+        file_name = 'foo'
+        dest_coll_name = 'copy_dest_coll'
+        dest_coll_path = "{collection}/{dest_coll_name}".format(**locals())
+        dest_obj_path = "{collection}/{dest_coll_name}/{file_name}".format(
+            **locals())
+
+        # make object in test collection
+        path = "{collection}/{file_name}".format(**locals())
+        src_obj = helpers.make_object(self.sess, path, options={kw.REG_CHKSUM_KW: ''})
+
+        # make new collection and copy object into it
+        options = {kw.VERIFY_CHKSUM_KW: ''}
+        helpers.make_collection(self.sess, dest_coll_path)
+        self.sess.data_objects.copy(path, dest_coll_path, options)
+
+        # compare checksums
+        dest_obj = self.sess.data_objects.get(dest_obj_path)
+        self.assertEqual(src_obj.checksum, dest_obj.checksum)
+
     def test_invalid_get(self):
         # bad paths
         path_with_invalid_file = self.coll_path + '/hamsalad'
@@ -150,7 +191,7 @@ class TestDataObjOps(unittest.TestCase):
         truncated_content = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
         # make object
-        obj = helpers.make_object(self.sess, file_path, content)
+        obj = helpers.make_object(self.sess, file_path, content=content)
 
         # truncate object
         obj.truncate(len(truncated_content))
@@ -220,7 +261,7 @@ class TestDataObjOps(unittest.TestCase):
                     hashlib.sha256(contents).digest()).decode()
 
                 # make object in test collection
-                obj = helpers.make_object(self.sess, obj_path, contents)
+                obj = helpers.make_object(self.sess, obj_path, content=contents)
 
                 # verify object's checksum
                 self.assertEqual(

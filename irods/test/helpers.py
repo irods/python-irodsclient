@@ -26,13 +26,13 @@ def make_session_from_config(**kwargs):
     return iRODSSession(**kwargs)
 
 
-def make_object(session, path, content=None):
+def make_object(session, path, content=None, options=None):
     if not content:
         content = 'blah'
 
     content = content.encode('utf-8').strip()
-    obj = session.data_objects.create(path)
-    with obj.open('w') as obj_desc:
+
+    with session.data_objects.open(path, 'w', options) as obj_desc:
         obj_desc.write(content)
 
     # refresh object after write
@@ -51,7 +51,7 @@ def make_collection(session, path, object_names=None, object_content=None):
     if object_names:
         for name in object_names:
             obj_path = os.path.join(path, name)
-            make_object(session, obj_path, object_content)
+            make_object(session, obj_path, content=object_content)
 
     return coll
 
