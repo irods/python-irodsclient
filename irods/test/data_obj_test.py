@@ -261,7 +261,8 @@ class TestDataObjOps(unittest.TestCase):
                     hashlib.sha256(contents).digest()).decode()
 
                 # make object in test collection
-                obj = helpers.make_object(self.sess, obj_path, content=contents)
+                options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
+                obj = helpers.make_object(self.sess, obj_path, content=contents, options=options)
 
                 # verify object's checksum
                 self.assertEqual(
@@ -373,7 +374,7 @@ class TestDataObjOps(unittest.TestCase):
         # make replication resource
         replication_resource = session.resources.create('repl_resc', 'replication')
 
-        # make 6 ufs resources
+        # make ufs resources
         ufs_resources = []
         for i in range(number_of_replicas):
             resource_name = 'ufs{0}'.format(i)
@@ -386,7 +387,7 @@ class TestDataObjOps(unittest.TestCase):
             # add child to replication resource
             session.resources.add_child(replication_resource.name, resource_name)
 
-        # create object on compound resource
+        # create object on replication resource
         obj = session.data_objects.create(obj_path, replication_resource.name)
 
         # write to object

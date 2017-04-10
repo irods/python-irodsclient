@@ -59,6 +59,8 @@ class DataObjectManager(Manager):
         return self.get(path)
 
     def open(self, path, mode, options=None):
+        if options is None:
+            options = {}
 
         flags, seek_to_end = {
             'r': (O_RDONLY, False),
@@ -70,6 +72,14 @@ class DataObjectManager(Manager):
         }[mode]
         # TODO: Use seek_to_end
 
+        try:
+            oprType = options[kw.OPR_TYPE_KW]
+        except KeyError:
+            oprType = 0
+
+        # sanitize options before packing
+        options = {str(key): str(value) for key, value in options.items()}
+
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -77,7 +87,7 @@ class DataObjectManager(Manager):
             offset=0,
             dataSize=-1,
             numThreads=0,
-            oprType=0,
+            oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,

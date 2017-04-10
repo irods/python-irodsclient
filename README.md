@@ -99,10 +99,12 @@ test1
 
 >>> for replica in obj.replicas:
 ...     print replica.resource_name
+...     print replica.number
 ...     print replica.path
 ...     print replica.status
 ...
 demoResc
+0
 /var/lib/irods/Vault/home/rods/test1
 1
 ```

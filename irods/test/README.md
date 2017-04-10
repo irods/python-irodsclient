@@ -1,5 +1,5 @@
 ### Test results
-[![Build Status](https://jenkins.irods.org/buildStatus/icon?job=test-python-client-4.1.8-ub14)](https://jenkins.irods.org/job/test-python-client-4.1.8-ub14)
+[![Build Status](https://jenkins.irods.org/buildStatus/icon?job=python-irodsclient-github-tracking-master)](https://jenkins.irods.org/job/python-irodsclient-github-tracking-master)
 
 ### To run a test
 Given the relative imports in the testing files `from ..message import *`

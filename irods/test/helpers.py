@@ -32,12 +32,12 @@ def make_object(session, path, content=None, options=None):
 
     content = content.encode('utf-8').strip()
 
-    with session.data_objects.open(path, 'w', options) as obj_desc:
+    obj = session.data_objects.create(path)
+    with obj.open('w', options) as obj_desc:
         obj_desc.write(content)
 
     # refresh object after write
     return session.data_objects.get(path)
-
 
 def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
     return iter(lambda: f.read(chunksize), b'')
