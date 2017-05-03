@@ -1,5 +1,6 @@
 from __future__ import absolute_import
-from irods.models import User, UserGroup
+from irods.models import User, UserGroup, UserAuth
+from irods.exception import NoResultFound
 
 
 class iRODSUser(object):
@@ -12,6 +13,17 @@ class iRODSUser(object):
             self.type = result[User.type]
             self.zone = result[User.zone]
         self._meta = None
+
+    @property
+    def dn(self):
+        query = self.manager.sess.query(UserAuth.user_dn).filter(UserAuth.user_id == self.id)
+        try:
+            return query.one()[UserAuth.user_dn]
+        except NoResultFound:
+            return None
+
+    def modify(self, *args, **kwargs):
+        self.manager.modify(self.name, *args, **kwargs)
 
     def __repr__(self):
         return "<iRODSUser {id} {name} {type} {zone}>".format(**vars(self))

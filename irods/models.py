@@ -29,13 +29,15 @@ class User(Model):
     name = Column(String, 'USER_NAME', 202)
     type = Column(String, 'USER_TYPE', 203)
     zone = Column(String, 'USER_ZONE', 204)
-    dn = Column(String, 'USER_DN', 205)
     info = Column(String, 'USER_INFO', 206)
     comment = Column(String, 'USER_COMMENT', 207)
     create_time = Column(DateTime, 'USER_CREATE_TIME', 208)
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
-# R_COLL_USER_MAIN in rodsGenQuery.h
+
+class UserAuth(Model):
+    user_id = Column(Integer, 'USER_AUTH_ID', 1600)
+    user_dn = Column(String, 'USER_DN', 1601)
 
 
 class CollectionUser(Model):

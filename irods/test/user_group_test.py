@@ -85,6 +85,33 @@ class TestUserGroup(unittest.TestCase):
         with self.assertRaises(UserGroupDoesNotExist):
             self.sess.user_groups.get(group_name)
 
+
+    def test_user_dn(self):
+        user_name = "testuser"
+        user_dn = "0123456789"
+
+        # create user
+        user = self.sess.users.create(user_name, 'rodsuser')
+
+        # expect no dn
+        self.assertEqual(user.dn, None)
+
+        # add dn
+        user.modify('addAuth', user_dn)
+
+        # confirm dn
+        self.assertEqual(user.dn, user_dn)
+
+        # remove dn
+        user.modify('rmAuth', user_dn)
+
+        # confirm removal
+        self.assertEqual(user.dn, None)
+
+        # delete user
+        user.remove()
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
