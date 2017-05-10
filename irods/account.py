@@ -1,15 +1,15 @@
 class iRODSAccount(object):
 
-    def __init__(self, host, port, user, zone,
-                 authentication_scheme='password',
+    def __init__(self, irods_host, irods_port, irods_user_name, irods_zone_name,
+                 irods_authentication_scheme='password',
                  password=None, client_user=None,
-                 server_dn=None, client_zone=None):
+                 server_dn=None, client_zone=None, **kwargs):
 
-        self.authentication_scheme = authentication_scheme.lower()
-        self.host = host
-        self.port = port
-        self.proxy_user = self.client_user = user
-        self.proxy_zone = self.client_zone = zone
+        self.authentication_scheme = irods_authentication_scheme.lower()
+        self.host = irods_host
+        self.port = int(irods_port)
+        self.proxy_user = self.client_user = irods_user_name
+        self.proxy_zone = self.client_zone = irods_zone_name
         self.server_dn = server_dn
         self.password = password
 
