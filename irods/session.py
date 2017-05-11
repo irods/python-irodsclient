@@ -50,8 +50,8 @@ class iRODSSession(object):
                   irods_env_file=None):
 
         if irods_env_file:
-            creds = iRODSSession.get_irods_env(irods_env_file)
-            creds['password']=iRODSSession.get_irods_auth(creds)
+            creds = self.get_irods_env(irods_env_file)
+            creds['password']=self.get_irods_auth(creds)
             account = iRODSAccount(**creds)
         else:
             account = iRODSAccount(

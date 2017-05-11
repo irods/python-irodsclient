@@ -31,7 +31,7 @@ def _recv_message_in_len(sock, size):
 
 class iRODSMessage(object):
 
-    def __init__(self, msg_type=None, msg=None, error=None, bs=None, int_info=None):
+    def __init__(self, msg_type=b'', msg=None, error=b'', bs=b'', int_info=0):
         self.msg_type = msg_type
         self.msg = msg
         self.error = error
@@ -67,22 +67,46 @@ class iRODSMessage(object):
 
         return iRODSMessage(msg_type, message, error, bs, int_info)
 
+
+    @staticmethod
+    def encode_unicode(my_str):
+        if type(my_str) is unicode:
+            return my_str.encode('utf-8')
+        else:
+            return my_str
+
+
     def pack(self):
-        main_msg = self.msg.pack() if self.msg else None
-        msg_header = "<MsgHeader_PI><type>%s</type><msgLen>%d</msgLen>\
-            <errorLen>%d</errorLen><bsLen>%d</bsLen><intInfo>%d</intInfo>\
-            </MsgHeader_PI>" % (self.msg_type,
-                                len(main_msg.encode('utf-8')) if main_msg else 0,
-                                len(self.error) if self.error else 0,
-                                len(self.bs) if self.bs else 0,
-                                self.int_info if self.int_info else 0)
+        # pack main message and endcode if needed
+        if self.msg:
+            main_msg = self.encode_unicode(self.msg.pack())
+        else:
+            main_msg = b''
+
+        # encode message parts if needed
+        self.error = self.encode_unicode(self.error)
+        self.bs = self.encode_unicode(self.bs)
+
+        header_info = {'type' : self.msg_type,
+                       'msg_len': len(main_msg),
+                       'err_len': len(self.error),
+                       'bs_len': len(self.bs),
+                       'int_info': self.int_info}
+
+        msg_header = ("<MsgHeader_PI>"
+                      "<type>{type}</type>"
+                      "<msgLen>{msg_len}</msgLen>"
+                      "<errorLen>{err_len}</errorLen>"
+                      "<bsLen>{bs_len}</bsLen>"
+                      "<intInfo>{int_info}</intInfo>"
+                      "</MsgHeader_PI>").format(**header_info)
+
+        # encode message header if needed
+        msg_header = self.encode_unicode(msg_header)
+
         msg_header_length = struct.pack(">i", len(msg_header))
-        msg_header_length = msg_header_length
-        parts = [x for x in [main_msg, self.error, self.bs] if x is not None]
-        joined_parts = ("".join(parts)).encode('utf-8')
-        msg_header = msg_header.encode('utf-8')
-        msg = msg_header_length + msg_header + joined_parts
-        return msg
+        return msg_header_length + msg_header + main_msg + self.error + self.bs
+
 
     def get_main_message(self, cls):
         msg = cls()
