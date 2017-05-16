@@ -26,10 +26,8 @@ class TestFiles(unittest.TestCase):
         # Create test collection
         self.test_coll = self.sess.collections.create(self.test_coll_path)
 
-        # Create test object and write to it
-        self.test_obj = self.sess.data_objects.create(self.test_obj_path)
-        with self.test_obj.open('r+') as f:
-            f.write(self.content_str)
+        # Create test object
+        helpers.make_object(self.sess, self.test_obj_path, self.content_str)
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -63,7 +61,7 @@ class TestFiles(unittest.TestCase):
 
         obj = self.sess.data_objects.get(self.test_obj_path)
         f = obj.open('r+')
-        str1 = f.read(1024)
+        str1 = f.read(1024).decode('utf-8')
         # self.assertTrue(expr, msg)
 
         # check content of test file
@@ -76,15 +74,15 @@ class TestFiles(unittest.TestCase):
 
         obj = self.sess.data_objects.get(self.test_obj_path)
         f = obj.open('w+')
-        f.write(self.write_str)
+        f.write(self.write_str.encode('utf-8'))
         f.seek(-6, 2)
-        f.write(self.write_str1)
+        f.write(self.write_str1.encode('utf-8'))
 
         # reset stream position for reading
         f.seek(0, 0)
 
         # check new content of file after our write
-        str1 = f.read(1024)
+        str1 = f.read(1024).decode('utf-8')
         assert str1 == (self.write_str[:-6] + self.write_str1)
 
         # self.assertTrue(expr, msg)

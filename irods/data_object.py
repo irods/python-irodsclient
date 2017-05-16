@@ -99,7 +99,10 @@ class iRODSDataObjectFileRaw(RawIOBase):
         return len(contents)
 
     def write(self, b):
-        return self.conn.write_file(self.desc, b.tobytes())
+        if isinstance(b, memoryview):
+            return self.conn.write_file(self.desc, b.tobytes())
+
+        return self.conn.write_file(self.desc, b)
 
     def readable(self):
         return True

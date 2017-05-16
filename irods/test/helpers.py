@@ -6,6 +6,7 @@ import contextlib
 import shutil
 import irods.test.config as config
 from irods.session import iRODSSession
+from irods.message import iRODSMessage
 from six.moves import range
 
 
@@ -27,11 +28,12 @@ def make_session_from_config(**kwargs):
 
 
 def make_object(session, path, content=None, options=None):
-    if not content:
-        content = 'blah'
+    if content is None:
+        content = u'blah'
 
-    content = content.encode('utf-8').strip()
+    content = iRODSMessage.encode_unicode(content)
 
+    # 2 step open-create necessary for iRODS 4.1.4 or older
     obj = session.data_objects.create(path)
     with obj.open('w', options) as obj_desc:
         obj_desc.write(content)

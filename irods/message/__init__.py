@@ -2,7 +2,7 @@ import struct
 import logging
 import socket
 import xml.etree.ElementTree as ET
-import six
+
 
 from irods import IRODS_VERSION
 from irods.message.message import Message
@@ -11,6 +11,13 @@ from irods.message.property import (BinaryProperty, StringProperty,
                                     SubmessageProperty)
 
 logger = logging.getLogger(__name__)
+
+try:
+    # Python 2
+    UNICODE = unicode
+except NameError:
+    # Python 3
+    UNICODE = str
 
 
 def _recv_message_in_len(sock, size):
@@ -22,7 +29,7 @@ def _recv_message_in_len(sock, size):
         except AttributeError:
             buf = sock.recv(size_left)
         size_left -= len(buf)
-        if retbuf == None:
+        if retbuf is None:
             retbuf = buf
         else:
             retbuf += buf
@@ -70,7 +77,7 @@ class iRODSMessage(object):
 
     @staticmethod
     def encode_unicode(my_str):
-        if type(my_str) is unicode:
+        if isinstance(my_str, UNICODE):
             return my_str.encode('utf-8')
         else:
             return my_str

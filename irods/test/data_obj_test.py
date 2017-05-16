@@ -296,8 +296,8 @@ class TestDataObjOps(unittest.TestCase):
         filename = 'test_open_file_with_options.txt'
         file_path = '/tmp/{filename}'.format(**locals())
         obj_path = '{collection}/{filename}'.format(**locals())
-        contents = "blah blah " * 10000
-        checksum = base64.b64encode(hashlib.sha256(contents).digest()).decode()
+        contents = u"blah blah " * 10000
+        checksum = base64.b64encode(hashlib.sha256(contents.encode('utf-8')).digest()).decode()
 
         objs = self.sess.data_objects
 
