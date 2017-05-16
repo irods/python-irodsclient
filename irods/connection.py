@@ -64,7 +64,8 @@ class Connection(object):
             msg = iRODSMessage.recv(self.socket)
         except socket.error:
             logger.error("Could not receive server response")
-            exit(1)
+            self.release(True)
+            raise NetworkException("Could not receive server response")
         if msg.int_info < 0:
             raise get_exception_by_code(msg.int_info)
         return msg
