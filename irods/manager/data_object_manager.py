@@ -43,7 +43,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=-1,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=0,
             KeyValPair_PI=StringStringMap(kvp),
         )
@@ -86,7 +86,7 @@ class DataObjectManager(Manager):
             openFlags=flags,
             offset=0,
             dataSize=-1,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
@@ -110,7 +110,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=-1,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=0,
             KeyValPair_PI=StringStringMap(options),
         )
@@ -136,7 +136,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=0,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=11,   # RENAME_DATA_OBJ
             KeyValPair_PI=StringStringMap(),
         )
@@ -146,7 +146,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=0,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=11,   # RENAME_DATA_OBJ
             KeyValPair_PI=StringStringMap(),
         )
@@ -179,7 +179,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=0,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=10,   # COPY_SRC
             KeyValPair_PI=StringStringMap(),
         )
@@ -189,7 +189,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=0,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=9,   # COPY_DEST
             KeyValPair_PI=StringStringMap(options),
         )
@@ -213,7 +213,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=size,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=0,
             KeyValPair_PI=StringStringMap(options),
         )
@@ -233,7 +233,7 @@ class DataObjectManager(Manager):
             openFlags=0,
             offset=0,
             dataSize=-1,
-            numThreads=0,
+            numThreads=self.sess.numThreads,
             oprType=6,
             KeyValPair_PI=StringStringMap(options),
         )
