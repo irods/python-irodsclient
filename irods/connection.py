@@ -236,7 +236,7 @@ class Connection(object):
         # Create a context handshaking GSI credentials
         # Note: this can work only if you export GSI certificates
         # as shell environment variables (X509_etc.)
-        self.handshake('rodserver')
+        self.handshake(self.account.host)
 
         # Complete the protocol
         self.gsi_client_auth_response()
@@ -295,7 +295,7 @@ class Connection(object):
         pwd_request = iRODSMessage(
             msg_type='RODS_API_REQ', int_info=704, msg=pwd_msg)
         self.send(pwd_request)
-        auth_response = self.recv()
+        self.recv()
 
     def write_file(self, desc, string):
         message_body = OpenedDataObjRequest(
@@ -346,4 +346,4 @@ class Connection(object):
                                int_info=api_number['DATA_OBJ_CLOSE_AN'])
 
         self.send(message)
-        response = self.recv()
+        self.recv()
