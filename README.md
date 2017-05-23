@@ -1,37 +1,46 @@
 Python iRODS Client (PRC)
-============
+=========================
 
 [iRODS](https://www.irods.org) is an open-source distributed data management system. This is a client API implemented in python.
 
-This project should be considered pre-alpha. Here's what works:
-- [x] Establish a connection to iRODS, authenticate
-- [x] Implement basic Gen Queries (select columns and filtering)
-- [ ] Support more advanced Gen Queries with limits, offsets, and aggregations
-- [x] Query the collections and data objects within a collection
-- [x] Support read, write, and seek operations for files
-- [x] Delete data objects
-- [x] Create collections
-- [x] Delete collections
-- [x] Rename data objects
-- [x] Rename collections
-- [x] Query metadata for collections and data objects
-- [x] Add, edit, remove metadata
-- [x] Replicate data objects to different resource servers
-- [x] Connection pool management
-- [x] Implement gen query result sets as lazy queries
-- [x] Return empty result sets when CAT_NO_ROWS_FOUND is raised
-- [x] Manage permissions
-- [x] Manage users and groups
-- [ ] Manage zones
-- [x] Manage resources
-- [x] GSI authentication
-- [x] Python 3 support
+Currently supported:
 
-Installation
+- Establish a connection to iRODS, authenticate
+- Implement basic Gen Queries (select columns and filtering)
+- Support more advanced Gen Queries with limits, offsets, and aggregations
+- Query the collections and data objects within a collection
+- Execute direct SQL queries
+- Execute iRODS rules
+- Support read, write, and seek operations for files
+- Delete data objects
+- Create collections
+- Delete collections
+- Rename data objects
+- Rename collections
+- Query metadata for collections and data objects
+- Add, edit, remove metadata
+- Replicate data objects to different resource servers
+- Connection pool management
+- Implement gen query result sets as lazy queries
+- Return empty result sets when CAT_NO_ROWS_FOUND is raised
+- Manage permissions
+- Manage users and groups
+- Manage resources
+- GSI authentication
+- Unicode strings
+- Python 2.7, 3.4 or newer
+
+Installing
+----------
+PRC requires Python 2.7 or 3.4+.
+To install with pip:
+
+`pip install git+git://github.com/irods/python-irodsclient.git`
+
+Uninstalling
 ------------
-PRC requires Python 2.7. Installation with pip is easy!
 
-    pip install git+git://github.com/irods/python-irodsclient.git
+`pip uninstall python-irodsclient`
 
 Establishing a connection
 -------------------------
@@ -110,7 +119,7 @@ demoResc
 ```
 
 Reading and writing files
------------------------
+-------------------------
 PRC provides [file-like objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writing files
 ```python
 >>> obj = sess.data_objects.get("/tempZone/home/rods/test1")

@@ -35,7 +35,7 @@ def install_testing_dependencies_apt():
 def gather_xml_reports(output_root_directory):
     irods_python_ci_utilities.mkdir_p(output_root_directory)
     shutil.copy('coverage.xml', output_root_directory)
-    shutil.copytree('test-reports', os.path.join(output_root_directory, 'test-reports'))
+    shutil.copytree('/tmp/python-irodsclient/test-reports', os.path.join(output_root_directory, 'test-reports'))
 
 if __name__ == '__main__':
     parser = optparse.OptionParser()

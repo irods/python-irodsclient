@@ -31,7 +31,7 @@ if __name__ == "__main__":
                                       top_level_dir="."))
 
     result = xmlrunner.XMLTestRunner(
-        verbosity=2, output='test-reports').run(suite)
+        verbosity=2, output='/tmp/python-irodsclient/test-reports').run(suite)
     if result.wasSuccessful():
         sys.exit(0)
 

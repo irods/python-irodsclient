@@ -274,7 +274,7 @@ class TestDataObjOps(unittest.TestCase):
         except IOError as e:
             # a likely fail scenario
             if e.errno == 13:
-                self.fail("No permission to modify server configuration")
+                self.skipTest("No permission to modify server configuration")
             raise
         except:
             raise

@@ -1,1 +1,1 @@
-include AUTHORS CHANGES LICENSE.txt README.md
+include AUTHORS CHANGELOG.rst LICENSE.txt README.md irods/test/unicode_sampler.xml
