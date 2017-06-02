@@ -400,6 +400,27 @@ class GeneralAdminRequest(Message):
     arg9 = StringProperty()
 
 
+#define ticketAdminInp_PI "str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6;"
+
+class TicketAdminRequest(Message):
+    _name = 'ticketAdminInp_PI'
+
+    def __init__(self, *args):
+        super(TicketAdminRequest, self).__init__()
+        for i in range(6):
+            if i < len(args) and args[i]:
+                setattr(self, 'arg{0}'.format(i+1), str(args[i]))
+            else:
+                setattr(self, 'arg{0}'.format(i+1), "")
+
+    arg1 = StringProperty()
+    arg2 = StringProperty()
+    arg3 = StringProperty()
+    arg4 = StringProperty()
+    arg5 = StringProperty()
+    arg6 = StringProperty()
+
+
 #define specificQueryInp_PI "str *sql; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7; str *arg8; str *arg9; str *arg10; int maxRows; int continueInx; int rowOffset; int options; struct KeyValPair_PI;"
 
 class SpecificQueryRequest(Message):
