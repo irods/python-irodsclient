@@ -16,23 +16,23 @@ class DoesNotExist(PycommandsException):
     pass
 
 
-class DataObjectDoesNotExist(PycommandsException):
+class DataObjectDoesNotExist(DoesNotExist):
     pass
 
 
-class CollectionDoesNotExist(PycommandsException):
+class CollectionDoesNotExist(DoesNotExist):
     pass
 
 
-class UserDoesNotExist(PycommandsException):
+class UserDoesNotExist(DoesNotExist):
     pass
 
 
-class UserGroupDoesNotExist(PycommandsException):
+class UserGroupDoesNotExist(DoesNotExist):
     pass
 
 
-class ResourceDoesNotExist(PycommandsException):
+class ResourceDoesNotExist(DoesNotExist):
     pass
 
 
