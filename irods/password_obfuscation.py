@@ -4,7 +4,6 @@ import os
 import time
 
 import six
-from .exceptions import IrodsError, IrodsWarning
 
 seq_list = [
         0xd768b678,
