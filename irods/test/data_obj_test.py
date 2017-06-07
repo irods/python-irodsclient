@@ -51,13 +51,13 @@ class TestDataObjOps(unittest.TestCase):
         obj_name = 'this_object_will_exist_once_made'
         exists_path = '{}/{}'.format(self.coll_path, obj_name)
         helpers.make_object(self.sess, exists_path)
-        self.assertTrue(self.session.data_objects.exists(exists_path))
+        self.assertTrue(self.sess.data_objects.exists(exists_path))
 
     def test_obj_does_not_exist(self):
         does_not_exist_name = 'this_object_will_never_exist'
         does_not_exist_path = '{}/{}'.format(self.coll_path,
                                              does_not_exist_name)
-        self.assertFalse(self.session.data_objects.exists(does_not_exist_path))
+        self.assertFalse(self.sess.data_objects.exists(does_not_exist_path))
 
     def test_rename_obj(self):
         # test args
