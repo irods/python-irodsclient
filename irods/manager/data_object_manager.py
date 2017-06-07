@@ -6,7 +6,7 @@ from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap)
-from irods.exception import DataObjectDoesNotExist
+from irods.exception import DataObjectDoesNotExist, DoesNotExist
 from irods.api_number import api_number
 from irods.data_object import iRODSDataObject, iRODSDataObjectFileRaw
 from io import BufferedRandom
@@ -120,6 +120,13 @@ class DataObjectManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+
+    def exists(self, path):
+        try:
+            self.get(path)
+        except DoesNotExist:
+            return False
+        return True
 
     def move(self, src_path, dest_path):
         # check if dest is a collection
