@@ -195,8 +195,8 @@ Query with aggregation(min, max, sum, avg, count):
 ```
 
 Run a Specifc Query (similar to iquest --sql <name>), using the 0.6.0 additional functionality of reading the iRODS environment files:
-```
-python
+--------------------------------------------------------------------------------------------------------------------------------------
+```python
 >>> import os
 >>> import json
 >>> 

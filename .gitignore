@@ -27,7 +27,8 @@ pip-log.txt
 .tox
 nosetests.xml
 
-## Editors
+# IDEs
+.settings
 .project
 .pydevproject
 
