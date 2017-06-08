@@ -193,3 +193,70 @@ Query with aggregation(min, max, sum, avg, count):
 | rods         | 10        | 10836     |
 +--------------+-----------+-----------+
 ```
+
+Run a Stored Query (similar to iquest --sql <name>), using the 0.6.0 additional functinality of reading the irods environment files:
+```
+python
+>>> import os
+>>> import json
+>>> 
+>>> from irods.session import iRODSSession
+>>> from irods.models import Collection, DataObject, Resource
+>>> from irods.query import SpecificQuery
+>>> 
+>>> 
+>>> def get_session():
+...     """
+...     establish a session to the iCAT server, using the iRODS environment env_file
+...     (MUST use library version >= 0.6.0)
+...     evaluate where to get the session information from,
+...     return an iRODS session *and* array with irods_environment.json info encoded for later use
+...     example decoded irods_environment.json;
+...         >>> pprint(ienv)
+...         {u'irods_authentication_scheme': u'KRB',
+...          u'irods_cwd': u'/DevZone/home/john',
+...          u'irods_def_resource': u'wtsiusers',
+...          u'irods_home': u'/DevZone/home/john',
+...          u'irods_host': u'icat.genomeresearch.ac.uk',
+...          u'irods_port': 1247,
+...          u'irods_user_name': u'john',
+...          u'irods_zone_name': u'DevZone'}
+...     """
+...     try:
+...         env_file = os.environ['IRODS_ENVIRONMENT_FILE']
+...     except KeyError:
+...         env_file = os.path.expanduser('~/.irods/irods_environment.json')
+...     with open(env_file) as data_file:
+...         ienv = json.load(data_file)
+...     return (iRODSSession(irods_env_file=env_file), ienv)
+... 
+>>> 
+>>> 
+>>> (SESS, ienv_info) = get_session()
+>>> 
+>>> #test session working OK
+... col_to_check = "/{}/home/irods".format(ienv_info['irods_zone_name'])
+>>> coll = SESS.collections.get(col_to_check)
+>>> print coll.id
+10286
+>>> 
+>>> CompoundResourceTree = "root"
+>>> # make specific query
+... sql = "select count(*) from r_data_main where resc_name = '{}' and data_is_dirty = '0'".format(CompoundResourceTree)
+>>> sql_alias = 'DirtyReplicas{}'.format(CompoundResourceTree)
+>>> query = SpecificQuery(SESS, sql, sql_alias)
+>>> 
+>>> # register query in iCAT
+... query.register()
+<irods.message.iRODSMessage object at 0x1face50>
+>>> 
+>>> #run the Stored Query
+... res_q = SpecificQuery(SESS, alias=sql_alias)
+>>> res_q.get_results()
+<generator object get_results at 0x1d2e730>
+>>> for r in res_q.get_results():
+...     print(r[0])
+... 
+0
+
+```
