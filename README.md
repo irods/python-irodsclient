@@ -194,7 +194,7 @@ Query with aggregation(min, max, sum, avg, count):
 +--------------+-----------+-----------+
 ```
 
-Run a Stored Query (similar to iquest --sql <name>), using the 0.6.0 additional functinality of reading the irods environment files:
+Run a Specifc Query (similar to iquest --sql <name>), using the 0.6.0 additional functionality of reading the iRODS environment files:
 ```
 python
 >>> import os
@@ -250,7 +250,7 @@ python
 ... query.register()
 <irods.message.iRODSMessage object at 0x1face50>
 >>> 
->>> #run the Stored Query
+>>> #run the Specific Query
 ... res_q = SpecificQuery(SESS, alias=sql_alias)
 >>> res_q.get_results()
 <generator object get_results at 0x1d2e730>
