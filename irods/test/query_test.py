@@ -4,7 +4,7 @@ import os
 import sys
 import unittest
 from irods.models import User, Collection, DataObject, Resource
-from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY
+from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import new_icat_keys, SpecificQuery
 from irods.column import Criterion
 from irods import MAX_SQL_ROWS
@@ -224,6 +224,23 @@ class TestSpecificQuery(unittest.TestCase):
         self.test_collection.remove(recurse=True, force=True)
 
 
+    def test_register_query_twice(self):
+        query = SpecificQuery(self.session, sql='select data_name from r_data_main', alias='list_data_names')
+
+        # register query
+        query.register()
+
+        # register same query again
+        with self.assertRaises(CAT_INVALID_ARGUMENT) as ex:
+            query.register()
+
+        # check the error message
+        self.assertEqual(str(ex.exception), 'Alias is not unique')
+
+        # remove query
+        query.remove()
+
+
     def test_list_specific_queries(self):
         query = SpecificQuery(self.session, alias='ls')
 
@@ -237,7 +254,7 @@ class TestSpecificQuery(unittest.TestCase):
 
         with self.assertRaises(CAT_UNKNOWN_SPECIFIC_QUERY):
             for result in query.get_results():
-                alias, query_str = result[0], result[1]
+                pass
 
 
 if __name__ == '__main__':

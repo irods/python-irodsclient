@@ -9,7 +9,7 @@ import six
 from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
-    GSIAuthMessage)
+    GSIAuthMessage, Error)
 from irods.exception import get_exception_by_code, NetworkException
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
@@ -67,7 +67,11 @@ class Connection(object):
             self.release(True)
             raise NetworkException("Could not receive server response")
         if msg.int_info < 0:
-            raise get_exception_by_code(msg.int_info)
+            try:
+                err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
+            except TypeError:
+                raise get_exception_by_code(msg.int_info)
+            raise get_exception_by_code(msg.int_info, err_msg)
         return msg
 
     def __enter__(self):

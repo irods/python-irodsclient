@@ -64,8 +64,8 @@ class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
     pass
 
 
-def get_exception_by_code(code):
-    return iRODSExceptionMeta.codes[code]()
+def get_exception_by_code(code, message=None):
+    return iRODSExceptionMeta.codes[code](message)
 
 
 class SystemException(iRODSException):

@@ -534,6 +534,22 @@ class STR_PI(Message):
     myStr = StringProperty()
 
 
+#define RErrMsg_PI "int status; str msg[ERR_MSG_LEN];"
+
+class ErrorMessage(Message):
+    _name = 'RErrMsg_PI'
+    status = IntegerProperty()
+    msg = StringProperty()
+
+
+#define RError_PI "int count; struct *RErrMsg_PI[count];"
+
+class Error(Message):
+    _name = 'RError_PI'
+    count = IntegerProperty()
+    RErrMsg_PI = ArrayProperty(SubmessageProperty(ErrorMessage))
+
+
 def empty_gen_query_out(cols):
     sql_results = [GenQueryResponseColumn(attriInx=col.icat_id, value=[])
                    for col in cols]
