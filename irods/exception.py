@@ -1128,6 +1128,10 @@ class CAT_TABLE_ACCESS_DENIED(CatalogLibraryException):
     code = -851000
 
 
+class CAT_UNKNOWN_SPECIFIC_QUERY(CatalogLibraryException):
+    code = -853000
+
+
 class RDSException(iRODSException):
     pass
 

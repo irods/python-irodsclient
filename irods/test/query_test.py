@@ -4,7 +4,7 @@ import os
 import sys
 import unittest
 from irods.models import User, Collection, DataObject, Resource
-from irods.exception import MultipleResultsFound
+from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY
 from irods.query import new_icat_keys, SpecificQuery
 from irods.column import Criterion
 from irods import MAX_SQL_ROWS
@@ -230,6 +230,14 @@ class TestSpecificQuery(unittest.TestCase):
         for result in query.get_results():
             self.assertIsNotNone(result[0])             # query alias
             self.assertIn('SELECT', result[1].upper())  # query string
+
+
+    def test_list_specific_queries_with_wrong_alias(self):
+        query = SpecificQuery(self.session, alias='foo')
+
+        with self.assertRaises(CAT_UNKNOWN_SPECIFIC_QUERY):
+            for result in query.get_results():
+                alias, query_str = result[0], result[1]
 
 
 if __name__ == '__main__':
