@@ -1,34 +1,63 @@
 from __future__ import absolute_import
-from os.path import basename, dirname
-from os import O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
-
+import os
+import io
 from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap)
 from irods.exception import DataObjectDoesNotExist, DoesNotExist
 from irods.api_number import api_number
-from irods.data_object import iRODSDataObject, iRODSDataObjectFileRaw
-from io import BufferedRandom
+from irods.data_object import (
+    iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
 import irods.keywords as kw
 
 SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
 
+READ_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
+WRITE_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
+
 
 class DataObjectManager(Manager):
 
-    def get(self, path):
-        parent = self.sess.collections.get(dirname(path))
+    def _download(self, obj, local_path, options=None):
+        if os.path.isdir(local_path):
+            file = os.path.join(local_path, irods_basename(obj))
+        else:
+            file = local_path
+
+        with open(file, 'wb') as f, self.open(obj, 'r', options) as o:
+            for chunk in chunks(o, READ_BUFFER_SIZE):
+                f.write(chunk)
+
+
+    def get(self, path, file=None, options=None):
+        parent = self.sess.collections.get(irods_dirname(path))
+
+        # TODO: optimize
+        if file:
+            self._download(path, file, options)
 
         query = self.sess.query(DataObject)\
-            .filter(DataObject.name == basename(path))\
+            .filter(DataObject.name == irods_basename(path))\
             .filter(DataObject.collection_id == parent.id)
-        results = query.all()
+        results = query.all() # get up to max_rows replicas
         if len(results) <= 0:
             raise DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
+
+
+    def put(self, file, irods_path, options=None):
+        if irods_path.endswith('/'):
+            obj = irods_path + os.path.basename(file)
+        else:
+            obj = irods_path
+
+        with open(file, 'rb') as f, self.open(obj, 'w', options) as o:
+            for chunk in chunks(f, WRITE_BUFFER_SIZE):
+                o.write(chunk)
+
 
     def create(self, path, resource=None, options=None):
         if options is None:
@@ -58,17 +87,18 @@ class DataObjectManager(Manager):
 
         return self.get(path)
 
+
     def open(self, path, mode, options=None):
         if options is None:
             options = {}
 
         flags, seek_to_end = {
-            'r': (O_RDONLY, False),
-            'r+': (O_RDWR, False),
-            'w': (O_WRONLY | O_CREAT, False),
-            'w+': (O_RDWR | O_CREAT, False),
-            'a': (O_WRONLY | O_CREAT, True),
-            'a+': (O_RDWR | O_CREAT, True),
+            'r': (os.O_RDONLY, False),
+            'r+': (os.O_RDWR, False),
+            'w': (os.O_WRONLY | os.O_CREAT, False),
+            'w+': (os.O_RDWR | os.O_CREAT, False),
+            'a': (os.O_WRONLY | os.O_CREAT, True),
+            'a+': (os.O_RDWR | os.O_CREAT, True),
         }[mode]
         # TODO: Use seek_to_end
 
@@ -97,7 +127,8 @@ class DataObjectManager(Manager):
         conn.send(message)
         desc = conn.recv().int_info
 
-        return BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
+        return io.BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
+
 
     def unlink(self, path, force=False, options=None):
         if options is None:
@@ -121,12 +152,14 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
+
     def exists(self, path):
         try:
             self.get(path)
         except DoesNotExist:
             return False
         return True
+
 
     def move(self, src_path, dest_path):
         # check if dest is a collection
@@ -167,6 +200,7 @@ class DataObjectManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+
 
     def copy(self, src_path, dest_path, options=None):
         if options is None:
@@ -230,6 +264,7 @@ class DataObjectManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+
 
     def replicate(self, path, options=None):
         if options is None:

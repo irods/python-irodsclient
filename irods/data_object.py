@@ -1,11 +1,21 @@
 from __future__ import absolute_import
-from io import RawIOBase
+import io
 import sys
 
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
 import six
+
+
+def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
+    return iter(lambda: f.read(chunksize), b'')
+
+def irods_dirname(path):
+    return path.rsplit('/', 1)[0]
+
+def irods_basename(path):
+    return path.rsplit('/', 1)[1]
 
 
 class iRODSReplica(object):
@@ -74,7 +84,7 @@ class iRODSDataObject(object):
         self.manager.replicate(self.path, options)
 
 
-class iRODSDataObjectFileRaw(RawIOBase):
+class iRODSDataObjectFileRaw(io.RawIOBase):
 
     def __init__(self, conn, descriptor, options):
         self.conn = conn

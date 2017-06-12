@@ -253,8 +253,7 @@ class TestSpecificQuery(unittest.TestCase):
         query = SpecificQuery(self.session, alias='foo')
 
         with self.assertRaises(CAT_UNKNOWN_SPECIFIC_QUERY):
-            for result in query.get_results():
-                pass
+            query.get_results().next()
 
 
 if __name__ == '__main__':

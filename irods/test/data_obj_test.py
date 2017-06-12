@@ -5,8 +5,9 @@ import sys
 import socket
 import unittest
 from irods.models import Collection, DataObject
-from irods.exception import DataObjectDoesNotExist, CollectionDoesNotExist
+import irods.exception as ex
 from irods.column import Criterion
+from irods.data_object import chunks
 import irods.test.config as config
 import irods.test.helpers as helpers
 import json
@@ -46,6 +47,13 @@ class TestDataObjOps(unittest.TestCase):
 
         # dump to a string to repave the existing server_config.json
         return json.dumps(svr_cfg, sort_keys=True, indent=4, separators=(',', ': '))
+
+    def sha256_checksum(self, filename, block_size=65536):
+        sha256 = hashlib.sha256()
+        with open(filename, 'rb') as f:
+            for chunk in chunks(f, block_size):
+                sha256.update(chunk)
+        return sha256.hexdigest()
 
     def test_obj_exists(self):
         obj_name = 'this_object_will_exist_once_made'
@@ -165,10 +173,10 @@ class TestDataObjOps(unittest.TestCase):
         path_with_invalid_file = self.coll_path + '/hamsalad'
         path_with_invalid_coll = self.coll_path + '/hamsandwich/foo'
 
-        with self.assertRaises(DataObjectDoesNotExist):
+        with self.assertRaises(ex.DataObjectDoesNotExist):
             obj = self.sess.data_objects.get(path_with_invalid_file)
 
-        with self.assertRaises(CollectionDoesNotExist):
+        with self.assertRaises(ex.CollectionDoesNotExist):
             obj = self.sess.data_objects.get(path_with_invalid_coll)
 
     def test_force_unlink(self):
@@ -183,7 +191,7 @@ class TestDataObjOps(unittest.TestCase):
         obj.unlink(force=True)
 
         # should be gone
-        with self.assertRaises(DataObjectDoesNotExist):
+        with self.assertRaises(ex.DataObjectDoesNotExist):
             obj = self.sess.data_objects.get(file_path)
 
         # make sure it's not in the trash either
@@ -322,7 +330,7 @@ class TestDataObjOps(unittest.TestCase):
 
         # write contents of file to object
         with open(file_path, 'rb') as f, objs.open(obj_path, 'w', options) as o:
-            for chunk in helpers.chunks(f):
+            for chunk in chunks(f):
                 o.write(chunk)
 
         # update object and verify checksum
@@ -439,6 +447,42 @@ class TestDataObjOps(unittest.TestCase):
 
         # remove replication resource
         replication_resource.remove()
+
+
+    def test_obj_put_get(self):
+
+        # Can't do one step open/create with older servers
+        if self.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'obj_put_get_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+
+        # make random 16M binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 1024 * 16))
+
+        # compute file checksum
+        digest = self.sha256_checksum(test_file)
+
+        # put file in test collection
+        self.sess.data_objects.put(test_file, collection + '/')
+
+        # delete file
+        os.remove(test_file)
+
+        # get file back
+        obj_path = '{collection}/{filename}'.format(**locals())
+        self.sess.data_objects.get(obj_path, test_dir)
+
+        # re-compute and verify checksum
+        self.assertEqual(digest, self.sha256_checksum(test_file))
+
+        # delete file
+        os.remove(test_file)
 
 
 if __name__ == '__main__':

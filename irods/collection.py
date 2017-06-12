@@ -1,10 +1,9 @@
 from __future__ import absolute_import
 import itertools
 import operator
-from os.path import basename
 
 from irods.models import Collection, DataObject
-from irods.data_object import iRODSDataObject
+from irods.data_object import iRODSDataObject, irods_basename
 from irods.meta import iRODSMetaCollection
 
 
@@ -15,7 +14,7 @@ class iRODSCollection(object):
         if result:
             self.id = result[Collection.id]
             self.path = result[Collection.name]
-            self.name = basename(result[Collection.name])
+            self.name = irods_basename(result[Collection.name])
         self._meta = None
 
     @property
