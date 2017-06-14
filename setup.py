@@ -27,4 +27,9 @@ setup(name='python-irodsclient',
                    ],
       packages=find_packages(),
       include_package_data=True,
-      install_requires=['PrettyTable>=0.7.2'])
+      install_requires=[
+                        'six>=1.10.0',
+                        'PrettyTable>=0.7.2',
+                        'xmlrunner>=1.7.7'
+                        ]
+      )
