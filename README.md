@@ -34,14 +34,20 @@ Installing
 ----------
 PRC requires Python 2.7 or 3.4+.
 To install with pip:
-`pip install python-irodsclient`
+```bash
+pip install python-irodsclient
+```
 or:
-`pip install git+git://github.com/irods/python-irodsclient.git[@branch|@commit|@tag]`
+```bash
+pip install git+https://github.com/irods/python-irodsclient.git[@branch|@commit|@tag]
+```
 
 Uninstalling
 ------------
 
-`pip uninstall python-irodsclient`
+```bash
+pip uninstall python-irodsclient
+```
 
 Establishing a connection
 -------------------------
