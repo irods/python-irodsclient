@@ -210,6 +210,8 @@ Run a Specifc Query (similar to iquest --sql <name>), using the 0.6.0 additional
 >>> from irods.session import iRODSSession
 >>> from irods.models import Collection, DataObject, Resource
 >>> from irods.query import SpecificQuery
+>>> import irods.exception as ex
+>>> 
 >>> 
 >>> 
 >>> def get_session():
@@ -256,6 +258,14 @@ Run a Specifc Query (similar to iquest --sql <name>), using the 0.6.0 additional
 >>> # register query in iCAT
 ... query.register()
 <irods.message.iRODSMessage object at 0x1face50>
+>>>
+>>> #can also use a try..catch here
+>>> try:
+...     query.register()
+... except ex.CAT_INVALID_ARGUMENT:
+...     print "we already got one of those"
+... 
+we already got one of those
 >>> 
 >>> #run the Specific Query
 ... res_q = SpecificQuery(SESS, alias=sql_alias)
