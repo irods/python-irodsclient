@@ -2,9 +2,12 @@
 from __future__ import absolute_import
 import os
 import sys
+import string
+import random
 import unittest
 from irods.models import User
 from irods.exception import UserDoesNotExist, ResourceDoesNotExist
+from irods.session import iRODSSession
 import irods.test.config as config
 import irods.test.helpers as helpers
 
@@ -268,17 +271,26 @@ class TestAdmin(unittest.TestCase):
         self.sess.resources.remove(resc_name)
 
     def test_set_user_password(self):
-        # make new regular user
+        # make a new user
         username = self.new_user_name
         zone = self.new_user_zone
         self.sess.users.create(self.new_user_name, self.new_user_type)
 
-        # set password (not yet supported)
-        test_password = '@?$#'
-        with self.assertRaises(ValueError):
-            self.sess.users.modify(username, 'password', test_password)
+        # make a 12 character pseudo-random password
+        new_password = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(12))
+        self.sess.users.modify(username, 'password', new_password)
 
-        # delete user
+        # open a session as the new user
+        with iRODSSession(host=self.sess.host,
+                          port=self.sess.port,
+                          user=username,
+                          password=new_password,
+                          zone=self.sess.zone) as session:
+
+            # do something that connects to the server
+            session.users.get(username)
+
+        # delete new user
         self.sess.users.remove(self.new_user_name)
 
         # user should be gone

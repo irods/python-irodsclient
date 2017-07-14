@@ -27,6 +27,7 @@ class Connection(object):
         self.pool = pool
         self.socket = None
         self.account = account
+        self._client_signature = None
         self._server_version = self._connect()
 
         scheme = self.account.authentication_scheme
@@ -39,6 +40,14 @@ class Connection(object):
         else:
             raise ValueError("Unknown authentication scheme %s" % scheme)
 
+    @property
+    def server_version(self):
+        return self._server_version.relVersion
+
+    @property
+    def client_signature(self):
+        return self._client_signature
+
     def __del__(self):
         if self.socket:
             self.disconnect()
@@ -48,7 +57,6 @@ class Connection(object):
 
         logger.debug(string)
         try:
-            #print(string)
             self.socket.sendall(string)
         except:
             logger.error(
@@ -114,10 +122,6 @@ class Connection(object):
         # server responds with version
         version_msg = self.recv()
         return version_msg.get_main_message(VersionResponse)
-
-    @property
-    def server_version(self):
-        return self._server_version.relVersion
 
     def disconnect(self):
         disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
@@ -275,6 +279,12 @@ class Connection(object):
         challenge_msg = self.recv()
         logger.debug(challenge_msg.msg)
         challenge = challenge_msg.get_main_message(AuthChallenge).challenge
+
+        # one "session" signature per connection
+        # see https://github.com/irods/irods/blob/4.2.1/plugins/auth/native/libnative.cpp#L137
+        # and https://github.com/irods/irods/blob/4.2.1/lib/core/src/clientLogin.cpp#L38-L60
+        self._client_signature = "".join("{:02x}".format(ord(c)) for c in challenge[:16])
+
         if six.PY3:
             challenge = challenge.encode('utf-8').strip()
             padded_pwd = struct.pack(
@@ -283,6 +293,7 @@ class Connection(object):
         else:
             padded_pwd = struct.pack(
                 "%ds" % MAX_PASSWORD_LENGTH, self.account.password)
+
         m = hashlib.md5()
         m.update(challenge)
         m.update(padded_pwd)

@@ -384,9 +384,9 @@ class GeneralAdminRequest(Message):
         super(GeneralAdminRequest, self).__init__()
         for i in range(10):
             if i < len(args) and args[i]:
-                setattr(self, 'arg%d' % i, args[i])
+                setattr(self, 'arg{0}'.format(i), args[i])
             else:
-                setattr(self, 'arg%d' % i, "")
+                setattr(self, 'arg{0}'.format(i), '')
 
     arg0 = StringProperty()
     arg1 = StringProperty()

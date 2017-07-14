@@ -5,6 +5,7 @@ from irods.message import GeneralAdminRequest, iRODSMessage
 from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFound
 from irods.api_number import api_number
 from irods.user import iRODSUser, iRODSUserGroup
+import irods.password_obfuscation as obf
 
 import logging
 
@@ -57,25 +58,29 @@ class UserManager(Manager):
         logger.debug(response.int_info)
 
     def modify(self, user_name, option, new_value, user_zone=""):
-        # checks
-        if option == 'password':
-            raise ValueError('Password modification is not yet supported.')
 
         # must append zone to username for this API call
         if len(user_zone) > 0:
             user_name += "#" + user_zone
 
-        message_body = GeneralAdminRequest(
-            "modify",
-            "user",
-            user_name,
-            option,
-            new_value,
-            user_zone,
-        )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
         with self.sess.pool.get_connection() as conn:
+
+            # if modifying password, new value needs obfuscating
+            if option == 'password':
+                current_password = self.sess.pool.account.password
+                new_value = obf.obfuscate_new_password(new_value, current_password, conn.client_signature)
+
+            message_body = GeneralAdminRequest(
+                "modify",
+                "user",
+                user_name,
+                option,
+                new_value,
+                user_zone,
+            )
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['GENERAL_ADMIN_AN'])
+
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)

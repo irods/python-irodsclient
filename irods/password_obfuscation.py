@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 import hashlib
+import sys
 import os
 import time
-
+import random
+import string
 import six
+from irods import MAX_PASSWORD_LENGTH
 
 seq_list = [
         0xd768b678,
@@ -36,6 +39,7 @@ wheel = [
 
 default_password_key = 'a9_3fker'
 default_scramble_prefix = '.E_'
+v2_prefix = 'A.ObfV2'
 
 #Decode a password from a .irodsA file
 def decode(s, uid=None):
@@ -237,3 +241,37 @@ def scramble(s, key=default_password_key, scramble_prefix=default_scramble_prefi
         encoder_ring_index += 1
 
     return scramble_prefix + scrambled_string
+
+# port of https://github.com/irods/irods/blob/4-2-stable/lib/core/src/obf.cpp#L1113
+def scramble_v2(s, first_key, second_key):
+
+    to_scramble = random.SystemRandom().choice(string.printable) + v2_prefix[1:10] + s[:150]
+
+    key = first_key[:90] + second_key[:100]
+
+    # Must pad the key with null bytes to generate the same hash as the server code
+    # https://github.com/irods/irods/blob/4.2.1/lib/core/src/obf.cpp#L1303-L1314
+    if sys.version_info > (2, 7, 7):
+        key = '{:\x00<100}'.format(key)
+    else:
+        # https://bugs.python.org/issue12546
+        key += '\x00' * max(100 - len(key), 0)
+
+    md5_hasher = hashlib.md5()
+    md5_hasher.update(key.encode('utf-8'))
+    hashed_key = md5_hasher.hexdigest()
+
+    return scramble(to_scramble, key=hashed_key, scramble_prefix='', block_chaining=True)
+
+# port of https://github.com/irods/irods_client_icommands/blob/4.2.1/src/iadmin.cpp#L878-L930
+def obfuscate_new_password(new, old, signature):
+    pwd_len = len(new)
+    new = new[:MAX_PASSWORD_LENGTH]
+    lcopy = MAX_PASSWORD_LENGTH - 10 - pwd_len
+
+    if lcopy > 15:
+        # https://github.com/irods/irods/blob/4.2.1/plugins/database/src/db_plugin.cpp#L1094-L1095
+        padding = '1gCBizHWbwIYyWLoysGzTe6SyzqFKMniZX05faZHWAwQKXf6Fs'
+        new = new + padding[:lcopy]
+
+    return scramble_v2(new, old, signature)

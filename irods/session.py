@@ -64,12 +64,6 @@ class iRODSSession(object):
     def query(self, *args):
         return Query(self, *args)
 
-        # WHY IS THIS HERE?
-        # self.host = host
-        # self.port = port
-        # self.proxy_user = self.client_user = user
-        # self.proxy_zone = self.client_zone = zone
-
     @property
     def username(self):
         return self.pool.account.client_user
