@@ -3,6 +3,11 @@ from __future__ import absolute_import
 import os
 import sys
 import socket
+import json
+import hashlib
+import base64
+import random
+import string
 import unittest
 from irods.models import Collection, DataObject
 import irods.exception as ex
@@ -10,9 +15,6 @@ from irods.column import Criterion
 from irods.data_object import chunks
 import irods.test.config as config
 import irods.test.helpers as helpers
-import json
-import hashlib
-import base64
 import irods.keywords as kw
 
 class TestDataObjOps(unittest.TestCase):
@@ -290,6 +292,74 @@ class TestDataObjOps(unittest.TestCase):
 
                 # cleanup
                 os.unlink(test_re_file)
+
+        except IOError as e:
+            # a likely fail scenario
+            if e.errno == 13:
+                self.skipTest("No permission to modify server configuration")
+            raise
+        except:
+            raise
+
+
+    @unittest.skipIf(
+        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
+        ), "Cannot modify remote server configuration")
+    def test_put_file_trigger_pep(self):
+        # skip if server is older than 4.2
+        if self.server_version < (4, 2, 0):
+            self.skipTest('Expects iRODS 4.2 server-side configuration')
+
+        # server config
+        server_config_dir = '/etc/irods'
+        test_re_file = os.path.join(server_config_dir, 'test.re')
+        server_config_file = os.path.join(
+            server_config_dir, 'server_config.json')
+
+        try:
+            with helpers.file_backed_up(server_config_file):
+                # make pep rule
+                test_rule = "acPostProcForPut { msiDataObjChksum ($objPath, 'forceChksum=', *out )}"
+
+                # write pep rule into test_re
+                with open(test_re_file, 'w') as f:
+                    f.write(test_rule)
+
+                # make new server configuration with additional re file
+                new_server_config = self.make_new_server_config_json(
+                    server_config_file)
+
+                # repave the existing server_config.json to add test_re
+                with open(server_config_file, 'w') as f:
+                    f.write(new_server_config)
+
+                # must make a new connection for the agent to pick up the
+                # updated configuration
+                self.sess.cleanup()
+
+                # make pseudo-random test file
+                filename = 'test_put_file_trigger_pep.txt'
+                test_file = os.path.join('/tmp', filename)
+                contents = ''.join(random.choice(string.printable) for _ in range(1024))
+                with open(test_file, 'wb') as f:
+                    f.write(contents)
+
+                # compute test file's checksum
+                checksum = base64.b64encode(hashlib.sha256(contents).digest()).decode()
+
+                # put object in test collection
+                collection = self.coll.path
+                self.sess.data_objects.put(test_file, '{collection}/'.format(**locals()))
+
+                # get object to confirm checksum
+                obj = self.sess.data_objects.get('{collection}/{filename}'.format(**locals()))
+
+                # verify object's checksum
+                self.assertEqual(obj.checksum, "sha2:{checksum}".format(**locals()))
+
+                # cleanup
+                os.unlink(test_re_file)
+                os.unlink(test_file)
 
         except IOError as e:
             # a likely fail scenario

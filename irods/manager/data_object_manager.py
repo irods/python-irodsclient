@@ -54,7 +54,12 @@ class DataObjectManager(Manager):
         else:
             obj = irods_path
 
-        with open(file, 'rb') as f, self.open(obj, 'w', options) as o:
+        # Set operation type to trigger acPostProcForPut
+        open_options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
+        if options:
+            open_options.update(options)
+
+        with open(file, 'rb') as f, self.open(obj, 'w', open_options) as o:
             for chunk in chunks(f, WRITE_BUFFER_SIZE):
                 o.write(chunk)
 
