@@ -147,7 +147,7 @@ class TestRule(unittest.TestCase):
 
         # test metadata
         some_string = u'foo'
-        some_other_string = u'bar'
+        some_other_string = u'我喜欢麦当劳'
         err_string = u'⛔'
 
         # make rule file

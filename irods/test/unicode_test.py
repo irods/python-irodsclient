@@ -16,10 +16,15 @@ UNICODE_TEST_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'unicode_sampler.xml')
 
 
+def to_unicode(data):
+    if isinstance(data, bytes):
+        return data.decode('utf-8')
+    return data
+
+
 def parse_xml_file(path):
     # parse xml document
-    parser = ET.XMLParser(encoding='utf-8')
-    tree = ET.parse(path, parser)
+    tree = ET.parse(path)
 
     # default namespace
     nsmap = {'ns': 'http://www.w3.org/1999/xhtml'}
@@ -30,7 +35,7 @@ def parse_xml_file(path):
     # extract values from table
     unicode_strings = set()
     for row in table:
-        values = [column.text for column in row]
+        values = [to_unicode(column.text) for column in row]
 
         # split strings in 3rd column
         for token in values[2].split():
@@ -42,7 +47,7 @@ def parse_xml_file(path):
 
     # fyi
     for string in unicode_strings:
-        logger.info(string.encode('utf-8'))
+        logger.info(string)
 
     return unicode_strings
 
@@ -79,7 +84,7 @@ class TestUnicodeNames(unittest.TestCase):
 
             # fyi
             logger.info(
-                u"{0}/{1}".format(result[Collection.name], result[DataObject.name]).encode('utf-8'))
+                u"{0}/{1}".format(result[Collection.name], result[DataObject.name]))
 
             # remove from set
             self.names.remove(result[DataObject.name])

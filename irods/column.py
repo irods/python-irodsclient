@@ -32,7 +32,29 @@ class Criterion(object):
     def __init__(self, op, query_key, value):
         self.op = op
         self.query_key = query_key
-        self.value = self.query_key.column_type.to_irods(value)
+        self._value = value
+
+    @property
+    def value(self):
+        return self.query_key.column_type.to_irods(self._value)
+
+
+class Like(Criterion):
+
+    def __init__(self, query_key, value):
+        super(Like, self).__init__('like', query_key, value)
+
+
+class Between(Criterion):
+
+    def __init__(self, query_key, value):
+        super(Between, self).__init__('between', query_key, value)
+
+    @property
+    def value(self):
+        lower_bound, upper_bound = self._value
+        return "{} {}".format(self.query_key.column_type.to_irods(lower_bound),
+                              self.query_key.column_type.to_irods(upper_bound))
 
 
 class Column(QueryKey):
@@ -43,12 +65,10 @@ class Column(QueryKey):
         super(Column, self).__init__(column_type)
 
     def __repr__(self):
-        return "<%s.%s %d %s>" % (
-            self.__class__.__module__,
-            self.__class__.__name__,
-            self.icat_id,
-            self.icat_key
-        )
+        return "<{}.{} {} {}>".format(self.__class__.__module__,
+                                      self.__class__.__name__,
+                                      self.icat_id,
+                                      self.icat_key)
 
     def __hash__(self):
         return hash((self.column_type, self.icat_key, self.icat_id))
@@ -60,9 +80,8 @@ class Keyword(QueryKey):
         self.icat_key = icat_key
         super(Keyword, self).__init__(column_type)
 
+
 # consider renaming columnType
-
-
 class ColumnType(object):
 
     @staticmethod
@@ -82,7 +101,7 @@ class Integer(ColumnType):
 
     @staticmethod
     def to_irods(data):
-        return "'%s'" % str(data)
+        return "'{}'".format(data)
 
 
 class String(ColumnType):
@@ -93,7 +112,7 @@ class String(ColumnType):
 
     @staticmethod
     def to_irods(data):
-        return "'%s'" % data
+        return u"'{}'".format(data)
 
 
 class DateTime(ColumnType):
@@ -104,4 +123,7 @@ class DateTime(ColumnType):
 
     @staticmethod
     def to_irods(data):
-        return "'%011d'" % timegm(data.utctimetuple())
+        try:
+            return "'{:0>11}'".format(timegm(data.utctimetuple()))
+        except AttributeError:
+            return "'{}'".format(data)

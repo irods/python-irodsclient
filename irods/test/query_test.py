@@ -3,10 +3,11 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
+from datetime import datetime
 from irods.models import User, Collection, DataObject, Resource
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import new_icat_keys, SpecificQuery
-from irods.column import Criterion
+from irods.column import Like, Between
 from irods import MAX_SQL_ROWS
 import irods.test.config as config
 import irods.test.helpers as helpers
@@ -142,13 +143,29 @@ class TestQuery(unittest.TestCase):
         for key in new_icat_keys:
             self.assertNotIn(key, query.columns)
 
-    def test_query_like(self):
+    def test_query_with_like_condition(self):
         '''Equivalent to:
         iquest "select RESC_NAME where RESC_NAME like 'dem%'"
         '''
 
-        rows = self.sess.query(Resource).filter(Criterion('like', Resource.name, 'dem%')).get_results()
+        rows = self.sess.query(Resource).filter(Like(Resource.name, 'dem%')).get_results()
         self.assertIn('demoResc', [row[Resource.name] for row in rows])
+
+    def test_query_with_between_condition(self):
+        '''Equivalent to:
+        iquest "select RESC_NAME, COLL_NAME, DATA_NAME where DATA_MODIFY_TIME between '01451606400' '...'"
+        '''
+        session = self.sess
+
+        start_date = datetime(2016, 1, 1, 0, 0)
+        end_date = datetime.utcnow()
+
+        query = session.query(Resource.name, Collection.name, DataObject.name)\
+            .filter(Between(DataObject.modify_time, (start_date, end_date)))
+
+        for result in query.get_results():
+            res_str = '{} {}/{}'.format(result[Resource.name], result[Collection.name], result[DataObject.name])
+            self.assertIn(session.zone, res_str)
 
 
 class TestSpecificQuery(unittest.TestCase):

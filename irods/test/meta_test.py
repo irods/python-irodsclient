@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import os
 import sys
@@ -22,8 +23,8 @@ class TestMeta(unittest.TestCase):
     obj_path = '{0}/{1}'.format(coll_path, obj_name)
 
     # test metadata
-    (attr0, value0, unit0) = ('attr0', 'value0', 'unit0')
-    (attr1, value1, unit1) = ('attr1', 'value1', 'unit1')
+    attr0, value0, unit0 = 'attr0', 'value0', 'unit0'
+    attr1, value1, unit1 = 'attr1', 'value1', 'unit1'
 
     def setUp(self):
         self.sess = helpers.make_session_from_config()
@@ -59,6 +60,11 @@ class TestMeta(unittest.TestCase):
         self.sess.metadata.add(DataObject, self.obj_path,
                                iRODSMeta(self.attr1, self.value1, self.unit1))
 
+        # Throw in some unicode for good measure
+        attribute, value = 'attr2', u'☭⛷★⚽'
+        self.sess.metadata.add(DataObject, self.obj_path,
+                               iRODSMeta(attribute, value))
+
         # get object metadata
         meta = self.sess.metadata.get(DataObject, self.obj_path)
 
@@ -74,6 +80,9 @@ class TestMeta(unittest.TestCase):
         assert meta[1].name == self.attr1
         assert meta[1].value == self.value1
         assert meta[1].units == self.unit1
+
+        assert meta[2].name == attribute
+        assert meta[2].value == value
 
     def test_add_obj_meta_empty(self):
         '''Should raise exception
