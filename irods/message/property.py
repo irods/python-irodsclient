@@ -60,15 +60,13 @@ class BinaryProperty(MessageProperty):
 
     def format(self, value):
         if six.PY3 and not isinstance(value, bytes):
-            val = b64encode(value.encode())
+            val = b64encode(value.encode('utf-8'))
         else:
             val = b64encode(value)
         return val
 
     def parse(self, value):
         val = b64decode(value)
-        if six.PY3:
-            val = val.decode('utf-8')
         return val
 
 

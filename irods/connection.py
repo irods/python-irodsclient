@@ -283,10 +283,13 @@ class Connection(object):
         # one "session" signature per connection
         # see https://github.com/irods/irods/blob/4.2.1/plugins/auth/native/libnative.cpp#L137
         # and https://github.com/irods/irods/blob/4.2.1/lib/core/src/clientLogin.cpp#L38-L60
-        self._client_signature = "".join("{:02x}".format(ord(c)) for c in challenge[:16])
+        if six.PY2:
+            self._client_signature = "".join("{:02x}".format(ord(c)) for c in challenge[:16])
+        else:
+            self._client_signature = "".join("{:02x}".format(c) for c in challenge[:16])
 
         if six.PY3:
-            challenge = challenge.encode('utf-8').strip()
+            challenge = challenge.strip()
             padded_pwd = struct.pack(
                 "%ds" % MAX_PASSWORD_LENGTH, self.account.password.encode(
                     'utf-8').strip())

@@ -57,7 +57,7 @@ class TestMessages(unittest.TestCase):
 
     def test_auth_response(self):
         ar = AuthResponse()
-        ar.response = "hello"
+        ar.response = b"hello"
         ar.username = "rods"
         expected = "<authResponseInp_PI>\
 <response>aGVsbG8=</response>\
@@ -67,7 +67,7 @@ class TestMessages(unittest.TestCase):
 
         ar2 = AuthResponse()
         ar2.unpack(ET.fromstring(expected))
-        self.assertEqual(ar2.response, "hello")
+        self.assertEqual(ar2.response, b"hello")
         self.assertEqual(ar2.username, "rods")
 
     def test_inx_ival_pair(self):

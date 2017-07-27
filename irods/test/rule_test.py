@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import os
 import sys
@@ -7,7 +8,9 @@ import textwrap
 import unittest
 from irods.models import DataObject
 import irods.test.helpers as helpers
+import irods.test.config as config
 from irods.rule import Rule
+import six
 
 
 class TestRule(unittest.TestCase):
@@ -17,6 +20,11 @@ class TestRule(unittest.TestCase):
 
     def setUp(self):
         self.sess = helpers.make_session_from_config()
+
+        # get server version
+        with self.sess.pool.get_connection() as conn:
+            self.server_version = tuple(int(token)
+                                        for token in conn.server_version.replace('rods', '').split('.'))
 
     def tearDown(self):
         # close connections
@@ -130,17 +138,22 @@ class TestRule(unittest.TestCase):
         The rule writes things to its stdout that we
         get back on the client side
         '''
+
+        # Wrong buffer length on older versions
+        if self.server_version < (4, 1, 7):
+            self.skipTest('For iRODS 4.1.7 and newer')
+
         session = self.sess
 
         # test metadata
-        some_string = "foo"
-        some_other_string = "bar"
-        err_string = "baz"
+        some_string = u'foo'
+        some_other_string = u'bar'
+        err_string = u'⛔'
 
         # make rule file
         ts = time.time()
         rule_file_path = "/tmp/test_{ts}.r".format(**locals())
-        rule = textwrap.dedent('''\
+        rule = textwrap.dedent(u'''\
                                 test {{
                                     # write stuff
                                     writeLine("stdout", *some_string);
@@ -151,20 +164,31 @@ class TestRule(unittest.TestCase):
                                 OUTPUT ruleExecOut'''.format(**locals()))
 
         with open(rule_file_path, "w") as rule_file:
-            rule_file.write(rule)
+            if six.PY2:
+                rule_file.write(rule.encode('utf-8'))
+            else:
+                rule_file.write(rule)
 
         # run test rule
         myrule = Rule(session, rule_file_path)
         out_array = myrule.execute()
 
-        # check stdout
-        outbuf = out_array.MsParam_PI[0].inOutStruct.stdoutBuf.buf
-        self.assertIn(some_string, outbuf)
-        self.assertIn(some_other_string, outbuf)
+        # retrieve out buffer
+        buf = out_array.MsParam_PI[0].inOutStruct.stdoutBuf.buf
 
-        # check stderr
-        errbuf = out_array.MsParam_PI[0].inOutStruct.stderrBuf.buf
-        self.assertIn(err_string, errbuf)
+        # it's binary data (BinBytesBuf) so must be decoded
+        buf = buf.decode('utf-8')
+
+        # check that we get our strings back
+        self.assertIn(some_string, buf)
+        self.assertIn(some_other_string, buf)
+
+        # same thing stderr buffer
+        buf = out_array.MsParam_PI[0].inOutStruct.stderrBuf.buf
+
+        # decode and check
+        buf = buf.decode('utf-8')
+        self.assertIn(err_string, buf)
 
         # remove rule file
         os.remove(rule_file_path)
