@@ -30,8 +30,7 @@ class Connection(object):
         if timeout is not None:
             if not isinstance(timeout, float):
                 raise ValueError("Invalid timeout. It must be a float.")
-            else:
-                self.timeout = timeout
+        self.timeout = timeout
         self._client_signature = None
         self._server_version = self._connect(timeout=self.timeout)
 
