@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 
 class Pool(object):
 
-    def __init__(self, account):
+    def __init__(self, account, timeout=None):
         self.account = account
+        self.timeout = timeout
         self._lock = threading.Lock()
         self.active = set()
         self.idle = set()
@@ -20,7 +21,7 @@ class Pool(object):
             try:
                 conn = self.idle.pop()
             except KeyError:
-                conn = Connection(self, self.account)
+                conn = Connection(self, self.account, self.timeout)
             self.active.add(conn)
         logger.debug('num active: %d' % len(self.active))
         return conn

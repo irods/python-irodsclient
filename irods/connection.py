@@ -22,13 +22,17 @@ logger = logging.getLogger(__name__)
 
 class Connection(object):
 
-    def __init__(self, pool, account):
+    def __init__(self, pool, account, timeout=None):
 
-        self.pool = pool
         self.socket = None
+        self.pool = pool
         self.account = account
+        if timeout is not None:
+            if not isinstance(timeout, float):
+                raise ValueError("Invalid timeout. It must be a float.")
+        self.timeout = timeout
         self._client_signature = None
-        self._server_version = self._connect()
+        self._server_version = self._connect(timeout=self.timeout)
 
         scheme = self.account.authentication_scheme
 
@@ -58,7 +62,7 @@ class Connection(object):
         logger.debug(string)
         try:
             self.socket.sendall(string)
-        except:
+        except BaseException:
             logger.error(
                 "Unable to send message. " +
                 "Connection to remote host may have closed. " +
@@ -76,7 +80,8 @@ class Connection(object):
             raise NetworkException("Could not receive server response")
         if msg.int_info < 0:
             try:
-                err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
+                err_msg = iRODSMessage(msg=msg.error) \
+                    .get_main_message(Error).RErrMsg_PI[0].msg
             except TypeError:
                 raise get_exception_by_code(msg.int_info)
             raise get_exception_by_code(msg.int_info, err_msg)
@@ -95,16 +100,20 @@ class Connection(object):
         value = socket.htonl(api_reply_index)
         try:
             self.socket.sendall(struct.pack('I', value))
-        except:
+        except BaseException:
             self.release(True)
             raise NetworkException("Unable to send API reply")
 
-    def _connect(self):
+    def _connect(self, timeout=None):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if timeout is not None:
+            logger.debug("Setting timeout to socket connection: %s" % timeout)
+            s.settimeout(timeout)
 
         try:
             s.connect((self.account.host, self.account.port))
-        except socket.error:
+        except socket.error as e:
+            logger.error("Failed: %s" % e)
             raise NetworkException(
                 "Could not connect to specified host and port: " +
                 "{host}:{port}".format(
@@ -283,7 +292,8 @@ class Connection(object):
         # one "session" signature per connection
         # see https://github.com/irods/irods/blob/4.2.1/plugins/auth/native/libnative.cpp#L137
         # and https://github.com/irods/irods/blob/4.2.1/lib/core/src/clientLogin.cpp#L38-L60
-        self._client_signature = "".join("{:02x}".format(ord(c)) for c in challenge[:16])
+        self._client_signature = \
+            "".join("{:02x}".format(ord(c)) for c in challenge[:16])
 
         if six.PY3:
             challenge = challenge.encode('utf-8').strip()

@@ -47,18 +47,18 @@ class iRODSSession(object):
                   host=None, port=1247, user=None, zone=None,
                   password=None, client_user=None, client_zone=None,
                   server_dn=None, authentication_scheme='password',
-                  irods_env_file=None, numThreads=0):
+                  irods_env_file=None, numThreads=0, timeout=None):
 
         if irods_env_file:
             creds = self.get_irods_env(irods_env_file)
-            creds['password']=self.get_irods_auth(creds)
+            creds['password'] = self.get_irods_auth(creds)
             account = iRODSAccount(**creds)
         else:
             account = iRODSAccount(
                 host, int(port), user, zone, authentication_scheme,
                 password, client_user, server_dn, client_zone)
 
-        self.pool = Pool(account)
+        self.pool = Pool(account, timeout)
         self.numThreads = numThreads
 
     def query(self, *args):
