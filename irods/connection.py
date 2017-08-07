@@ -100,10 +100,11 @@ class Connection(object):
             raise NetworkException("Unable to send API reply")
 
     def _connect(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        address = (self.account.host, self.account.port)
+        timeout = self.pool.connection_timeout
 
         try:
-            s.connect((self.account.host, self.account.port))
+            s = socket.create_connection(address, timeout)
         except socket.error:
             raise NetworkException(
                 "Could not connect to specified host and port: " +

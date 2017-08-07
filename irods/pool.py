@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import logging
 import threading
 
+from irods import DEFAULT_CONNECTION_TIMEOUT
 from irods.connection import Connection
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ class Pool(object):
         self._lock = threading.Lock()
         self.active = set()
         self.idle = set()
+        self.connection_timeout = DEFAULT_CONNECTION_TIMEOUT
 
     def get_connection(self):
         with self._lock:
