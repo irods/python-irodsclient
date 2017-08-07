@@ -80,6 +80,14 @@ class iRODSSession(object):
     def port(self):
         return self.pool.account.port
 
+    @property
+    def connection_timeout(self):
+        return self.pool.connection_timeout
+
+    @connection_timeout.setter
+    def connection_timeout(self, seconds):
+        self.pool.connection_timeout = seconds
+
     @staticmethod
     def get_irods_env(env_file):
         with open(env_file, 'rt') as f:
