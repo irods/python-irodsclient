@@ -1,4 +1,11 @@
 from __future__ import absolute_import
+import logging
+import six
+if six.PY3:
+    from html import escape
+else:
+    from cgi import escape
+
 from irods.models import User, UserGroup
 from irods.manager import Manager
 from irods.message import GeneralAdminRequest, iRODSMessage
@@ -6,8 +13,6 @@ from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFou
 from irods.api_number import api_number
 from irods.user import iRODSUser, iRODSUserGroup
 import irods.password_obfuscation as obf
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +74,11 @@ class UserManager(Manager):
             if option == 'password':
                 current_password = self.sess.pool.account.password
                 new_value = obf.obfuscate_new_password(new_value, current_password, conn.client_signature)
+
+                # html style escaping might have to be generalized:
+                # https://github.com/irods/irods/blob/4.2.1/lib/core/src/packStruct.cpp#L1913
+                # https://github.com/irods/irods/blob/4.2.1/lib/core/src/packStruct.cpp#L1331-L1368
+                new_value = escape(new_value, quote=False)
 
             message_body = GeneralAdminRequest(
                 "modify",
