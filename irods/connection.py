@@ -32,8 +32,8 @@ class Connection(object):
 
         scheme = self.account.authentication_scheme
 
-        if scheme == 'password':
-            self._login_password()
+        if scheme == 'native':
+            self._login_native()
         elif scheme == 'gsi':
             self.client_ctx = None
             self._login_gsi()
@@ -270,7 +270,7 @@ class Connection(object):
         response = self.recv()
         return response.bs
 
-    def _login_password(self):
+    def _login_native(self):
 
         # authenticate
         auth_req = iRODSMessage(msg_type='RODS_API_REQ', int_info=703)
