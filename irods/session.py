@@ -46,7 +46,7 @@ class iRODSSession(object):
     def configure(self,
                   host=None, port=1247, user=None, zone=None,
                   password=None, client_user=None, client_zone=None,
-                  server_dn=None, authentication_scheme='password',
+                  server_dn=None, authentication_scheme='native',
                   irods_env_file=None, numThreads=0):
 
         if irods_env_file:
