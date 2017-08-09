@@ -1,7 +1,7 @@
 class iRODSAccount(object):
 
     def __init__(self, irods_host, irods_port, irods_user_name, irods_zone_name,
-                 irods_authentication_scheme='password',
+                 irods_authentication_scheme='native',
                  password=None, client_user=None,
                  server_dn=None, client_zone=None, **kwargs):
 
