@@ -556,7 +556,7 @@ class USER_FILE_TOO_LARGE(UserInputException):
     code = -311000
 
 
-class OVERWITE_WITHOUT_FORCE_FLAG(UserInputException):
+class OVERWRITE_WITHOUT_FORCE_FLAG(UserInputException):
     code = -312000
 
 

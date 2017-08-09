@@ -5,7 +5,7 @@ from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap)
-from irods.exception import DataObjectDoesNotExist, DoesNotExist
+import irods.exception as ex
 from irods.api_number import api_number
 from irods.data_object import (
     iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
@@ -27,6 +27,13 @@ class DataObjectManager(Manager):
         else:
             file = local_path
 
+        # Check for force flag if file exists
+        if os.path.exists(file):
+            try:
+                options[kw.FORCE_FLAG_KW]
+            except (TypeError, KeyError):
+                raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
+
         with open(file, 'wb') as f, self.open(obj, 'r', options) as o:
             for chunk in chunks(o, READ_BUFFER_SIZE):
                 f.write(chunk)
@@ -44,7 +51,7 @@ class DataObjectManager(Manager):
             .filter(DataObject.collection_id == parent.id)
         results = query.all() # get up to max_rows replicas
         if len(results) <= 0:
-            raise DataObjectDoesNotExist()
+            raise ex.DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
 
 
@@ -161,7 +168,7 @@ class DataObjectManager(Manager):
     def exists(self, path):
         try:
             self.get(path)
-        except DoesNotExist:
+        except ex.DoesNotExist:
             return False
         return True
 

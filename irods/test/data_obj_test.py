@@ -555,6 +555,38 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
+    def test_force_get(self):
+
+        # Can't do one step open/create with older servers
+        if self.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'force_get_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+
+        # make random 4M binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 1024 * 4))
+
+        # put file in test collection
+        self.sess.data_objects.put(test_file, collection + '/')
+
+        # try to get file back
+        obj_path = '{collection}/{filename}'.format(**locals())
+        with self.assertRaises(ex.OVERWRITE_WITHOUT_FORCE_FLAG):
+            self.sess.data_objects.get(obj_path, test_dir)
+
+        # this time with force flag
+        options = {kw.FORCE_FLAG_KW: ''}
+        self.sess.data_objects.get(obj_path, test_dir, options=options)
+
+        # delete file
+        os.remove(test_file)
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
