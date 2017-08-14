@@ -1,11 +1,14 @@
 from __future__ import absolute_import
 import io
 import sys
+import logging
+import six
 
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
-import six
+
+logger = logging.getLogger(__name__)
 
 
 def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
@@ -46,7 +49,7 @@ class iRODSDataObject(object):
                         setattr(self, attr, results[0][value])
                     except KeyError:
                         # backward compatibility with pre iRODS 4
-                        sys.exc_clear()
+                        logger.exception('Unable to set data object attribute')
             self.path = self.collection.path + '/' + self.name
             replicas = sorted(
                 results, key=lambda r: r[DataObject.replica_number])
