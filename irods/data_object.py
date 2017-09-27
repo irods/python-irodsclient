@@ -77,6 +77,9 @@ class iRODSDataObject(object):
     def unlink(self, force=False, options=None):
         self.manager.unlink(self.path, force, options)
 
+    def unregister(self, options=None):
+        self.manager.unregister(self.path, options)
+
     def truncate(self, size):
         self.manager.truncate(self.path, size)
 

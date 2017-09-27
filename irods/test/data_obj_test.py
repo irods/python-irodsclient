@@ -587,6 +587,36 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
+    @unittest.skipIf(
+        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
+        ), "Creates server-side file(s)")
+    def test_register(self):
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'register_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        # make random 4K binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 4))
+
+        # register file in test collection
+        self.sess.data_objects.register(test_file, obj_path)
+
+        # confirm object presence
+        obj = self.sess.data_objects.get(obj_path)
+
+        # in a real use case we would likely
+        # want to leave the physical file on disk
+        obj.unregister()
+
+        # delete file
+        os.remove(test_file)
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))

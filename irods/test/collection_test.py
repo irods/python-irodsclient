@@ -2,9 +2,11 @@
 from __future__ import absolute_import
 import os
 import sys
+import shutil
 import unittest
 from irods.meta import iRODSMetaCollection
 from irods.exception import CollectionDoesNotExist
+from irods.models import Collection, DataObject
 import irods.test.config as config
 import irods.test.helpers as helpers
 from six.moves import range
@@ -14,35 +16,39 @@ class TestCollection(unittest.TestCase):
     test_coll_path = '/{0}/home/{1}/test_dir'.format(
         config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
 
+
     def setUp(self):
         self.sess = helpers.make_session_from_config()
 
         self.test_coll = self.sess.collections.create(self.test_coll_path)
+
 
     def tearDown(self):
         """ Delete the test collection after each test """
         self.test_coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+
     def test_get_collection(self):
         # path = "/tempZone/home/rods"
         coll = self.sess.collections.get(self.test_coll_path)
         self.assertEqual(self.test_coll_path, coll.path)
 
-    # def test_new_collection(self):
-    #    self.assertEquals(self.coll.name, 'test_dir')
 
     def test_append_to_collection(self):
         """ Append a new file to the collection"""
         pass
 
+
     def test_remove_from_collection(self):
         """ Delete a file from a collection """
         pass
 
+
     def test_update_in_collection(self):
         """ Modify a file in a collection """
         pass
+
 
     def test_remove_deep_collection(self):
         # depth = 100
@@ -59,6 +65,7 @@ class TestCollection(unittest.TestCase):
         # confirm delete
         with self.assertRaises(CollectionDoesNotExist):
             self.sess.collections.get(root_coll_path)
+
 
     def test_rename_collection(self):
         # test args
@@ -86,6 +93,7 @@ class TestCollection(unittest.TestCase):
 
         # remove collection
         coll.remove(recurse=True, force=True)
+
 
     def test_move_coll_to_coll(self):
         # test args
@@ -115,12 +123,14 @@ class TestCollection(unittest.TestCase):
         # remove collection
         coll1.remove(recurse=True, force=True)
 
+
     def test_repr_coll(self):
         coll_name = self.test_coll.name.encode('utf-8')
         coll_id = self.test_coll.id
 
         self.assertEqual(
             repr(self.test_coll), "<iRODSCollection {coll_id} {coll_name}>".format(**locals()))
+
 
     def test_walk_collection_topdown(self):
         depth = 20
@@ -163,6 +173,7 @@ class TestCollection(unittest.TestCase):
         # that should be it
         with self.assertRaises(StopIteration):
             next(colls)
+
 
     def test_walk_collection(self):
         depth = 20
@@ -212,6 +223,39 @@ class TestCollection(unittest.TestCase):
 
     def test_collection_metadata(self):
         self.assertIsInstance(self.test_coll.metadata, iRODSMetaCollection)
+
+
+    @unittest.skipIf(
+        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
+        ), "Creates server-side file(s)")
+    def test_register_collection(self):
+
+        # test vars
+        file_count = 10
+        dir_name = 'register_test_dir'
+        dir_path = os.path.join('/tmp', dir_name)
+        coll_path = '{}/{}'.format(self.test_coll.path, dir_name)
+
+        # make test dir
+        helpers.make_flat_test_dir(dir_path, file_count)
+
+        # register test dir
+        self.sess.collections.register(dir_path, coll_path)
+
+        # confirm collection presence
+        coll = self.sess.collections.get(coll_path)
+
+        # confirm object count in collection
+        query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
+        obj_count = next(query.get_results())[DataObject.id]
+        self.assertEqual(file_count, int(obj_count))
+
+        # remove coll but leave directory on disk
+        coll.unregister()
+
+        # delete test dir
+        shutil.rmtree(dir_path)
+
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib

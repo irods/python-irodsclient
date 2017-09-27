@@ -6,6 +6,7 @@ from irods.exception import CollectionDoesNotExist, NoResultFound
 from irods.api_number import api_number
 from irods.collection import iRODSCollection
 from irods.constants import SYS_SVR_TO_CLI_COLL_STAT, SYS_CLI_TO_SVR_COLL_STAT_REPLY
+import irods.keywords as kw
 
 
 class CollectionManager(Manager):
@@ -17,6 +18,7 @@ class CollectionManager(Manager):
         except NoResultFound:
             raise CollectionDoesNotExist()
         return iRODSCollection(self, result)
+
 
     def create(self, path):
         message_body = CollectionRequest(
@@ -30,17 +32,28 @@ class CollectionManager(Manager):
             response = conn.recv()
         return self.get(path)
 
-    def remove(self, path, recurse=True, force=False, additional_flags=None):
-        if additional_flags is None:
-            additional_flags = {}
-        options = {}
+
+    def remove(self, path, recurse=True, force=False, options=None):
+        if options is None:
+            options = {}
+
         if recurse:
-            options['recursiveOpr'] = ''
+            options[kw.RECURSIVE_OPR__KW] = ''
         if force:
-            options['forceFlag'] = ''
-        options = dict(list(options.items()) + list(additional_flags.items()))
+            options[kw.FORCE_FLAG_KW] = ''
+
+        try:
+            oprType = options[kw.OPR_TYPE_KW]
+        except KeyError:
+            oprType = 0
+
+        # sanitize options before packing
+        options = {str(key): str(value) for key, value in options.items()}
+
         message_body = CollectionRequest(
             collName=path,
+            flags = 0,
+            oprType = oprType,
             KeyValPair_PI=StringStringMap(options)
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
@@ -53,12 +66,24 @@ class CollectionManager(Manager):
                 conn.reply(SYS_CLI_TO_SVR_COLL_STAT_REPLY)
                 response = conn.recv()
 
+
+    def unregister(self, path, options=None):
+        if options is None:
+            options = {}
+
+        # https://github.com/irods/irods/blob/4.2.1/lib/api/include/dataObjInpOut.h#L190
+        options[kw.OPR_TYPE_KW] = 26
+
+        self.remove(path, options=options)
+
+
     def exists(self, path):
         try:
             self.get(path)
         except CollectionDoesNotExist:
             return False
         return True
+
 
     def move(self, src_path, dest_path):
         # check if dest is an existing collection
@@ -95,6 +120,29 @@ class CollectionManager(Manager):
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_RENAME_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+
+
+    def register(self, dir_path, coll_path, options=None):
+        if options is None:
+            options = {}
+        options[kw.FILE_PATH_KW] = dir_path
+        options[kw.COLLECTION_KW] = ''
+        message_body = FileOpenRequest(
+            objPath=coll_path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=0,
+            numThreads=self.sess.numThreads,
+            oprType=0,
+            KeyValPair_PI=StringStringMap(options),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['PHY_PATH_REG_AN'])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)

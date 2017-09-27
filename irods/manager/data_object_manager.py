@@ -147,6 +147,15 @@ class DataObjectManager(Manager):
             options = {}
         if force:
             options[kw.FORCE_FLAG_KW] = ''
+
+        try:
+            oprType = options[kw.OPR_TYPE_KW]
+        except KeyError:
+            oprType = 0
+
+        # sanitize options before packing
+        options = {str(key): str(value) for key, value in options.items()}
+
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -154,7 +163,7 @@ class DataObjectManager(Manager):
             offset=0,
             dataSize=-1,
             numThreads=self.sess.numThreads,
-            oprType=0,
+            oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
@@ -163,6 +172,16 @@ class DataObjectManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+
+
+    def unregister(self, path, options=None):
+        if options is None:
+            options = {}
+
+        # https://github.com/irods/irods/blob/4.2.1/lib/api/include/dataObjInpOut.h#L190
+        options[kw.OPR_TYPE_KW] = 26
+
+        self.unlink(path, options=options)
 
 
     def exists(self, path):
@@ -293,6 +312,28 @@ class DataObjectManager(Manager):
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_REPL_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+
+
+    def register(self, file_path, obj_path, options=None):
+        if options is None:
+            options = {}
+        options[kw.FILE_PATH_KW] = file_path
+        message_body = FileOpenRequest(
+            objPath=obj_path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=0,
+            numThreads=self.sess.numThreads,
+            oprType=0,
+            KeyValPair_PI=StringStringMap(options),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['PHY_PATH_REG_AN'])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)

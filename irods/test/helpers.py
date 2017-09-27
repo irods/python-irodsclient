@@ -3,6 +3,7 @@ import os
 import tempfile
 import contextlib
 import shutil
+import math
 import irods.test.config as config
 from irods.session import iRODSSession
 from irods.message import iRODSMessage
@@ -87,6 +88,22 @@ def make_deep_collection(session, root_path, depth=10, objects_per_level=50, obj
             current_coll_path, 'subcoll' + str(d).zfill(len(str(d))))
 
     return root_coll
+
+
+def make_flat_test_dir(dir_path, file_count=10, file_size=1024):
+    if file_count < 1:
+        raise ValueError
+
+    os.mkdir(dir_path)
+
+    for i in range(file_count):
+        # pad file name suffix with zeroes
+        suffix_width = int(math.log10(file_count))+1
+        file_path = '{dir_path}/test_{i:0>{suffix_width}}.txt'.format(**locals())
+
+        # make random binary file
+        with open(file_path, 'wb') as f:
+            f.write(os.urandom(file_size))
 
 
 @contextlib.contextmanager
