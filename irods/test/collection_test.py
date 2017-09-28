@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 import os
 import sys
+import socket
 import shutil
 import unittest
 from irods.meta import iRODSMetaCollection

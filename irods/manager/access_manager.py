@@ -45,10 +45,12 @@ class AccessManager(Manager):
             user_zone=row[user_type.zone]
         ) for row in results]
 
-    def set(self, acl, recursive=False):
+    def set(self, acl, recursive=False, admin=False):
+        prefix = 'admin:' if admin else ''
+
         message_body = ModAclRequest(
             recursiveFlag=int(recursive),
-            accessLevel=acl.access_name,
+            accessLevel='{prefix}{access_name}'.format(prefix=prefix, **vars(acl)),
             userName=acl.user_name,
             zone=acl.user_zone,
             path=acl.path
