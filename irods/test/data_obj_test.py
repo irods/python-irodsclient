@@ -617,6 +617,41 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
+    @unittest.skipIf(
+        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
+        ), "Creates server-side file(s)")
+    def test_register_with_checksum(self):
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'register_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        # make random 4K binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 4))
+
+        # register file in test collection
+        options = {kw.VERIFY_CHKSUM_KW: ''}
+        self.sess.data_objects.register(test_file, obj_path, options=options)
+
+        # confirm object presence and verify checksum
+        obj = self.sess.data_objects.get(obj_path)
+
+        # don't use obj.path (aka logical path)
+        phys_path = obj.replicas[0].path
+        digest = helpers.compute_sha256_digest(phys_path)
+        self.assertEqual(obj.checksum == "sha2:{}".format(digest))
+
+        # leave physical file on disk
+        obj.unregister()
+
+        # delete file
+        os.remove(test_file)
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))

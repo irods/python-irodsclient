@@ -10,6 +10,7 @@ from irods.exception import CollectionDoesNotExist
 from irods.models import Collection, DataObject
 import irods.test.config as config
 import irods.test.helpers as helpers
+import irods.keywords as kw
 from six.moves import range
 
 
@@ -250,6 +251,47 @@ class TestCollection(unittest.TestCase):
         query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
         obj_count = next(query.get_results())[DataObject.id]
         self.assertEqual(file_count, int(obj_count))
+
+        # remove coll but leave directory on disk
+        coll.unregister()
+
+        # delete test dir
+        shutil.rmtree(dir_path)
+
+
+    @unittest.skipIf(
+        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
+        ), "Creates server-side file(s)")
+    def test_register_collection_with_checksums(self):
+
+        # test vars
+        file_count = 10
+        dir_name = 'register_test_dir'
+        dir_path = os.path.join('/tmp', dir_name)
+        coll_path = '{}/{}'.format(self.test_coll.path, dir_name)
+
+        # make test dir
+        helpers.make_flat_test_dir(dir_path, file_count)
+
+        # register test dir
+        options = {kw.VERIFY_CHKSUM_KW: ''}
+        self.sess.collections.register(dir_path, coll_path, options=options)
+
+        # confirm collection presence
+        coll = self.sess.collections.get(coll_path)
+
+        # confirm object count in collection
+        query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
+        obj_count = next(query.get_results())[DataObject.id]
+        self.assertEqual(file_count, int(obj_count))
+
+        # confirm object checksums
+        objs = next(coll.walk())[2]
+        for obj in objs:
+            # don't use obj.path (aka logical path)
+            phys_path = obj.replicas[0].path
+            digest = helpers.compute_sha256_digest(phys_path)
+            self.assertEqual(obj.checksum == "sha2:{}".format(digest))
 
         # remove coll but leave directory on disk
         coll.unregister()

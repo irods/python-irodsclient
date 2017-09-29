@@ -1,8 +1,11 @@
 from __future__ import absolute_import
 import os
+import io
 import tempfile
 import contextlib
 import shutil
+import hashlib
+import base64
 import math
 import irods.test.config as config
 from irods.session import iRODSSession
@@ -104,6 +107,20 @@ def make_flat_test_dir(dir_path, file_count=10, file_size=1024):
         # make random binary file
         with open(file_path, 'wb') as f:
             f.write(os.urandom(file_size))
+
+
+def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
+    return iter(lambda: f.read(chunksize), b'')
+
+
+def compute_sha256_digest(file_path):
+    hasher = hashlib.sha256()
+
+    with open(file_path, 'rb') as f:
+        for chunk in chunks(f):
+            hasher.update(chunk)
+
+    return base64.b64encode(hasher.digest()).decode()
 
 
 @contextlib.contextmanager
