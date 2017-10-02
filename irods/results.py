@@ -25,6 +25,14 @@ class ResultSet(object):
         table.align = 'l'
         return table.get_string()
 
+    def get_html_string(self):
+        table = PrettyTable()
+        for col in self.cols:
+            table.add_column(
+                ModelBase.columns[col.attriInx].icat_key, col.value)
+        table.align = 'l'
+        return table.get_html_string()
+
     @staticmethod
     def _format_attribute(attribute_index, value):
         col = ModelBase.columns[attribute_index]
