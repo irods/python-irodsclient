@@ -291,7 +291,7 @@ class TestCollection(unittest.TestCase):
             # don't use obj.path (aka logical path)
             phys_path = obj.replicas[0].path
             digest = helpers.compute_sha256_digest(phys_path)
-            self.assertEqual(obj.checksum == "sha2:{}".format(digest))
+            self.assertEqual(obj.checksum, "sha2:{}".format(digest))
 
         # remove coll but leave directory on disk
         coll.unregister()
