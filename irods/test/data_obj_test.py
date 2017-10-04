@@ -10,6 +10,7 @@ import random
 import string
 import unittest
 from irods.models import Collection, DataObject
+from irods.session import iRODSSession
 import irods.exception as ex
 from irods.column import Criterion
 from irods.data_object import chunks
@@ -553,6 +554,129 @@ class TestDataObjOps(unittest.TestCase):
 
         # delete file
         os.remove(test_file)
+
+
+    @unittest.skipIf(config.IRODS_SERVER_VERSION < (4, 0, 0), 'For iRODS 4+')
+    def test_obj_create_to_default_resource(self):
+
+        # make another UFS resource
+        session = self.sess
+        resource_name = 'ufs'
+        resource_type = 'unixfilesystem'
+        resource_host = session.host
+        resource_path = '/tmp/' + resource_name
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
+
+        # set default resource to new UFS resource
+        session.default_resource = resource_name
+
+        # test object
+        collection = self.coll_path
+        filename = 'create_def_resc_test_file'
+        obj_path = "{collection}/{filename}".format(**locals())
+        content = ''.join(random.choice(string.printable) for _ in range(1024))
+
+        # make object in test collection
+        obj = helpers.make_object(session, obj_path, content=content)
+
+        # get object and confirm resource
+        self.assertEqual(obj.replicas[0].resource_name, resource_name)
+
+        # delete obj and second resource
+        obj.unlink(force=True)
+        session.resources.remove(resource_name)
+
+
+    def test_obj_put_to_default_resource(self):
+        # Can't do one step open/create with older servers
+        if self.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # make another UFS resource
+        session = self.sess
+        resource_name = 'ufs'
+        resource_type = 'unixfilesystem'
+        resource_host = session.host
+        resource_path = '/tmp/' + resource_name
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
+
+        # set default resource to new UFS resource
+        session.default_resource = resource_name
+
+        # make a local file with random text content
+        content = ''.join(random.choice(string.printable) for _ in range(1024))
+        filename = 'testfile.txt'
+        file_path = os.path.join('/tmp', filename)
+        with open(file_path, 'w') as f:
+            f.write(content)
+
+        # put file
+        collection = self.coll_path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        session.data_objects.put(file_path, obj_path)
+
+        # get object and confirm resource
+        obj = session.data_objects.get(obj_path)
+        self.assertEqual(obj.replicas[0].resource_name, resource_name)
+
+        # cleanup
+        os.remove(file_path)
+        obj.unlink(force=True)
+        session.resources.remove(resource_name)
+
+
+    def test_obj_put_to_default_resource_from_env_file(self):
+        # Can't do one step open/create with older servers
+        if self.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # make another UFS resource
+        session = self.sess
+        resource_name = 'ufs'
+        resource_type = 'unixfilesystem'
+        resource_host = session.host
+        resource_path = '/tmp/' + resource_name
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
+
+        # make a copy of the irods env file with 'ufs0' as the default resource
+        env_file = os.path.expanduser('~/.irods/irods_environment.json')
+        new_env_file = '/tmp/irods_environment.json'
+        try:
+            with open(env_file) as f, open(new_env_file, 'w') as new_f:
+                irods_env = json.load(f)
+                irods_env['irods_default_resource'] = resource_name
+                json.dump(irods_env, new_f)
+        except IOError:
+            self.skipTest('Cannot copy irods environment file')
+
+        # now open a new session with our modified environment file
+        with iRODSSession(irods_env_file=new_env_file) as new_session:
+
+            # make a local file with random text content
+            content = ''.join(random.choice(string.printable) for _ in range(1024))
+            filename = 'testfile.txt'
+            file_path = os.path.join('/tmp', filename)
+            with open(file_path, 'w') as f:
+                f.write(content)
+
+            # put file
+            collection = self.coll_path
+            obj_path = '{collection}/{filename}'.format(**locals())
+
+            new_session.data_objects.put(file_path, obj_path)
+
+            # get object and confirm resource
+            obj = new_session.data_objects.get(obj_path)
+            self.assertEqual(obj.replicas[0].resource_name, resource_name)
+
+        # delete second resource
+        obj.unlink(force=True)
+        session.resources.remove(resource_name)
+
+        # cleanup
+        os.remove(file_path)
+        os.remove(new_env_file)
 
 
     def test_force_get(self):

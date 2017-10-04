@@ -13,6 +13,11 @@ class iRODSAccount(object):
         self.server_dn = server_dn
         self.password = password
 
+        try:
+            self.default_resource = kwargs['irods_default_resource']
+        except KeyError:
+            pass
+
         if client_user:
             self.client_user = client_user
             if client_zone:

@@ -47,7 +47,7 @@ class iRODSSession(object):
                   host=None, port=1247, user=None, zone=None,
                   password=None, client_user=None, client_zone=None,
                   server_dn=None, authentication_scheme='native',
-                  irods_env_file=None, numThreads=0):
+                  irods_env_file=None, numThreads=0, **kwargs):
 
         if irods_env_file:
             creds = self.get_irods_env(irods_env_file)
@@ -56,7 +56,7 @@ class iRODSSession(object):
         else:
             account = iRODSAccount(
                 host, int(port), user, zone, authentication_scheme,
-                password, client_user, server_dn, client_zone)
+                password, client_user, server_dn, client_zone, **kwargs)
 
         self.pool = Pool(account)
         self.numThreads = numThreads
@@ -79,6 +79,14 @@ class iRODSSession(object):
     @property
     def port(self):
         return self.pool.account.port
+
+    @property
+    def default_resource(self):
+        return self.pool.account.default_resource
+
+    @default_resource.setter
+    def default_resource(self, name):
+        self.pool.account.default_resource = name
 
     @property
     def connection_timeout(self):

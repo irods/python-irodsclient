@@ -72,12 +72,17 @@ class DataObjectManager(Manager):
 
 
     def create(self, path, resource=None, options=None):
-        if options is None:
-            options = {}
-        kvp = {kw.DATA_TYPE_KW: 'generic'}
+        try:
+            kvp = {kw.DEST_RESC_NAME_KW: self.sess.default_resource}
+        except AttributeError:
+            kvp = {}
+
+        kvp[kw.DATA_TYPE_KW] = 'generic'
+
         if resource:
             kvp[kw.DEST_RESC_NAME_KW] = resource
-        kvp.update(options)
+        if options:
+            kvp.update(options)
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0o644,
@@ -101,8 +106,10 @@ class DataObjectManager(Manager):
 
 
     def open(self, path, mode, options=None):
-        if options is None:
-            options = {}
+        try:
+            kvp = {kw.DEST_RESC_NAME_KW: self.sess.default_resource}
+        except AttributeError:
+            kvp = {}
 
         flags, seek_to_end = {
             'r': (os.O_RDONLY, False),
@@ -114,13 +121,16 @@ class DataObjectManager(Manager):
         }[mode]
         # TODO: Use seek_to_end
 
+        if options:
+            kvp.update(options)
+
         try:
-            oprType = options[kw.OPR_TYPE_KW]
+            oprType = kvp[kw.OPR_TYPE_KW]
         except KeyError:
             oprType = 0
 
         # sanitize options before packing
-        options = {str(key): str(value) for key, value in options.items()}
+        kvp = {str(key): str(value) for key, value in kvp.items()}
 
         message_body = FileOpenRequest(
             objPath=path,
@@ -130,7 +140,7 @@ class DataObjectManager(Manager):
             dataSize=-1,
             numThreads=self.sess.numThreads,
             oprType=oprType,
-            KeyValPair_PI=StringStringMap(options),
+            KeyValPair_PI=StringStringMap(kvp),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_OPEN_AN'])
@@ -139,7 +149,7 @@ class DataObjectManager(Manager):
         conn.send(message)
         desc = conn.recv().int_info
 
-        return io.BufferedRandom(iRODSDataObjectFileRaw(conn, desc, options))
+        return io.BufferedRandom(iRODSDataObjectFileRaw(conn, desc, kvp))
 
 
     def unlink(self, path, force=False, options=None):
