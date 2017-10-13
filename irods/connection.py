@@ -9,12 +9,18 @@ import six
 from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge,
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
-    GSIAuthMessage, Error)
+    GSIAuthMessage, ClientServerNegotiation, Error)
 from irods.exception import get_exception_by_code, NetworkException
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
-    AUTH_SCHEME_KEY, GSI_AUTH_PLUGIN, GSI_AUTH_SCHEME, GSI_OID
-)
+    AUTH_SCHEME_KEY, GSI_AUTH_PLUGIN, GSI_AUTH_SCHEME, GSI_OID)
+from irods.client_server_negotiation import (
+    perform_negotiation,
+    validate_policy,
+    REQUEST_NEGOTIATION,
+    REQUIRE_TCP,
+    FAILURE,
+    CS_NEG_RESULT_KW)
 from irods.api_number import api_number
 
 logger = logging.getLogger(__name__)
@@ -99,6 +105,14 @@ class Connection(object):
             self.release(True)
             raise NetworkException("Unable to send API reply")
 
+    def requires_cs_negotiation(self):
+        try:
+            if self.account.client_server_negotiation == REQUEST_NEGOTIATION:
+                return True
+        except AttributeError:
+            return False
+        return False
+
     def _connect(self):
         address = (self.account.host, self.account.port)
         timeout = self.pool.connection_timeout
@@ -108,8 +122,7 @@ class Connection(object):
         except socket.error:
             raise NetworkException(
                 "Could not connect to specified host and port: " +
-                "{host}:{port}".format(
-                    host=self.account.host, port=self.account.port))
+                "{}:{}".format(*address))
 
         self.socket = s
         main_message = StartupPack(
@@ -117,10 +130,53 @@ class Connection(object):
             (self.account.client_user, self.account.client_zone)
         )
 
+        # No client-server negotiation
+        if not self.requires_cs_negotiation():
+
+            # Send startup pack without negotiation request
+            msg = iRODSMessage(msg_type='RODS_CONNECT', msg=main_message)
+            self.send(msg)
+
+            # Server responds with version
+            version_msg = self.recv()
+
+            # Done
+            return version_msg.get_main_message(VersionResponse)
+
+        # Get client negotiation policy
+        client_policy = getattr(self.account, 'client_server_policy', REQUIRE_TCP)
+
+        # Sanity check
+        validate_policy(client_policy)
+
+        # Send startup pack with negotiation request
+        main_message.option = '{};{}'.format(main_message.option, REQUEST_NEGOTIATION)
         msg = iRODSMessage(msg_type='RODS_CONNECT', msg=main_message)
         self.send(msg)
 
-        # server responds with version
+        # Server responds with its own negotiation policy
+        cs_neg_msg = self.recv()
+        response = cs_neg_msg.get_main_message(ClientServerNegotiation)
+        server_policy = response.result
+
+        # Perform the negotiation
+        neg_result, status = perform_negotiation(client_policy=client_policy,
+                                                 server_policy=server_policy)
+
+        # Send negotiation result to server
+        client_neg_response = ClientServerNegotiation(
+            status=status,
+            result='{}={};'.format(CS_NEG_RESULT_KW, neg_result)
+        )
+        msg = iRODSMessage(msg_type='RODS_CS_NEG_T', msg=client_neg_response)
+        self.send(msg)
+
+        # If negotiation failed we're done
+        if neg_result == FAILURE:
+            self.disconnect()
+            raise NetworkException("Client-Server negotiation failure: {},{}".format(client_policy, server_policy))
+
+        # Server responds with version
         version_msg = self.recv()
         return version_msg.get_main_message(VersionResponse)
 

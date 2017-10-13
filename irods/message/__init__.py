@@ -121,6 +121,14 @@ class iRODSMessage(object):
         msg.unpack(ET.fromstring(self.msg))
         return msg
 
+
+#define CS_NEG_PI "int status; str result[MAX_NAME_LEN];"
+class ClientServerNegotiation(Message):
+    _name = 'CS_NEG_PI'
+    status = IntegerProperty()
+    result = StringProperty()
+
+
 # define StartupPack_PI "int irodsProt; int reconnFlag; int connectCnt;
 # str proxyUser[NAME_LEN]; str proxyRcatZone[NAME_LEN]; str
 # clientUser[NAME_LEN]; str clientRcatZone[NAME_LEN]; str

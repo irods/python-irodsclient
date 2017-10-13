@@ -27,6 +27,11 @@ def make_session_from_config(**kwargs):
         except KeyError:
             pass
 
+    if config.IRODS_SERVER_VERSION >= (4, 0, 0):
+        neg_params = {'irods_client_server_negotiation': 'request_server_negotiation',
+                      'irods_client_server_policy': 'CS_NEG_REFUSE'}
+        kwargs.update(neg_params)
+
     return iRODSSession(**kwargs)
 
 
