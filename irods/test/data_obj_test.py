@@ -670,8 +670,10 @@ class TestDataObjOps(unittest.TestCase):
             obj = new_session.data_objects.get(obj_path)
             self.assertEqual(obj.replicas[0].resource_name, resource_name)
 
+            # remove object
+            obj.unlink(force=True)
+
         # delete second resource
-        obj.unlink(force=True)
         session.resources.remove(resource_name)
 
         # cleanup

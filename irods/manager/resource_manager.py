@@ -31,7 +31,7 @@ class ResourceManager(Manager):
             raise ResourceDoesNotExist()
         return iRODSResource(self, result)
 
-    def create(self, name, resource_type, host="", path="", context="", zone="", resource_class=""):
+    def create(self, name, resource_type, host="EMPTY_RESC_HOST", path="EMPTY_RESC_PATH", context="", zone="", resource_class=""):
         with self.sess.pool.get_connection() as conn:
             # check server version
             server_version = tuple(int(token)
