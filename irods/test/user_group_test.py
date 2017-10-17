@@ -13,6 +13,11 @@ class TestUserGroup(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session_from_config()
 
+        # get server version
+        with self.sess.pool.get_connection() as conn:
+            self.server_version = tuple(int(token)
+                                        for token in conn.server_version.replace('rods', '').split('.'))
+
     def tearDown(self):
         '''Close connections
         '''
@@ -87,26 +92,32 @@ class TestUserGroup(unittest.TestCase):
 
 
     def test_user_dn(self):
+        # https://github.com/irods/irods/issues/3620
+        if self.server_version == (4, 2, 1):
+            self.skipTest('Broken in 4.2.1')
+
         user_name = "testuser"
-        user_dn = "0123456789"
+        user_DNs = ['foo', 'bar']
 
         # create user
         user = self.sess.users.create(user_name, 'rodsuser')
 
         # expect no dn
-        self.assertEqual(user.dn, None)
+        self.assertEqual(user.dn, [])
 
         # add dn
-        user.modify('addAuth', user_dn)
+        user.modify('addAuth', user_DNs[0])
+        self.assertEqual(user.dn[0], user_DNs[0])
 
-        # confirm dn
-        self.assertEqual(user.dn, user_dn)
+        # add other dn
+        user.modify('addAuth', user_DNs[1])
+        self.assertEqual(user.dn, user_DNs)
 
-        # remove dn
-        user.modify('rmAuth', user_dn)
+        # remove first dn
+        user.modify('rmAuth', user_DNs[0])
 
         # confirm removal
-        self.assertEqual(user.dn, None)
+        self.assertEqual(user.dn, user_DNs[1:])
 
         # delete user
         user.remove()

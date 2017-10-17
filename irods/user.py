@@ -17,10 +17,7 @@ class iRODSUser(object):
     @property
     def dn(self):
         query = self.manager.sess.query(UserAuth.user_dn).filter(UserAuth.user_id == self.id)
-        try:
-            return query.one()[UserAuth.user_dn]
-        except NoResultFound:
-            return None
+        return [res[UserAuth.user_dn] for res in query.get_results()]
 
     def modify(self, *args, **kwargs):
         self.manager.modify(self.name, *args, **kwargs)
