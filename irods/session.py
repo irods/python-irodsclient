@@ -18,6 +18,8 @@ class iRODSSession(object):
 
     def __init__(self, *args, **kwargs):
         self.pool = None
+        self.numThreads = 0
+
         if args or kwargs:
             self.configure(*args, **kwargs)
 
@@ -43,23 +45,28 @@ class iRODSSession(object):
                 pass
             conn.release(True)
 
-    def configure(self,
-                  host=None, port=1247, user=None, zone=None,
-                  password=None, client_user=None, client_zone=None,
-                  server_dn=None, authentication_scheme='native',
-                  irods_env_file=None, numThreads=0, **kwargs):
-
-        if irods_env_file:
-            creds = self.get_irods_env(irods_env_file)
+    def configure(self, *args, **kwargs):
+        # try to load credentials from environment file
+        try:
+            creds = self.get_irods_env(kwargs['irods_env_file'])
             creds['password']=self.get_irods_auth(creds)
             account = iRODSAccount(**creds)
-        else:
-            account = iRODSAccount(
-                host, int(port), user, zone, authentication_scheme,
-                password, client_user, server_dn, client_zone, **kwargs)
+
+        # no environment file in parameters
+        except KeyError:
+
+            # for backwards compatibility
+            for key in ['host', 'port', 'authentication_scheme']:
+                if key in kwargs:
+                    kwargs['irods_{}'.format(key)] = kwargs.pop(key)
+
+            for key in ['user', 'zone']:
+                if key in kwargs:
+                    kwargs['irods_{}_name'.format(key)] = kwargs.pop(key)
+
+            account = iRODSAccount(*args, **kwargs)
 
         self.pool = Pool(account)
-        self.numThreads = numThreads
 
     def query(self, *args):
         return Query(self, *args)
