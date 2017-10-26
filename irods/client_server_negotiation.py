@@ -21,7 +21,7 @@ CS_NEG_RESULT_KW = "cs_neg_result_kw"
 
 def perform_negotiation(client_policy, server_policy):
     if REQUIRE_SSL in (client_policy, server_policy):
-        if (client_policy, server_policy) != (REQUIRE_SSL, REQUIRE_SSL):
+        if REQUIRE_TCP in (client_policy, server_policy):
             return FAILURE, 0
         return USE_SSL, 1
     return USE_TCP, 1
