@@ -12,7 +12,7 @@ class Pool(object):
 
     def __init__(self, account):
         self.account = account
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.active = set()
         self.idle = set()
         self.connection_timeout = DEFAULT_CONNECTION_TIMEOUT
