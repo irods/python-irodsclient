@@ -4,6 +4,9 @@ import logging
 import struct
 import hashlib
 import six
+import struct
+import os
+import ssl
 
 
 from irods.message import (
@@ -20,6 +23,7 @@ from irods.client_server_negotiation import (
     REQUEST_NEGOTIATION,
     REQUIRE_TCP,
     FAILURE,
+    USE_SSL,
     CS_NEG_RESULT_KW)
 from irods.api_number import api_number
 
@@ -113,6 +117,46 @@ class Connection(object):
             return False
         return False
 
+    def ssl_startup(self):
+        # Get encryption settings from client environment
+        host = self.account.host
+        algo = self.account.encryption_algorithm
+        key_size = self.account.encryption_key_size
+        hash_rounds = self.account.encryption_num_hash_rounds
+        salt_size = self.account.encryption_salt_size
+
+        # Create SSL context
+        # TODO: Start with default context and then tighten security
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+
+        # Wrap socket with context
+        wrapped_socket = context.wrap_socket(self.socket, server_hostname=host)
+
+        # Initial SSL handshake
+        wrapped_socket.do_handshake()
+
+        # Generate key (shared secret)
+        key = os.urandom(self.account.encryption_key_size)
+
+        # Send header-only message with client side encryption settings
+        packed_header = iRODSMessage.pack_header(algo,
+                                                 key_size,
+                                                 salt_size,
+                                                 hash_rounds,
+                                                 0)
+        wrapped_socket.sendall(packed_header)
+
+        # Send shared secret
+        packed_header = iRODSMessage.pack_header('SHARED_SECRET',
+                                                 key_size,
+                                                 0,
+                                                 0,
+                                                 0)
+        wrapped_socket.sendall(packed_header + key)
+
+        # Use SSL socket from now on
+        self.socket = wrapped_socket
+
     def _connect(self):
         address = (self.account.host, self.account.port)
         timeout = self.pool.connection_timeout
@@ -178,6 +222,10 @@ class Connection(object):
 
         # Server responds with version
         version_msg = self.recv()
+
+        if neg_result == USE_SSL:
+            self.ssl_startup()
+
         return version_msg.get_main_message(VersionResponse)
 
     def disconnect(self):

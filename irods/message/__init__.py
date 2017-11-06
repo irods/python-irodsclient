@@ -26,7 +26,7 @@ def _recv_message_in_len(sock, size):
     while size_left > 0:
         try:
             buf = sock.recv(size_left, socket.MSG_WAITALL)
-        except AttributeError:
+        except (AttributeError, ValueError):
             buf = sock.recv(size_left)
         size_left -= len(buf)
         if retbuf is None:
@@ -83,6 +83,25 @@ class iRODSMessage(object):
             return my_str
 
 
+    @staticmethod
+    def pack_header(type, msg_len, err_len, bs_len, int_info):
+        msg_header = ("<MsgHeader_PI>"
+                      "<type>{}</type>"
+                      "<msgLen>{}</msgLen>"
+                      "<errorLen>{}</errorLen>"
+                      "<bsLen>{}</bsLen>"
+                      "<intInfo>{}</intInfo>"
+                      "</MsgHeader_PI>").format(type, msg_len, err_len, bs_len, int_info)
+
+        # encode if needed
+        msg_header = iRODSMessage.encode_unicode(msg_header)
+
+        # pack length
+        msg_header_length = struct.pack(">i", len(msg_header))
+
+        return msg_header_length + msg_header
+
+
     def pack(self):
         # pack main message and endcode if needed
         if self.msg:
@@ -94,25 +113,14 @@ class iRODSMessage(object):
         self.error = self.encode_unicode(self.error)
         self.bs = self.encode_unicode(self.bs)
 
-        header_info = {'type' : self.msg_type,
-                       'msg_len': len(main_msg),
-                       'err_len': len(self.error),
-                       'bs_len': len(self.bs),
-                       'int_info': self.int_info}
+        # pack header
+        packed_header = self.pack_header(self.msg_type,
+                                         len(main_msg),
+                                         len(self.error),
+                                         len(self.bs),
+                                         self.int_info)
 
-        msg_header = ("<MsgHeader_PI>"
-                      "<type>{type}</type>"
-                      "<msgLen>{msg_len}</msgLen>"
-                      "<errorLen>{err_len}</errorLen>"
-                      "<bsLen>{bs_len}</bsLen>"
-                      "<intInfo>{int_info}</intInfo>"
-                      "</MsgHeader_PI>").format(**header_info)
-
-        # encode message header if needed
-        msg_header = self.encode_unicode(msg_header)
-
-        msg_header_length = struct.pack(">i", len(msg_header))
-        return msg_header_length + msg_header + main_msg + self.error + self.bs
+        return packed_header + main_msg + self.error + self.bs
 
 
     def get_main_message(self, cls):
