@@ -4,14 +4,13 @@ import os
 import sys
 import unittest
 from irods.exception import NetworkException
-import irods.test.config as config
 import irods.test.helpers as helpers
 
 
 class TestConnections(unittest.TestCase):
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
     def tearDown(self):
         '''Close connections
@@ -29,6 +28,7 @@ class TestConnections(unittest.TestCase):
 
     def test_failed_connection(self):
         # mess with the account's port
+        saved_port = self.sess.port
         self.sess.pool.account.port = 6666
 
         # try connecting
@@ -36,7 +36,7 @@ class TestConnections(unittest.TestCase):
             self.sess.pool.get_connection()
 
         # set port back
-        self.sess.pool.account.port = config.IRODS_SERVER_PORT
+        self.sess.pool.account.port = saved_port
 
     def test_send_failure(self):
         with self.sess.pool.get_connection() as conn:

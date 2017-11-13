@@ -8,7 +8,6 @@ import textwrap
 import unittest
 from irods.models import DataObject
 import irods.test.helpers as helpers
-import irods.test.config as config
 from irods.rule import Rule
 import six
 
@@ -19,7 +18,7 @@ class TestRule(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
         # get server version
         with self.sess.pool.get_connection() as conn:

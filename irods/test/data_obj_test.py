@@ -14,14 +14,13 @@ from irods.session import iRODSSession
 import irods.exception as ex
 from irods.column import Criterion
 from irods.data_object import chunks
-import irods.test.config as config
 import irods.test.helpers as helpers
 import irods.keywords as kw
 
 class TestDataObjOps(unittest.TestCase):
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
         # get server version
         with self.sess.pool.get_connection() as conn:
@@ -29,15 +28,16 @@ class TestDataObjOps(unittest.TestCase):
                                         for token in conn.server_version.replace('rods', '').split('.'))
 
         # Create test collection
-        self.coll_path = '/{0}/home/{1}/test_dir'.format(
-            config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
+
 
     def tearDown(self):
         '''Remove test data and close connections
         '''
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
+
 
     def make_new_server_config_json(self, server_config_filename):
         # load server_config.json to inject a new rule base
@@ -51,6 +51,7 @@ class TestDataObjOps(unittest.TestCase):
         # dump to a string to repave the existing server_config.json
         return json.dumps(svr_cfg, sort_keys=True, indent=4, separators=(',', ': '))
 
+
     def sha256_checksum(self, filename, block_size=65536):
         sha256 = hashlib.sha256()
         with open(filename, 'rb') as f:
@@ -58,17 +59,20 @@ class TestDataObjOps(unittest.TestCase):
                 sha256.update(chunk)
         return sha256.hexdigest()
 
+
     def test_obj_exists(self):
         obj_name = 'this_object_will_exist_once_made'
         exists_path = '{}/{}'.format(self.coll_path, obj_name)
         helpers.make_object(self.sess, exists_path)
         self.assertTrue(self.sess.data_objects.exists(exists_path))
 
+
     def test_obj_does_not_exist(self):
         does_not_exist_name = 'this_object_will_never_exist'
         does_not_exist_path = '{}/{}'.format(self.coll_path,
                                              does_not_exist_name)
         self.assertFalse(self.sess.data_objects.exists(does_not_exist_path))
+
 
     def test_rename_obj(self):
         # test args
@@ -101,6 +105,7 @@ class TestDataObjOps(unittest.TestCase):
         # remove object
         self.sess.data_objects.unlink(new_path)
 
+
     def test_move_obj_to_coll(self):
         # test args
         collection = self.coll_path
@@ -130,6 +135,7 @@ class TestDataObjOps(unittest.TestCase):
         # remove new collection
         new_coll.remove(recurse=True, force=True)
 
+
     def test_copy_obj_to_obj(self):
         # test args
         collection = self.coll_path
@@ -148,6 +154,7 @@ class TestDataObjOps(unittest.TestCase):
         # compare checksums
         dest_obj = self.sess.data_objects.get(dest_path)
         self.assertEqual(src_obj.checksum, dest_obj.checksum)
+
 
     def test_copy_obj_to_coll(self):
         # test args
@@ -171,6 +178,7 @@ class TestDataObjOps(unittest.TestCase):
         dest_obj = self.sess.data_objects.get(dest_obj_path)
         self.assertEqual(src_obj.checksum, dest_obj.checksum)
 
+
     def test_invalid_get(self):
         # bad paths
         path_with_invalid_file = self.coll_path + '/hamsalad'
@@ -181,6 +189,7 @@ class TestDataObjOps(unittest.TestCase):
 
         with self.assertRaises(ex.CollectionDoesNotExist):
             obj = self.sess.data_objects.get(path_with_invalid_coll)
+
 
     def test_force_unlink(self):
         collection = self.coll_path
@@ -205,6 +214,7 @@ class TestDataObjOps(unittest.TestCase):
         results = query.all()
         self.assertEqual(len(results), 0)
 
+
     def test_obj_truncate(self):
         collection = self.coll_path
         filename = 'test_obj_truncate.txt'
@@ -224,6 +234,7 @@ class TestDataObjOps(unittest.TestCase):
         with obj.open('r') as f:
             self.assertEqual(f.read().decode(), truncated_content)
 
+
     def test_multiple_reads(self):
         collection = self.coll_path
 
@@ -240,10 +251,12 @@ class TestDataObjOps(unittest.TestCase):
             with obj.open('r') as f:
                 self.assertEqual(f.read().decode(), obj.path)
 
-    @unittest.skipIf(
-        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ), "Cannot modify remote server configuration")
+
     def test_create_with_checksum(self):
+        # skip if server is remote
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
+
         # skip if server is older than 4.2
         if self.server_version < (4, 2, 0):
             self.skipTest('Expects iRODS 4.2 server-side configuration')
@@ -303,10 +316,11 @@ class TestDataObjOps(unittest.TestCase):
             raise
 
 
-    @unittest.skipIf(
-        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ), "Cannot modify remote server configuration")
     def test_put_file_trigger_pep(self):
+        # skip if server is remote
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
+
         # skip if server is older than 4.2
         if self.server_version < (4, 2, 0):
             self.skipTest('Expects iRODS 4.2 server-side configuration')
@@ -416,13 +430,13 @@ class TestDataObjOps(unittest.TestCase):
     def test_obj_replicate(self):
         # test data
         resc_name = 'temporary_test_resource'
-        if config.IRODS_SERVER_VERSION < (4, 0, 0):
+        if self.server_version < (4, 0, 0):
             resc_type = 'unix file system'
             resc_class = 'cache'
         else:
             resc_type = 'unixfilesystem'
             resc_class = ''
-        resc_host = config.IRODS_SERVER_HOST  # use remote host when available in CI
+        resc_host = self.sess.host  # use remote host when available in CI
         resc_path = '/tmp/' + resc_name
 
         # make second resource
@@ -453,8 +467,10 @@ class TestDataObjOps(unittest.TestCase):
         self.sess.resources.remove(resc_name)
 
 
-    @unittest.skipIf(config.IRODS_SERVER_VERSION < (4, 0, 0), "iRODS 4+")
     def test_replica_number(self):
+        if self.server_version < (4, 0, 0):
+            self.skipTest('For iRODS 4+')
+
         session = self.sess
         zone = session.zone
         username = session.username
@@ -521,7 +537,6 @@ class TestDataObjOps(unittest.TestCase):
 
 
     def test_obj_put_get(self):
-
         # Can't do one step open/create with older servers
         if self.server_version <= (4, 1, 4):
             self.skipTest('For iRODS 4.1.5 and newer')
@@ -556,8 +571,9 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
-    @unittest.skipIf(config.IRODS_SERVER_VERSION < (4, 0, 0), 'For iRODS 4+')
     def test_obj_create_to_default_resource(self):
+        if self.server_version < (4, 0, 0):
+            self.skipTest('For iRODS 4+')
 
         # make another UFS resource
         session = self.sess
@@ -642,16 +658,14 @@ class TestDataObjOps(unittest.TestCase):
         # make a copy of the irods env file with 'ufs0' as the default resource
         env_file = os.path.expanduser('~/.irods/irods_environment.json')
         new_env_file = '/tmp/irods_environment.json'
-        try:
-            with open(env_file) as f, open(new_env_file, 'w') as new_f:
-                irods_env = json.load(f)
-                irods_env['irods_default_resource'] = resource_name
-                json.dump(irods_env, new_f)
-        except IOError:
-            self.skipTest('Cannot copy irods environment file')
+
+        with open(env_file) as f, open(new_env_file, 'w') as new_f:
+            irods_env = json.load(f)
+            irods_env['irods_default_resource'] = resource_name
+            json.dump(irods_env, new_f)
 
         # now open a new session with our modified environment file
-        with iRODSSession(irods_env_file=new_env_file) as new_session:
+        with helpers.make_session(irods_env_file=new_env_file) as new_session:
 
             # make a local file with random text content
             content = ''.join(random.choice(string.printable) for _ in range(1024))
@@ -682,7 +696,6 @@ class TestDataObjOps(unittest.TestCase):
 
 
     def test_force_get(self):
-
         # Can't do one step open/create with older servers
         if self.server_version <= (4, 1, 4):
             self.skipTest('For iRODS 4.1.5 and newer')
@@ -713,10 +726,10 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
-    @unittest.skipIf(
-        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ), "Creates server-side file(s)")
     def test_register(self):
+        # skip if server is remote
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
 
         # test vars
         test_dir = '/tmp'
@@ -743,10 +756,10 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
-    @unittest.skipIf(
-        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ), "Creates server-side file(s)")
     def test_register_with_checksum(self):
+        # skip if server is remote
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
 
         # test vars
         test_dir = '/tmp'

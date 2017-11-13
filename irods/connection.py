@@ -126,7 +126,6 @@ class Connection(object):
         salt_size = self.account.encryption_salt_size
 
         # Create SSL context
-        # TODO: Start with default context and then tighten security
         context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 
         # Wrap socket with context

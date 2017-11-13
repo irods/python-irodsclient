@@ -3,37 +3,37 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
-import irods.test.config as config
 import irods.test.helpers as helpers
 
 
 class TestFiles(unittest.TestCase):
-
     '''Suite of data object I/O unit tests
     '''
-    test_coll_path = '/{0}/home/{1}/test_dir'.format(
-        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
-    test_obj_name = 'test1'
-    content_str = u'blah'
-    write_str = u'0123456789'
-    write_str1 = u'INTERRUPT'
-
-    test_obj_path = test_coll_path + '/' + test_obj_name
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
         # Create test collection
-        self.test_coll = self.sess.collections.create(self.test_coll_path)
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
+        self.collection = self.sess.collections.create(self.coll_path)
+
+        self.obj_name = 'test1'
+        self.content_str = u'blah'
+        self.write_str = u'0123456789'
+        self.write_str1 = u'INTERRUPT'
+
+        self.test_obj_path = '{coll_path}/{obj_name}'.format(**vars(self))
 
         # Create test object
         helpers.make_object(self.sess, self.test_obj_path, self.content_str)
 
+
     def tearDown(self):
         '''Remove test data and close connections
         '''
-        self.test_coll.remove(recurse=True, force=True)
+        self.collection.remove(recurse=True, force=True)
         self.sess.cleanup()
+
 
     def test_file_get(self):
         # get object
@@ -41,6 +41,7 @@ class TestFiles(unittest.TestCase):
 
         # assertions
         self.assertEqual(obj.size, len(self.content_str))
+
 
     def test_file_open(self):
         # from irods.models import Collection, User, DataObject
@@ -56,6 +57,7 @@ class TestFiles(unittest.TestCase):
         # self.assertTrue(expr, msg)
         f.close()
 
+
     def test_file_read(self):
         # from irods.models import Collection, User, DataObject
 
@@ -68,6 +70,7 @@ class TestFiles(unittest.TestCase):
         assert str1 == self.content_str
 
         f.close()
+
 
     def test_file_write(self):
         # from irods.models import Collection, User, DataObject

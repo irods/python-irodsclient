@@ -8,19 +8,16 @@ import unittest
 from irods.meta import iRODSMetaCollection
 from irods.exception import CollectionDoesNotExist
 from irods.models import Collection, DataObject
-import irods.test.config as config
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from six.moves import range
 
 
 class TestCollection(unittest.TestCase):
-    test_coll_path = '/{0}/home/{1}/test_dir'.format(
-        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
-
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
+        self.test_coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
 
         self.test_coll = self.sess.collections.create(self.test_coll_path)
 
@@ -227,10 +224,9 @@ class TestCollection(unittest.TestCase):
         self.assertIsInstance(self.test_coll.metadata, iRODSMetaCollection)
 
 
-    @unittest.skipIf(
-        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ), "Creates server-side file(s)")
     def test_register_collection(self):
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
 
         # test vars
         file_count = 10
@@ -259,10 +255,9 @@ class TestCollection(unittest.TestCase):
         shutil.rmtree(dir_path)
 
 
-    @unittest.skipIf(
-        config.IRODS_SERVER_HOST != 'localhost' and config.IRODS_SERVER_HOST != socket.gethostname(
-        ), "Creates server-side file(s)")
     def test_register_collection_with_checksums(self):
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
 
         # test vars
         file_count = 10

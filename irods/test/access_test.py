@@ -4,19 +4,16 @@ import os
 import sys
 import unittest
 from irods.access import iRODSAccess
-import irods.test.config as config
 import irods.test.helpers as helpers
-
 
 
 class TestAccess(unittest.TestCase):
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
         # Create test collection
-        self.coll_path = '/{0}/home/{1}/test_dir'.format(
-            config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
 
     def tearDown(self):
@@ -31,8 +28,7 @@ class TestAccess(unittest.TestCase):
         filename = 'foo'
 
         # get current user info
-        user = self.sess.users.get(
-            config.IRODS_USER_USERNAME, config.IRODS_SERVER_ZONE)
+        user = self.sess.users.get(self.sess.username, self.sess.zone)
 
         # make object in test collection
         path = "{collection}/{filename}".format(**locals())
@@ -56,7 +52,7 @@ class TestAccess(unittest.TestCase):
 
         # check repr()
         self.assertEqual(
-            repr(acl), "<iRODSAccess {0} {1} {2} {3}>".format('own', path, user.name, user.zone))
+            repr(acl), "<iRODSAccess own {path} {name} {zone}>".format(path=path, **vars(user)))
 
         # remove object
         self.sess.data_objects.unlink(path)
@@ -67,8 +63,7 @@ class TestAccess(unittest.TestCase):
         filename = 'foo'
 
         # get current user info
-        user = self.sess.users.get(
-            config.IRODS_USER_USERNAME, config.IRODS_SERVER_ZONE)
+        user = self.sess.users.get(self.sess.username, self.sess.zone)
 
         # make object in test collection
         path = "{collection}/{filename}".format(**locals())
@@ -101,8 +96,7 @@ class TestAccess(unittest.TestCase):
         coll = self.coll
 
         # get current user info
-        user = self.sess.users.get(
-            config.IRODS_USER_USERNAME, config.IRODS_SERVER_ZONE)
+        user = self.sess.users.get(self.sess.username, self.sess.zone)
 
         # set permission to write
         acl1 = iRODSAccess('write', coll.path, user.name, user.zone)

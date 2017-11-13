@@ -24,7 +24,7 @@ class Pool(object):
             except KeyError:
                 conn = Connection(self, self.account)
             self.active.add(conn)
-        logger.debug('num active: %d' % len(self.active))
+        logger.debug('num active: {}'.format(len(self.active)))
         return conn
 
     def release_connection(self, conn, destroy=False):
@@ -35,4 +35,4 @@ class Pool(object):
                     self.idle.add(conn)
             elif conn in self.idle and destroy:
                 self.idle.remove(conn)
-        logger.debug('num idle: %d' % len(self.idle))
+        logger.debug('num idle: {}'.format(len(self.idle)))

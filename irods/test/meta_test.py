@@ -6,32 +6,29 @@ import sys
 import unittest
 from irods.meta import iRODSMeta
 from irods.models import DataObject, Collection
-import irods.test.config as config
 import irods.test.helpers as helpers
 from six.moves import range
 
 
 class TestMeta(unittest.TestCase):
-
     '''Suite of tests on metadata operations
     '''
-
-    # test data
-    coll_path = '/{0}/home/{1}/test_dir'.format(
-        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
-    obj_name = 'test1'
-    obj_path = '{0}/{1}'.format(coll_path, obj_name)
-
     # test metadata
     attr0, value0, unit0 = 'attr0', 'value0', 'unit0'
     attr1, value1, unit1 = 'attr1', 'value1', 'unit1'
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
+
+        # test data
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
+        self.obj_name = 'test1'
+        self.obj_path = '{coll_path}/{obj_name}'.format(**vars(self))
 
         # Create test collection and (empty) test object
         self.coll = self.sess.collections.create(self.coll_path)
         self.obj = self.sess.data_objects.create(self.obj_path)
+
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -39,21 +36,16 @@ class TestMeta(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+
     def test_get_obj_meta(self):
-        """
-        """
         # get object metadata
         meta = self.sess.metadata.get(DataObject, self.obj_path)
 
         # there should be no metadata at this point
         assert len(meta) == 0
 
-     # self.assertEqual(first, second, msg)
 
     def test_add_obj_meta(self):
-        """
-        """
-
         # add metadata to test object
         self.sess.metadata.add(DataObject, self.obj_path,
                                iRODSMeta(self.attr0, self.value0))
@@ -84,6 +76,7 @@ class TestMeta(unittest.TestCase):
         assert meta[2].name == attribute
         assert meta[2].value == value
 
+
     def test_add_obj_meta_empty(self):
         '''Should raise exception
         '''
@@ -93,10 +86,8 @@ class TestMeta(unittest.TestCase):
             self.sess.metadata.add(DataObject, self.obj_path,
                                    iRODSMeta('attr_with_empty_value', ''))
 
-    def test_copy_obj_meta(self):
-        """
-        """
 
+    def test_copy_obj_meta(self):
         # test destination object for copy
         dest_obj_path = self.coll_path + '/test2'
         self.sess.data_objects.create(dest_obj_path)
@@ -115,10 +106,8 @@ class TestMeta(unittest.TestCase):
         # check metadata
         assert dest_meta[0].name == self.attr0
 
-    def test_remove_obj_meta(self):
-        """
-        """
 
+    def test_remove_obj_meta(self):
         # add metadata to test object
         self.sess.metadata.add(DataObject, self.obj_path,
                                iRODSMeta(self.attr0, self.value0))
@@ -135,10 +124,8 @@ class TestMeta(unittest.TestCase):
         meta = self.sess.metadata.get(DataObject, self.obj_path)
         assert len(meta) == 0
 
-    def test_add_coll_meta(self):
-        """
-        """
 
+    def test_add_coll_meta(self):
         # add metadata to test collection
         self.sess.metadata.add(Collection, self.coll_path,
                                iRODSMeta(self.attr0, self.value0))
@@ -157,6 +144,7 @@ class TestMeta(unittest.TestCase):
         # check that metadata is gone
         meta = self.sess.metadata.get(Collection, self.coll_path)
         assert len(meta) == 0
+
 
     def test_meta_repr(self):
         # test obj
@@ -184,6 +172,7 @@ class TestMeta(unittest.TestCase):
 
         # remove test object
         obj.unlink(force=True)
+
 
     def test_irodsmetacollection_data_obj(self):
         '''

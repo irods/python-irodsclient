@@ -16,12 +16,12 @@ from irods.password_obfuscation import decode
 
 class iRODSSession(object):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, configure=True, **kwargs):
         self.pool = None
         self.numThreads = 0
 
-        if args or kwargs:
-            self.configure(*args, **kwargs)
+        if configure:
+            self.configure(**kwargs)
 
         self.collections = CollectionManager(self)
         self.data_objects = DataObjectManager(self)
@@ -45,17 +45,12 @@ class iRODSSession(object):
                 pass
             conn.release(True)
 
-    def configure(self, *args, **kwargs):
-        # try to load credentials from environment file
+    def _configure_account(self, **kwargs):
         try:
-            creds = self.get_irods_env(kwargs['irods_env_file'])
-            creds['password']=self.get_irods_auth(creds)
-            account = iRODSAccount(**creds)
+            env_file = kwargs['irods_env_file']
 
-        # no environment file in parameters
         except KeyError:
-
-            # for backwards compatibility
+            # For backwards compatibility
             for key in ['host', 'port', 'authentication_scheme']:
                 if key in kwargs:
                     kwargs['irods_{}'.format(key)] = kwargs.pop(key)
@@ -64,8 +59,34 @@ class iRODSSession(object):
                 if key in kwargs:
                     kwargs['irods_{}_name'.format(key)] = kwargs.pop(key)
 
-            account = iRODSAccount(*args, **kwargs)
+            return iRODSAccount(**kwargs)
 
+        # Get credentials from irods environment file
+        creds = self.get_irods_env(env_file)
+
+        # Get auth scheme
+        try:
+            auth_scheme = creds['irods_authentication_scheme']
+        except KeyError:
+            # default
+            auth_scheme = 'native'
+
+        if auth_scheme != 'native':
+            return iRODSAccount(**creds)
+
+        # Native auth, try to unscramble password
+        try:
+            creds['irods_authentication_uid'] = kwargs['irods_authentication_uid']
+        except KeyError:
+            pass
+
+        creds['password'] = self.get_irods_password(**creds)
+
+        return iRODSAccount(**creds)
+
+
+    def configure(self, **kwargs):
+        account = self._configure_account(**kwargs)
         self.pool = Pool(account)
 
     def query(self, *args):
@@ -104,16 +125,28 @@ class iRODSSession(object):
         self.pool.connection_timeout = seconds
 
     @staticmethod
+    def get_irods_password_file():
+        try:
+            return os.environ['IRODS_AUTHENTICATION_FILE']
+        except KeyError:
+            return os.path.expanduser('~/.irods/.irodsA')
+
+    @staticmethod
     def get_irods_env(env_file):
         with open(env_file, 'rt') as f:
             return json.load(f)
 
     @staticmethod
-    def get_irods_auth(env):
+    def get_irods_password(**kwargs):
         try:
-            irods_auth_file = env['irods_authentication_file']
+            irods_auth_file = kwargs['irods_authentication_file']
         except KeyError:
-            irods_auth_file = os.path.expanduser('~/.irods/.irodsA')
+            irods_auth_file = iRODSSession.get_irods_password_file()
+
+        try:
+            uid = kwargs['irods_authentication_uid']
+        except KeyError:
+            uid = None
 
         with open(irods_auth_file, 'r') as f:
-            return decode(f.read().rstrip('\n'))
+            return decode(f.read().rstrip('\n'), uid)

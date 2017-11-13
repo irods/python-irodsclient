@@ -7,32 +7,28 @@ import shutil
 import hashlib
 import base64
 import math
-import irods.test.config as config
+from pwd import getpwnam
 from irods.session import iRODSSession
 from irods.message import iRODSMessage
 from six.moves import range
 
 
-def make_session_from_config(**kwargs):
-    conf_map = {'host': 'IRODS_SERVER_HOST',
-                'port': 'IRODS_SERVER_PORT',
-                'zone': 'IRODS_SERVER_ZONE',
-                'user': 'IRODS_USER_USERNAME',
-                'authentication_scheme': 'IRODS_AUTHENTICATION_SCHEME',
-                'password': 'IRODS_USER_PASSWORD',
-                'server_dn': 'IRODS_SERVER_DN'}
-    for key in conf_map.keys():
+def make_session(**kwargs):
+    try:
+        env_file = kwargs['irods_env_file']
+    except KeyError:
         try:
-            kwargs[key] = vars(config)[conf_map[key]]
+            env_file = os.environ['IRODS_ENVIRONMENT_FILE']
         except KeyError:
-            pass
+            env_file = os.path.expanduser('~/.irods/irods_environment.json')
 
-    if config.IRODS_SERVER_VERSION >= (4, 0, 0):
-        neg_params = {'irods_client_server_negotiation': 'request_server_negotiation',
-                      'irods_client_server_policy': 'CS_NEG_REFUSE'}
-        kwargs.update(neg_params)
+    try:
+        os.environ['IRODS_CI_TEST_RUN']
+        uid = getpwnam('irods').pw_uid
+    except KeyError:
+        uid = None
 
-    return iRODSSession(**kwargs)
+    return iRODSSession(irods_authentication_uid=uid, irods_env_file=env_file)
 
 
 def make_object(session, path, content=None, options=None):

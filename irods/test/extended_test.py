@@ -4,20 +4,17 @@ import os
 import sys
 import unittest
 from irods.models import Collection, DataObject
-import irods.test.config as config
 import irods.test.helpers as helpers
 
 
 class TestContinueQuery(unittest.TestCase):
-    # test data
-    coll_path = '/{0}/home/{1}/test_dir'.format(
-        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
-    obj_count = 2500
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
         # Create test collection
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
+        self.obj_count = 2500
         self.coll = helpers.make_test_collection(
             self.sess, self.coll_path, self.obj_count)
 
@@ -52,7 +49,7 @@ class TestContinueQuery(unittest.TestCase):
                 "/test" + str(counter).zfill(6) + ".txt"
 
             # what we see
-            result_path = "{0}/{1}".format(
+            result_path = "{}/{}".format(
                 result[Collection.name], result[DataObject.name])
 
             # compare

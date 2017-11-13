@@ -72,7 +72,11 @@ class iRODSDataObject(object):
         return self._meta
 
     def open(self, mode='r', options=None):
-        return self.manager.open(self.path, mode, options)
+        kvp = {kw.DEST_RESC_NAME_KW: self.replicas[0].resource_name}
+        if options:
+            kvp.update(options)
+
+        return self.manager.open(self.path, mode, kvp)
 
     def unlink(self, force=False, options=None):
         self.manager.unlink(self.path, force, options)

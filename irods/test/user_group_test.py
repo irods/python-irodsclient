@@ -11,7 +11,7 @@ from six.moves import range
 class TestUserGroup(unittest.TestCase):
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
         # get server version
         with self.sess.pool.get_connection() as conn:

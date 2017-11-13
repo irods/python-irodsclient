@@ -9,7 +9,7 @@ import irods.test.helpers as helpers
 class TestPool(unittest.TestCase):
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
 
     def tearDown(self):
         '''Close connections

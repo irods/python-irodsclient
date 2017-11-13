@@ -9,23 +9,23 @@ from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CA
 from irods.query import new_icat_keys, SpecificQuery
 from irods.column import Like, Between
 from irods import MAX_SQL_ROWS
-import irods.test.config as config
 import irods.test.helpers as helpers
 
 
 class TestQuery(unittest.TestCase):
-    # test data
-    coll_path = '/{0}/home/{1}/test_dir'.format(
-        config.IRODS_SERVER_ZONE, config.IRODS_USER_USERNAME)
-    obj_name = 'test1'
-    obj_path = '{0}/{1}'.format(coll_path, obj_name)
 
     def setUp(self):
-        self.sess = helpers.make_session_from_config()
+        self.sess = helpers.make_session()
+
+        # test data
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
+        self.obj_name = 'test1'
+        self.obj_path = '{coll_path}/{obj_name}'.format(**vars(self))
 
         # Create test collection and (empty) test object
         self.coll = self.sess.collections.create(self.coll_path)
         self.obj = self.sess.data_objects.create(self.obj_path)
+
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -33,10 +33,12 @@ class TestQuery(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+
     def test_collections_query(self):
         # collection query test
         result = self.sess.query(Collection.id, Collection.name).all()
         assert result.has_value(self.coll_path)
+
 
     def test_files_query(self):
         # file query test
@@ -49,6 +51,7 @@ class TestQuery(unittest.TestCase):
 
         result = query.all()
         assert result.has_value(self.obj_name)
+
 
     def test_users_query(self):
         '''Lists all users and look for known usernames
@@ -63,6 +66,7 @@ class TestQuery(unittest.TestCase):
         # assertions
         self.assertIn('rods', users)
         self.assertIn('public', users)
+
 
     def test_resources_query(self):
         '''Lists resources
@@ -79,6 +83,7 @@ class TestQuery(unittest.TestCase):
         # assertions
         self.assertIn('demoResc', resources)
 
+
     def test_query_first(self):
         # with no result
         results = self.sess.query(User.name).filter(User.name == 'boo').first()
@@ -88,14 +93,17 @@ class TestQuery(unittest.TestCase):
         results = self.sess.query(User.name).first()
         self.assertEqual(len(results), 1)
 
+
     def test_query_one(self):
         # with multiple results
         with self.assertRaises(MultipleResultsFound):
             results = self.sess.query(User.name).one()
 
+
     def test_query_wrong_type(self):
         with self.assertRaises(TypeError):
             query = self.sess.query(str())
+
 
     def test_query_order_by(self):
         # query for user names
@@ -112,6 +120,7 @@ class TestQuery(unittest.TestCase):
         # check that list was already sorted
         user_names.sort()
         self.assertEqual(user_names, original)
+
 
     def test_query_order_by_desc(self):
         # query for user names
@@ -130,10 +139,12 @@ class TestQuery(unittest.TestCase):
         user_names.sort(reverse=True)
         self.assertEqual(user_names, original)
 
+
     def test_query_order_by_invalid_param(self):
         with self.assertRaises(ValueError):
             results = self.sess.query(User.name).order_by(
                 User.name, order='moo').all()
+
 
     def test_query_strip(self):
         query = self.sess.query(Resource)
@@ -143,6 +154,7 @@ class TestQuery(unittest.TestCase):
         for key in new_icat_keys:
             self.assertNotIn(key, query.columns)
 
+
     def test_query_with_like_condition(self):
         '''Equivalent to:
         iquest "select RESC_NAME where RESC_NAME like 'dem%'"
@@ -150,6 +162,7 @@ class TestQuery(unittest.TestCase):
 
         rows = self.sess.query(Resource).filter(Like(Resource.name, 'dem%')).get_results()
         self.assertIn('demoResc', [row[Resource.name] for row in rows])
+
 
     def test_query_with_between_condition(self):
         '''Equivalent to:
@@ -172,7 +185,7 @@ class TestSpecificQuery(unittest.TestCase):
 
     def setUp(self):
         super(TestSpecificQuery, self).setUp()
-        self.session = helpers.make_session_from_config()
+        self.session = helpers.make_session()
 
 
     def tearDown(self):

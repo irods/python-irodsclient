@@ -13,9 +13,18 @@ def main(output_root_directory):
         gather_xml_reports(output_root_directory)
 
 def run_tests():
+    # prerequisites
     install_testing_dependencies()
+    irods_python_ci_utilities.subprocess_get_output(['sudo', 'cp', '-r', '/var/lib/irods/.irods', '/home/irodsbuild/'], check_rc=True)
+    irods_python_ci_utilities.subprocess_get_output(['sudo', 'chown', '-R', 'irodsbuild', '/home/irodsbuild/.irods'], check_rc=True)
     irods_python_ci_utilities.subprocess_get_output(['sudo', 'chmod', '-R', '777', '/etc/irods'], check_rc=True)
-    irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'run', 'irods/test/runner.py'])
+
+    # test run
+    test_env = os.environ.copy()
+    test_env['IRODS_CI_TEST_RUN'] = '1'
+    irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'run', 'irods/test/runner.py'], env=test_env)
+
+    # reports
     irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'report'], check_rc=True)
     irods_python_ci_utilities.subprocess_get_output(['python-coverage', 'xml'], check_rc=True)
 
