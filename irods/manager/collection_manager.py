@@ -33,10 +33,7 @@ class CollectionManager(Manager):
         return self.get(path)
 
 
-    def remove(self, path, recurse=True, force=False, options=None):
-        if options is None:
-            options = {}
-
+    def remove(self, path, recurse=True, force=False, **options):
         if recurse:
             options[kw.RECURSIVE_OPR__KW] = ''
         if force:
@@ -46,9 +43,6 @@ class CollectionManager(Manager):
             oprType = options[kw.OPR_TYPE_KW]
         except KeyError:
             oprType = 0
-
-        # sanitize options before packing
-        options = {str(key): str(value) for key, value in options.items()}
 
         message_body = CollectionRequest(
             collName=path,
@@ -67,14 +61,11 @@ class CollectionManager(Manager):
                 response = conn.recv()
 
 
-    def unregister(self, path, options=None):
-        if options is None:
-            options = {}
-
+    def unregister(self, path, **options):
         # https://github.com/irods/irods/blob/4.2.1/lib/api/include/dataObjInpOut.h#L190
         options[kw.OPR_TYPE_KW] = 26
 
-        self.remove(path, options=options)
+        self.remove(path, **options)
 
 
     def exists(self, path):
@@ -126,11 +117,10 @@ class CollectionManager(Manager):
             response = conn.recv()
 
 
-    def register(self, dir_path, coll_path, options=None):
-        if options is None:
-            options = {}
+    def register(self, dir_path, coll_path, **options):
         options[kw.FILE_PATH_KW] = dir_path
         options[kw.COLLECTION_KW] = ''
+
         message_body = FileOpenRequest(
             objPath=coll_path,
             createMode=0,

@@ -31,7 +31,7 @@ def make_session(**kwargs):
     return iRODSSession(irods_authentication_uid=uid, irods_env_file=env_file)
 
 
-def make_object(session, path, content=None, options=None):
+def make_object(session, path, content=None, **options):
     if content is None:
         content = u'blah'
 
@@ -39,7 +39,7 @@ def make_object(session, path, content=None, options=None):
 
     # 2 step open-create necessary for iRODS 4.1.4 or older
     obj = session.data_objects.create(path)
-    with obj.open('w', options) as obj_desc:
+    with obj.open('w', **options) as obj_desc:
         obj_desc.write(content)
 
     # refresh object after write

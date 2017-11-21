@@ -143,13 +143,14 @@ class TestDataObjOps(unittest.TestCase):
         dest_file_name = 'bar'
 
         # make object in test collection
+        options={kw.REG_CHKSUM_KW: ''}
         src_path = "{collection}/{src_file_name}".format(**locals())
-        src_obj = helpers.make_object(self.sess, src_path, options={kw.REG_CHKSUM_KW: ''})
+        src_obj = helpers.make_object(self.sess, src_path, **options)
 
         # copy object
         options = {kw.VERIFY_CHKSUM_KW: ''}
         dest_path = "{collection}/{dest_file_name}".format(**locals())
-        self.sess.data_objects.copy(src_path, dest_path, options)
+        self.sess.data_objects.copy(src_path, dest_path, **options)
 
         # compare checksums
         dest_obj = self.sess.data_objects.get(dest_path)
@@ -167,12 +168,13 @@ class TestDataObjOps(unittest.TestCase):
 
         # make object in test collection
         path = "{collection}/{file_name}".format(**locals())
-        src_obj = helpers.make_object(self.sess, path, options={kw.REG_CHKSUM_KW: ''})
+        options={kw.REG_CHKSUM_KW: ''}
+        src_obj = helpers.make_object(self.sess, path, **options)
 
         # make new collection and copy object into it
         options = {kw.VERIFY_CHKSUM_KW: ''}
         helpers.make_collection(self.sess, dest_coll_path)
-        self.sess.data_objects.copy(path, dest_coll_path, options)
+        self.sess.data_objects.copy(path, dest_coll_path, **options)
 
         # compare checksums
         dest_obj = self.sess.data_objects.get(dest_obj_path)
@@ -298,7 +300,7 @@ class TestDataObjOps(unittest.TestCase):
 
                 # make object in test collection
                 options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
-                obj = helpers.make_object(self.sess, obj_path, content=contents, options=options)
+                obj = helpers.make_object(self.sess, obj_path, content=contents, **options)
 
                 # verify object's checksum
                 self.assertEqual(
@@ -414,7 +416,7 @@ class TestDataObjOps(unittest.TestCase):
         options = {kw.REG_CHKSUM_KW: ''}
 
         # write contents of file to object
-        with open(file_path, 'rb') as f, objs.open(obj_path, 'w', options) as o:
+        with open(file_path, 'rb') as f, objs.open(obj_path, 'w', **options) as o:
             for chunk in chunks(f):
                 o.write(chunk)
 
@@ -511,9 +513,8 @@ class TestDataObjOps(unittest.TestCase):
 
         # now trim odd-numbered replicas
         for i in [1, 3, 5]:
-            options = {}
-            options[kw.REPL_NUM_KW] = str(i)
-            obj.unlink(options=options)
+            options = {kw.REPL_NUM_KW: str(i)}
+            obj.unlink(**options)
 
         # refresh object
         obj = session.data_objects.get(obj_path)
@@ -720,7 +721,7 @@ class TestDataObjOps(unittest.TestCase):
 
         # this time with force flag
         options = {kw.FORCE_FLAG_KW: ''}
-        self.sess.data_objects.get(obj_path, test_dir, options=options)
+        self.sess.data_objects.get(obj_path, test_dir, **options)
 
         # delete file
         os.remove(test_file)
@@ -774,7 +775,7 @@ class TestDataObjOps(unittest.TestCase):
 
         # register file in test collection
         options = {kw.VERIFY_CHKSUM_KW: ''}
-        self.sess.data_objects.register(test_file, obj_path, options=options)
+        self.sess.data_objects.register(test_file, obj_path, **options)
 
         # confirm object presence and verify checksum
         obj = self.sess.data_objects.get(obj_path)

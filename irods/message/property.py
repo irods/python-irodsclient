@@ -77,9 +77,9 @@ class StringProperty(MessageProperty):
         super(StringProperty, self).__init__()
 
     def format(self, value):
-        if six.PY3 and isinstance(value, bytes):
-            value = value.decode()
-        return value
+        if six.PY2 and isinstance(value, unicode):
+            return value
+        return str(value)
 
     def parse(self, value):
         return value

@@ -454,7 +454,7 @@ class Connection(object):
         offset = response.get_main_message(FileSeekResponse).offset
         return offset
 
-    def close_file(self, desc, options=None):
+    def close_file(self, desc, **options):
         message_body = OpenedDataObjRequest(
             l1descInx=desc,
             len=0,

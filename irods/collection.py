@@ -44,11 +44,11 @@ class iRODSCollection(object):
             for _, replicas in grouped
         ]
 
-    def remove(self, recurse=True, force=False, options=None):
-        self.manager.remove(self.path, recurse, force, options)
+    def remove(self, recurse=True, force=False, **options):
+        self.manager.remove(self.path, recurse, force, **options)
 
-    def unregister(self, options=None):
-        self.manager.unregister(self.path, options)
+    def unregister(self, **options):
+        self.manager.unregister(self.path, **options)
 
     def move(self, path):
         self.manager.move(self.path, path)

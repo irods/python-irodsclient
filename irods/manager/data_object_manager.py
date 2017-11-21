@@ -21,30 +21,27 @@ WRITE_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
 
 class DataObjectManager(Manager):
 
-    def _download(self, obj, local_path, options=None):
+    def _download(self, obj, local_path, **options):
         if os.path.isdir(local_path):
             file = os.path.join(local_path, irods_basename(obj))
         else:
             file = local_path
 
         # Check for force flag if file exists
-        if os.path.exists(file):
-            try:
-                options[kw.FORCE_FLAG_KW]
-            except (TypeError, KeyError):
-                raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
+        if os.path.exists(file) and kw.FORCE_FLAG_KW not in options:
+            raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
 
-        with open(file, 'wb') as f, self.open(obj, 'r', options) as o:
+        with open(file, 'wb') as f, self.open(obj, 'r', **options) as o:
             for chunk in chunks(o, READ_BUFFER_SIZE):
                 f.write(chunk)
 
 
-    def get(self, path, file=None, options=None):
+    def get(self, path, file=None, **options):
         parent = self.sess.collections.get(irods_dirname(path))
 
         # TODO: optimize
         if file:
-            self._download(path, file, options)
+            self._download(path, file, **options)
 
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == irods_basename(path))\
@@ -55,34 +52,33 @@ class DataObjectManager(Manager):
         return iRODSDataObject(self, parent, results)
 
 
-    def put(self, file, irods_path, options=None):
+    def put(self, file, irods_path, **options):
         if irods_path.endswith('/'):
             obj = irods_path + os.path.basename(file)
         else:
             obj = irods_path
 
         # Set operation type to trigger acPostProcForPut
-        open_options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
-        if options:
-            open_options.update(options)
+        if kw.OPR_TYPE_KW not in options:
+            options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
-        with open(file, 'rb') as f, self.open(obj, 'w', open_options) as o:
+        with open(file, 'rb') as f, self.open(obj, 'w', **options) as o:
             for chunk in chunks(f, WRITE_BUFFER_SIZE):
                 o.write(chunk)
 
 
-    def create(self, path, resource=None, options=None):
-        try:
-            kvp = {kw.DEST_RESC_NAME_KW: self.sess.default_resource}
-        except AttributeError:
-            kvp = {}
-
-        kvp[kw.DATA_TYPE_KW] = 'generic'
+    def create(self, path, resource=None, **options):
+        options[kw.DATA_TYPE_KW] = 'generic'
 
         if resource:
-            kvp[kw.DEST_RESC_NAME_KW] = resource
-        if options:
-            kvp.update(options)
+            options[kw.DEST_RESC_NAME_KW] = resource
+        else:
+            # Use client-side default resource if available
+            try:
+                options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
+            except AttributeError:
+                pass
+
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0o644,
@@ -91,7 +87,7 @@ class DataObjectManager(Manager):
             dataSize=-1,
             numThreads=self.sess.numThreads,
             oprType=0,
-            KeyValPair_PI=StringStringMap(kvp),
+            KeyValPair_PI=StringStringMap(options),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_CREATE_AN'])
@@ -105,11 +101,13 @@ class DataObjectManager(Manager):
         return self.get(path)
 
 
-    def open(self, path, mode, options=None):
-        try:
-            kvp = {kw.DEST_RESC_NAME_KW: self.sess.default_resource}
-        except AttributeError:
-            kvp = {}
+    def open(self, path, mode, **options):
+        if kw.DEST_RESC_NAME_KW not in options:
+            # Use client-side default resource if available
+            try:
+                options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
+            except AttributeError:
+                pass
 
         flags, seek_to_end = {
             'r': (os.O_RDONLY, False),
@@ -121,16 +119,10 @@ class DataObjectManager(Manager):
         }[mode]
         # TODO: Use seek_to_end
 
-        if options:
-            kvp.update(options)
-
         try:
-            oprType = kvp[kw.OPR_TYPE_KW]
+            oprType = options[kw.OPR_TYPE_KW]
         except KeyError:
             oprType = 0
-
-        # sanitize options before packing
-        kvp = {str(key): str(value) for key, value in kvp.items()}
 
         message_body = FileOpenRequest(
             objPath=path,
@@ -140,7 +132,7 @@ class DataObjectManager(Manager):
             dataSize=-1,
             numThreads=self.sess.numThreads,
             oprType=oprType,
-            KeyValPair_PI=StringStringMap(kvp),
+            KeyValPair_PI=StringStringMap(options),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_OPEN_AN'])
@@ -149,12 +141,10 @@ class DataObjectManager(Manager):
         conn.send(message)
         desc = conn.recv().int_info
 
-        return io.BufferedRandom(iRODSDataObjectFileRaw(conn, desc, kvp))
+        return io.BufferedRandom(iRODSDataObjectFileRaw(conn, desc, **options))
 
 
-    def unlink(self, path, force=False, options=None):
-        if options is None:
-            options = {}
+    def unlink(self, path, force=False, **options):
         if force:
             options[kw.FORCE_FLAG_KW] = ''
 
@@ -162,9 +152,6 @@ class DataObjectManager(Manager):
             oprType = options[kw.OPR_TYPE_KW]
         except KeyError:
             oprType = 0
-
-        # sanitize options before packing
-        options = {str(key): str(value) for key, value in options.items()}
 
         message_body = FileOpenRequest(
             objPath=path,
@@ -184,14 +171,11 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def unregister(self, path, options=None):
-        if options is None:
-            options = {}
-
+    def unregister(self, path, **options):
         # https://github.com/irods/irods/blob/4.2.1/lib/api/include/dataObjInpOut.h#L190
         options[kw.OPR_TYPE_KW] = 26
 
-        self.unlink(path, options=options)
+        self.unlink(path, **options)
 
 
     def exists(self, path):
@@ -243,10 +227,7 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def copy(self, src_path, dest_path, options=None):
-        if options is None:
-            options = {}
-
+    def copy(self, src_path, dest_path, **options):
         # check if dest is a collection
         # if so append filename to it
         if self.sess.collections.exists(dest_path):
@@ -287,8 +268,7 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def truncate(self, path, size):
-        options = {}
+    def truncate(self, path, size, **options):
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -307,9 +287,7 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def replicate(self, path, options=None):
-        if options is None:
-            options = {}
+    def replicate(self, path, **options):
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -328,10 +306,9 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def register(self, file_path, obj_path, options=None):
-        if options is None:
-            options = {}
+    def register(self, file_path, obj_path, **options):
         options[kw.FILE_PATH_KW] = file_path
+
         message_body = FileOpenRequest(
             objPath=obj_path,
             createMode=0,

@@ -71,38 +71,36 @@ class iRODSDataObject(object):
                 self.manager.sess.metadata, DataObject, self.path)
         return self._meta
 
-    def open(self, mode='r', options=None):
-        kvp = {kw.DEST_RESC_NAME_KW: self.replicas[0].resource_name}
-        if options:
-            kvp.update(options)
+    def open(self, mode='r', **options):
+        if kw.DEST_RESC_NAME_KW not in options:
+            options[kw.DEST_RESC_NAME_KW] = self.replicas[0].resource_name
 
-        return self.manager.open(self.path, mode, kvp)
+        return self.manager.open(self.path, mode, **options)
 
-    def unlink(self, force=False, options=None):
-        self.manager.unlink(self.path, force, options)
+    def unlink(self, force=False, **options):
+        self.manager.unlink(self.path, force, **options)
 
-    def unregister(self, options=None):
-        self.manager.unregister(self.path, options)
+    def unregister(self, **options):
+        self.manager.unregister(self.path, **options)
 
     def truncate(self, size):
         self.manager.truncate(self.path, size)
 
-    def replicate(self, resource):
-        options = {}
+    def replicate(self, resource=None, **options):
         if resource:
             options[kw.DEST_RESC_NAME_KW] = resource
-        self.manager.replicate(self.path, options)
+        self.manager.replicate(self.path, **options)
 
 
 class iRODSDataObjectFileRaw(io.RawIOBase):
 
-    def __init__(self, conn, descriptor, options):
+    def __init__(self, conn, descriptor, **options):
         self.conn = conn
         self.desc = descriptor
         self.options = options
 
     def close(self):
-        self.conn.close_file(self.desc, self.options)
+        self.conn.close_file(self.desc, **self.options)
         self.conn.release()
         super(iRODSDataObjectFileRaw, self).close()
         return None

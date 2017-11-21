@@ -270,7 +270,7 @@ class TestCollection(unittest.TestCase):
 
         # register test dir
         options = {kw.VERIFY_CHKSUM_KW: ''}
-        self.sess.collections.register(dir_path, coll_path, options=options)
+        self.sess.collections.register(dir_path, coll_path, **options)
 
         # confirm collection presence
         coll = self.sess.collections.get(coll_path)
