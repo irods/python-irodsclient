@@ -1,21 +1,22 @@
 from setuptools import setup, find_packages
-try:
-    from pypandoc import convert
-    read_md = lambda f: convert(f, 'rst')
-except ImportError:
-    print("warning: pypandoc module not found, could not convert Markdown to RST")
-    read_md = lambda f: open(f, 'r').read()
+
+
+# Get package version
+version = {}
+here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(here, 'irods/version.py')) as f:
+    exec(f.read(), version)
 
 
 setup(name='python-irodsclient',
-      version='0.7.0a0',
+      version=version['__version__'],
       author='iRODS Consortium',
       author_email='support@irods.org',
       description='A python API for iRODS',
       license='BSD',
       url='https://github.com/irods/python-irodsclient',
       keywords='irods',
-      long_description=read_md('README.md'),
+      long_description='README.rst',
       classifiers=[
                    'License :: OSI Approved :: BSD License',
                    'Development Status :: 4 - Beta',

@@ -2,15 +2,14 @@ import struct
 import logging
 import socket
 import xml.etree.ElementTree as ET
-
-
-from irods import IRODS_VERSION
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty,
                                     IntegerProperty, LongProperty, ArrayProperty,
                                     SubmessageProperty)
 
 logger = logging.getLogger(__name__)
+
+IRODS_VERSION = (4, 3, 0, 'd')
 
 try:
     # Python 2
@@ -153,9 +152,8 @@ class StartupPack(Message):
             self.connectCnt = 0
             self.proxyUser, self.proxyRcatZone = proxy_user
             self.clientUser, self.clientRcatZone = client_user
-            self.relVersion = "rods{major}.{minor}.{patchlevel}".format(
-                **IRODS_VERSION)
-            self.apiVersion = "{api}".format(**IRODS_VERSION)
+            self.relVersion = "rods{}.{}.{}".format(*IRODS_VERSION)
+            self.apiVersion = "{3}".format(*IRODS_VERSION)
             self.option = ""
 
     irodsProt = IntegerProperty()
