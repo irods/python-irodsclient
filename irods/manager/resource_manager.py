@@ -34,9 +34,7 @@ class ResourceManager(Manager):
     def create(self, name, resource_type, host="EMPTY_RESC_HOST", path="EMPTY_RESC_PATH", context="", zone="", resource_class=""):
         with self.sess.pool.get_connection() as conn:
             # check server version
-            server_version = tuple(int(token)
-                                   for token in conn.server_version.replace('rods', '').split('.'))
-            if server_version < (4, 0, 0):
+            if conn.server_version < (4, 0, 0):
                 # make resource, iRODS 3 style
                 message_body = GeneralAdminRequest(
                     "add",
@@ -114,9 +112,7 @@ class ResourceManager(Manager):
     def add_child(self, parent, child, context=""):
         with self.sess.pool.get_connection() as conn:
             # check server version
-            server_version = tuple(int(token)
-                                   for token in conn.server_version.replace('rods', '').split('.'))
-            if server_version < (4, 0, 0):
+            if conn.server_version < (4, 0, 0):
                 # No resource hierarchies before iRODS 4
                 raise OperationNotSupported
 
@@ -141,9 +137,7 @@ class ResourceManager(Manager):
     def remove_child(self, parent, child):
         with self.sess.pool.get_connection() as conn:
             # check server version
-            server_version = tuple(int(token)
-                                   for token in conn.server_version.replace('rods', '').split('.'))
-            if server_version < (4, 0, 0):
+            if conn.server_version < (4, 0, 0):
                 # No resource hierarchies before iRODS 4
                 raise OperationNotSupported
 

@@ -13,11 +13,6 @@ class TestUserGroup(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session()
 
-        # get server version
-        with self.sess.pool.get_connection() as conn:
-            self.server_version = tuple(int(token)
-                                        for token in conn.server_version.replace('rods', '').split('.'))
-
     def tearDown(self):
         '''Close connections
         '''
@@ -93,7 +88,7 @@ class TestUserGroup(unittest.TestCase):
 
     def test_user_dn(self):
         # https://github.com/irods/irods/issues/3620
-        if self.server_version == (4, 2, 1):
+        if self.sess.server_version == (4, 2, 1):
             self.skipTest('Broken in 4.2.1')
 
         user_name = "testuser"

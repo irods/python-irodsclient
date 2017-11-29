@@ -171,9 +171,7 @@ class Query(object):
     def execute(self):
         with self.sess.pool.get_connection() as conn:
             # check server version
-            server_version = tuple(int(token)
-                                   for token in conn.server_version.replace('rods', '').split('.'))
-            if server_version < (4, 0, 0):
+            if conn.server_version < (4, 0, 0):
                 self._strip()
 
             message_body = self._message()

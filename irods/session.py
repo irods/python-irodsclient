@@ -50,7 +50,7 @@ class iRODSSession(object):
             env_file = kwargs['irods_env_file']
 
         except KeyError:
-            # For backwards compatibility
+            # For backward compatibility
             for key in ['host', 'port', 'authentication_scheme']:
                 if key in kwargs:
                     kwargs['irods_{}'.format(key)] = kwargs.pop(key)
@@ -107,6 +107,17 @@ class iRODSSession(object):
     @property
     def port(self):
         return self.pool.account.port
+
+    @property
+    def server_version(self):
+        try:
+            conn = next(iter(self.pool.active))
+            return conn.server_version
+        except StopIteration:
+            conn = self.pool.get_connection()
+            version = conn.server_version
+            conn.release()
+            return version
 
     @property
     def default_resource(self):

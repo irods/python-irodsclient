@@ -22,11 +22,6 @@ class TestDataObjOps(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session()
 
-        # get server version
-        with self.sess.pool.get_connection() as conn:
-            self.server_version = tuple(int(token)
-                                        for token in conn.server_version.replace('rods', '').split('.'))
-
         # Create test collection
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
@@ -260,7 +255,7 @@ class TestDataObjOps(unittest.TestCase):
             self.skipTest('Requires access to server-side file(s)')
 
         # skip if server is older than 4.2
-        if self.server_version < (4, 2, 0):
+        if self.sess.server_version < (4, 2, 0):
             self.skipTest('Expects iRODS 4.2 server-side configuration')
 
         # server config
@@ -324,7 +319,7 @@ class TestDataObjOps(unittest.TestCase):
             self.skipTest('Requires access to server-side file(s)')
 
         # skip if server is older than 4.2
-        if self.server_version < (4, 2, 0):
+        if self.sess.server_version < (4, 2, 0):
             self.skipTest('Expects iRODS 4.2 server-side configuration')
 
         # server config
@@ -395,7 +390,7 @@ class TestDataObjOps(unittest.TestCase):
         '''
 
         # skip if server is 4.1.4 or older
-        if self.server_version <= (4, 1, 4):
+        if self.sess.server_version <= (4, 1, 4):
             self.skipTest('Not supported')
 
         # test data
@@ -432,7 +427,7 @@ class TestDataObjOps(unittest.TestCase):
     def test_obj_replicate(self):
         # test data
         resc_name = 'temporary_test_resource'
-        if self.server_version < (4, 0, 0):
+        if self.sess.server_version < (4, 0, 0):
             resc_type = 'unix file system'
             resc_class = 'cache'
         else:
@@ -470,7 +465,7 @@ class TestDataObjOps(unittest.TestCase):
 
 
     def test_replica_number(self):
-        if self.server_version < (4, 0, 0):
+        if self.sess.server_version < (4, 0, 0):
             self.skipTest('For iRODS 4+')
 
         session = self.sess
@@ -539,7 +534,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_obj_put_get(self):
         # Can't do one step open/create with older servers
-        if self.server_version <= (4, 1, 4):
+        if self.sess.server_version <= (4, 1, 4):
             self.skipTest('For iRODS 4.1.5 and newer')
 
         # test vars
@@ -573,7 +568,7 @@ class TestDataObjOps(unittest.TestCase):
 
 
     def test_obj_create_to_default_resource(self):
-        if self.server_version < (4, 0, 0):
+        if self.sess.server_version < (4, 0, 0):
             self.skipTest('For iRODS 4+')
 
         # make another UFS resource
@@ -606,7 +601,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_obj_put_to_default_resource(self):
         # Can't do one step open/create with older servers
-        if self.server_version <= (4, 1, 4):
+        if self.sess.server_version <= (4, 1, 4):
             self.skipTest('For iRODS 4.1.5 and newer')
 
         # make another UFS resource
@@ -645,7 +640,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_obj_put_to_default_resource_from_env_file(self):
         # Can't do one step open/create with older servers
-        if self.server_version <= (4, 1, 4):
+        if self.sess.server_version <= (4, 1, 4):
             self.skipTest('For iRODS 4.1.5 and newer')
 
         # make another UFS resource
@@ -698,7 +693,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_force_get(self):
         # Can't do one step open/create with older servers
-        if self.server_version <= (4, 1, 4):
+        if self.sess.server_version <= (4, 1, 4):
             self.skipTest('For iRODS 4.1.5 and newer')
 
         # test vars

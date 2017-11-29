@@ -23,11 +23,6 @@ class TestAdmin(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session()
 
-        # get server version
-        with self.sess.pool.get_connection() as conn:
-            self.server_version = tuple(int(token)
-                                        for token in conn.server_version.replace('rods', '').split('.'))
-
 
     def tearDown(self):
         '''Close connections
@@ -129,7 +124,7 @@ class TestAdmin(unittest.TestCase):
 
 
     def test_make_compound_resource(self):
-        if self.server_version < (4, 0, 0):
+        if self.sess.server_version < (4, 0, 0):
             self.skipTest('For iRODS 4+')
 
         session = self.sess
@@ -186,7 +181,7 @@ class TestAdmin(unittest.TestCase):
 
 
     def test_resource_context_string(self):
-        if self.server_version < (4, 0, 0):
+        if self.sess.server_version < (4, 0, 0):
             self.skipTest('For iRODS 4+')
 
         session = self.sess
@@ -220,7 +215,7 @@ class TestAdmin(unittest.TestCase):
     def test_make_ufs_resource(self):
         # test data
         resc_name = 'temporary_test_resource'
-        if self.server_version < (4, 0, 0):
+        if self.sess.server_version < (4, 0, 0):
             resc_type = 'unix file system'
             resc_class = 'cache'
         else:

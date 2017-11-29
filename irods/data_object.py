@@ -49,7 +49,8 @@ class iRODSDataObject(object):
                         setattr(self, attr, results[0][value])
                     except KeyError:
                         # backward compatibility with pre iRODS 4
-                        logger.exception('Unable to set data object attribute')
+                        if self.manager.sess.server_version >= (4, 0, 0):
+                            raise
             self.path = self.collection.path + '/' + self.name
             replicas = sorted(
                 results, key=lambda r: r[DataObject.replica_number])

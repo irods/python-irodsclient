@@ -52,7 +52,7 @@ class Connection(object):
 
     @property
     def server_version(self):
-        return self._server_version.relVersion
+        return tuple(int(x) for x in self._server_version.relVersion.replace('rods', '').split('.'))
 
     @property
     def client_signature(self):

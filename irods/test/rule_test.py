@@ -20,11 +20,6 @@ class TestRule(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session()
 
-        # get server version
-        with self.sess.pool.get_connection() as conn:
-            self.server_version = tuple(int(token)
-                                        for token in conn.server_version.replace('rods', '').split('.'))
-
     def tearDown(self):
         # close connections
         self.sess.cleanup()
@@ -139,7 +134,7 @@ class TestRule(unittest.TestCase):
         '''
 
         # Wrong buffer length on older versions
-        if self.server_version < (4, 1, 7):
+        if self.sess.server_version < (4, 1, 7):
             self.skipTest('For iRODS 4.1.7 and newer')
 
         session = self.sess
