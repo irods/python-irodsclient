@@ -23,14 +23,17 @@ def irods_basename(path):
 
 class iRODSReplica(object):
 
-    def __init__(self, number, status, resource_name, path):
+    def __init__(self, number, status, resource_name, path, **kwargs):
         self.number = number
         self.status = status
         self.resource_name = resource_name
         self.path = path
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
 
     def __repr__(self):
-        return "<{0}.{1} {2}>".format(
+        return "<{}.{} {}>".format(
             self.__class__.__module__,
             self.__class__.__name__,
             self.resource_name
@@ -58,12 +61,13 @@ class iRODSDataObject(object):
                 r[DataObject.replica_number],
                 r[DataObject.replica_status],
                 r[DataObject.resource_name],
-                r[DataObject.path]
+                r[DataObject.path],
+                checksum=r[DataObject.checksum]
             ) for r in replicas]
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSDataObject {id} {name}>".format(id=self.id, name=self.name.encode('utf-8'))
+        return "<iRODSDataObject {id} {name}>".format(**vars(self))
 
     @property
     def metadata(self):

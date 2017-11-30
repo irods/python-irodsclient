@@ -66,6 +66,9 @@ class DataObjectManager(Manager):
             for chunk in chunks(f, WRITE_BUFFER_SIZE):
                 o.write(chunk)
 
+        if kw.ALL_KW in options:
+            self.replicate(obj, **options)
+
 
     def create(self, path, resource=None, **options):
         options[kw.DATA_TYPE_KW] = 'generic'
@@ -287,7 +290,10 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def replicate(self, path, **options):
+    def replicate(self, path, resource=None, **options):
+        if resource:
+            options[kw.DEST_RESC_NAME_KW] = resource
+
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,

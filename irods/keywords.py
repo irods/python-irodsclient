@@ -1,7 +1,7 @@
 '''From rodsKeyWdDef.hpp
 '''
 
-ALL_KW = "all"        # operation done on all replica #
+ALL_KW = "all"        # operation done on all replicas #
 COPIES_KW = "copies"    # the number of copies #
 EXEC_LOCALLY_KW = "execLocally"    # execute locally #
 FORCE_FLAG_KW = "forceFlag"    # force update #
