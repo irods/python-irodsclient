@@ -67,6 +67,7 @@ class DataObjectManager(Manager):
                 o.write(chunk)
 
         if kw.ALL_KW in options:
+            options[kw.UPDATE_REPL_KW] = ''
             self.replicate(obj, **options)
 
 
