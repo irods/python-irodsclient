@@ -5,8 +5,13 @@ import os
 # Get package version
 version = {}
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, 'irods/version.py')) as f:
-    exec(f.read(), version)
+with open(os.path.join(here, 'irods/version.py')) as file:
+    exec(file.read(), version)
+
+
+# Get description
+with open('README.rst') as file:
+    long_description = file.read()
 
 
 setup(name='python-irodsclient',
@@ -14,10 +19,10 @@ setup(name='python-irodsclient',
       author='iRODS Consortium',
       author_email='support@irods.org',
       description='A python API for iRODS',
+      long_description=long_description,
       license='BSD',
       url='https://github.com/irods/python-irodsclient',
       keywords='irods',
-      long_description='README.rst',
       classifiers=[
                    'License :: OSI Approved :: BSD License',
                    'Development Status :: 4 - Beta',
