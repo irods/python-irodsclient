@@ -34,7 +34,7 @@ class iRODSCollection(object):
     @property
     def data_objects(self):
         query = self.manager.sess.query(DataObject)\
-            .filter(DataObject.collection_id == self.id)
+            .filter(Collection.name == self.path)
         results = query.get_results()
         grouped = itertools.groupby(
             results, operator.itemgetter(DataObject.id))
