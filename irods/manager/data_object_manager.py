@@ -116,8 +116,8 @@ class DataObjectManager(Manager):
         flags, seek_to_end = {
             'r': (os.O_RDONLY, False),
             'r+': (os.O_RDWR, False),
-            'w': (os.O_WRONLY | os.O_CREAT, False),
-            'w+': (os.O_RDWR | os.O_CREAT, False),
+            'w': (os.O_WRONLY | os.O_CREAT | os.O_TRUNC, False),
+            'w+': (os.O_RDWR | os.O_CREAT | os.O_TRUNC, False),
             'a': (os.O_WRONLY | os.O_CREAT, True),
             'a+': (os.O_RDWR | os.O_CREAT, True),
         }[mode]

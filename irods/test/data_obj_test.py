@@ -547,7 +547,7 @@ class TestDataObjOps(unittest.TestCase):
         obj_path = '/{zone}/home/{username}/{filename}'.format(**locals())
 
         # make test file
-        obj_content = u'foo'
+        obj_content = u'foobar'
         checksum = base64.b64encode(hashlib.sha256(obj_content.encode('utf-8')).digest()).decode()
         with open(test_file, 'w') as f:
             f.write(obj_content)
