@@ -491,12 +491,20 @@ class TestDataObjOps(unittest.TestCase):
             # add child to replication resource
             session.resources.add_child(replication_resource.name, resource_name)
 
-        # create object on replication resource
-        obj = session.data_objects.create(obj_path, replication_resource.name)
+        # make test object on replication resource
+        if self.sess.server_version == (4, 2, 2):
+            # skip create
+            options = {kw.DEST_RESC_NAME_KW: replication_resource.name}
+            with session.data_objects.open(obj_path, 'w', **options) as obj:
+                obj.write(obj_content)
 
-        # write to object
-        with obj.open('w+') as obj_desc:
-            obj_desc.write(obj_content)
+        else:
+            # create object on replication resource
+            obj = session.data_objects.create(obj_path, replication_resource.name)
+
+            # write to object
+            with obj.open('w') as obj_desc:
+                obj_desc.write(obj_content)
 
         # refresh object
         obj = session.data_objects.get(obj_path)
