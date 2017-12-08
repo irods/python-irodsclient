@@ -58,12 +58,18 @@ class BinaryProperty(MessageProperty):
         self.length = length
         super(BinaryProperty, self).__init__()
 
-    def format(self, value):
-        if six.PY3 and not isinstance(value, bytes):
-            val = b64encode(value.encode('utf-8'))
-        else:
-            val = b64encode(value)
-        return val
+    if six.PY2:
+        def format(self, value):
+            return b64encode(value)
+
+    else:
+        # Python 3
+        def format(self, value):
+            if isinstance(value, bytes):
+                return b64encode(value)
+            else:
+                return b64encode(value.encode())
+
 
     def parse(self, value):
         val = b64decode(value)
@@ -76,10 +82,25 @@ class StringProperty(MessageProperty):
         self.length = length
         super(StringProperty, self).__init__()
 
-    def format(self, value):
-        if six.PY2 and isinstance(value, unicode):
-            return value
-        return str(value)
+
+    if six.PY2:
+        def format(self, value):
+            if isinstance(value, str) or isinstance(value, unicode):
+                return value
+
+            return str(value)
+
+    else:
+        # Python 3
+        def format(self, value):
+            if isinstance(value, str):
+                return value
+
+            if isinstance(value, bytes):
+                return value.decode()
+
+            return str(value)
+
 
     def parse(self, value):
         return value
