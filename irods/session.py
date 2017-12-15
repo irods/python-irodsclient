@@ -31,6 +31,13 @@ class iRODSSession(object):
         self.user_groups = UserGroupManager(self)
         self.resources = ResourceManager(self)
 
+        # os module Linux constants for using in open message flags
+        self.O_RDONLY = 0
+        self.O_WRONLY = 1
+        self.O_RDWR = 2
+        self.O_CREAT = 64
+        self.O_TRUNC = 512
+
     def __enter__(self):
         return self
 
