@@ -114,12 +114,12 @@ class DataObjectManager(Manager):
                 pass
 
         flags, seek_to_end = {
-            'r': (os.O_RDONLY, False),
-            'r+': (os.O_RDWR, False),
-            'w': (os.O_WRONLY | os.O_CREAT | os.O_TRUNC, False),
-            'w+': (os.O_RDWR | os.O_CREAT | os.O_TRUNC, False),
-            'a': (os.O_WRONLY | os.O_CREAT, True),
-            'a+': (os.O_RDWR | os.O_CREAT, True),
+            'r': (self.sess.O_RDONLY, False),
+            'r+': (self.sess.O_RDWR, False),
+            'w': (self.sess.O_WRONLY | self.sess.O_CREAT | self.sess.O_TRUNC, False),
+            'w+': (self.sess.O_RDWR | self.sess.O_CREAT | self.sess.O_TRUNC, False),
+            'a': (self.sess.O_WRONLY | self.sess.O_CREAT, True),
+            'a+': (self.sess.O_RDWR | self.sess.O_CREAT, True),
         }[mode]
         # TODO: Use seek_to_end
 
