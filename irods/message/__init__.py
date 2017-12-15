@@ -27,6 +27,11 @@ def _recv_message_in_len(sock, size):
             buf = sock.recv(size_left, socket.MSG_WAITALL)
         except (AttributeError, ValueError):
             buf = sock.recv(size_left)
+        except OSError as e:
+            #skip only Windows error 10045 
+            if getattr(e, 'winerror', 0) != 10045:
+                raise
+            buf = sock.recv(size_left)
         size_left -= len(buf)
         if retbuf is None:
             retbuf = buf
