@@ -107,12 +107,12 @@ Working with collections
 /tempZone/home/rods
 
 >>> for col in coll.subcollections:
->>>   print col
+>>>   print(col)
 <iRODSCollection /tempZone/home/rods/subcol1>
 <iRODSCollection /tempZone/home/rods/subcol2>
 
 >>> for obj in coll.data_objects:
->>>   print obj
+>>>   print(obj)
 <iRODSDataObject /tempZone/home/rods/file.txt>
 <iRODSDataObject /tempZone/home/rods/file2.txt>
 
@@ -145,10 +145,10 @@ test1
 <iRODSCollection /tempZone/home/rods>
 
 >>> for replica in obj.replicas:
-...     print replica.resource_name
-...     print replica.number
-...     print replica.path
-...     print replica.status
+...     print(replica.resource_name)
+...     print(replica.number)
+...     print(replica.path)
+...     print(replica.status)
 ...
 demoResc
 0
@@ -166,7 +166,7 @@ PRC provides `file-like objects <http://docs.python.org/2/library/stdtypes.html#
 ...   f.write('foo\nbar\n')
 ...   f.seek(0,0)
 ...   for line in f:
-...      print line
+...      print(line)
 ...
 foo
 bar
@@ -176,24 +176,24 @@ Working with metadata
 ---------------------
 
 >>> obj = session.data_objects.get("/tempZone/home/rods/test1")
->>> print obj.metadata.items()
+>>> print(obj.metadata.items())
 []
 
 >>> obj.metadata.add('key1', 'value1', 'units1')
 >>> obj.metadata.add('key1', 'value2')
 >>> obj.metadata.add('key2', 'value3')
->>> print obj.metadata.items()
+>>> print(obj.metadata.items())
 [<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key2, value3, None, 10017)>, 
 <iRODSMeta (key1, value2, None, 10020)>]
 
->>> print obj.metadata.get_all('key1')
+>>> print(obj.metadata.get_all('key1'))
 [<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key1, value2, None, 10020)>]
 
->>> print obj.metadata.get_one('key2')
+>>> print(obj.metadata.get_one('key2'))
 <iRODSMeta (key2, value3, None, 10017)>
 
 >>> obj.metadata.remove('key1', 'value1', 'units1')
->>> print obj.metadata.items()
+>>> print(obj.metadata.items())
 [<iRODSMeta (key2, value3, None, 10017)>, <iRODSMeta (key1, value2, None, 10020)>]
 
 
@@ -209,7 +209,7 @@ General queries
 ...     query = session.query(Collection.name, DataObject.id, DataObject.name, DataObject.size)
 ...     
 ...     for result in query.get_results():
-...             print '{}/{} id={} size={}'.format(result[Collection.name], result[DataObject.name], result[DataObject.id], result[DataObject.size])
+...             print('{}/{} id={} size={}'.format(result[Collection.name], result[DataObject.name], result[DataObject.id], result[DataObject.size]))
 ... 
 /tempZone/home/rods/manager/access_manager.py id=212665 size=2164
 /tempZone/home/rods/manager/access_manager.pyc id=212668 size=2554
@@ -230,14 +230,14 @@ Query with aggregation(min, max, sum, avg, count):
 
 >>> with iRODSSession(irods_env_file=env_file) as session:
 ...     query = session.query(DataObject.owner_name).count(DataObject.id).sum(DataObject.size)
-...     print next(query.get_results())
+...     print(next(query.get_results()))
 {<irods.column.Column 411 D_OWNER_NAME>: 'rods', <irods.column.Column 407 DATA_SIZE>: 62262, <irods.column.Column 401 D_DATA_ID>: 14}
 
 In this case since we are expecting only one row we can directly call ``query.execute()``:
 
 >>> with iRODSSession(irods_env_file=env_file) as session:
 ...     query = session.query(DataObject.owner_name).count(DataObject.id).sum(DataObject.size)
-...     print query.execute()
+...     print(query.execute())
 +--------------+-----------+-----------+
 | D_OWNER_NAME | D_DATA_ID | DATA_SIZE |
 +--------------+-----------+-----------+
@@ -265,7 +265,7 @@ Specific Queries
 ...     _ = query.register()
 ...     
 ...     for result in query.get_results():
-...             print '{} {}'.format(result[DataObject.name], result[DataObject.id])
+...             print('{} {}'.format(result[DataObject.name], result[DataObject.id]))
 ...     
 ...     # delete specific query
 ...     _ = query.remove()
