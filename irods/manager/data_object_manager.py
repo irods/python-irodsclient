@@ -11,15 +11,20 @@ from irods.data_object import (
     iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
 import irods.keywords as kw
 
-SEEK_SET = 0
-SEEK_CUR = 1
-SEEK_END = 2
-
-READ_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
-WRITE_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
-
 
 class DataObjectManager(Manager):
+
+    READ_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
+    WRITE_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
+
+    # Data object open flags (independent of client os)
+    O_RDONLY = 0
+    O_WRONLY = 1
+    O_RDWR = 2
+    O_APPEND = 1024
+    O_CREAT = 64
+    O_EXCL = 128
+    O_TRUNC = 512
 
     def _download(self, obj, local_path, **options):
         if os.path.isdir(local_path):
@@ -32,7 +37,7 @@ class DataObjectManager(Manager):
             raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
 
         with open(file, 'wb') as f, self.open(obj, 'r', **options) as o:
-            for chunk in chunks(o, READ_BUFFER_SIZE):
+            for chunk in chunks(o, self.READ_BUFFER_SIZE):
                 f.write(chunk)
 
 
@@ -63,7 +68,7 @@ class DataObjectManager(Manager):
             options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
         with open(file, 'rb') as f, self.open(obj, 'w', **options) as o:
-            for chunk in chunks(f, WRITE_BUFFER_SIZE):
+            for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
                 o.write(chunk)
 
         if kw.ALL_KW in options:
@@ -114,12 +119,12 @@ class DataObjectManager(Manager):
                 pass
 
         flags, seek_to_end = {
-            'r': (self.sess.O_RDONLY, False),
-            'r+': (self.sess.O_RDWR, False),
-            'w': (self.sess.O_WRONLY | self.sess.O_CREAT | self.sess.O_TRUNC, False),
-            'w+': (self.sess.O_RDWR | self.sess.O_CREAT | self.sess.O_TRUNC, False),
-            'a': (self.sess.O_WRONLY | self.sess.O_CREAT, True),
-            'a+': (self.sess.O_RDWR | self.sess.O_CREAT, True),
+            'r': (self.O_RDONLY, False),
+            'r+': (self.O_RDWR, False),
+            'w': (self.O_WRONLY | self.O_CREAT | self.O_TRUNC, False),
+            'w+': (self.O_RDWR | self.O_CREAT | self.O_TRUNC, False),
+            'a': (self.O_WRONLY | self.O_CREAT, True),
+            'a+': (self.O_RDWR | self.O_CREAT, True),
         }[mode]
         # TODO: Use seek_to_end
 
