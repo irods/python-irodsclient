@@ -230,6 +230,11 @@ class Connection(object):
     def disconnect(self):
         disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
         self.send(disconnect_msg)
+        try:
+            # SSL shutdown handshake
+            self.socket = self.socket.unwrap()
+        except AttributeError:
+            pass
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
         self.socket = None
