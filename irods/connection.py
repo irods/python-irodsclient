@@ -126,7 +126,8 @@ class Connection(object):
         salt_size = self.account.encryption_salt_size
 
         # Create SSL context
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        CA_file = getattr(self.account, 'ssl_ca_certificate_file', None)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_file)
 
         # Wrap socket with context
         wrapped_socket = context.wrap_socket(self.socket, server_hostname=host)
