@@ -492,7 +492,7 @@ class TestDataObjOps(unittest.TestCase):
             session.resources.add_child(replication_resource.name, resource_name)
 
         # make test object on replication resource
-        if self.sess.server_version == (4, 2, 2):
+        if self.sess.server_version > (4, 1, 4):
             # skip create
             options = {kw.DEST_RESC_NAME_KW: replication_resource.name}
             with session.data_objects.open(obj_path, 'w', **options) as obj:
