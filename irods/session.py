@@ -64,6 +64,9 @@ class iRODSSession(object):
         # Get credentials from irods environment file
         creds = self.get_irods_env(env_file)
 
+        # Update with new keywords arguments only
+        creds.update((key, value) for key, value in kwargs.items() if key not in creds)
+
         # Get auth scheme
         try:
             auth_scheme = creds['irods_authentication_scheme']

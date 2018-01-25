@@ -125,9 +125,12 @@ class Connection(object):
         hash_rounds = self.account.encryption_num_hash_rounds
         salt_size = self.account.encryption_salt_size
 
-        # Create SSL context
-        CA_file = getattr(self.account, 'ssl_ca_certificate_file', None)
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_file)
+        # Get or create SSL context
+        try:
+            context = self.account.ssl_context
+        except AttributeError:
+            CA_file = getattr(self.account, 'ssl_ca_certificate_file', None)
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_file)
 
         # Wrap socket with context
         wrapped_socket = context.wrap_socket(self.socket, server_hostname=host)
