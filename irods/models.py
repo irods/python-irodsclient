@@ -91,6 +91,7 @@ class DataObject(Model):
     create_time = Column(DateTime, 'D_CREATE_TIME', 419)
     modify_time = Column(DateTime, 'D_MODIFY_TIME', 420)
     resc_hier = Column(String, 'D_RESC_HIER', 422)
+    resc_id = Column(String, 'D_RESC_ID', 423)
 
 
 class Collection(Model):
