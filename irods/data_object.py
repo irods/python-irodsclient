@@ -51,9 +51,8 @@ class iRODSDataObject(object):
                     try:
                         setattr(self, attr, results[0][value])
                     except KeyError:
-                        # backward compatibility with pre iRODS 4
-                        if self.manager.sess.server_version >= (4, 0, 0):
-                            raise
+                        # backward compatibility with older schema versions
+                        pass
             self.path = self.collection.path + '/' + self.name
             replicas = sorted(
                 results, key=lambda r: r[DataObject.replica_number])
