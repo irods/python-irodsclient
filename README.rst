@@ -208,7 +208,7 @@ General queries
 >>> with iRODSSession(irods_env_file=env_file) as session:
 ...     query = session.query(Collection.name, DataObject.id, DataObject.name, DataObject.size)
 ...     
-...     for result in query.get_results():
+...     for result in query:
 ...             print('{}/{} id={} size={}'.format(result[Collection.name], result[DataObject.name], result[DataObject.id], result[DataObject.size]))
 ... 
 /tempZone/home/rods/manager/access_manager.py id=212665 size=2164
@@ -264,7 +264,7 @@ Specific Queries
 ...     # register specific query in iCAT
 ...     _ = query.register()
 ...     
-...     for result in query.get_results():
+...     for result in query:
 ...             print('{} {}'.format(result[DataObject.name], result[DataObject.id]))
 ...     
 ...     # delete specific query

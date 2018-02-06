@@ -28,8 +28,7 @@ class iRODSCollection(object):
     def subcollections(self):
         query = self.manager.sess.query(Collection)\
             .filter(Collection.parent_name == self.path)
-        results = query.get_results()
-        return [iRODSCollection(self.manager, row) for row in results]
+        return [iRODSCollection(self.manager, row) for row in query]
 
     @property
     def data_objects(self):

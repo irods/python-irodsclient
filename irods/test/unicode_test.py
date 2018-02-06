@@ -75,7 +75,7 @@ class TestUnicodeNames(unittest.TestCase):
         query = self.sess.query(DataObject.name, Collection.name).filter(
             Collection.name == self.coll_path)
 
-        for result in query.get_results():
+        for result in query:
             # check that we got back one of our original names
             assert result[DataObject.name] in self.names
 

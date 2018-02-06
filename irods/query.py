@@ -199,6 +199,9 @@ class Query(object):
             for result in result_set:
                 yield result
 
+    def __iter__(self):
+        return self.get_results()
+
     def one(self):
         results = self.execute()
         if not len(results):
@@ -295,6 +298,10 @@ class SpecificQuery(object):
 
         results = response.get_main_message(GenQueryResponse)
         return SpecificQueryResultSet(results, self._columns)
+
+
+    def __iter__(self):
+        return self.get_results()
 
 
     def get_batches(self):

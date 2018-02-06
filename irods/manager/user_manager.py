@@ -126,7 +126,7 @@ class UserGroupManager(UserManager):
 
     def getmembers(self, name):
         results = self.sess.query(User).filter(
-            User.type != 'rodsgroup', UserGroup.name == name).get_results()
+            User.type != 'rodsgroup', UserGroup.name == name)
         return [iRODSUser(self, row) for row in results]
 
     def addmember(self, group_name, user_name, user_zone=""):

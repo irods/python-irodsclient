@@ -43,7 +43,7 @@ class TestContinueQuery(unittest.TestCase):
 
         counter = 0
 
-        for result in query.get_results():
+        for result in query:
             # what we should see
             object_path = self.coll_path + \
                 "/test" + str(counter).zfill(6) + ".txt"

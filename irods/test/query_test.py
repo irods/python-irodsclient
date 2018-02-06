@@ -151,8 +151,8 @@ class TestQuery(unittest.TestCase):
         iquest "select RESC_NAME where RESC_NAME like 'dem%'"
         '''
 
-        rows = self.sess.query(Resource).filter(Like(Resource.name, 'dem%')).get_results()
-        self.assertIn('demoResc', [row[Resource.name] for row in rows])
+        query = self.sess.query(Resource).filter(Like(Resource.name, 'dem%'))
+        self.assertIn('demoResc', [row[Resource.name] for row in query])
 
 
     def test_query_with_between_condition(self):
@@ -167,7 +167,7 @@ class TestQuery(unittest.TestCase):
         query = session.query(Resource.name, Collection.name, DataObject.name)\
             .filter(Between(DataObject.modify_time, (start_date, end_date)))
 
-        for result in query.get_results():
+        for result in query:
             res_str = '{} {}/{}'.format(result[Resource.name], result[Collection.name], result[DataObject.name])
             self.assertIn(session.zone, res_str)
 
@@ -201,7 +201,7 @@ class TestSpecificQuery(unittest.TestCase):
         query.register()
 
         # run query and check results
-        for i, result in enumerate(query.get_results()):
+        for i, result in enumerate(query):
             self.assertIn('test', result[DataObject.name])
             self.assertIsNotNone(result[DataObject.id])
         self.assertEqual(i, test_collection_size - 1)
@@ -233,7 +233,7 @@ class TestSpecificQuery(unittest.TestCase):
         query.register()
 
         # run query and check results
-        for i, result in enumerate(query.get_results()):
+        for i, result in enumerate(query):
             self.assertIn('test', result[0])
             self.assertIsNotNone(result[1])
         self.assertEqual(i, test_collection_size - 1)
@@ -265,7 +265,7 @@ class TestSpecificQuery(unittest.TestCase):
     def test_list_specific_queries(self):
         query = SpecificQuery(self.session, alias='ls')
 
-        for result in query.get_results():
+        for result in query:
             self.assertIsNotNone(result[0])             # query alias
             self.assertIn('SELECT', result[1].upper())  # query string
 
