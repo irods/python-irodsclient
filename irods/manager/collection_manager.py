@@ -20,10 +20,13 @@ class CollectionManager(Manager):
         return iRODSCollection(self, result)
 
 
-    def create(self, path):
+    def create(self, path, recurse=True, **options):
+        if recurse:
+            options[kw.RECURSIVE_OPR__KW] = ''
+       
         message_body = CollectionRequest(
             collName=path,
-            KeyValPair_PI=StringStringMap()
+            KeyValPair_PI=StringStringMap(options)
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['COLL_CREATE_AN'])
