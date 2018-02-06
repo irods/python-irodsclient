@@ -49,6 +49,22 @@ class TestCollection(unittest.TestCase):
         pass
 
 
+    def test_create_recursive_collection(self):
+        # make path with recursion
+        root_coll_path = self.test_coll_path + "/recursive/collection/test"
+        self.sess.collections.create(root_coll_path, recurse=True)
+
+        #confirm col create
+        coll = self.sess.collections.get(root_coll_path)
+        self.assertEqual(root_coll_path, coll.path)
+
+        # delete test collection
+        self.sess.collections.remove(root_coll_path, recurse=True, force=True)
+
+        # confirm delete
+        with self.assertRaises(CollectionDoesNotExist):
+            self.sess.collections.get(root_coll_path)
+
     def test_remove_deep_collection(self):
         # depth = 100
         depth = 20  # placeholder
