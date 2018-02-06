@@ -1,11 +1,10 @@
 python-irodsclient was originally created by Chris LaRose when he was a member
 of the atmosphere team at the iPlant Collaborative.
 
-Antoine de Torcy recently provided support for iRODS 4 and integration into
-the iRODS build system.
+Antoine de Torcy maintained this project from version 0.5.0 through 0.7.0.
 
 Chris LaRose <cjlarose@iplantcollaborative.org>
-Antoine de Torcy <adetorcy@email.unc.edu>
+Antoine de Torcy <adetorcy@irods.org>
 J. Matt Peterson <jmatt@jmatt.org>
 David Knapp
 Steve "esteve" Gregory <sgregory@iplantcollaborative.org>
