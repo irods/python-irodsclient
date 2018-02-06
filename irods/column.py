@@ -59,9 +59,10 @@ class Between(Criterion):
 
 class Column(QueryKey):
 
-    def __init__(self, column_type, icat_key, icat_id):
+    def __init__(self, column_type, icat_key, icat_id, min_version=(0,0,0)):
         self.icat_key = icat_key
         self.icat_id = icat_id
+        self.min_version = min_version
         super(Column, self).__init__(column_type)
 
     def __repr__(self):

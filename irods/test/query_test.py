@@ -6,7 +6,7 @@ import unittest
 from datetime import datetime
 from irods.models import User, Collection, DataObject, Resource
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
-from irods.query import new_icat_keys, SpecificQuery
+from irods.query import SpecificQuery
 from irods.column import Like, Between
 from irods import MAX_SQL_ROWS
 import irods.test.helpers as helpers
@@ -144,15 +144,6 @@ class TestQuery(unittest.TestCase):
         with self.assertRaises(ValueError):
             results = self.sess.query(User.name).order_by(
                 User.name, order='moo').all()
-
-
-    def test_query_strip(self):
-        query = self.sess.query(Resource)
-        query._strip()
-
-        # should have none of the new stuff
-        for key in new_icat_keys:
-            self.assertNotIn(key, query.columns)
 
 
     def test_query_with_like_condition(self):

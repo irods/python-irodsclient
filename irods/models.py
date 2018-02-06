@@ -59,15 +59,15 @@ class Resource(Model):
     location = Column(String, 'R_LOC', 306)
     vault_path = Column(String, 'R_VAULT_PATH', 307)
     free_space = Column(String, 'R_FREE_SPACE', 308)
-    free_space_time = Column(String, 'R_FREE_SPACE_TIME', 314)
+    free_space_time = Column(String, 'R_FREE_SPACE_TIME', 314, min_version=(4,0,0))
     comment = Column(String, 'R_RESC_COMMENT', 310)
     create_time = Column(DateTime, 'R_CREATE_TIME', 311)
     modify_time = Column(DateTime, 'R_MODIFY_TIME', 312)
-    status = Column(String, 'R_RESC_STATUS', 313)
-    children = Column(String, 'R_RESC_CHILDREN', 315)
-    context = Column(String, 'R_RESC_CONTEXT', 316)
-    parent = Column(String, 'R_RESC_PARENT', 317)
-    parent_context = Column(String, 'R_RESC_PARENT_CONTEXT', 318)
+    status = Column(String, 'R_RESC_STATUS', 313, min_version=(4,0,0))
+    children = Column(String, 'R_RESC_CHILDREN', 315, min_version=(4,0,0))
+    context = Column(String, 'R_RESC_CONTEXT', 316, min_version=(4,0,0))
+    parent = Column(String, 'R_RESC_PARENT', 317, min_version=(4,0,0))
+    parent_context = Column(String, 'R_RESC_PARENT_CONTEXT', 318, min_version=(4,0,0))
 
 
 class DataObject(Model):
@@ -90,8 +90,8 @@ class DataObject(Model):
     comments = Column(String, 'D_COMMENTS', 418)
     create_time = Column(DateTime, 'D_CREATE_TIME', 419)
     modify_time = Column(DateTime, 'D_MODIFY_TIME', 420)
-    resc_hier = Column(String, 'D_RESC_HIER', 422)
-    resc_id = Column(String, 'D_RESC_ID', 423)
+    resc_hier = Column(String, 'D_RESC_HIER', 422, min_version=(4,0,0))
+    resc_id = Column(String, 'D_RESC_ID', 423, min_version=(4,2,0))
 
 
 class Collection(Model):
