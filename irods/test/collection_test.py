@@ -59,7 +59,7 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(root_coll_path, coll.path)
 
         # delete test collection
-        self.sess.collections.remove(root_coll_path, recurse=True, force=True)
+        coll.remove(force=True)
 
         # confirm delete
         with self.assertRaises(CollectionDoesNotExist):
