@@ -16,6 +16,7 @@ from irods.column import Criterion
 from irods.data_object import chunks
 import irods.test.helpers as helpers
 import irods.keywords as kw
+from datetime import datetime
 
 class TestDataObjOps(unittest.TestCase):
 
@@ -860,6 +861,44 @@ class TestDataObjOps(unittest.TestCase):
         # delete file
         os.remove(test_file)
 
+    def test_modDataObjMeta(self):
+        # skip if server is remote
+        if self.sess.host not in ('localhost', socket.gethostname()):
+            self.skipTest('Requires access to server-side file(s)')
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'register_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        # make random 4K binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 4))
+
+        # register file in test collection
+        self.sess.data_objects.register(test_file, obj_path)
+
+        qu = self.sess.query(Collection.id).filter(Collection.name == collection)
+        for res in qu:
+            collection_id = res[Collection.id]
+
+        qu = self.sess.query(DataObject.size, DataObject.modify_time).filter(DataObject.name == filename, DataObject.collection_id == collection_id)
+        for res in qu:
+            self.assertEqual(int(res[DataObject.size]), 1024 * 4)
+        self.sess.data_objects.modDataObjMeta(obj_path, {"dataSize":1024, "dataModify":4096})
+
+        qu = self.sess.query(DataObject.size, DataObject.modify_time).filter(DataObject.name == filename, DataObject.collection_id == collection_id)
+        for res in qu:
+            self.assertEqual(int(res[DataObject.size]), 1024)
+            self.assertEqual(res[DataObject.modify_time], datetime.utcfromtimestamp(4096))
+
+        # leave physical file on disk
+        self.sess.data_objects.unregister(obj_path)
+
+        # delete file
+        os.remove(test_file)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
