@@ -4,7 +4,7 @@ import io
 from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
-    iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap)
+    iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta)
 import irods.exception as ex
 from irods.api_number import api_number
 from irods.data_object import (
@@ -333,6 +333,55 @@ class DataObjectManager(Manager):
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['PHY_PATH_REG_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+
+    def modDataObjMeta(self, obj_path, meta_dict, **options):
+        meta_dict["all"] = ""
+        message_body = ModDataObjMeta(
+            dataObjInfo=DataObjInfo(
+                objPath=obj_path,
+                rescName="",
+                rescHier="",
+                dataType="",
+                dataSize=0,
+                chksum="",
+                version="",
+                filePath="",
+                dataOwnerName="",
+                dataOwnerZone="",
+                replNum=0,
+                replStatus=0,
+                statusString="",
+                dataId=0,
+                collId=0,
+                dataMapId=0,
+                flags=0,
+                dataComments="",
+                dataMode="",
+                dataExpiry="",
+                dataCreate="",
+                dataModify="",
+                dataAccess="",
+                dataAccessInx=0,
+                writeFlag=0,
+                destRescName="",
+                backupRescName="",
+                subPath="",
+                specColl=0,
+                regUid=0,
+                otherFlags=0,
+                KeyValPair_PI=StringStringMap(options),
+                in_pdmo="",
+                next=0,
+                rescId=0
+                ),
+            regParam=StringStringMap(meta_dict)
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['MOD_DATA_OBJ_META_AN'])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)

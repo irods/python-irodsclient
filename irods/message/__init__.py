@@ -574,6 +574,48 @@ class STR_PI(Message):
     myStr = StringProperty()
 
 
+class DataObjInfo(Message):
+    _name = 'DataObjInfo_PI'
+    objPath = StringProperty()
+    rescName = StringProperty()
+    rescHier = StringProperty()
+    dataType = StringProperty()
+    dataSize = LongProperty()
+    chksum = StringProperty()
+    version = StringProperty()
+    filePath = StringProperty()
+    dataOwnerName = StringProperty()
+    dataOwnerZone = StringProperty()
+    replNum = IntegerProperty()
+    replStatus = IntegerProperty()
+    statusString = StringProperty()
+    dataId = LongProperty()
+    collId = LongProperty()
+    dataMapId = IntegerProperty()
+    dataComments = StringProperty()
+    dataMode = StringProperty()
+    dataExpiry = StringProperty()
+    dataCreate = StringProperty()
+    dataModify = StringProperty()
+    dataAccess = StringProperty()
+    dataAccessInx = IntegerProperty()
+    writeFlag = IntegerProperty()
+    destRescName = StringProperty()
+    backupRescName = StringProperty()
+    subPath = StringProperty()
+    specColl = IntegerProperty()
+    regUid = IntegerProperty()
+    otherFlags = IntegerProperty()
+    KeyValPair_PI = SubmessageProperty(StringStringMap)
+    in_pdmo = StringProperty()
+    next = IntegerProperty()
+    rescId = LongProperty()
+
+class ModDataObjMeta(Message):
+    _name = "ModDataObjMeta_PI"
+    dataObjInfo = SubmessageProperty(DataObjInfo)
+    regParam = SubmessageProperty(StringStringMap)
+
 #define RErrMsg_PI "int status; str msg[ERR_MSG_LEN];"
 
 class ErrorMessage(Message):
