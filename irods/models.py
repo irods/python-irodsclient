@@ -67,7 +67,7 @@ class Resource(Model):
     children = Column(String, 'R_RESC_CHILDREN', 315, min_version=(4,0,0))
     context = Column(String, 'R_RESC_CONTEXT', 316, min_version=(4,0,0))
     parent = Column(String, 'R_RESC_PARENT', 317, min_version=(4,0,0))
-    parent_context = Column(String, 'R_RESC_PARENT_CONTEXT', 318, min_version=(4,0,0))
+    parent_context = Column(String, 'R_RESC_PARENT_CONTEXT', 318, min_version=(4,2,0))
 
 
 class DataObject(Model):

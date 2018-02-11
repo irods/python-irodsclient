@@ -8,6 +8,7 @@ import unittest
 from irods.models import User
 from irods.exception import UserDoesNotExist, ResourceDoesNotExist
 from irods.session import iRODSSession
+from irods.resource import iRODSResource
 import irods.test.helpers as helpers
 
 
@@ -150,7 +151,7 @@ class TestAdmin(unittest.TestCase):
         ufs2 = session.resources.create(
             resc_name, resc_type, resc_host, resc_path)
 
-        # add children to compound
+        # add children to compound resource
         session.resources.add_child(comp.name, ufs1.name, 'archive')
         session.resources.add_child(comp.name, ufs2.name, 'cache')
 
@@ -170,7 +171,7 @@ class TestAdmin(unittest.TestCase):
         # remove object
         obj.unlink(force=True)
 
-        # remove children from compound
+        # remove children from compound resource
         session.resources.remove_child(comp.name, ufs1.name)
         session.resources.remove_child(comp.name, ufs2.name)
 
@@ -178,6 +179,57 @@ class TestAdmin(unittest.TestCase):
         ufs1.remove()
         ufs2.remove()
         comp.remove()
+
+
+    def test_get_resource_children(self):
+        if self.sess.server_version < (4, 0, 0):
+            self.skipTest('For iRODS 4+')
+
+        session = self.sess
+        username = self.sess.username
+
+        # make compound resource
+        compound_resource = session.resources.create('comp_resc', 'compound')
+
+        # make 1st ufs resource
+        resc_name = 'ufs1'
+        resc_type = 'unixfilesystem'
+        resc_host = self.sess.host
+        resc_path = '/tmp/' + resc_name
+        ufs1 = session.resources.create(
+            resc_name, resc_type, resc_host, resc_path)
+
+        # make 2nd ufs resource
+        resc_name2 = 'ufs2'
+        resc_path = '/tmp/' + resc_name2
+        ufs2 = session.resources.create(
+            resc_name2, resc_type, resc_host, resc_path)
+
+        # add children to compound resource
+        session.resources.add_child(compound_resource.name, ufs1.name, 'archive')
+        session.resources.add_child(compound_resource.name, ufs2.name, 'cache')
+
+        # confirm number of children
+        self.assertEqual(len(compound_resource.children), 2)
+
+        # assertions on children
+        for child in compound_resource.children:
+            self.assertIsInstance(child, iRODSResource)
+            self.assertIn(child.name, [resc_name, resc_name2])
+            self.assertEqual(child.type, resc_type)
+            self.assertEqual(child.location, resc_host)
+
+            if session.server_version >= (4, 2, 0):
+                self.assertIn(child.parent_context, ['archive', 'cache'])
+
+        # remove children from compound resource
+        session.resources.remove_child(compound_resource.name, ufs1.name)
+        session.resources.remove_child(compound_resource.name, ufs2.name)
+
+        # remove resources
+        ufs1.remove()
+        ufs2.remove()
+        compound_resource.remove()
 
 
     def test_resource_context_string(self):
