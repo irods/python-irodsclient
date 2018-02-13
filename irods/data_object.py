@@ -113,11 +113,10 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
         return self.conn.seek_file(self.desc, offset, whence)
 
     def readinto(self, b):
-        contents = self.conn.read_file(self.desc, len(b))
+        contents = self.conn.read_file(self.desc, buffer=b)
         if contents is None:
             return 0
-        for i, c in enumerate(contents):
-            b[i] = c
+
         return len(contents)
 
     def write(self, b):

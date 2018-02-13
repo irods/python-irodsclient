@@ -92,6 +92,23 @@ class Connection(object):
             raise get_exception_by_code(msg.int_info, err_msg)
         return msg
 
+    def recv_into(self, buffer):
+        try:
+            msg = iRODSMessage.recv_into(self.socket, buffer)
+        except socket.error:
+            logger.error("Could not receive server response")
+            self.release(True)
+            raise NetworkException("Could not receive server response")
+
+        if msg.int_info < 0:
+            try:
+                err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
+            except TypeError:
+                raise get_exception_by_code(msg.int_info)
+            raise get_exception_by_code(msg.int_info, err_msg)
+
+        return msg
+
     def __enter__(self):
         return self
 
@@ -364,7 +381,12 @@ class Connection(object):
 
         logger.info("GSI authorization validated")
 
-    def read_file(self, desc, size):
+    def read_file(self, desc, size=-1, buffer=None):
+        if size < 0:
+            size = len(buffer)
+        elif buffer is not None:
+            size = min(size, len(buffer))
+
         message_body = OpenedDataObjRequest(
             l1descInx=desc,
             len=size,
@@ -379,7 +401,11 @@ class Connection(object):
 
         logger.debug(desc)
         self.send(message)
-        response = self.recv()
+        if buffer is None:
+            response = self.recv()
+        else:
+            response = self.recv_into(buffer)
+
         return response.bs
 
     def _login_native(self):
