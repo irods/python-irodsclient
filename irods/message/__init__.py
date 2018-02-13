@@ -40,6 +40,25 @@ def _recv_message_in_len(sock, size):
     return retbuf
 
 
+def _recv_message_into(sock, buffer, size):
+    size_left = size
+    index = 0
+    mv = memoryview(buffer)
+    while size_left > 0:
+        try:
+            rsize = sock.recv_into(mv[index:], size_left, socket.MSG_WAITALL)
+        except (AttributeError, ValueError):
+            rsize = sock.recv_into(mv[index:], size_left)
+        except OSError as e:
+            #skip only Windows error 10045 
+            if getattr(e, 'winerror', 0) != 10045:
+                raise
+            rsize = sock.recv_into(mv[index:], size_left)
+        size_left -= rsize
+        index += rsize
+    return mv[:index]
+
+
 class iRODSMessage(object):
 
     def __init__(self, msg_type=b'', msg=None, error=b'', bs=b'', int_info=0):
@@ -75,6 +94,25 @@ class iRODSMessage(object):
 
         # if message:
         #     logger.debug(message)
+
+        return iRODSMessage(msg_type, message, error, bs, int_info)
+
+    @staticmethod
+    def recv_into(sock, buffer):
+        rsp_header_size = _recv_message_in_len(sock, 4)
+        rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
+        rsp_header = _recv_message_in_len(sock, rsp_header_size)
+
+        xml_root = ET.fromstring(rsp_header)
+        msg_type = xml_root.find('type').text
+        msg_len = int(xml_root.find('msgLen').text)
+        err_len = int(xml_root.find('errorLen').text)
+        bs_len = int(xml_root.find('bsLen').text)
+        int_info = int(xml_root.find('intInfo').text)
+
+        message = _recv_message_in_len(sock, msg_len) if msg_len != 0 else None
+        error = _recv_message_in_len(sock, err_len) if err_len != 0 else None
+        bs = _recv_message_into(sock, buffer, bs_len) if bs_len != 0 else None
 
         return iRODSMessage(msg_type, message, error, bs, int_info)
 
