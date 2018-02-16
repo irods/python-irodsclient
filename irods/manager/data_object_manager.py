@@ -338,13 +338,18 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
 
-    def modDataObjMeta(self, obj_path, meta_dict, **options):
-        meta_dict["all"] = ""
+    def modDataObjMeta(self, data_obj_info, meta_dict, **options):
+        if "rescHier" in data_obj_info:
+            resc_hier = data_obj_info["rescHier"]
+        else:
+            resc_hier = ""
+            meta_dict["all"] = ""
+            
         message_body = ModDataObjMeta(
             dataObjInfo=DataObjInfo(
-                objPath=obj_path,
+                objPath=data_obj_info["objPath"],
                 rescName="",
-                rescHier="",
+                rescHier=resc_hier,
                 dataType="",
                 dataSize=0,
                 chksum="",

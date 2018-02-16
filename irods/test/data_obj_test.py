@@ -887,7 +887,7 @@ class TestDataObjOps(unittest.TestCase):
         qu = self.sess.query(DataObject.size, DataObject.modify_time).filter(DataObject.name == filename, DataObject.collection_id == collection_id)
         for res in qu:
             self.assertEqual(int(res[DataObject.size]), 1024 * 4)
-        self.sess.data_objects.modDataObjMeta(obj_path, {"dataSize":1024, "dataModify":4096})
+        self.sess.data_objects.modDataObjMeta({"objPath" : obj_path}, {"dataSize":1024, "dataModify":4096})
 
         qu = self.sess.query(DataObject.size, DataObject.modify_time).filter(DataObject.name == filename, DataObject.collection_id == collection_id)
         for res in qu:
