@@ -69,28 +69,28 @@ Using environment files in ``~/.irods/``:
 ...     env_file = os.environ['IRODS_ENVIRONMENT_FILE']
 ... except KeyError:
 ...     env_file = os.path.expanduser('~/.irods/irods_environment.json')
-... 
+...
 >>> with iRODSSession(irods_env_file=env_file) as session:
 ...     pass
-... 
->>> 
+...
+>>>
 
 Passing iRODS credentials as keyword arguments:
 
 >>> from irods.session import iRODSSession
 >>> with iRODSSession(host='localhost', port=1247, user='bob', password='1234', zone='tempZone') as session:
 ...     pass
-... 
->>> 
+...
+>>>
 
 If you're an administrator acting on behalf of another user:
 
 >>> from irods.session import iRODSSession
->>> with iRODSSession(host='localhost', port=1247, user='rods', password='1234', zone='tempZone', 
+>>> with iRODSSession(host='localhost', port=1247, user='rods', password='1234', zone='tempZone',
            client_user='bob', client_zone='possibly_another_zone') as session:
 ...     pass
-... 
->>> 
+...
+>>>
 
 If no ``client_zone`` is provided, the ``zone`` parameter is used in its place.
 
@@ -132,7 +132,6 @@ Create a new data object:
 >>> obj = session.data_objects.create("/tempZone/home/rods/test1")
 <iRODSDataObject /tempZone/home/rods/test1>
 
-
 Get an existing data object:
 
 >>> obj = session.data_objects.get("/tempZone/home/rods/test1")
@@ -154,6 +153,16 @@ demoResc
 0
 /var/lib/irods/Vault/home/rods/test1
 1
+
+
+Using the put() method rather than the create() method will trigger different policy enforcement points (PEPs) on the server.
+
+Put an existing file as a new data object:
+
+>>> session.data_objects.put("test.txt","/tempZone/home/rods/test2")
+>>> obj2 = session.data_objects.get("/tempZone/home/rods/test2")
+>>> obj2.id
+56789
 
 
 Reading and writing files
@@ -183,7 +192,7 @@ Working with metadata
 >>> obj.metadata.add('key1', 'value2')
 >>> obj.metadata.add('key2', 'value3')
 >>> print(obj.metadata.items())
-[<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key2, value3, None, 10017)>, 
+[<iRODSMeta (key1, value1, units1, 10014)>, <iRODSMeta (key2, value3, None, 10017)>,
 <iRODSMeta (key1, value2, None, 10020)>]
 
 >>> print(obj.metadata.get_all('key1'))
@@ -203,14 +212,14 @@ General queries
 >>> import os
 >>> from irods.session import iRODSSession
 >>> from irods.models import Collection, DataObject
->>> 
+>>>
 >>> env_file = os.path.expanduser('~/.irods/irods_environment.json')
 >>> with iRODSSession(irods_env_file=env_file) as session:
 ...     query = session.query(Collection.name, DataObject.id, DataObject.name, DataObject.size)
-...     
+...
 ...     for result in query:
 ...             print('{}/{} id={} size={}'.format(result[Collection.name], result[DataObject.name], result[DataObject.id], result[DataObject.size]))
-... 
+...
 /tempZone/home/rods/manager/access_manager.py id=212665 size=2164
 /tempZone/home/rods/manager/access_manager.pyc id=212668 size=2554
 /tempZone/home/rods/manager/collection_manager.py id=212663 size=4472
@@ -224,7 +233,7 @@ General queries
 /tempZone/home/rods/manager/resource_manager.py id=212666 size=5329
 /tempZone/home/rods/manager/resource_manager.pyc id=212661 size=4570
 /tempZone/home/rods/manager/user_manager.py id=212669 size=5509
-/tempZone/home/rods/manager/user_manager.pyc id=212658 size=5233 
+/tempZone/home/rods/manager/user_manager.pyc id=212658 size=5233
 
 Query with aggregation(min, max, sum, avg, count):
 
@@ -252,7 +261,7 @@ Specific Queries
 >>> from irods.session import iRODSSession
 >>> from irods.models import Collection, DataObject
 >>> from irods.query import SpecificQuery
->>> 
+>>>
 >>> env_file = os.path.expanduser('~/.irods/irods_environment.json')
 >>> with iRODSSession(irods_env_file=env_file) as session:
 ...     # define our query
@@ -260,16 +269,16 @@ Specific Queries
 ...     alias = 'list_data_name_id'
 ...     columns = [DataObject.name, DataObject.id] # optional, if we want to get results by key
 ...     query = SpecificQuery(session, sql, alias, columns)
-...     
+...
 ...     # register specific query in iCAT
 ...     _ = query.register()
-...     
+...
 ...     for result in query:
 ...             print('{} {}'.format(result[DataObject.name], result[DataObject.id]))
-...     
+...
 ...     # delete specific query
 ...     _ = query.remove()
-... 
+...
 user_manager.pyc 212658
 metadata_manager.pyc 212659
 metadata_manager.py 212660
@@ -283,7 +292,7 @@ data_object_manager.pyc 212667
 access_manager.pyc 212668
 user_manager.py 212669
 __init__.py 212670
-__init__.pyc 212671 
+__init__.pyc 212671
 
 
 And more...
