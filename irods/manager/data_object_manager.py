@@ -339,17 +339,14 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
     def modDataObjMeta(self, data_obj_info, meta_dict, **options):
-        if "rescHier" in data_obj_info:
-            resc_hier = data_obj_info["rescHier"]
-        else:
-            resc_hier = ""
+        if "rescHier" not in data_obj_info and "rescName" not in data_obj_info and "replNum" not in data_obj_info:
             meta_dict["all"] = ""
             
         message_body = ModDataObjMeta(
             dataObjInfo=DataObjInfo(
                 objPath=data_obj_info["objPath"],
-                rescName="",
-                rescHier=resc_hier,
+                rescName=data_obj_info.get("rescName", ""),
+                rescHier=data_obj_info.get("rescHier", ""),
                 dataType="",
                 dataSize=0,
                 chksum="",
@@ -357,7 +354,7 @@ class DataObjectManager(Manager):
                 filePath="",
                 dataOwnerName="",
                 dataOwnerZone="",
-                replNum=0,
+                replNum=data_obj_info.get("replNum", 0),
                 replStatus=0,
                 statusString="",
                 dataId=0,
