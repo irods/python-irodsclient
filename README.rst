@@ -294,6 +294,27 @@ user_manager.py 212669
 __init__.py 212670
 __init__.pyc 212671
 
+Recherché queries
+-----------------
+
+In some cases you might like to use an LIGQ operator not directly offered by this Python  library,
+or even combine query filters in ways LIGQ may not directly support. As an example, the code below
+finds metadata value fields lexicographically outside the range of decimal integers, while also
+requiring that the data objects to which they are attached do not reside in the trash.
+
+>>> search_tuple = (DataObject.name , Collection.name ,
+...                 DataObjectMeta.name , DataObjectMeta.value)
+
+>>> # "not like" : direct instantiation of Criterion (operator in literal string)
+>>> not_in_trash = Criterion ('not like', Collection.name , '%/trash/%')
+
+>>> # "not between"( column, X, Y) := column < X OR column > Y ("OR" done via chained iterators)
+>>> res1 = session.query (* search_tuple).filter(not_in_trash).filter(DataObjectMeta.value < '0')
+>>> res2 = session.query (* search_tuple).filter(not_in_trash).filter(DataObjectMeta.value > '9' * 9999 )
+
+>>> chained_results = itertools.chain ( res1.get_results(), res2.get_results() )
+>>> pprint( list( chained_results ) )
+
 
 And more...
 -----------
