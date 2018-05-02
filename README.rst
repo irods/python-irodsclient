@@ -297,10 +297,12 @@ __init__.pyc 212671
 Recherché queries
 -----------------
 
-In some cases you might like to use an LIGQ operator not directly offered by this Python  library,
-or even combine query filters in ways LIGQ may not directly support. As an example, the code below
-finds metadata value fields lexicographically outside the range of decimal integers, while also
-requiring that the data objects to which they are attached do not reside in the trash.
+In some cases you might like to use a GenQuery operator not directly offered by this
+Python library, or even combine query filters in ways GenQuery may not directly support.
+
+As an example, the code below finds metadata value fields lexicographically outside the range
+of decimal integers, while also requiring that the data objects to which they are attached do
+not reside in the trash.
 
 >>> search_tuple = (DataObject.name , Collection.name ,
 ...                 DataObjectMeta.name , DataObjectMeta.value)
