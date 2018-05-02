@@ -1,5 +1,7 @@
 python-irodsclient was originally created by Chris LaRose when he was a member
-of the atmosphere team at the iPlant Collaborative.
+of the atmosphere team at the iPlant Collaborative, now known as CyVerse.
+
+Terrell Russell has maintained this project since 0.8.0.
 
 Antoine de Torcy maintained this project from version 0.5.0 through 0.7.0.
 

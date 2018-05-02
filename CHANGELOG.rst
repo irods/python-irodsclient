@@ -1,6 +1,30 @@
 Changelog
 =========
 
+v0.8.0 (2018-05-03)
+-------------------
+- Add rescName and replNum awareness. [Hao Xu]
+- Document put() method in README.rst. [Terrell Russell]
+- Add support for specifying resource hierarchy. [Hao Xu]
+- Add modDataObjMeta. [Hao Xu]
+- Use socket.recv_into() to speed up file download. [Pierre Gay]
+- Lazy load resource children. [Antoine de Torcy]
+- Test cleanup. [Antoine de Torcy]
+- Add recursive collection creation support, plus test. [Robert Davey]
+- Make query instances iterable. [Antoine de Torcy]
+- Update package information. [Antoine de Torcy]
+- Add version attribute to icat columns. [Antoine de Torcy]
+- Don't enforce DB schema in data object constructor. [Antoine de Torcy]
+- Add D_RESC_ID to data object model. [Bob Belnap]
+- SSL context from iRODSAccount instance attributes. [Antoine de Torcy]
+- Avoid calling data object create on replication node. [Antoine de Torcy]
+- Pass optional CA file to SSL context. [Antoine de Torcy]
+- Graceful SSL shutdown. [Antoine de Torcy]
+- Set open flags and IO buffer size in DataObjectManager. [Antoine de Torcy]
+- Force open flags to client os independent values. [Pierre Gay]
+- Handle Winerror 10045. [Pierre Gay]
+- Python 2/3 compability. [Jonathan de Bruin]
+
 
 v0.7.0 (2017-12-15)
 -------------------
@@ -48,7 +72,7 @@ v0.7.0 (2017-12-15)
 - Add CAT_UNKNOWN_SPECIFIC_QUERY exception. [Antoine de Torcy]
 - Commits for the english language, which apparently I'm qualified in..
   [John Constable]
-- Document the use of the SpecificQuery class and irods_environment.jon
+- Document the use of the SpecificQuery class and irods_environment.json
   reading functionality. [John Constable]
 - Adds exists() to data_object manager to mirror collection manager.
   [Alex Lemann]
