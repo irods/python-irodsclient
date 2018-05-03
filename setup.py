@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import codecs
 import os
 
 
@@ -10,7 +11,7 @@ with open(os.path.join(here, 'irods/version.py')) as file:
 
 
 # Get description
-with open('README.rst') as file:
+with codecs.open('README.rst', 'r', 'utf-8') as file:
     long_description = file.read()
 
 
