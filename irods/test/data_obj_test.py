@@ -606,6 +606,65 @@ class TestDataObjOps(unittest.TestCase):
         for resource in ufs_resources:
             resource.remove()
 
+    def test_get_replica_size(self):
+        session = self.sess
+
+        # Can't do one step open/create with older servers
+        if session.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'get_replica_size_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+
+        # make random 16byte binary file
+        original_size = 16
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(original_size))
+
+        # make ufs resources
+        ufs_resources = []
+        for i in range(2):
+            resource_name = 'ufs{}'.format(i)
+            resource_type = 'unixfilesystem'
+            resource_host = session.host
+            resource_path = '/tmp/{}'.format(resource_name)
+            ufs_resources.append(session.resources.create(
+                resource_name, resource_type, resource_host, resource_path))
+
+        # put file in test collection and replicate
+        obj_path = '{collection}/{filename}'.format(**locals())
+        options = {kw.DEST_RESC_NAME_KW: ufs_resources[0].name}
+        session.data_objects.put(test_file, collection + '/', **options)
+        session.data_objects.replicate(obj_path, ufs_resources[1].name)
+
+        # make random 32byte binary file
+        new_size = 32 
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(new_size))
+
+        # overwrite existing replica 0 with new file
+        options = {kw.FORCE_FLAG_KW: '', kw.DEST_RESC_NAME_KW: ufs_resources[0].name}
+        session.data_objects.put(test_file, collection + '/', **options)
+
+        # delete file
+        os.remove(test_file)
+
+        # ensure that sizes of the replicas are distinct
+        obj = session.data_objects.get(obj_path, test_dir)
+        self.assertEqual(obj.replicas[0].size, new_size)
+        self.assertEqual(obj.replicas[1].size, original_size)
+
+        # remove object
+        obj.unlink(force=True)
+        # delete file
+        os.remove(test_file)
+
+        # remove ufs resources
+        for resource in ufs_resources:
+            resource.remove()
 
     def test_obj_put_get(self):
         # Can't do one step open/create with older servers
