@@ -223,6 +223,12 @@ class AuthChallenge(Message):
     _name = 'authRequestOut_PI'
     challenge = BinaryProperty(64)
 
+
+class AuthPluginOut(Message):
+    _name = 'authPlugReqOut_PI'
+    result_ = StringProperty()
+    # result_ = BinaryProperty(16)
+
 # define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 
 
@@ -232,7 +238,7 @@ class BinBytesBuf(Message):
     buf = BinaryProperty()
 
 
-class GSIAuthMessage(Message):
+class PluginAuthMessage(Message):
     _name = 'authPlugReqInp_PI'
     auth_scheme_ = StringProperty()
     context_ = StringProperty()
