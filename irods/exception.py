@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import
 import six
+
+
 class PycommandsException(Exception):
     pass
 
@@ -1874,3 +1876,23 @@ class PHP_REQUEST_STARTUP_ERR(PHPException):
 
 class PHP_OPEN_SCRIPT_FILE_ERR(PHPException):
     code = -1602000
+
+
+class PAMException(iRODSException):
+    pass
+
+
+class PAM_AUTH_NOT_BUILT_INTO_CLIENT(PAMException):
+    code = -991000
+
+
+class PAM_AUTH_NOT_BUILT_INTO_SERVER(PAMException):
+    code = -992000
+
+
+class PAM_AUTH_PASSWORD_FAILED(PAMException):
+    code = -993000
+
+
+class PAM_AUTH_PASSWORD_INVALID_TTL(PAMException):
+    code = -994000
