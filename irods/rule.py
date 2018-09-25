@@ -1,17 +1,6 @@
 from __future__ import absolute_import
-import six
 from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
 from irods.api_number import api_number
-
-if six.PY3:
-    from html import escape
-else:
-    from cgi import escape
-
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 class Rule(object):
     def __init__(self, session, rule_file=None, body='', params=None, output=''):
@@ -20,7 +9,7 @@ class Rule(object):
         if rule_file:
             self.load(rule_file)
         else:
-            self.body = '@external\n' + escape(body, quote=True)
+            self.body = '@external\n' + body
             if params is None:
                 self.params = {}
             else:
@@ -61,14 +50,14 @@ class Rule(object):
 
                 # parse rule
                 else:
-                    self.body += escape(line, quote=True)
+                    self.body += line
 
 
     def execute(self):
         # rule input
         param_array = []
         for label, value in self.params.items():
-            inOutStruct = STR_PI(myStr=escape(value, quote=True))
+            inOutStruct = STR_PI(myStr=value)
             param_array.append(MsParam(label=label, type='STR_PI', inOutStruct=inOutStruct))
 
         inpParamArray = MsParamArray(paramLen=len(param_array), oprType=0, MsParam_PI=param_array)

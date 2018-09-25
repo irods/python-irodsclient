@@ -3,7 +3,10 @@ from base64 import b64encode, b64decode
 
 from irods.message.ordered import OrderedProperty
 import six
-
+if six.PY3:
+    from html import escape
+else:
+    from cgi import escape
 
 class MessageProperty(OrderedProperty):
 
@@ -82,24 +85,27 @@ class StringProperty(MessageProperty):
         self.length = length
         super(StringProperty, self).__init__()
 
+    @staticmethod
+    def escape_xml_string(string):
+        return escape(string, quote=False)
 
     if six.PY2:
         def format(self, value):
             if isinstance(value, str) or isinstance(value, unicode):
-                return value
+                return self.escape_xml_string(value)
 
-            return str(value)
+            return self.escape_xml_string(str(value))
 
     else:
         # Python 3
         def format(self, value):
             if isinstance(value, str):
-                return value
+                return self.escape_xml_string(value)
 
             if isinstance(value, bytes):
-                return value.decode()
+                return self.escape_xml_string(value.decode())
 
-            return str(value)
+            return self.escape_xml_string(str(value))
 
 
     def parse(self, value):
