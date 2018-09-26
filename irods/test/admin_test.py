@@ -2,8 +2,6 @@
 from __future__ import absolute_import
 import os
 import sys
-import string
-import random
 import unittest
 from irods.models import User
 from irods.exception import UserDoesNotExist, ResourceDoesNotExist
@@ -332,8 +330,8 @@ class TestAdmin(unittest.TestCase):
         zone = self.sess.zone
         self.sess.users.create(self.new_user_name, self.new_user_type)
 
-        # make a 12 character pseudo-random password
-        new_password = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(12))
+        # make a really horrible password
+        new_password = '''abc123!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~Z'''
         self.sess.users.modify(username, 'password', new_password)
 
         # open a session as the new user
