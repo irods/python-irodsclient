@@ -192,7 +192,7 @@ class TestSpecificQuery(unittest.TestCase):
             self.session, test_collection_path, obj_count=test_collection_size)
 
         # make specific query
-        sql = "select data_name, data_id from r_data_main join r_coll_main using (coll_id) where coll_name = '{test_collection_path}'".format(**locals())
+        sql = "select DATA_NAME, DATA_ID from R_DATA_MAIN join R_COLL_MAIN using (COLL_ID) where COLL_NAME = '{test_collection_path}'".format(**locals())
         alias = 'list_data_name_id'
         columns = [DataObject.name, DataObject.id]
         query = SpecificQuery(self.session, sql, alias, columns)
@@ -225,7 +225,7 @@ class TestSpecificQuery(unittest.TestCase):
             self.session, test_collection_path, obj_count=test_collection_size)
 
         # make specific query
-        sql = "select data_name, data_id from r_data_main join r_coll_main using (coll_id) where coll_name = '{test_collection_path}'".format(**locals())
+        sql = "select DATA_NAME, DATA_ID from R_DATA_MAIN join R_COLL_MAIN using (COLL_ID) where COLL_NAME = '{test_collection_path}'".format(**locals())
         alias = 'list_data_name_id'
         query = SpecificQuery(self.session, sql, alias)
 
@@ -246,7 +246,7 @@ class TestSpecificQuery(unittest.TestCase):
 
 
     def test_register_query_twice(self):
-        query = SpecificQuery(self.session, sql='select data_name from r_data_main', alias='list_data_names')
+        query = SpecificQuery(self.session, sql='select DATA_NAME from R_DATA_MAIN', alias='list_data_names')
 
         # register query
         query.register()
