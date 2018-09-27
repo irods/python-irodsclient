@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.8.1 (2018-09-27)
+-------------------
+- [#140] Remove randomization from password test [Alan King]
+- [#139] Use uppercase queries in tests [Alan King]
+- [#137] Handle filenames with ampersands [Alan King]
+- [#126] Add size attribute to iRODSReplica [Alan King]
+
 v0.8.0 (2018-05-03)
 -------------------
 - Add rescName and replNum awareness. [Hao Xu]
