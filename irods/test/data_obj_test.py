@@ -825,6 +825,46 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(new_env_file)
 
 
+    def test_obj_put_and_return_data_object(self):
+        # Can't do one step open/create with older servers
+        if self.sess.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # make another UFS resource
+        session = self.sess
+        resource_name = 'ufs'
+        resource_type = 'unixfilesystem'
+        resource_host = session.host
+        resource_path = '/tmp/' + resource_name
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
+
+        # set default resource to new UFS resource
+        session.default_resource = resource_name
+
+        # make a local file with random text content
+        content = ''.join(random.choice(string.printable) for _ in range(1024))
+        filename = 'testfile.txt'
+        file_path = os.path.join('/tmp', filename)
+        with open(file_path, 'w') as f:
+            f.write(content)
+
+        # put file
+        collection = self.coll_path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        new_file = session.data_objects.put(file_path, obj_path, return_data_object=True)
+
+        # get object and confirm resource
+        obj = session.data_objects.get(obj_path)
+        self.assertEqual(new_file.replicas[0].resource_name, obj.replicas[0].resource_name)
+
+        # cleanup
+        os.remove(file_path)
+        obj.unlink(force=True)
+        session.resources.remove(resource_name)
+
+
+
     def test_force_get(self):
         # Can't do one step open/create with older servers
         if self.sess.server_version <= (4, 1, 4):

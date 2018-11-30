@@ -57,7 +57,7 @@ class DataObjectManager(Manager):
         return iRODSDataObject(self, parent, results)
 
 
-    def put(self, file, irods_path, **options):
+    def put(self, file, irods_path, return_data_object=False, **options):
         if irods_path.endswith('/'):
             obj = irods_path + os.path.basename(file)
         else:
@@ -74,6 +74,9 @@ class DataObjectManager(Manager):
         if kw.ALL_KW in options:
             options[kw.UPDATE_REPL_KW] = ''
             self.replicate(obj, **options)
+
+        if return_data_object:
+            return self.get(obj)
 
 
     def create(self, path, resource=None, **options):
