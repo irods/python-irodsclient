@@ -279,7 +279,7 @@ class SpecificQuery(object):
             conditions = StringStringMap({})
 
         sql_args = {}
-        for i, arg in enumerate(self._args[:10]):
+        for i, arg in enumerate(self._args[:10], start=1):
             sql_args['arg{}'.format(i)] = arg
 
         message_body = SpecificQueryRequest(sql=target,
