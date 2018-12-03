@@ -4,7 +4,6 @@ import logging
 import struct
 import hashlib
 import six
-# import struct
 import os
 import ssl
 
