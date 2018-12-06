@@ -270,7 +270,15 @@ class TestSpecificQuery(unittest.TestCase):
             self.assertIn('SELECT', result[1].upper())  # query string
 
 
-    def test_list_specific_queries_with_wrong_alias(self):
+    def test_list_specific_queries_with_arguments(self):
+        query = SpecificQuery(self.session, alias='lsl', args=['%OFFSET%'])
+
+        for result in query:
+            self.assertIsNotNone(result[0])             # query alias
+            self.assertIn('SELECT', result[1].upper())  # query string
+
+
+    def test_list_specific_queries_with_unknown_alias(self):
         query = SpecificQuery(self.session, alias='foo')
 
         with self.assertRaises(CAT_UNKNOWN_SPECIFIC_QUERY):
