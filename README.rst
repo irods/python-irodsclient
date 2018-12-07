@@ -2,38 +2,38 @@
 Python iRODS Client (PRC)
 =========================
 
-`iRODS <https://www.irods.org>`_ is an open source distributed data management system. This is a client API implemented in python.
+`iRODS <https://www.irods.org>`_ is an open source distributed data management system. This is a client API implemented in Python.
 
 Currently supported:
 
-- Establish a connection to iRODS, authenticate
-- Implement basic Gen Queries (select columns and filtering)
-- Support more advanced Gen Queries with limits, offsets, and aggregations
+- Establish a connection to iRODS
+- Authenticate via password, GSI, PAM
+- iRODS connection over SSL
+- Implement basic GenQueries (select columns and filtering)
+- Support more advanced GenQueries with limits, offsets, and aggregations
 - Query the collections and data objects within a collection
 - Execute direct SQL queries
 - Execute iRODS rules
 - Support read, write, and seek operations for files
 - PUT/GET data objects
-- Create data objects
-- Delete data objects
 - Create collections
-- Delete collections
-- Rename data objects
 - Rename collections
+- Delete collections
+- Create data objects
+- Rename data objects
+- Delete data objects
 - Register files and directories
 - Query metadata for collections and data objects
 - Add, edit, remove metadata
 - Replicate data objects to different resource servers
 - Connection pool management
-- Implement gen query result sets as lazy queries
+- Implement GenQuery result sets as lazy queries
 - Return empty result sets when CAT_NO_ROWS_FOUND is raised
 - Manage permissions
 - Manage users and groups
 - Manage resources
-- GSI authentication
 - Unicode strings
 - Ticket based access
-- iRODS connection over SSL
 - Python 2.7, 3.4 or newer
 
 
