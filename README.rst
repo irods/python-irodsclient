@@ -235,6 +235,25 @@ General queries
 /tempZone/home/rods/manager/user_manager.py id=212669 size=5509
 /tempZone/home/rods/manager/user_manager.pyc id=212658 size=5233
 
+Query using other models:
+
+>>> from irods.column import Criterion
+>>> from irods.models import DataObject, DataObjectMeta, Collection, CollectionMeta
+>>> from irods.session import iRODSSession
+>>> import os
+>>> env_file = os.path.expanduser('~/.irods/irods_environment.json')
+>>> with iRODSSession(irods_env_file=env_file) as session:
+...    # by metadata
+...    # equivalent to 'imeta qu -C type like Project'
+...    results = session.query(Collection, CollectionMeta).filter( \
+...        Criterion('=', CollectionMeta.name, 'type')).filter( \
+...        Criterion('like', CollectionMeta.value, '%Project%'))
+...    for r in results:
+...        print(r[Collection.name], r[CollectionMeta.name], r[CollectionMeta.value], r[CollectionMeta.units])
+...
+('/tempZone/home/rods', 'type', 'Project', None)
+
+
 Query with aggregation(min, max, sum, avg, count):
 
 >>> with iRODSSession(irods_env_file=env_file) as session:
