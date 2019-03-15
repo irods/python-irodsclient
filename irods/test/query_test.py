@@ -1,7 +1,10 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import os
+import six
 import sys
+import tempfile
 import unittest
 from datetime import datetime
 from irods.models import User, Collection, DataObject, Resource
@@ -171,6 +174,42 @@ class TestQuery(unittest.TestCase):
             res_str = '{} {}/{}'.format(result[Resource.name], result[Collection.name], result[DataObject.name])
             self.assertIn(session.zone, res_str)
 
+    @unittest.skipIf(six.PY3, 'Test is for python2 only')
+    def test_query_for_data_object_with_utf8_name_python2(self):
+        filename_prefix = '_prefix_ǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸ'
+        _,test_file = tempfile.mkstemp(prefix=filename_prefix)
+        obj_path = os.path.join(self.coll.path, os.path.basename(test_file))
+        try:
+            self.sess.data_objects.register(test_file, obj_path)
+            results = self.sess.query(DataObject, Collection.name).filter(DataObject.path == test_file).first()
+            result_logical_path = os.path.join(results[Collection.name], results[DataObject.name])
+            result_physical_path = results[DataObject.path]
+            self.assertEqual(result_logical_path, obj_path.decode('utf8'))
+            self.assertEqual(result_physical_path, test_file.decode('utf8'))
+        finally:
+            self.sess.data_objects.unregister(obj_path)
+            os.remove(test_file)
+
+    @unittest.skipIf(six.PY2, 'Test is for python3 only')
+    def test_query_for_data_object_with_utf8_name_python3(self):
+        filename_prefix = u'_prefix_ǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸ'
+        _,encoded_test_file = tempfile.mkstemp(prefix=filename_prefix.encode('utf-8'))
+        self.assertTrue(os.path.exists(encoded_test_file))
+
+        test_file = encoded_test_file.decode('utf-8')
+        obj_path = os.path.join(self.coll.path, os.path.basename(test_file))
+
+        try:
+            self.sess.data_objects.register(test_file, obj_path)
+
+            results = self.sess.query(DataObject, Collection.name).filter(DataObject.path == test_file).first()
+            result_logical_path = os.path.join(results[Collection.name], results[DataObject.name])
+            result_physical_path = results[DataObject.path]
+            self.assertEqual(result_logical_path, obj_path)
+            self.assertEqual(result_physical_path, test_file)
+        finally:
+            self.sess.data_objects.unregister(obj_path)
+            os.remove(encoded_test_file)
 
 class TestSpecificQuery(unittest.TestCase):
 

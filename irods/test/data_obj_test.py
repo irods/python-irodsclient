@@ -1016,16 +1016,13 @@ class TestDataObjOps(unittest.TestCase):
             f.write(os.urandom(1024 * 4))
 
         # register file in test collection
-        print('registering [' + obj_path + ']')
         self.sess.data_objects.register(test_file, obj_path)
 
         # confirm object presence
-        print('getting [' + obj_path + ']')
         obj = self.sess.data_objects.get(obj_path)
 
         # in a real use case we would likely
         # want to leave the physical file on disk
-        print('unregistering [' + obj.path + ']')
         obj.unregister()
 
         # delete file
