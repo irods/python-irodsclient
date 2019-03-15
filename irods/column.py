@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import six
 from datetime import datetime
 from calendar import timegm
 
@@ -113,6 +114,12 @@ class String(ColumnType):
 
     @staticmethod
     def to_irods(data):
+        try:
+            # Convert to Unicode string (aka decode)
+            data = six.text_type(data, 'utf-8', 'replace')
+        except TypeError:
+            # Some strings are already Unicode so they do not need decoding
+            pass
         return u"'{}'".format(data)
 
 
