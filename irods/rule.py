@@ -6,19 +6,21 @@ class Rule(object):
     def __init__(self, session, rule_file=None, body='', params=None, output=''):
         self.session = session
 
+        self.params = {}
+        self.output = ''
+
         if rule_file:
             self.load(rule_file)
         else:
             self.body = '@external\n' + body
-            if params is None:
-                self.params = {}
-            else:
-                self.params = params
+
+        # overwrite params and output if received arguments
+        if params is not None:
+            self.params = params
+        if output != '':
             self.output = output
 
     def load(self, rule_file):
-        self.params = {}
-        self.output = ''
         self.body = '@external\n'
 
         # parse rule file
