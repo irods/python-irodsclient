@@ -23,11 +23,12 @@ def irods_basename(path):
 
 class iRODSReplica(object):
 
-    def __init__(self, number, status, resource_name, path, **kwargs):
+    def __init__(self, number, status, resource_name, path, resc_hier, **kwargs):
         self.number = number
         self.status = status
         self.resource_name = resource_name
         self.path = path
+        self.resc_hier = resc_hier
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -61,6 +62,7 @@ class iRODSDataObject(object):
                 r[DataObject.replica_status],
                 r[DataObject.resource_name],
                 r[DataObject.path],
+                r[DataObject.resc_hier],
                 checksum=r[DataObject.checksum],
                 size=r[DataObject.size]
             ) for r in replicas]
