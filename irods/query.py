@@ -184,15 +184,20 @@ class Query(object):
 
     def get_batches(self):
         result_set = self.execute()
-        yield result_set
 
-        while result_set.continue_index > 0:
-            try:
-                result_set = self.continue_index(
-                    result_set.continue_index).execute()
-                yield result_set
-            except CAT_NO_ROWS_FOUND:
-                break
+        try:
+            yield result_set
+
+            while result_set.continue_index > 0:
+                try:
+                    result_set = self.continue_index(
+                        result_set.continue_index).execute()
+                    yield result_set
+                except CAT_NO_ROWS_FOUND:
+                    break
+        except GeneratorExit:
+            if result_set.continue_index > 0:
+                self.continue_index(result_set.continue_index).close()
 
     def get_results(self):
         for result_set in self.get_batches():
@@ -204,6 +209,8 @@ class Query(object):
 
     def one(self):
         results = self.execute()
+        if results.continue_index > 0:
+            self.continue_index(results.continue_index).close()
         if not len(results):
             raise NoResultFound()
         if len(results) > 1:
@@ -213,6 +220,8 @@ class Query(object):
     def first(self):
         query = self.limit(1)
         results = query.execute()
+        if results.continue_index > 0:
+            query.continue_index(results.continue_index).close()
         if not len(results):
             return None
         else:
