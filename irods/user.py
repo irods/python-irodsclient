@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from irods.models import User, UserGroup, UserAuth
+from irods.meta import iRODSMetaCollection
 from irods.exception import NoResultFound
 
 
@@ -18,6 +19,13 @@ class iRODSUser(object):
     def dn(self):
         query = self.manager.sess.query(UserAuth.user_dn).filter(UserAuth.user_id == self.id)
         return [res[UserAuth.user_dn] for res in query]
+
+    @property
+    def metadata(self):
+        if not self._meta:
+            self._meta = iRODSMetaCollection(
+                 self.manager.sess.metadata, User, self.name)
+        return self._meta
 
     def modify(self, *args, **kwargs):
         self.manager.modify(self.name, *args, **kwargs)
@@ -47,6 +55,13 @@ class iRODSUserGroup(object):
     @property
     def members(self):
         return self.manager.getmembers(self.name)
+    
+    @property
+    def metadata(self):
+        if not self._meta:
+            self._meta = iRODSMetaCollection(
+                 self.manager.sess.metadata, User, self.name)
+        return self._meta
 
     def addmember(self, user_name, user_zone=""):
         self.manager.addmember(self.name, user_name, user_zone)
