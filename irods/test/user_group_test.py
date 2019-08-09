@@ -4,6 +4,7 @@ import os
 import sys
 import unittest
 from irods.exception import UserGroupDoesNotExist
+from irods.meta import iRODSMetaCollection
 import irods.test.helpers as helpers
 from six.moves import range
 
@@ -106,7 +107,7 @@ class TestUserGroup(unittest.TestCase):
 
         # add other dn
         user.modify('addAuth', user_DNs[1])
-        self.assertEqual(user.dn, user_DNs)
+        self.assertEqual(user.dn.sort(), user_DNs.sort())
 
         # remove first dn
         user.modify('rmAuth', user_DNs[0])
@@ -117,6 +118,63 @@ class TestUserGroup(unittest.TestCase):
         # delete user
         user.remove()
 
+    def test_user_metadata(self):
+        user_name = 'testuser'
+        user = self.sess.users.create(user_name, 'rodsuser')        
+        self.assertIsInstance(user.metadata, iRODSMetaCollection)
+        user.remove()
+    
+    def test_get_user_metadata(self):
+        
+        user_name = "testuser"
+        
+        # create user
+        user = self.sess.users.create(user_name, 'rodsuser')        
+        meta = user.metadata.get_all('key')        
+        # There should be no metadata
+        self.assertEqual(len(meta), 0)        
+        user.remove()
+        
+    def test_add_user_metadata(self):
+        user_name = "testuser"
+        
+        # create user
+        user = self.sess.users.create(user_name, 'rodsuser')        
+        
+        user.metadata.add('key0', 'value0')
+        user.metadata.add('key1', 'value1', 'unit1')
+        user.metadata.add('key2', 'value2a', 'unit2')
+        user.metadata.add('key2', 'value2b', 'unit2')
+        
+        meta0 = user.metadata.get_all('key0')
+        self.assertEqual(len(meta0),1)
+        self.assertEqual(meta0[0].name, 'key0')
+        self.assertEqual(meta0[0].value, 'value0')        
+        
+        meta1 = user.metadata.get_all('key1')
+        self.assertEqual(len(meta1),1)
+        self.assertEqual(meta1[0].name, 'key1')
+        self.assertEqual(meta1[0].value, 'value1')
+        self.assertEqual(meta1[0].units, 'unit1')
+
+        meta2 = sorted(user.metadata.get_all('key2'), key = lambda AVU : AVU.value)
+        self.assertEqual(len(meta2),2)
+        self.assertEqual(meta2[0].name, 'key2')
+        self.assertEqual(meta2[0].value, 'value2a')
+        self.assertEqual(meta2[0].units, 'unit2')
+        self.assertEqual(meta2[1].name, 'key2')
+        self.assertEqual(meta2[1].value, 'value2b')
+        self.assertEqual(meta2[1].units, 'unit2')
+        
+        user.metadata.remove('key1', 'value1', 'unit1')
+        metadata = user.metadata.items()
+        self.assertEqual(len(metadata), 3)
+        
+        user.metadata.remove('key2', 'value2a', 'unit2')
+        metadata = user.metadata.items()
+        self.assertEqual(len(metadata), 2)
+                
+        user.remove()        
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
