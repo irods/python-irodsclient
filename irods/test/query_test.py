@@ -7,15 +7,34 @@ import sys
 import tempfile
 import unittest
 from datetime import datetime
-from irods.models import User, Collection, DataObject, Resource
+from irods.models import User, Collection, DataObject, DataObjectMeta, Resource
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import SpecificQuery
 from irods.column import Like, Between
+from irods.meta import iRODSMeta
 from irods import MAX_SQL_ROWS
 import irods.test.helpers as helpers
+from six.moves import range as py3_range
 
+IRODS_STATEMENT_TABLE_SIZE = 50
+
+def remove_unused_metadata (sess) :
+
+    from irods.message import GeneralAdminRequest, iRODSMessage
+    from irods.api_number import api_number
+    message_body = GeneralAdminRequest( 'rm', 'unusedAVUs', '','','','')
+    req = iRODSMessage("RODS_API_REQ", msg = message_body,int_info=api_number['GENERAL_ADMIN_AN'])
+    with sess.pool.get_connection() as conn:
+        conn.send(req)
+        response=conn.recv()
+        if (response.int_info != 0): raise RuntimeError("Error removing unused AVU's")
 
 class TestQuery(unittest.TestCase):
+
+    Iterate_to_exhaust_statement_table = range(IRODS_STATEMENT_TABLE_SIZE + 1)
+
+    More_than_one_batch = 2*MAX_SQL_ROWS # may need to increase if PRC default page
+                                         #   size is increased beyond 500
 
     def setUp(self):
         self.sess = helpers.make_session()
@@ -29,13 +48,11 @@ class TestQuery(unittest.TestCase):
         self.coll = self.sess.collections.create(self.coll_path)
         self.obj = self.sess.data_objects.create(self.obj_path)
 
-
     def tearDown(self):
         '''Remove test data and close connections
         '''
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
-
 
     def test_collections_query(self):
         # collection query test
@@ -210,6 +227,116 @@ class TestQuery(unittest.TestCase):
         finally:
             self.sess.data_objects.unregister(obj_path)
             os.remove(encoded_test_file)
+
+    class Issue_166_context:
+        '''
+        For [irods/python-irodsclient#166] related tests
+        '''
+
+        def __init__(self, session, coll_path='test_collection_issue_166', num_objects=8, num_avus_per_object=0):
+            self.session = session
+            if '/' not in coll_path:
+                coll_path = '/{}/home/{}/{}'.format(self.session.zone, self.session.username, coll_path)
+            self.coll_path = coll_path
+            self.num_objects = num_objects
+            self.test_collection = None
+            self.nAVUs = num_avus_per_object
+
+        def __enter__(self): # - prepare for context block ("with" statement)
+
+            self.test_collection = helpers.make_test_collection( self.session, self.coll_path, obj_count=self.num_objects)
+            q_params = (Collection.name, DataObject.name)
+
+            if self.nAVUs > 0:
+
+                # - set the AVUs on the collection's objects:
+                for data_obj_path in map(lambda d:d[Collection.name]+"/"+d[DataObject.name],
+                                         self.session.query(*q_params).filter(Collection.name == self.test_collection.path)):
+                    data_obj = self.session.data_objects.get(data_obj_path)
+                    for key in (str(x) for x in py3_range(self.nAVUs)):
+                        data_obj.metadata[key] = iRODSMeta(key, "1")
+
+                # - in subsequent test searches, match on each AVU of every data object in the collection:
+                q_params += (DataObjectMeta.name,)
+
+            # - The "with" statement receives, as context variable, a zero-arg function to build the query
+            return lambda : self.session.query( *q_params ).filter( Collection.name == self.test_collection.path)
+
+        def __exit__(self,*_): # - clean up after context block
+
+            if self.test_collection is not None:
+                self.test_collection.remove(recurse=True, force=True)
+
+            if self.nAVUs > 0 and self.num_objects > 0:
+                remove_unused_metadata(self.session)                    # delete unused AVU's
+
+    def test_query_first__166(self):
+
+        with self.Issue_166_context(self.sess) as buildQuery:
+            for dummy_i in self.Iterate_to_exhaust_statement_table:
+                buildQuery().first()
+
+    def test_query_one__166(self):
+
+        with self.Issue_166_context(self.sess, num_objects = self.More_than_one_batch) as buildQuery:
+
+            for dummy_i in self.Iterate_to_exhaust_statement_table:
+                query = buildQuery()
+                try:
+                    query.one()
+                except MultipleResultsFound:
+                    pass # irrelevant result
+
+    def test_query_one_iter__166(self):
+
+        with self.Issue_166_context(self.sess, num_objects = self.More_than_one_batch) as buildQuery:
+
+            for dummy_i in self.Iterate_to_exhaust_statement_table:
+
+                for dummy_row in buildQuery():
+                    break # single iteration
+
+    def test_paging_get_batches_and_check_paging__166(self):
+
+        with self.Issue_166_context( self.sess, num_objects = 1,
+                                     num_avus_per_object = 2 * self.More_than_one_batch) as buildQuery:
+
+            pages = [b for b in buildQuery().get_batches()]
+            self.assertTrue(len(pages) > 2 and len(pages[0]) < self.More_than_one_batch)
+
+            to_compare = []
+
+            for _ in self.Iterate_to_exhaust_statement_table:
+
+                for batch in buildQuery().get_batches():
+                    to_compare.append(batch)
+                    if len(to_compare) == 2: break  #leave query unfinished, but save two pages to compare
+
+                # - To make sure paging was done, we ensure that this "key" tuple (collName/dataName , metadataKey)
+                #   is not repeated between first two pages:
+
+                Compare_Key = lambda d: ( d[Collection.name] + "/" + d[DataObject.name],
+                                          d[DataObjectMeta.name] )
+                Set0 = { Compare_Key(dct) for dct in to_compare[0] }
+                Set1 = { Compare_Key(dct) for dct in to_compare[1] }
+                self.assertTrue(len(Set0 & Set1) == 0) # assert intersection is null set
+
+    def test_paging_get_results__166(self):
+
+        with self.Issue_166_context( self.sess, num_objects = self.More_than_one_batch) as buildQuery:
+            batch_size = 0
+            for result_set in buildQuery().get_batches():
+                batch_size = len(result_set)
+                break
+
+            self.assertTrue(0 < batch_size < self.More_than_one_batch)
+
+            for dummy_iter in self.Iterate_to_exhaust_statement_table:
+                iters = 0
+                for dummy_row in buildQuery().get_results():
+                    iters += 1
+                    if iters == batch_size - 1:
+                        break # leave iteration unfinished
 
 class TestSpecificQuery(unittest.TestCase):
 
