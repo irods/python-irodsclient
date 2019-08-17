@@ -55,7 +55,7 @@ class iRODSUserGroup(object):
     @property
     def members(self):
         return self.manager.getmembers(self.name)
-    
+
     @property
     def metadata(self):
         if not self._meta:

@@ -124,6 +124,17 @@ def compute_sha256_digest(file_path):
     return base64.b64encode(hasher.digest()).decode()
 
 
+def remove_unused_metadata(session):
+    from irods.message import GeneralAdminRequest
+    from irods.api_number import api_number
+    message_body = GeneralAdminRequest( 'rm', 'unusedAVUs', '','','','')
+    req = iRODSMessage("RODS_API_REQ", msg = message_body,int_info=api_number['GENERAL_ADMIN_AN'])
+    with session.pool.get_connection() as conn:
+        conn.send(req)
+        response=conn.recv()
+        if (response.int_info != 0): raise RuntimeError("Error removing unused AVUs")
+
+
 @contextlib.contextmanager
 def file_backed_up(filename):
     with tempfile.NamedTemporaryFile(prefix=os.path.basename(filename)) as f:
