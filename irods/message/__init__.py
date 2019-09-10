@@ -6,7 +6,7 @@ import socket
 import json
 from six.moves import builtins
 import irods.exception as ex
-import xml.etree.ElementTree as ET
+from irods.message import quasixml as ET
 from collections import namedtuple
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty,
