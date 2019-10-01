@@ -36,6 +36,7 @@ class Query(object):
         self._limit = -1
         self._offset = 0
         self._continue_index = 0
+        self._keywords = {}
 
         for arg in args:
             if isinstance(arg, type) and issubclass(arg, Model):
@@ -54,6 +55,12 @@ class Query(object):
         new_q._limit = self._limit
         new_q._offset = self._offset
         new_q._continue_index = self._continue_index
+        new_q._keywords = self._keywords
+        return new_q
+
+    def add_keyword(self, keyword, value = ''):
+        new_q = self._clone()
+        new_q._keywords[keyword] = value
         return new_q
 
     def filter(self, *criteria):
@@ -138,6 +145,8 @@ class Query(object):
             for criterion in self.criteria
             if isinstance(criterion.query_key, Keyword)
         ])
+        for key in self._keywords:
+            dct[ key ] = self._keywords[key]
         return StringStringMap(dct)
 
     def _message(self):

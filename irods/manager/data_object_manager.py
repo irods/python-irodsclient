@@ -50,7 +50,9 @@ class DataObjectManager(Manager):
 
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == irods_basename(path))\
-            .filter(DataObject.collection_id == parent.id)
+            .filter(DataObject.collection_id == parent.id)\
+            .add_keyword(kw.ZONE_KW, path.split('/')[1])
+
         results = query.all() # get up to max_rows replicas
         if len(results) <= 0:
             raise ex.DataObjectDoesNotExist()
