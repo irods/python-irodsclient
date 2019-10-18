@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from irods.models import Resource
+from irods.meta import iRODSMetaCollection
 import six
 
 
@@ -37,6 +38,12 @@ class iRODSResource(object):
 
         self._meta = None
 
+    @property
+    def metadata(self):
+        if not self._meta:
+            self._meta = iRODSMetaCollection(
+                self.manager.sess.metadata, Resource, self.name)
+        return self._meta
 
     @property
     def context_fields(self):
