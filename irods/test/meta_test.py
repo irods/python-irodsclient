@@ -5,7 +5,7 @@ import os
 import sys
 import unittest
 from irods.meta import iRODSMeta
-from irods.models import DataObject, Collection
+from irods.models import DataObject, Collection, Resource
 import irods.test.helpers as helpers
 from six.moves import range
 
@@ -44,6 +44,19 @@ class TestMeta(unittest.TestCase):
         # there should be no metadata at this point
         assert len(meta) == 0
 
+    def test_resc_meta(self):
+        rescname = 'demoResc'
+        self.sess.resources.get(rescname).metadata.remove_all()
+        self.sess.metadata.set(Resource, rescname, iRODSMeta('zero','marginal','cost'))
+        self.sess.metadata.add(Resource, rescname, iRODSMeta('zero','marginal'))
+        self.sess.metadata.set(Resource, rescname, iRODSMeta('for','ever','after'))
+        meta = self.sess.resources.get(rescname).metadata
+        self.assertTrue( len(meta) == 3 )
+        resource = self.sess.resources.get(rescname)
+        all_AVUs= resource.metadata.items()
+        for avu in all_AVUs:
+            resource.metadata.remove(avu)
+        self.assertTrue(0 == len(self.sess.resources.get(rescname).metadata))
 
     def test_add_obj_meta(self):
         # add metadata to test object
