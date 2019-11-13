@@ -1,6 +1,22 @@
 Changelog
 =========
 
+v0.8.2 (2019-11-14)
+-------------------
+- [#8] Add PAM Authentication handling (still needs tests) [Mattia D'Antonio]
+- [#5] Remove commented-out import [Alan King]
+- [#5] Add .idea directory to .gitignore [Jonathan Landrum]
+- [#150] Fix specific query argument labeling [Chris Klimowski]
+- [#148] DataObjectManager.put() can return the new data_object [Jonathan Landrum]
+- [#124] Convert strings going to irods to Unicode [Alan King]
+- [#161] Allow dynamic I/O for rule from file [Mathijs Koymans]
+- [#162] Include resc_hier in replica information [Brett Hartley]
+- [#165] Fix CAT_STATEMENT_TABLE_FULL by auto closing queries [Chris Smeele]
+- [#166] Test freeing statements in unfinished query [Daniel Moore]
+- [#167] Add metadata for user and usergroup objects [Erwin van Wieringen]
+- [#175] Add metadata property for instances of iRODSResource [Daniel Moore]
+- [#163] add keywords to query objects [Daniel Moore]
+
 v0.8.1 (2018-09-27)
 -------------------
 - [#140] Remove randomization from password test [Alan King]
