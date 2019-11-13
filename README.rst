@@ -59,7 +59,7 @@ Uninstalling
 
 
 Establishing a (secure) connection
--------------------------
+----------------------------------
 
 Using environment files (including any SSL settings) in ``~/.irods/``:
 
