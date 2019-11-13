@@ -1,7 +1,7 @@
 Changelog
 =========
 
-v0.8.2 (2019-11-14)
+v0.8.2 (2019-11-13)
 -------------------
 - [#8] Add PAM Authentication handling (still needs tests) [Mattia D'Antonio]
 - [#5] Remove commented-out import [Alan King]
