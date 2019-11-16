@@ -74,7 +74,6 @@ Using environment files (including any SSL settings) in ``~/.irods/``:
 >>> ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=None, capath=None, cadata=None)
 >>> ssl_settings = {'ssl_context': ssl_context}
 >>> with iRODSSession(irods_env_file=env_file, **ssl_settings) as session:
->>> with iRODSSession(irods_env_file=env_file) as session:
 ...     pass
 ...
 >>>
