@@ -39,6 +39,20 @@ class Criterion(object):
     def value(self):
         return self.query_key.column_type.to_irods(self._value)
 
+class In(Criterion):
+
+    def __init__(self, query_key, value):
+        super(In, self).__init__('in', query_key, value)
+
+    @property
+    def value(self):
+        v = "("
+        comma = ""
+        for element in self._value:
+            v += "{}'{}'".format(comma,element)
+            comma = ","
+        v += ")"
+        return v
 
 class Like(Criterion):
 

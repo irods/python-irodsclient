@@ -10,7 +10,7 @@ from datetime import datetime
 from irods.models import User, Collection, DataObject, DataObjectMeta, Resource
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import SpecificQuery
-from irods.column import Like, Between
+from irods.column import Like, Between, In
 from irods.meta import iRODSMeta
 from irods import MAX_SQL_ROWS
 import irods.test.helpers as helpers
@@ -204,6 +204,18 @@ class TestQuery(unittest.TestCase):
         for result in query:
             res_str = '{} {}/{}'.format(result[Resource.name], result[Collection.name], result[DataObject.name])
             self.assertIn(session.zone, res_str)
+
+    def test_query_with_in_condition(self):
+        collection = self.coll_path
+        filename = 'test_query_id_in_list.txt'
+        file_path = '{collection}/{filename}'.format(**locals())
+        obj1 = helpers.make_object(self.sess, file_path+'-1')
+        obj2 = helpers.make_object(self.sess, file_path+'-2')
+        ids = [x.id for x in (obj1,obj2)]
+        for number in range(3):  # slice for empty(:0), first(:1) or both(:2)
+            search_tuple = (ids[:number] if number >= 1 else [0] + ids[:number])
+            q = self.sess.query(DataObject.name).filter(In( DataObject.id, search_tuple ))
+            self.assertEqual (number, len(list(q)))
 
     @unittest.skipIf(six.PY3, 'Test is for python2 only')
     def test_query_for_data_object_with_utf8_name_python2(self):
