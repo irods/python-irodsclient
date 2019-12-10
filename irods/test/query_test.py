@@ -165,6 +165,20 @@ class TestQuery(unittest.TestCase):
             results = self.sess.query(User.name).order_by(
                 User.name, order='moo').all()
 
+    def test_query_order_by_col_not_in_result__183(self):
+        test_collection_size = 8
+        test_collection_path = '/{0}/home/{1}/testcoln_for_col_not_in_result'.format(self.sess.zone, self.sess.username)
+        c1 = c2 = None
+        try:
+            c1 = helpers.make_test_collection( self.sess, test_collection_path+"1", obj_count=test_collection_size)
+            c2 = helpers.make_test_collection( self.sess, test_collection_path+"2", obj_count=test_collection_size)
+            d12 = [ sorted([d.id for d in c.data_objects]) for c in sorted((c1,c2),key=lambda c:c.id) ]
+            query = self.sess.query(DataObject).filter(Like(Collection.name, test_collection_path+"_")).order_by(Collection.id)
+            q12 = list(map(lambda res:res[DataObject.id], query))
+            self.assertTrue(d12[0] + d12[1] == sorted( q12[:test_collection_size] ) + sorted( q12[test_collection_size:]))
+        finally:
+            if c1: c1.remove(recurse=True,force=True)
+            if c2: c2.remove(recurse=True,force=True)
 
     def test_query_with_like_condition(self):
         '''Equivalent to:

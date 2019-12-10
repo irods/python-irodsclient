@@ -70,7 +70,7 @@ class Query(object):
 
     def order_by(self, column, order='asc'):
         new_q = self._clone()
-        del new_q.columns[column]
+        new_q.columns.pop(column,None)
         if order == 'asc':
             new_q.columns[column] = query_number['ORDER_BY']
         elif order == 'desc':
