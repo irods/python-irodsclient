@@ -6,8 +6,13 @@ import six
 import sys
 import tempfile
 import unittest
+import time
 from datetime import datetime
-from irods.models import User, Collection, DataObject, DataObjectMeta, Resource
+from irods.models import (User, UserMeta,
+                          Resource, ResourceMeta,
+                          Collection, CollectionMeta,
+                          DataObject, DataObjectMeta  )
+
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import SpecificQuery
 from irods.column import Like, Between, In
@@ -17,6 +22,9 @@ import irods.test.helpers as helpers
 from six.moves import range as py3_range
 
 IRODS_STATEMENT_TABLE_SIZE = 50
+
+def rows_returned(query):
+    return len( list(query) )
 
 
 class TestQuery(unittest.TestCase):
@@ -204,7 +212,7 @@ class TestQuery(unittest.TestCase):
         for number in range(3):  # slice for empty(:0), first(:1) or both(:2)
             search_tuple = (ids[:number] if number >= 1 else [0] + ids[:number])
             q = self.sess.query(DataObject.name).filter(In( DataObject.id, search_tuple ))
-            self.assertEqual (number, len(list(q)))
+            self.assertEqual (number, rows_returned(q))
 
     def test_simultaneous_multiple_AVU_joins(self):
         objects = []
@@ -225,25 +233,60 @@ class TestQuery(unittest.TestCase):
             q = self.sess.query(DataObject,DataObjectMeta).\
                                             filter(DataObjectMeta.name == 'A_meta', DataObjectMeta.value <  '20').\
                                             filter(DataObjectMeta.name == 'B_meta', DataObjectMeta.value >= '20')
-            self.assertTrue( len(list(q)) == len(objects) )
+            self.assertTrue( rows_returned(q) == len(objects) )
 
             # -- test no-stomp of previous filter --
             self.assertTrue( ('B_meta','28') in [ (x.name,x.value) for x in objects[-1].metadata.items() ] )
             q = self.sess.query(DataObject,DataObjectMeta).\
                                             filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value < '28').\
                                             filter(DataObjectMeta.name == 'B_meta').filter(Like(DataObjectMeta.value, '2_'))
-            self.assertTrue( len(list(q)) == len(objects)-1 )
+            self.assertTrue( rows_returned(q) == len(objects)-1 )
 
             # -- test multiple AVU's by same attribute name --
             objects[-1].metadata.add('B_meta','29')
             q = self.sess.query(DataObject,DataObjectMeta).\
                                             filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value == '28').\
                                             filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value == '29')
-            self.assertTrue(len(list(q)) == 1)
+            self.assertTrue(rows_returned(q) == 1)
         finally:
             for x in (objects + decoys):
                 x.unlink(force=True)
             helpers.remove_unused_metadata( self.sess )
+
+    def test_query_on_AVU_times(self):
+        test_collection_path = '/{zone}/home/{user}/test_collection'.format( zone = self.sess.zone, user = self.sess.username)
+        testColl = helpers.make_test_collection(self.sess, test_collection_path, obj_count = 1)
+        testData =  testColl.data_objects[0]
+        testResc =  self.sess.resources.get('demoResc')
+        testUser =  self.sess.users.get(self.sess.username)
+        objects =    { 'r': testResc, 'u': testUser, 'c':testColl, 'd':testData }
+        object_IDs = { sfx:obj.id for sfx,obj in objects.items() }
+        tables =  { 'r': (Resource, ResourceMeta),
+                    'u': (User, UserMeta),
+                    'd': (DataObject, DataObjectMeta),
+                    'c': (Collection, CollectionMeta)  }
+        try:
+            str_number_incr = lambda str_numbers : str(1+max([0]+[int(n) if n.isdigit() else 0 for n in str_numbers]))
+            AVU_unique_incr = lambda obj,suffix='' : ( 'a_'+suffix,
+                                                       'v_'+suffix,
+                                                       str_number_incr(avu.units for avu in obj.metadata.items()) )
+            before = datetime.utcnow()
+            time.sleep(1.5)
+            for suffix,obj in objects.items(): obj.metadata.add( *AVU_unique_incr(obj,suffix) )
+            after = datetime.utcnow()
+            for suffix, tblpair in tables.items():
+                self.sess.query( *tblpair ).filter(tblpair[1].modify_time <= after )\
+                                           .filter(tblpair[1].modify_time > before )\
+                                           .filter(tblpair[0].id == object_IDs[suffix] ).one()
+                self.sess.query( *tblpair ).filter(tblpair[1].create_time <= after )\
+                                           .filter(tblpair[1].create_time > before )\
+                                           .filter(tblpair[0].id == object_IDs[suffix] ).one()
+        finally:
+            for obj in objects.values():
+                for avu in obj.metadata.items(): obj.metadata.remove(avu)
+            testColl.remove(recurse=True,force=True)
+            helpers.remove_unused_metadata( self.sess )
+
 
     def test_multiple_criteria_on_one_column_name(self):
         collection = self.coll_path
@@ -502,7 +545,6 @@ class TestSpecificQuery(unittest.TestCase):
 
         # remove query
         query.remove()
-
 
     def test_list_specific_queries(self):
         query = SpecificQuery(self.session, alias='ls')
