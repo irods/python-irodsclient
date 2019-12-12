@@ -5,7 +5,7 @@ from irods import MAX_SQL_ROWS
 from irods.models import Model
 from irods.column import Column, Keyword
 from irods.message import (
-    IntegerIntegerMap, IntegerStringMap, StringStringMap,
+    IntegerIntegerMap, IntegerStringMap, StringStringMap, _OrderedMultiMapping,
     GenQueryRequest, GenQueryResponse, empty_gen_query_out,
     iRODSMessage, SpecificQueryRequest, GeneralAdminRequest)
 from irods.api_number import api_number
@@ -131,7 +131,7 @@ class Query(object):
     # todo store criterion for columns and criterion for keywords in seaparate
     # lists
     def _conds_message(self):
-        dct = dict([
+        dct = _OrderedMultiMapping([
             (criterion.query_key.icat_id, criterion.op + ' ' + criterion.value)
             for criterion in self.criteria
             if isinstance(criterion.query_key, Column)

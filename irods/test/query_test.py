@@ -18,16 +18,6 @@ from six.moves import range as py3_range
 
 IRODS_STATEMENT_TABLE_SIZE = 50
 
-def remove_unused_metadata (sess) :
-
-    from irods.message import GeneralAdminRequest, iRODSMessage
-    from irods.api_number import api_number
-    message_body = GeneralAdminRequest( 'rm', 'unusedAVUs', '','','','')
-    req = iRODSMessage("RODS_API_REQ", msg = message_body,int_info=api_number['GENERAL_ADMIN_AN'])
-    with sess.pool.get_connection() as conn:
-        conn.send(req)
-        response=conn.recv()
-        if (response.int_info != 0): raise RuntimeError("Error removing unused AVU's")
 
 class TestQuery(unittest.TestCase):
 
@@ -188,7 +178,6 @@ class TestQuery(unittest.TestCase):
         query = self.sess.query(Resource).filter(Like(Resource.name, 'dem%'))
         self.assertIn('demoResc', [row[Resource.name] for row in query])
 
-
     def test_query_with_between_condition(self):
         '''Equivalent to:
         iquest "select RESC_NAME, COLL_NAME, DATA_NAME where DATA_MODIFY_TIME between '01451606400' '...'"
@@ -216,6 +205,55 @@ class TestQuery(unittest.TestCase):
             search_tuple = (ids[:number] if number >= 1 else [0] + ids[:number])
             q = self.sess.query(DataObject.name).filter(In( DataObject.id, search_tuple ))
             self.assertEqual (number, len(list(q)))
+
+    def test_simultaneous_multiple_AVU_joins(self):
+        objects = []
+        decoys = []
+        try:
+            collection = self.coll_path
+            filename = 'test_multiple_AVU_joins'
+            file_path = '{collection}/{filename}'.format(**locals())
+            for x in range(3,9):
+                obj = helpers.make_object(self.sess, file_path+'-{}'.format(x))  # with metadata
+                objects.append(obj)
+                obj.metadata.add('A_meta','1{}'.format(x))
+                obj.metadata.add('B_meta','2{}'.format(x))
+                decoys.append(helpers.make_object(self.sess, file_path+'-dummy{}'.format(x)))   # without metadata
+            self.assertTrue( len(objects) > 0 )
+            q = self.sess.query(DataObject,DataObjectMeta).\
+                                            filter(DataObjectMeta.name == 'A_meta', DataObjectMeta.value <  '20').\
+                                            filter(DataObjectMeta.name == 'B_meta', DataObjectMeta.value >= '20')
+            self.assertTrue( len(list(q)) == len(objects) )
+            q = self.sess.query(DataObject,DataObjectMeta).\
+                                            filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value < '28').\
+                                            filter(DataObjectMeta.name == 'B_meta').filter(Like(DataObjectMeta.value, '2_'))
+            self.assertTrue( len(list(q)) == len(objects)-1 )
+        finally:
+            for x in (objects + decoys):
+                x.unlink(force=True)
+            helpers.remove_unused_metadata( self.sess )
+
+    def test_multiple_criteria_on_one_column_name(self):
+        collection = self.coll_path
+        filename = 'test_multiple_AVU_joins'
+        file_path = '{collection}/{filename}'.format(**locals())
+        objects = []
+        nobj = 0
+        for x in range(3,9):
+            nobj += 2
+            obj1 = helpers.make_object(self.sess, file_path+'-{}'.format(x))
+            obj2 = helpers.make_object(self.sess, file_path+'-dummy{}'.format(x))
+            objects.extend([obj1,obj2])
+        self.assertTrue( nobj > 0 and len(objects) == nobj )
+        q = self.sess.query(Collection,DataObject)
+        dummy_test = [d for d in q if d[DataObject.name][-1:] != '8'
+                                  and d[DataObject.name][-7:-1] == '-dummy' ]
+        self.assertTrue( len(dummy_test) > 0 )
+        q = q. filter(Like(DataObject.name, '%-dummy_')).\
+               filter(Collection.name == collection) .\
+               filter(DataObject.name != (filename + '-dummy8'))
+        results = [r[DataObject.name] for r in q]
+        self.assertTrue(len(results) == len(dummy_test))
 
     @unittest.skipIf(six.PY3, 'Test is for python2 only')
     def test_query_for_data_object_with_utf8_name_python2(self):
@@ -294,7 +332,7 @@ class TestQuery(unittest.TestCase):
                 self.test_collection.remove(recurse=True, force=True)
 
             if self.nAVUs > 0 and self.num_objects > 0:
-                remove_unused_metadata(self.session)                    # delete unused AVU's
+                helpers.remove_unused_metadata(self.session)            # delete unused AVU's
 
     def test_query_first__166(self):
 
