@@ -220,14 +220,26 @@ class TestQuery(unittest.TestCase):
                 obj.metadata.add('B_meta','2{}'.format(x))
                 decoys.append(helpers.make_object(self.sess, file_path+'-dummy{}'.format(x)))   # without metadata
             self.assertTrue( len(objects) > 0 )
+
+            # -- test simple repeat of same column --
             q = self.sess.query(DataObject,DataObjectMeta).\
                                             filter(DataObjectMeta.name == 'A_meta', DataObjectMeta.value <  '20').\
                                             filter(DataObjectMeta.name == 'B_meta', DataObjectMeta.value >= '20')
             self.assertTrue( len(list(q)) == len(objects) )
+
+            # -- test no-stomp of previous filter --
+            self.assertTrue( ('B_meta','28') in [ (x.name,x.value) for x in objects[-1].metadata.items() ] )
             q = self.sess.query(DataObject,DataObjectMeta).\
                                             filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value < '28').\
                                             filter(DataObjectMeta.name == 'B_meta').filter(Like(DataObjectMeta.value, '2_'))
             self.assertTrue( len(list(q)) == len(objects)-1 )
+
+            # -- test multiple AVU's by same attribute name --
+            objects[-1].metadata.add('B_meta','29')
+            q = self.sess.query(DataObject,DataObjectMeta).\
+                                            filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value == '28').\
+                                            filter(DataObjectMeta.name == 'B_meta').filter(DataObjectMeta.value == '29')
+            self.assertTrue(len(list(q)) == 1)
         finally:
             for x in (objects + decoys):
                 x.unlink(force=True)
