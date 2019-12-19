@@ -28,7 +28,7 @@ def _recv_message_in_len(sock, size):
         except (AttributeError, ValueError):
             buf = sock.recv(size_left)
         except OSError as e:
-            #skip only Windows error 10045 
+            #skip only Windows error 10045
             if getattr(e, 'winerror', 0) != 10045:
                 raise
             buf = sock.recv(size_left)
@@ -50,7 +50,7 @@ def _recv_message_into(sock, buffer, size):
         except (AttributeError, ValueError):
             rsize = sock.recv_into(mv[index:], size_left)
         except OSError as e:
-            #skip only Windows error 10045 
+            #skip only Windows error 10045
             if getattr(e, 'winerror', 0) != 10045:
                 raise
             rsize = sock.recv_into(mv[index:], size_left)
@@ -171,6 +171,12 @@ class iRODSMessage(object):
         msg.unpack(ET.fromstring(self.msg))
         return msg
 
+
+# define INT_PI "int myInt;"
+
+class OprComplete(Message):
+    _name = 'INT_PI'
+    myInt = IntegerProperty()
 
 #define CS_NEG_PI "int status; str result[MAX_NAME_LEN];"
 class ClientServerNegotiation(Message):
@@ -375,6 +381,30 @@ class OpenedDataObjRequest(Message):
     offset = LongProperty()
     bytesWritten = LongProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
+
+#define PortList_PI "int portNum; int cookie; int sock; int windowSize;
+# str hostAddr[LONG_NAME_LEN];"
+
+
+class PortList(Message):
+    _name = 'PortList_PI'
+    portNum = IntegerProperty()
+    cookie = IntegerProperty()
+    sock = IntegerProperty()
+    windowSize = IntegerProperty()
+    hostAddr = StringProperty()
+
+# define PortalOprOut_PI "int status; int l1descInx; int numThreads;
+# str chksum[NAME_LEN]; struct PortList_PI;"
+
+
+class PortalOprResponse(Message):
+    _name = 'PortalOprOut_PI'
+    status = IntegerProperty()
+    l1descInx = IntegerProperty()
+    numThreads = IntegerProperty()
+    chksum = StringProperty()
+    PortList_PI = SubmessageProperty(PortList)
 
 # define fileLseekOut_PI "double offset;"
 

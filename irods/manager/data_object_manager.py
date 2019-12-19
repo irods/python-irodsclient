@@ -1,16 +1,49 @@
 from __future__ import absolute_import
 import os
 import io
+import socket
+import ssl
+import struct
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
-    iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta)
+    iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta, PortalOprResponse, OprComplete)
 import irods.exception as ex
 from irods.api_number import api_number
 from irods.data_object import (
     iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
+from irods import DEFAULT_CONNECTION_TIMEOUT
 import irods.keywords as kw
 
+
+class LockCounter:
+    def __init__(self, value=0):
+        self.lock = threading.Lock()
+        self.__value = value
+
+    def __get_value(self):
+        return self.__value
+
+    def __set_value(self, new_value):
+        with self.lock:
+            self.__value = new_value
+            return self.__value
+
+    value = property(__get_value, __set_value)
+
+    def __add(self, add):
+        with self.lock:
+            self.__value += add
+            return self.__value
+
+    def incr(self, increment=1):
+        return self.__add(increment)
+
+    def decr(self, decrement=1):
+        return self.__add(- decrement)
 
 class DataObjectManager(Manager):
 
@@ -69,9 +102,8 @@ class DataObjectManager(Manager):
         if kw.OPR_TYPE_KW not in options:
             options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
-        with open(file, 'rb') as f, self.open(obj, 'w', **options) as o:
-            for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
-                o.write(chunk)
+        with self.open(obj, 'w', **options) as o:
+            self._put_opened_file(file, obj, o, **options)
 
         if kw.ALL_KW in options:
             options[kw.UPDATE_REPL_KW] = ''
@@ -80,6 +112,165 @@ class DataObjectManager(Manager):
         if return_data_object:
             return self.get(obj)
 
+
+    def _put_opened_file(self, local_path, irods_path, obj, **options):
+        with open(local_path, 'rb') as f:
+            for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
+                obj.write(chunk)
+
+    def put_parallel(self, local_path, irods_path, executor=None, **options):
+
+        def connect_to_portal(host, port, cookie,
+                                 timeout=DEFAULT_CONNECTION_TIMEOUT):
+            address = (host, port)
+            try:
+                s = socket.create_connection(address, timeout)
+            except socket.error:
+                raise ex.NetworkException(
+                    "Could not connect to specified host and port: " +
+                    "{}:{}".format(*address))
+
+            fmt = '!i'
+            sent = s.send(struct.pack(fmt, cookie))
+
+            if sent != struct.calcsize(fmt):
+                s.close()
+                raise ex.NetworkException(
+                    "SYS_PORT_COOKIE_ERR: {}:{}".format(*address))
+
+            return s
+
+        def recv_xfer_header(sock):
+            # typedef struct TransferHeader { int oprType; int flags;
+            # rodsLong_t offset; rodsLong_t length; } transferHeader_t;
+
+            fmt = '!iiqq'
+            size = struct.calcsize(fmt)
+            buf = bytearray(b'\0' * size)
+            recv_size = sock.recv_into(buf, size)
+            if recv_size != size:
+                raise ex.SYS_COPY_LEN_ERR
+
+            u = struct.unpack(fmt, buf)
+            return u
+
+        def send_task(host, port, cookie, local_path, task_count):
+            sock = connect_to_portal(host, port, cookie)
+            try:
+                opr, flags, offset, size = recv_xfer_header(sock)
+
+                with open(local_path, 'rb') as lf:
+                    lf.seek(offset)
+                    while size > 0:
+                        if task_count.value < 0:
+                            return
+                        to_read = min(size, self.WRITE_BUFFER_SIZE)
+
+                        buf = lf.read(to_read)
+                        read_size = len(buf)
+                        sock.sendall(buf)
+
+                        size -= read_size
+            finally:
+                sock.close()
+
+            if task_count.decr() == 0:
+                # last task has to complete iRODS operation
+                message = iRODSMessage('RODS_API_REQ',
+                                       OprComplete(myInt=desc),
+                                       int_info=api_number['OPR_COMPLETE_AN'])
+
+                with self.sess.pool.get_connection() as conn:
+                    conn.send(message)
+                    resp = conn.recv()
+
+                replicate()
+
+        def send_task_cb(fut):
+            if fut.exception() is not None:
+                # exception occurred in send_task. Mark other tasks for exit
+                task_count.value = -1
+
+        def send_to_catalog(local_path, irods_path, desc, **options):
+            with io.BufferedRandom(iRODSDataObjectFileRaw( \
+                    self.sess.pool.get_connection(), desc, **options)) as o:
+                self._put_opened_file(local_path, irods_path, o, **options)
+
+            replicate()
+
+        def replicate():
+            if kw.ALL_KW in options:
+                options[kw.UPDATE_REPL_KW] = ''
+                self.replicate(irods_path, **options)
+
+        local_size = os.lstat(local_path).st_size
+
+        # Set operation type to trigger acPostProcForPut
+        if kw.OPR_TYPE_KW not in options:
+            options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
+
+        # for now, can't handle ssl multithreaded operation
+        with self.sess.pool.get_connection() as conn:
+            use_ssl = isinstance(conn.socket, ssl.SSLSocket)
+        if use_ssl:
+            if executor is None:
+                self.put(local_path, irods_path, **options)
+                return []
+
+            fut = executor.submit(self.put, local_path, irods_path,
+                                  **options)
+            return [fut]
+
+        response = self.open_put(irods_path, local_size, **options)
+
+        desc = response.l1descInx
+        nt = response.numThreads
+        if nt <= 0:
+            nt = 1
+
+        futs = []
+        join = False
+
+        if executor is None:
+            if nt <= 1:
+                # sequential put
+                send_to_catalog(local_path, irods_path, desc, **options)
+                return []
+
+            # handle parallel transfer with own executor
+            executor = ThreadPoolExecutor(max_workers=nt)
+            join = True
+
+        if nt <= 1:
+            fut = executor.submit(send_to_catalog, local_path, irods_path,
+                                  desc, **options)
+            futs.append(fut)
+        else:
+            host = response.PortList_PI.hostAddr
+            port = response.PortList_PI.portNum
+            cookie = response.PortList_PI.cookie
+
+            task_count = LockCounter(nt)
+
+            for i in range(nt):
+                fut = executor.submit(send_task, host, port, cookie,
+                                      local_path, task_count)
+                fut.add_done_callback(send_task_cb)
+
+                futs.append(fut)
+
+        if join:
+            executor.shutdown()
+            exceptions = []
+            for f in futs:
+                e=f.exception()
+                if e is not None:
+                    exceptions.append(e)
+            if len(exceptions) > 0:
+                msgs = ['%s%s' % (type(e).__name__, str(e)) for e in exceptions]
+                raise Exception(', '.join(msgs))
+
+        return futs
 
     def create(self, path, resource=None, **options):
         options[kw.DATA_TYPE_KW] = 'generic'
@@ -114,6 +305,41 @@ class DataObjectManager(Manager):
 
         return self.get(path)
 
+
+    def open_put(self, path, size, **options):
+        if kw.DEST_RESC_NAME_KW not in options:
+            # Use client-side default resource if available
+            try:
+                options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
+            except AttributeError:
+                pass
+
+        flags = self.O_WRONLY | self.O_CREAT | self.O_TRUNC
+
+        try:
+            oprType = options[kw.OPR_TYPE_KW]
+        except KeyError:
+            oprType = 0
+
+        message_body = FileOpenRequest(
+            objPath=path,
+            createMode=0,
+            openFlags=flags,
+            offset=0,
+            dataSize=size,
+            numThreads=self.sess.numThreads,
+            oprType=oprType,
+            KeyValPair_PI=StringStringMap(options),
+        )
+
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['DATA_OBJ_PUT_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            resp = conn.recv()
+
+        return resp.get_main_message(PortalOprResponse)
 
     def open(self, path, mode, **options):
         if kw.DEST_RESC_NAME_KW not in options:
@@ -346,7 +572,7 @@ class DataObjectManager(Manager):
     def modDataObjMeta(self, data_obj_info, meta_dict, **options):
         if "rescHier" not in data_obj_info and "rescName" not in data_obj_info and "replNum" not in data_obj_info:
             meta_dict["all"] = ""
-            
+
         message_body = ModDataObjMeta(
             dataObjInfo=DataObjInfo(
                 objPath=data_obj_info["objPath"],
