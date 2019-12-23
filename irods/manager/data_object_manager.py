@@ -5,6 +5,7 @@ import socket
 import ssl
 import struct
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from irods.models import DataObject
@@ -45,6 +46,41 @@ class LockCounter:
     def decr(self, decrement=1):
         return self.__add(- decrement)
 
+def connect_to_portal(host, port, cookie,
+                      timeout=DEFAULT_CONNECTION_TIMEOUT):
+    address = (host, port)
+    try:
+        s = socket.create_connection(address, timeout)
+    except socket.error:
+        raise ex.NetworkException(
+            "Could not connect to specified host and port: " +
+            "{}:{}".format(*address))
+
+    fmt = '!i'
+    sent = s.send(struct.pack(fmt, cookie))
+
+    if sent != struct.calcsize(fmt):
+        s.close()
+        raise ex.NetworkException(
+            "SYS_PORT_COOKIE_ERR: {}:{}".format(*address))
+
+    return s
+
+def recv_xfer_header(sock):
+    # typedef struct TransferHeader { int oprType; int flags;
+    # rodsLong_t offset; rodsLong_t length; } transferHeader_t;
+
+    fmt = '!iiqq'
+    size = struct.calcsize(fmt)
+    buf = bytearray(b'\0' * size)
+    recv_size = sock.recv_into(buf, size)
+    if recv_size != size:
+        raise ex.SYS_COPY_LEN_ERR
+
+    u = struct.unpack(fmt, buf)
+    return u
+
+
 class DataObjectManager(Manager):
 
     READ_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
@@ -59,6 +95,7 @@ class DataObjectManager(Manager):
     O_EXCL = 128
     O_TRUNC = 512
 
+    # lib/api/include/dataObjInpOut.h
     DONE_OPR = 9999
 
     def _download(self, obj, local_path, **options):
@@ -93,6 +130,115 @@ class DataObjectManager(Manager):
             raise ex.DataObjectDoesNotExist()
         return iRODSDataObject(self, parent, results)
 
+    def download_parallel(self, irods_path, local_path, executor=None,
+                          **options):
+        def recv_task(host, port, cookie, local_path, task_count):
+            sock = connect_to_portal(host, port, cookie)
+            try:
+                with open(local_path, 'r+b') as lf:
+                    buf = bytearray(b'\0' * self.READ_BUFFER_SIZE)
+
+                    while True:
+                        opr, flags, offset, size = recv_xfer_header(sock)
+                        if opr == self.DONE_OPR:
+                            break
+
+                        lf.seek(offset)
+
+                        while size > 0:
+                            if task_count.value < 0:
+                                return
+
+                            to_read = min(size, self.READ_BUFFER_SIZE)
+                            read_size = 0
+                            while to_read > 0:
+                                read_size = sock.recv_into(buf, to_read)
+
+                                lf.write(memoryview(buf)[0:read_size])
+                                to_read -= read_size
+                                size -= read_size
+
+            finally:
+                sock.close()
+
+            if task_count.decr() == 0:
+                # last task has to complete iRODS operation
+                message = iRODSMessage('RODS_API_REQ',
+                                       OprComplete(myInt=desc),
+                                       int_info=api_number['OPR_COMPLETE_AN'])
+
+                with self.sess.pool.get_connection() as conn:
+                    conn.send(message)
+                    resp = conn.recv()
+
+        # Check for force flag if local file exists
+        if os.path.exists(local_path) and kw.FORCE_FLAG_KW not in options:
+            raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
+
+        # for now, can't handle ssl multithreaded operation
+        with self.sess.pool.get_connection() as conn:
+            use_ssl = isinstance(conn.socket, ssl.SSLSocket)
+        if use_ssl:
+            if executor is None:
+                self.get(irods_path, local_path, **options)
+                return []
+
+            fut = executor.submit(self.get, irods_path, local_path,
+                                  **options)
+            return [fut]
+
+        response, message = self._open(irods_path, 'DATA_OBJ_GET_AN',
+                                       'r', 0, **options)
+
+        desc = message.l1descInx
+
+        if desc <= 2:
+            # file contents are directly embeded in catalog response
+            with open(local_path, 'wb') as lf:
+                lf.write(response.bs)
+            return []
+
+        futs = []
+
+        nt = message.numThreads
+        if nt <= 0:
+            nt = 1
+
+        host = message.PortList_PI.hostAddr
+        port = message.PortList_PI.portNum
+        cookie = message.PortList_PI.cookie
+
+        task_count = LockCounter(nt)
+
+        join = False
+        if executor is None:
+            # handle parallel transfer with own executor
+            executor = ThreadPoolExecutor(max_workers=nt)
+            join = True
+
+        with open(local_path, 'w') as lf:
+            # create local file
+            pass
+
+        for i in range(nt):
+            fut = executor.submit(recv_task, host, port, cookie,
+                                  local_path, task_count)
+            #fut.add_done_callback(recv_task_cb)
+
+            futs.append(fut)
+
+        if join:
+            executor.shutdown()
+            exceptions = []
+            for f in futs:
+                e=f.exception()
+                if e is not None:
+                    exceptions.append(e)
+            if len(exceptions) > 0:
+                msgs = ['%s%s' % (type(e).__name__, str(e)) for e in exceptions]
+                raise Exception(', '.join(msgs))
+
+        return futs
 
     def put(self, file, irods_path, return_data_object=False, **options):
         if irods_path.endswith('/'):
@@ -121,40 +267,6 @@ class DataObjectManager(Manager):
                 obj.write(chunk)
 
     def put_parallel(self, local_path, irods_path, executor=None, **options):
-
-        def connect_to_portal(host, port, cookie,
-                                 timeout=DEFAULT_CONNECTION_TIMEOUT):
-            address = (host, port)
-            try:
-                s = socket.create_connection(address, timeout)
-            except socket.error:
-                raise ex.NetworkException(
-                    "Could not connect to specified host and port: " +
-                    "{}:{}".format(*address))
-
-            fmt = '!i'
-            sent = s.send(struct.pack(fmt, cookie))
-
-            if sent != struct.calcsize(fmt):
-                s.close()
-                raise ex.NetworkException(
-                    "SYS_PORT_COOKIE_ERR: {}:{}".format(*address))
-
-            return s
-
-        def recv_xfer_header(sock):
-            # typedef struct TransferHeader { int oprType; int flags;
-            # rodsLong_t offset; rodsLong_t length; } transferHeader_t;
-
-            fmt = '!iiqq'
-            size = struct.calcsize(fmt)
-            buf = bytearray(b'\0' * size)
-            recv_size = sock.recv_into(buf, size)
-            if recv_size != size:
-                raise ex.SYS_COPY_LEN_ERR
-
-            u = struct.unpack(fmt, buf)
-            return u
 
         def send_task(host, port, cookie, local_path, task_count):
             sock = connect_to_portal(host, port, cookie)
@@ -228,10 +340,10 @@ class DataObjectManager(Manager):
                                   **options)
             return [fut]
 
-        response = self.open_put(irods_path, local_size, **options)
-
-        desc = response.l1descInx
-        nt = response.numThreads
+        response, message = self._open(irods_path, 'DATA_OBJ_PUT_AN',
+                                       'w', local_size, **options)
+        desc = message.l1descInx
+        nt = message.numThreads
         if nt <= 0:
             nt = 1
 
@@ -253,9 +365,9 @@ class DataObjectManager(Manager):
                                   desc, **options)
             futs.append(fut)
         else:
-            host = response.PortList_PI.hostAddr
-            port = response.PortList_PI.portNum
-            cookie = response.PortList_PI.cookie
+            host = message.PortList_PI.hostAddr
+            port = message.PortList_PI.portNum
+            cookie = message.PortList_PI.cookie
 
             task_count = LockCounter(nt)
 
@@ -313,7 +425,7 @@ class DataObjectManager(Manager):
         return self.get(path)
 
 
-    def open_put(self, path, size, **options):
+    def _open(self, path, an_name, mode, size, **options):
         if kw.DEST_RESC_NAME_KW not in options:
             # Use client-side default resource if available
             try:
@@ -321,12 +433,20 @@ class DataObjectManager(Manager):
             except AttributeError:
                 pass
 
-        flags = self.O_WRONLY | self.O_CREAT | self.O_TRUNC
-
         try:
             oprType = options[kw.OPR_TYPE_KW]
         except KeyError:
             oprType = 0
+
+        flags, seek_to_end = {
+            'r': (self.O_RDONLY, False),
+            'r+': (self.O_RDWR, False),
+            'w': (self.O_WRONLY | self.O_CREAT | self.O_TRUNC, False),
+            'w+': (self.O_RDWR | self.O_CREAT | self.O_TRUNC, False),
+            'a': (self.O_WRONLY | self.O_CREAT, True),
+            'a+': (self.O_RDWR | self.O_CREAT, True),
+        }[mode]
+        # TODO: Use seek_to_end
 
         message_body = FileOpenRequest(
             objPath=path,
@@ -340,13 +460,13 @@ class DataObjectManager(Manager):
         )
 
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-                               int_info=api_number['DATA_OBJ_PUT_AN'])
+                               int_info=api_number[an_name])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             resp = conn.recv()
 
-        return resp.get_main_message(PortalOprResponse)
+        return resp, resp.get_main_message(PortalOprResponse)
 
     def open(self, path, mode, **options):
         if kw.DEST_RESC_NAME_KW not in options:
