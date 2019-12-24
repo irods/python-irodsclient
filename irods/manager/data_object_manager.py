@@ -59,6 +59,8 @@ class DataObjectManager(Manager):
     O_EXCL = 128
     O_TRUNC = 512
 
+    DONE_OPR = 9999
+
     def _download(self, obj, local_path, **options):
         if os.path.isdir(local_path):
             file = os.path.join(local_path, irods_basename(obj))
@@ -157,20 +159,25 @@ class DataObjectManager(Manager):
         def send_task(host, port, cookie, local_path, task_count):
             sock = connect_to_portal(host, port, cookie)
             try:
-                opr, flags, offset, size = recv_xfer_header(sock)
-
                 with open(local_path, 'rb') as lf:
-                    lf.seek(offset)
-                    while size > 0:
-                        if task_count.value < 0:
-                            return
-                        to_read = min(size, self.WRITE_BUFFER_SIZE)
+                    while True:
+                        opr, flags, offset, size = recv_xfer_header(sock)
 
-                        buf = lf.read(to_read)
-                        read_size = len(buf)
-                        sock.sendall(buf)
+                        if opr == self.DONE_OPR:
+                            break
 
-                        size -= read_size
+                        lf.seek(offset)
+
+                        while size > 0:
+                            if task_count.value < 0:
+                                return
+                            to_read = min(size, self.WRITE_BUFFER_SIZE)
+
+                            buf = lf.read(to_read)
+                            read_size = len(buf)
+                            sock.sendall(buf)
+
+                            size -= read_size
             finally:
                 sock.close()
 
