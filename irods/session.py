@@ -12,6 +12,7 @@ from irods.manager.user_manager import UserManager, UserGroupManager
 from irods.manager.resource_manager import ResourceManager
 from irods.exception import NetworkException
 from irods.password_obfuscation import decode
+from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
 
 
 class iRODSSession(object):
@@ -74,7 +75,13 @@ class iRODSSession(object):
             # default
             auth_scheme = 'native'
 
-        if auth_scheme != 'native':
+        if auth_scheme.lower() == PAM_AUTH_SCHEME:
+            if 'password' in creds:
+                return iRODSAccount(**creds)
+            else:
+                # password will be from irodsA file therefore use native login
+                creds['irods_authentication_scheme'] = NATIVE_AUTH_SCHEME
+        elif auth_scheme != 'native':
             return iRODSAccount(**creds)
 
         # Native auth, try to unscramble password
