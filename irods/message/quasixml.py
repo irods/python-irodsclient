@@ -79,7 +79,7 @@ def tokenize(s):
         elif s.startswith(b'</'):
             try:
                 name, s = s[2:].split(b'>', 1)
-            except:
+            except Exception:
                 raise QuasiXmlParseError('protocol error: unterminated close tag')
             tokens.append(TokenTagClose(name))
             s = s.lstrip() # consume space after closing tag
@@ -88,7 +88,7 @@ def tokenize(s):
         elif s.startswith(b'<'):
             try:
                 name, s = s[1:].split(b'>', 1)
-            except:
+            except Exception:
                 raise QuasiXmlParseError('protocol error: unterminated open tag')
             tokens.append(TokenTagOpen(name))
 
@@ -96,7 +96,7 @@ def tokenize(s):
             # capture cdata till next tag.
             try:
                 cdata, s = s.split(b'<', 1)
-            except:
+            except Exception:
                 raise QuasiXmlParseError('protocol error: unterminated cdata')
             s = b'<' + s
             tokens.append(TokenCData(cdata))
