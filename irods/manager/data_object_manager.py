@@ -132,7 +132,7 @@ class DataObjectManager(Manager):
 
     def download_parallel(self, irods_path, local_path, executor=None,
                           **options):
-        def recv_task(host, port, cookie, local_path, task_count):
+        def recv_task(host, port, cookie, local_path, conn, task_count):
             sock = connect_to_portal(host, port, cookie)
             try:
                 with open(local_path, 'r+b') as lf:
@@ -167,9 +167,9 @@ class DataObjectManager(Manager):
                                        OprComplete(myInt=desc),
                                        int_info=api_number['OPR_COMPLETE_AN'])
 
-                with self.sess.pool.get_connection() as conn:
-                    conn.send(message)
-                    resp = conn.recv()
+                conn.send(message)
+                resp = conn.recv()
+                conn.release()
 
         # Check for force flag if local file exists
         if os.path.exists(local_path) and kw.FORCE_FLAG_KW not in options:
@@ -187,15 +187,19 @@ class DataObjectManager(Manager):
                                   **options)
             return [fut]
 
-        response, message = self._open(irods_path, 'DATA_OBJ_GET_AN',
-                                       'r', 0, **options)
+        response, message, conn = self._open_request(irods_path,
+                                                     'DATA_OBJ_GET_AN',
+                                                     'r', 0, **options)
 
         desc = message.l1descInx
 
         if desc <= 2:
-            # file contents are directly embeded in catalog response
-            with open(local_path, 'wb') as lf:
-                lf.write(response.bs)
+            try:
+                # file contents are directly embeded in catalog response
+                with open(local_path, 'wb') as lf:
+                    lf.write(response.bs)
+            finally:
+                conn.release()
             return []
 
         futs = []
@@ -222,8 +226,7 @@ class DataObjectManager(Manager):
 
         for i in range(nt):
             fut = executor.submit(recv_task, host, port, cookie,
-                                  local_path, task_count)
-            #fut.add_done_callback(recv_task_cb)
+                                  local_path, conn, task_count)
 
             futs.append(fut)
 
@@ -266,9 +269,10 @@ class DataObjectManager(Manager):
             for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
                 obj.write(chunk)
 
-    def put_parallel(self, local_path, irods_path, executor=None, **options):
+    def put_parallel(self, local_path, irods_path, executor=None,
+                     **options):
 
-        def send_task(host, port, cookie, local_path, task_count):
+        def send_task(host, port, cookie, local_path, conn, task_count):
             sock = connect_to_portal(host, port, cookie)
             try:
                 with open(local_path, 'rb') as lf:
@@ -299,9 +303,9 @@ class DataObjectManager(Manager):
                                        OprComplete(myInt=desc),
                                        int_info=api_number['OPR_COMPLETE_AN'])
 
-                with self.sess.pool.get_connection() as conn:
-                    conn.send(message)
-                    resp = conn.recv()
+                conn.send(message)
+                resp = conn.recv()
+                conn.release()
 
                 replicate()
 
@@ -310,11 +314,11 @@ class DataObjectManager(Manager):
                 # exception occurred in send_task. Mark other tasks for exit
                 task_count.value = -1
 
-        def send_to_catalog(local_path, irods_path, desc, **options):
-            with io.BufferedRandom(iRODSDataObjectFileRaw( \
-                    self.sess.pool.get_connection(), desc, **options)) as o:
-                self._put_opened_file(local_path, irods_path, o, **options)
-
+        def send_to_catalog(conn, local_path, irods_path, desc, **options):
+            with io.BufferedRandom(iRODSDataObjectFileRaw(conn,
+                                   desc, **options)) as o:
+                self._put_opened_file(local_path, irods_path, o,
+                                      **options)
             replicate()
 
         def replicate():
@@ -340,8 +344,10 @@ class DataObjectManager(Manager):
                                   **options)
             return [fut]
 
-        response, message = self._open(irods_path, 'DATA_OBJ_PUT_AN',
-                                       'w', local_size, **options)
+        response, message, conn = self._open_request(irods_path,
+                                                     'DATA_OBJ_PUT_AN',
+                                                     'w', local_size,
+                                                     **options)
         desc = message.l1descInx
         nt = message.numThreads
         if nt <= 0:
@@ -353,7 +359,8 @@ class DataObjectManager(Manager):
         if executor is None:
             if nt <= 1:
                 # sequential put
-                send_to_catalog(local_path, irods_path, desc, **options)
+                send_to_catalog(conn, local_path, irods_path, desc,
+                                **options)
                 return []
 
             # handle parallel transfer with own executor
@@ -361,8 +368,8 @@ class DataObjectManager(Manager):
             join = True
 
         if nt <= 1:
-            fut = executor.submit(send_to_catalog, local_path, irods_path,
-                                  desc, **options)
+            fut = executor.submit(send_to_catalog, conn, local_path,
+                                  irods_path, desc, **options)
             futs.append(fut)
         else:
             host = message.PortList_PI.hostAddr
@@ -373,7 +380,7 @@ class DataObjectManager(Manager):
 
             for i in range(nt):
                 fut = executor.submit(send_task, host, port, cookie,
-                                      local_path, task_count)
+                                      local_path, conn, task_count)
                 fut.add_done_callback(send_task_cb)
 
                 futs.append(fut)
@@ -425,7 +432,7 @@ class DataObjectManager(Manager):
         return self.get(path)
 
 
-    def _open(self, path, an_name, mode, size, **options):
+    def _open_request(self, path, an_name, mode, size, **options):
         if kw.DEST_RESC_NAME_KW not in options:
             # Use client-side default resource if available
             try:
@@ -462,11 +469,11 @@ class DataObjectManager(Manager):
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number[an_name])
 
-        with self.sess.pool.get_connection() as conn:
-            conn.send(message)
-            resp = conn.recv()
+        conn = self.sess.pool.get_connection()
+        conn.send(message)
+        resp = conn.recv()
 
-        return resp, resp.get_main_message(PortalOprResponse)
+        return resp, resp.get_main_message(PortalOprResponse), conn
 
     def open(self, path, mode, **options):
         if kw.DEST_RESC_NAME_KW not in options:
