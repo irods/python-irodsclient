@@ -21,6 +21,9 @@ class Pool(object):
         with self._lock:
             try:
                 conn = self.idle.pop()
+                #release and return new connection until cache issue is cleared
+                del conn
+                conn = Connection(self, self.account)
             except KeyError:
                 conn = Connection(self, self.account)
             self.active.add(conn)
