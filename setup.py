@@ -39,6 +39,7 @@ setup(name='python-irodsclient',
       install_requires=[
                         'six>=1.10.0',
                         'PrettyTable>=0.7.2',
-                        'xmlrunner>=1.7.7'
+                        'xmlrunner>=1.7.7',
+                        'M2Crypto>=0.35.2',
                         ]
       )

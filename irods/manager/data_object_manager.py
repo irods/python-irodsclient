@@ -8,6 +8,8 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+import M2Crypto
+
 from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
@@ -80,6 +82,30 @@ def recv_xfer_header(sock):
     u = struct.unpack(fmt, buf)
     return u
 
+class Encryption:
+    def __init__(self, connection):
+        self.algorithm = connection.account.encryption_algorithm.lower().replace('-', '_')
+        self.key = connection.shared_secret
+        self.key_size = connection.account.encryption_key_size
+
+        self.ifmt = 'i'
+        self.isize = struct.calcsize(self.ifmt)
+        self.ibuf = bytearray(b'\0' * self.isize)
+
+    def recv_int(self, sock):
+        recv_size = sock.recv_into(self.ibuf, self.isize)
+
+        if recv_size != self.isize:
+            raise ex.SYS_COPY_LEN_ERR
+
+        u = struct.unpack(self.ifmt, self.ibuf)
+        return u[0]
+
+    def decrypt(self, buf):
+        iv = buf[0:self.key_size]
+        cipher = M2Crypto.EVP.Cipher(alg=self.algorithm, key=self.key,
+                                     iv=iv, op=0)
+        return cipher.update(memoryview(buf)[self.key_size:]) + cipher.final()
 
 class DataObjectManager(Manager):
 
@@ -137,6 +163,7 @@ class DataObjectManager(Manager):
             try:
                 with open(local_path, 'r+b') as lf:
                     buf = bytearray(b'\0' * self.READ_BUFFER_SIZE)
+                    crypt = Encryption(conn)
 
                     while True:
                         opr, flags, offset, size = recv_xfer_header(sock)
@@ -150,13 +177,24 @@ class DataObjectManager(Manager):
                                 return
 
                             to_read = min(size, self.READ_BUFFER_SIZE)
-                            read_size = 0
-                            while to_read > 0:
-                                read_size = sock.recv_into(buf, to_read)
 
-                                lf.write(memoryview(buf)[0:read_size])
-                                to_read -= read_size
-                                size -= read_size
+                            if use_encryption:
+                                to_read = crypt.recv_int(sock)
+
+                            all_read = 0
+                            while all_read < to_read:
+                                current = memoryview(buf)[all_read:]
+                                read_size = sock.recv_into(current,
+                                                           to_read - all_read)
+                                all_read += read_size
+
+                            plaintext = memoryview(buf)[0:all_read]
+
+                            if use_encryption:
+                                plaintext = crypt.decrypt(plaintext)
+
+                            lf.write(plaintext)
+                            size -= all_read
 
             finally:
                 sock.close()
@@ -175,17 +213,8 @@ class DataObjectManager(Manager):
         if os.path.exists(local_path) and kw.FORCE_FLAG_KW not in options:
             raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
 
-        # for now, can't handle ssl multithreaded operation
         with self.sess.pool.get_connection() as conn:
-            use_ssl = isinstance(conn.socket, ssl.SSLSocket)
-        if use_ssl:
-            if executor is None:
-                self.get(irods_path, local_path, **options)
-                return []
-
-            fut = executor.submit(self.get, irods_path, local_path,
-                                  **options)
-            return [fut]
+            use_encryption = isinstance(conn.socket, ssl.SSLSocket)
 
         response, message, conn = self._open_request(irods_path,
                                                      'DATA_OBJ_GET_AN',
@@ -334,8 +363,8 @@ class DataObjectManager(Manager):
 
         # for now, can't handle ssl multithreaded operation
         with self.sess.pool.get_connection() as conn:
-            use_ssl = isinstance(conn.socket, ssl.SSLSocket)
-        if use_ssl:
+            use_encryption = isinstance(conn.socket, ssl.SSLSocket)
+        if use_encryption:
             if executor is None:
                 self.put(local_path, irods_path, **options)
                 return []

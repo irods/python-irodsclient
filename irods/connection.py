@@ -162,6 +162,8 @@ class Connection(object):
         # Generate key (shared secret)
         key = os.urandom(self.account.encryption_key_size)
 
+        self.shared_secret = key
+
         # Send header-only message with client side encryption settings
         packed_header = iRODSMessage.pack_header(algo,
                                                  key_size,
@@ -247,6 +249,7 @@ class Connection(object):
         # Server responds with version
         version_msg = self.recv()
 
+        self.shared_secret = None
         if neg_result == USE_SSL:
             self.ssl_startup()
 
