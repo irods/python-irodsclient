@@ -101,11 +101,26 @@ class Encryption:
         u = struct.unpack(self.ifmt, self.ibuf)
         return u[0]
 
+    def send_int(self, sock, i):
+        struct.pack_into(self.ifmt, self.ibuf, 0, i)
+
+        sock.sendall(self.ibuf)
+
+    def generate_key(self):
+        return os.urandom(self.key_size)
+
+    def __xxcrypt(self, iv, buf, op):
+        cipher = M2Crypto.EVP.Cipher(alg=self.algorithm, key=self.key,
+                                     iv=iv, op=op)
+        return cipher.update(buf) + cipher.final()
+
     def decrypt(self, buf):
         iv = buf[0:self.key_size]
-        cipher = M2Crypto.EVP.Cipher(alg=self.algorithm, key=self.key,
-                                     iv=iv, op=0)
-        return cipher.update(memoryview(buf)[self.key_size:]) + cipher.final()
+        text = memoryview(buf)[self.key_size:]
+        return self.__xxcrypt(iv, text, op=0)
+
+    def encrypt(self, iv, buf):
+        return self.__xxcrypt(iv, buf, op=1)
 
 class DataObjectManager(Manager):
 
@@ -163,7 +178,8 @@ class DataObjectManager(Manager):
             try:
                 with open(local_path, 'r+b') as lf:
                     buf = bytearray(b'\0' * self.READ_BUFFER_SIZE)
-                    crypt = Encryption(conn)
+                    if use_encryption:
+                        crypt = Encryption(conn)
 
                     while True:
                         opr, flags, offset, size = recv_xfer_header(sock)
@@ -305,6 +321,9 @@ class DataObjectManager(Manager):
             sock = connect_to_portal(host, port, cookie)
             try:
                 with open(local_path, 'rb') as lf:
+                    if use_encryption:
+                        crypt = Encryption(conn)
+
                     while True:
                         opr, flags, offset, size = recv_xfer_header(sock)
 
@@ -313,6 +332,9 @@ class DataObjectManager(Manager):
 
                         lf.seek(offset)
 
+                        if use_encryption:
+                            iv = crypt.generate_key()
+
                         while size > 0:
                             if task_count.value < 0:
                                 return
@@ -320,6 +342,13 @@ class DataObjectManager(Manager):
 
                             buf = lf.read(to_read)
                             read_size = len(buf)
+
+                            new_size = read_size
+                            if use_encryption:
+                                buf = iv + crypt.encrypt(iv, buf)
+                                new_size = len(buf)
+                                crypt.send_int(sock, new_size)
+
                             sock.sendall(buf)
 
                             size -= read_size
@@ -364,14 +393,6 @@ class DataObjectManager(Manager):
         # for now, can't handle ssl multithreaded operation
         with self.sess.pool.get_connection() as conn:
             use_encryption = isinstance(conn.socket, ssl.SSLSocket)
-        if use_encryption:
-            if executor is None:
-                self.put(local_path, irods_path, **options)
-                return []
-
-            fut = executor.submit(self.put, local_path, irods_path,
-                                  **options)
-            return [fut]
 
         response, message, conn = self._open_request(irods_path,
                                                      'DATA_OBJ_PUT_AN',
