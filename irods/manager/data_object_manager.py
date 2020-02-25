@@ -116,11 +116,16 @@ class Encryption:
 
     def decrypt(self, buf):
         iv = buf[0:self.key_size]
-        text = memoryview(buf)[self.key_size:]
-        return self.__xxcrypt(iv, text, op=0)
+        text = buf[self.key_size:]
+        try:
+            return self.__xxcrypt(iv, text, op=0)
+        except TypeError as e:
+            # Python 2 doesn't seem to know that memoryview on bytearray
+            # are bytelike objects...
+            return self.__xxcrypt(bytearray(iv), bytearray(text), op=0)
 
     def encrypt(self, iv, buf):
-        return self.__xxcrypt(iv, buf, op=1)
+        return iv + self.__xxcrypt(iv, buf, op=1)
 
 class DataObjectManager(Manager):
 
@@ -177,7 +182,7 @@ class DataObjectManager(Manager):
             sock = connect_to_portal(host, port, cookie)
             try:
                 with open(local_path, 'r+b') as lf:
-                    buf = bytearray(b'\0' * self.READ_BUFFER_SIZE)
+                    buf = memoryview(bytearray(self.READ_BUFFER_SIZE))
                     if use_encryption:
                         crypt = Encryption(conn)
 
@@ -199,15 +204,16 @@ class DataObjectManager(Manager):
 
                             all_read = 0
                             while all_read < to_read:
-                                current = memoryview(buf)[all_read:]
+                                current = buf[all_read:]
                                 read_size = sock.recv_into(current,
                                                            to_read - all_read)
                                 all_read += read_size
 
-                            plaintext = memoryview(buf)[0:all_read]
+                            plaintext = buf[0:all_read]
 
                             if use_encryption:
                                 plaintext = crypt.decrypt(plaintext)
+                                all_read = len(plaintext)
 
                             lf.write(plaintext)
                             size -= all_read
@@ -229,12 +235,11 @@ class DataObjectManager(Manager):
         if os.path.exists(local_path) and kw.FORCE_FLAG_KW not in options:
             raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
 
-        with self.sess.pool.get_connection() as conn:
-            use_encryption = isinstance(conn.socket, ssl.SSLSocket)
-
         response, message, conn = self._open_request(irods_path,
                                                      'DATA_OBJ_GET_AN',
                                                      'r', 0, **options)
+
+        use_encryption = conn.shared_secret is not None
 
         desc = message.l1descInx
 
@@ -345,7 +350,7 @@ class DataObjectManager(Manager):
 
                             new_size = read_size
                             if use_encryption:
-                                buf = iv + crypt.encrypt(iv, buf)
+                                buf = crypt.encrypt(iv, buf)
                                 new_size = len(buf)
                                 crypt.send_int(sock, new_size)
 
