@@ -238,6 +238,17 @@ class DataObjectManager(Manager):
                 resp = conn.recv()
                 conn.release()
 
+        def write_from_response(irods_path, local_path, response, conn,
+                                progress_cb):
+            try:
+                with open(local_path, 'wb') as lf:
+                    lf.write(response.bs)
+            finally:
+                conn.release()
+                progress_cb(local_path, irods_path, len(response.bs))
+
+            return []
+
         # Check for force flag if local file exists
         if os.path.exists(local_path) and kw.FORCE_FLAG_KW not in options:
             raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
@@ -251,12 +262,14 @@ class DataObjectManager(Manager):
         desc = message.l1descInx
 
         if desc <= 2:
-            try:
-                # file contents are directly embeded in catalog response
-                with open(local_path, 'wb') as lf:
-                    lf.write(response.bs)
-            finally:
-                conn.release()
+            # file contents are directly embeded in catalog response
+
+            if executor is not None:
+                return [executor.submit(write_from_response, irods_path,
+                                        local_path, response, conn,
+                                        progress_cb)]
+
+            write_from_response(local_path, response, conn)
             return []
 
         futs = []
