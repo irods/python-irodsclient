@@ -177,7 +177,10 @@ class DataObjectManager(Manager):
         return iRODSDataObject(self, parent, results)
 
     def download_parallel(self, irods_path, local_path, executor=None,
-                          **options):
+                          progress_cb=None, **options):
+
+        progress_cb = progress_cb or (lambda l, i, c: True)
+
         def recv_task(host, port, cookie, local_path, conn, task_count):
             sock = connect_to_portal(host, port, cookie)
             try:
@@ -218,6 +221,10 @@ class DataObjectManager(Manager):
                             lf.write(plaintext)
                             size -= all_read
 
+                            if not progress_cb(local_path, irods_path,
+                                               all_read):
+                                task_count.value = -1
+                                conn.release()
             finally:
                 sock.close()
 
@@ -320,7 +327,9 @@ class DataObjectManager(Manager):
                 obj.write(chunk)
 
     def put_parallel(self, local_path, irods_path, executor=None,
-                     **options):
+                     progress_cb=None, **options):
+
+        progress_cb = progress_cb or (lambda l, i, c: True)
 
         def send_task(host, port, cookie, local_path, conn, task_count):
             sock = connect_to_portal(host, port, cookie)
@@ -357,6 +366,10 @@ class DataObjectManager(Manager):
                             sock.sendall(buf)
 
                             size -= read_size
+
+                            if not progress_cb(local_path, irods_path,
+                                               read_size):
+                                task_count.value = -1
             finally:
                 sock.close()
 
