@@ -40,6 +40,7 @@ class Connection(object):
         self.socket = None
         self.account = account
         self._client_signature = None
+        self.shared_secret = None
         self._server_version = self._connect()
 
         scheme = self.account.authentication_scheme
@@ -249,7 +250,6 @@ class Connection(object):
         # Server responds with version
         version_msg = self.recv()
 
-        self.shared_secret = None
         if neg_result == USE_SSL:
             self.ssl_startup()
 
