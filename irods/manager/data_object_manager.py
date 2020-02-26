@@ -267,7 +267,8 @@ class DataObjectManager(Manager):
                                         local_path, response, conn,
                                         progress_cb)]
 
-            write_from_response(local_path, response, conn)
+            write_from_response(irods_path, local_path, response, conn,
+                                progress_cb)
             return []
 
         futs = []
