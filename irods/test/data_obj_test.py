@@ -641,7 +641,7 @@ class TestDataObjOps(unittest.TestCase):
         session.data_objects.replicate(obj_path, ufs_resources[1].name)
 
         # make random 32byte binary file
-        new_size = 32 
+        new_size = 32
         with open(test_file, 'wb') as f:
             f.write(os.urandom(new_size))
 
@@ -699,6 +699,66 @@ class TestDataObjOps(unittest.TestCase):
 
         # delete file
         os.remove(test_file)
+
+
+    def test_obj_parallel_put_get(self):
+        # Can't do one step open/create with older servers
+        if self.sess.server_version <= (4, 1, 4):
+            self.skipTest('For iRODS 4.1.5 and newer')
+
+        # test vars
+        test_dir = '/tmp'
+        filename = 'obj_parallel_put_get_test_file'
+        test_file = os.path.join(test_dir, filename)
+        collection = self.coll.path
+
+        # set session for parallel transfer
+        old_nt = self.sess.numThreads
+        self.sess.numThreads = 16
+
+        # test files of various sizes for different protocols
+        # (decreasing order)
+        sizes = [
+            1024**2 * 64,
+            1024**2,
+            1024
+        ]
+
+        # make random 16M binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(sizes[0]))
+
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        for size in sizes:
+            # set test_file to the corresponding size
+            with open(test_file, 'wb+') as f:
+                f.truncate(size)
+
+            # compute file checksum
+            digest = self.sha256_checksum(test_file)
+
+            # put file in test collection
+            self.sess.data_objects.put_parallel(test_file, obj_path)
+
+            # delete file
+            os.remove(test_file)
+
+            # get file back
+            self.sess.data_objects.download_parallel(obj_path,
+                                                     test_file)
+
+            # remove file from
+            self.sess.data_objects.unlink(obj_path, force=True)
+
+            # re-compute and verify checksum
+            self.assertEqual(digest, self.sha256_checksum(test_file))
+
+        # delete file
+        os.remove(test_file)
+
+        # restore former number of threads
+        self.sess.numThreads = old_nt
 
 
     def test_obj_create_to_default_resource(self):
