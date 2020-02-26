@@ -179,6 +179,14 @@ class DataObjectManager(Manager):
 
         progress_cb = progress_cb or (lambda l, i, c: True)
 
+        def opr_complete(conn, desc):
+            message = iRODSMessage('RODS_API_REQ',
+                                   OprComplete(myInt=desc),
+                                   int_info=api_number['OPR_COMPLETE_AN'])
+
+            conn.send(message)
+            return conn.recv()
+
         def recv_task(host, port, cookie, local_path, conn, task_count):
             sock = connect_to_portal(host, port, cookie)
             try:
@@ -228,12 +236,7 @@ class DataObjectManager(Manager):
 
             if task_count.decr() == 0:
                 # last task has to complete iRODS operation
-                message = iRODSMessage('RODS_API_REQ',
-                                       OprComplete(myInt=desc),
-                                       int_info=api_number['OPR_COMPLETE_AN'])
-
-                conn.send(message)
-                resp = conn.recv()
+                opr_complete(conn, desc)
                 conn.release()
 
         def write_from_response(irods_path, local_path, response, conn,
@@ -241,6 +244,8 @@ class DataObjectManager(Manager):
             try:
                 with open(local_path, 'wb') as lf:
                     lf.write(response.bs)
+
+                opr_complete(conn, desc)
             finally:
                 conn.release()
                 progress_cb(local_path, irods_path, len(response.bs))
