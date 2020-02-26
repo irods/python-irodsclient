@@ -2,10 +2,8 @@ from __future__ import absolute_import
 import os
 import io
 import socket
-import ssl
 import struct
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
 
 import M2Crypto
@@ -421,14 +419,13 @@ class DataObjectManager(Manager):
         if kw.OPR_TYPE_KW not in options:
             options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
-        # for now, can't handle ssl multithreaded operation
-        with self.sess.pool.get_connection() as conn:
-            use_encryption = isinstance(conn.socket, ssl.SSLSocket)
-
         response, message, conn = self._open_request(irods_path,
                                                      'DATA_OBJ_PUT_AN',
                                                      'w', local_size,
                                                      **options)
+
+        use_encryption = conn.shared_secret is not None
+
         desc = message.l1descInx
         nt = message.numThreads
         if nt <= 0:
