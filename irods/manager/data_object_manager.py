@@ -72,10 +72,16 @@ def recv_xfer_header(sock):
 
     fmt = '!iiqq'
     size = struct.calcsize(fmt)
-    buf = bytearray(b'\0' * size)
+    buf = bytearray(size)
     recv_size = sock.recv_into(buf, size)
     if recv_size != size:
-        raise ex.SYS_COPY_LEN_ERR
+        try:
+            # try to unpack only opr type instead of whole header
+            opr = struct.unpack('!i', buf[0:recv_size])[0]
+            return (opr, 0, 0, 0)
+        except:
+            # raise error if unpack failed
+            raise ex.SYS_COPY_LEN_ERR
 
     u = struct.unpack(fmt, buf)
     return u
@@ -88,7 +94,7 @@ class Encryption:
 
         self.ifmt = 'i'
         self.isize = struct.calcsize(self.ifmt)
-        self.ibuf = bytearray(b'\0' * self.isize)
+        self.ibuf = bytearray(self.isize)
 
     def recv_int(self, sock):
         recv_size = sock.recv_into(self.ibuf, self.isize)
