@@ -193,8 +193,7 @@ class DataObjectManager(Manager):
             conn.send(message)
             return conn.recv()
 
-        def recv_task(host, port, cookie, local_path, conn, task_count):
-            sock = connect_to_portal(host, port, cookie)
+        def recv_task(sock, local_path, conn, task_count):
             try:
                 with open(local_path, 'r+b') as lf:
                     buf = memoryview(bytearray(self.READ_BUFFER_SIZE))
@@ -305,8 +304,9 @@ class DataObjectManager(Manager):
             pass
 
         for i in range(nt):
-            fut = executor.submit(recv_task, host, port, cookie,
-                                  local_path, conn, task_count)
+            sock = connect_to_portal(host, port, cookie)
+            fut = executor.submit(recv_task, sock, local_path, conn,
+                                  task_count)
 
             futs.append(fut)
 
@@ -354,8 +354,7 @@ class DataObjectManager(Manager):
 
         progress_cb = progress_cb or (lambda l, i, c: True)
 
-        def send_task(host, port, cookie, local_path, conn, task_count):
-            sock = connect_to_portal(host, port, cookie)
+        def send_task(sock, local_path, conn, task_count):
             try:
                 with open(local_path, 'rb') as lf:
                     if use_encryption:
@@ -469,8 +468,9 @@ class DataObjectManager(Manager):
             task_count = LockCounter(nt)
 
             for i in range(nt):
-                fut = executor.submit(send_task, host, port, cookie,
-                                      local_path, conn, task_count)
+                sock = connect_to_portal(host, port, cookie)
+                fut = executor.submit(send_task, sock, local_path, conn,
+                                      task_count)
                 fut.add_done_callback(send_task_cb)
 
                 futs.append(fut)
