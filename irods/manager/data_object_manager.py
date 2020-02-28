@@ -201,7 +201,7 @@ class DataObjectManager(Manager):
                         crypt = Encryption(conn)
 
                     while True:
-                        opr, flags, offset, size = recv_xfer_header(sock)
+                        opr, flags, _, size = recv_xfer_header(sock)
                         if opr == self.DONE_OPR:
                             break
 
@@ -303,7 +303,7 @@ class DataObjectManager(Manager):
             # create local file
             pass
 
-        for i in range(nt):
+        for _ in range(nt):
             sock = connect_to_portal(host, port, cookie)
             fut = executor.submit(recv_task, sock, local_path, conn,
                                   task_count)
@@ -361,7 +361,7 @@ class DataObjectManager(Manager):
                         crypt = Encryption(conn)
 
                     while True:
-                        opr, _flags, offset, size = recv_xfer_header(sock)
+                        opr, _, offset, size = recv_xfer_header(sock)
 
                         if opr == self.DONE_OPR:
                             break
@@ -402,7 +402,7 @@ class DataObjectManager(Manager):
                                        int_info=api_number['OPR_COMPLETE_AN'])
 
                 conn.send(message)
-                _resp = conn.recv()
+                conn.recv()
                 conn.release()
 
                 replicate()
@@ -429,10 +429,9 @@ class DataObjectManager(Manager):
         if kw.OPR_TYPE_KW not in options:
             options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
-        _response, message, conn = self._open_request(irods_path,
-                                                      'DATA_OBJ_PUT_AN',
-                                                      'w', local_size,
-                                                      **options)
+        _, message, conn = self._open_request(irods_path,
+                                              'DATA_OBJ_PUT_AN', 'w',
+                                              local_size, **options)
 
         use_encryption = conn.shared_secret is not None
 
@@ -466,7 +465,7 @@ class DataObjectManager(Manager):
 
             task_count = LockCounter(nt)
 
-            for _i in range(nt):
+            for _ in range(nt):
                 sock = connect_to_portal(host, port, cookie)
                 fut = executor.submit(send_task, sock, local_path, conn,
                                       task_count)
