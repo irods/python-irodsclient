@@ -201,7 +201,7 @@ class DataObjectManager(Manager):
                         crypt = Encryption(conn)
 
                     while True:
-                        opr, flags, _, size = recv_xfer_header(sock)
+                        opr, _, offset, size = recv_xfer_header(sock)
                         if opr == self.DONE_OPR:
                             break
 
