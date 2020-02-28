@@ -123,7 +123,7 @@ class Encryption:
         text = buf[self.key_size:]
         try:
             return self.__xxcrypt(iv, text, op=0)
-        except TypeError as e:
+        except TypeError:
             # Python 2 doesn't seem to know that memoryview on bytearray
             # are bytelike objects...
             return self.__xxcrypt(bytearray(iv), bytearray(text), op=0)
@@ -299,7 +299,7 @@ class DataObjectManager(Manager):
             executor = ThreadPoolExecutor(max_workers=nt)
             join = True
 
-        with open(local_path, 'w') as lf:
+        with open(local_path, 'w'):
             # create local file
             pass
 
@@ -334,7 +334,7 @@ class DataObjectManager(Manager):
             options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
         with self.open(obj, 'w', **options) as o:
-            self._put_opened_file(file, obj, o, **options)
+            self._put_opened_file(file, obj, o)
 
         if kw.ALL_KW in options:
             options[kw.UPDATE_REPL_KW] = ''
@@ -344,7 +344,7 @@ class DataObjectManager(Manager):
             return self.get(obj)
 
 
-    def _put_opened_file(self, local_path, irods_path, obj, **options):
+    def _put_opened_file(self, local_path, irods_path, obj):
         with open(local_path, 'rb') as f:
             for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
                 obj.write(chunk)
@@ -361,7 +361,7 @@ class DataObjectManager(Manager):
                         crypt = Encryption(conn)
 
                     while True:
-                        opr, flags, offset, size = recv_xfer_header(sock)
+                        opr, _flags, offset, size = recv_xfer_header(sock)
 
                         if opr == self.DONE_OPR:
                             break
@@ -402,7 +402,7 @@ class DataObjectManager(Manager):
                                        int_info=api_number['OPR_COMPLETE_AN'])
 
                 conn.send(message)
-                resp = conn.recv()
+                _resp = conn.recv()
                 conn.release()
 
                 replicate()
@@ -415,8 +415,7 @@ class DataObjectManager(Manager):
         def send_to_catalog(conn, local_path, irods_path, desc, **options):
             with io.BufferedRandom(iRODSDataObjectFileRaw(conn,
                                    desc, **options)) as o:
-                self._put_opened_file(local_path, irods_path, o,
-                                      **options)
+                self._put_opened_file(local_path, irods_path, o)
             replicate()
 
         def replicate():
@@ -430,10 +429,10 @@ class DataObjectManager(Manager):
         if kw.OPR_TYPE_KW not in options:
             options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
 
-        response, message, conn = self._open_request(irods_path,
-                                                     'DATA_OBJ_PUT_AN',
-                                                     'w', local_size,
-                                                     **options)
+        _response, message, conn = self._open_request(irods_path,
+                                                      'DATA_OBJ_PUT_AN',
+                                                      'w', local_size,
+                                                      **options)
 
         use_encryption = conn.shared_secret is not None
 
@@ -467,7 +466,7 @@ class DataObjectManager(Manager):
 
             task_count = LockCounter(nt)
 
-            for i in range(nt):
+            for _i in range(nt):
                 sock = connect_to_portal(host, port, cookie)
                 fut = executor.submit(send_task, sock, local_path, conn,
                                       task_count)
