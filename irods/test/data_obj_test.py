@@ -131,6 +131,37 @@ class TestDataObjOps(unittest.TestCase):
         # remove new collection
         new_coll.remove(recurse=True, force=True)
 
+    def test_copy_existing_obj_to_relative_dest_fails_irods4796(self):
+        if self.sess.server_version <= (4, 2, 7):
+            self.skipTest('iRODS servers <= 4.2.7 will give nondescriptive error')
+        obj_name = 'this_object_will_exist_once_made'
+        exists_path = '{}/{}'.format(self.coll_path, obj_name)
+        helpers.make_object(self.sess, exists_path)
+        self.assertTrue(self.sess.data_objects.exists(exists_path))
+        non_existing_zone = 'this_zone_absent'
+        relative_dst_path = '{non_existing_zone}/{obj_name}'.format(**locals())
+        options = {}
+        with self.assertRaises(ex.USER_INPUT_PATH_ERR):
+            self.sess.data_objects.copy(exists_path, relative_dst_path, **options)
+
+    def test_copy_from_nonexistent_absolute_data_obj_path_fails_irods4796(self):
+        if self.sess.server_version <= (4, 2, 7):
+            self.skipTest('iRODS servers <= 4.2.7 will hang the client')
+        non_existing_zone = 'this_zone_absent'
+        src_path = '/{non_existing_zone}/non_existing.src'.format(**locals())
+        dst_path = '/{non_existing_zone}/non_existing.dst'.format(**locals())
+        options = {}
+        with self.assertRaises(ex.USER_INPUT_PATH_ERR):
+            self.sess.data_objects.copy(src_path, dst_path, **options)
+
+    def test_copy_from_relative_path_fails_irods4796(self):
+        if self.sess.server_version <= (4, 2, 7):
+            self.skipTest('iRODS servers <= 4.2.7 will hang the client')
+        src_path = 'non_existing.src'
+        dst_path = 'non_existing.dst'
+        options = {}
+        with self.assertRaises(ex.USER_INPUT_PATH_ERR):
+            self.sess.data_objects.copy(src_path, dst_path, **options)
 
     def test_copy_obj_to_obj(self):
         # test args
