@@ -578,7 +578,8 @@ purposed that all replicas are "good", ie have a status of "1" ::
               objects_trimmed += 1
               data_object.replicate(dstRescName)
               for replica_number in [r.number for r in data_object.replicas]:
-                  data_object.unlink( replNum = replica_number )
+                  options = { kw.DATA_REPL_KW: replica_number }
+                  data_object.unlink( **options )
       return objects_trimmed
 
 
