@@ -107,13 +107,13 @@ class TestUserGroup(unittest.TestCase):
 
         # add other dn
         user.modify('addAuth', user_DNs[1])
-        self.assertEqual(user.dn, user_DNs)
+        self.assertEqual( sorted(user.dn), sorted(user_DNs) )
 
         # remove first dn
         user.modify('rmAuth', user_DNs[0])
 
         # confirm removal
-        self.assertEqual(user.dn, user_DNs[1:])
+        self.assertEqual(sorted(user.dn), sorted(user_DNs[1:]))
 
         # delete user
         user.remove()
