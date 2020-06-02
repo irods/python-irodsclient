@@ -62,7 +62,7 @@ class iRODSDataObject(object):
                 r[DataObject.replica_status],
                 r[DataObject.resource_name],
                 r[DataObject.path],
-                r[DataObject.resc_hier],
+                r.get(DataObject.resc_hier, None),
                 checksum=r[DataObject.checksum],
                 size=r[DataObject.size]
             ) for r in replicas]
