@@ -1,6 +1,19 @@
 Changelog
 =========
 
+v0.8.3 (2020-06-05)
+-------------------
+- [#3] remove order sensitivity in test_user_dn
+- [#5] clarify unlink specific replica example
+- [irods/irods#4796] add data object copy tests
+- [#5] Additional sections and examples in README
+- [#187] Allow query on metadata create and modify times
+- [#135] fix queries for multiple AVUs of same name
+- [#135] Allow multiple criteria based on column name
+- [#180] add the "in" genquery operator
+- [#183] fix key error when tables from order_by() not in query()
+- [#5] fix ssl example in README.rst
+
 v0.8.2 (2019-11-13)
 -------------------
 - [#8] Add PAM Authentication handling (still needs tests) [Mattia D'Antonio]
