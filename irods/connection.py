@@ -31,8 +31,11 @@ from irods.api_number import api_number
 
 logger = logging.getLogger(__name__)
 
+class PlainTextPAMPasswordError(Exception): pass
 
 class Connection(object):
+
+    DISALLOWING_PAM_PLAINTEXT = True
 
     def __init__(self, pool, account):
 
@@ -393,6 +396,10 @@ class Connection(object):
         ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, "60")
 
         ctx = ";".join([ctx_user, ctx_pwd, ctx_ttl])
+
+        if type(self.socket) is socket.socket:
+            if getattr(self,'DISALLOWING_PAM_PLAINTEXT',True):
+                raise PlainTextPAMPasswordError
 
         message_body = PluginAuthMessage(
             auth_scheme_=PAM_AUTH_SCHEME,
