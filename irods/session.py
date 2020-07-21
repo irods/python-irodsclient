@@ -130,6 +130,15 @@ class iRODSSession(object):
             return version
 
     @property
+    def pam_pw_negotiated(self):
+            self.pool.account.store_pw = []
+            conn = self.pool.get_connection()
+            pw = getattr(self.pool.account,'store_pw',[])
+            delattr( self.pool.account, 'store_pw')
+            conn.release()
+            return pw
+
+    @property
     def default_resource(self):
         return self.pool.account.default_resource
 
