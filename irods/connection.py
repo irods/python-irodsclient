@@ -421,6 +421,12 @@ class Connection(object):
 
         self.disconnect()
         self._connect()
+
+        if hasattr(self.account,'store_pw'):
+            drop = self.account.store_pw
+            if type(drop) is list:
+                drop[:] = [ auth_out.result_ ]
+
         self._login_native(password=auth_out.result_)
 
         logger.info("PAM authorization validated")
