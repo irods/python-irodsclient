@@ -120,7 +120,7 @@ class Connection(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.release()
+        self.release(True)
 
     def release(self, destroy=False):
         self.pool.release_connection(self, destroy)
