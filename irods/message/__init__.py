@@ -188,7 +188,7 @@ class ClientServerNegotiation(Message):
 class StartupPack(Message):
     _name = 'StartupPack_PI'
 
-    def __init__(self, proxy_user, client_user):
+    def __init__(self, proxy_user, client_user, application_name = ''):
         super(StartupPack, self).__init__()
         if proxy_user and client_user:
             self.irodsProt = 1
@@ -197,7 +197,7 @@ class StartupPack(Message):
             self.clientUser, self.clientRcatZone = client_user
             self.relVersion = "rods{}.{}.{}".format(*IRODS_VERSION)
             self.apiVersion = "{3}".format(*IRODS_VERSION)
-            self.option = ""
+            self.option = application_name
 
     irodsProt = IntegerProperty()
     reconnFlag = IntegerProperty()
