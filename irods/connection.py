@@ -37,7 +37,7 @@ class Connection(object):
 
     DISALLOWING_PAM_PLAINTEXT = True
 
-    def __init__(self, pool, account):
+    def __init__(self, pool, account ):
 
         self.pool = pool
         self.socket = None
@@ -196,9 +196,11 @@ class Connection(object):
                 "{}:{}".format(*address))
 
         self.socket = s
+
         main_message = StartupPack(
             (self.account.proxy_user, self.account.proxy_zone),
-            (self.account.client_user, self.account.client_zone)
+            (self.account.client_user, self.account.client_zone),
+            self.pool.client_name
         )
 
         # No client-server negotiation

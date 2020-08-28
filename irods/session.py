@@ -97,7 +97,7 @@ class iRODSSession(object):
 
     def configure(self, **kwargs):
         account = self._configure_account(**kwargs)
-        self.pool = Pool(account)
+        self.pool = Pool(account, name = kwargs.pop('name',''))
 
     def query(self, *args):
         return Query(self, *args)
