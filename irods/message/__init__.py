@@ -188,7 +188,7 @@ class ClientServerNegotiation(Message):
 class StartupPack(Message):
     _name = 'StartupPack_PI'
 
-    def __init__(self, proxy_user, client_user, client_name):
+    def __init__(self, proxy_user, client_user, client_name = ''):
         super(StartupPack, self).__init__()
         if proxy_user and client_user:
             self.irodsProt = 1
