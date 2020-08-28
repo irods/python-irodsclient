@@ -21,7 +21,6 @@ class Pool(object):
         self.idle = set()
         self.connection_timeout = DEFAULT_CONNECTION_TIMEOUT
         self.client_name = (name  or  os.environ.get('spOption','')  or  DEFAULT_CLIENT_NAME)
-        #print "pool name = {.name}".format(self)
 
     def get_connection(self):
         with self._lock:
