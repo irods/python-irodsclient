@@ -196,9 +196,11 @@ class Connection(object):
                 "{}:{}".format(*address))
 
         self.socket = s
+
         main_message = StartupPack(
             (self.account.proxy_user, self.account.proxy_zone),
-            (self.account.client_user, self.account.client_zone)
+            (self.account.client_user, self.account.client_zone),
+            self.pool.application_name
         )
 
         # No client-server negotiation
