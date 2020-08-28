@@ -32,8 +32,7 @@ class Pool(object):
             try:
                 conn = self.idle.pop()
             except KeyError:
-                conn = Connection(self, self.account, #client_name =  self.name
-                )
+                conn = Connection(self, self.account)
             self.active.add(conn)
         logger.debug('num active: {}'.format(len(self.active)))
         return conn
