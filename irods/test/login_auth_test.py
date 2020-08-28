@@ -12,11 +12,13 @@ import irods.test.helpers as helpers
 from irods.connection import Connection
 from irods.session import iRODSSession
 from irods.rule import Rule
+from irods.models import User
 from socket import gethostname
 from irods.password_obfuscation import (encode as pw_encode)
 from irods.connection import PlainTextPAMPasswordError
 import contextlib
 from re import (compile as regex,_pattern_type as regex_type)
+
 
 def json_file_update(fname,keys_to_delete=(),**kw):
     j = json.load(open(fname,'r'))
@@ -78,19 +80,29 @@ def pam_password_in_plaintext(allow=True):
     finally:
         Connection.DISALLOWING_PAM_PLAINTEXT = saved
 
-class TestLogins(unittest.TestCase):
 
-    UserName = 'alissa'
+class TestLogins(unittest.TestCase):
+    '''
+    This is due to be moved into Jenkins CI along core and other iRODS tests.
+    Until  then, for these tests to run successfully, we require:
+      1. First run ./setupssl.py (sets up SSL keys etc. in /etc/irods/ssl)
+      2. Add & override configuration entries in /var/lib/irods/irods_environment
+         Per https://slides.com/irods/ugm2018-ssl-and-pam-configuration#/3/7
+      3. Create rodsuser alissa and corresponding unix user with the appropriate
+         passwords as below.
+    '''
+
+    test_rods_user = 'alissa'
 
     user_auth_envs = {
         '.irods.pam': {
-            'USER':     UserName,
-            'PASSWORD': 'test123',
+            'USER':     test_rods_user,
+            'PASSWORD': 'test123', # UNIX pw
             'AUTH':     'pam'
         },
         '.irods.native': {
-            'USER':     UserName,
-            'PASSWORD': 'apass',
+            'USER':     test_rods_user,
+            'PASSWORD': 'apass',   # iRODS pw
             'AUTH':     'native'
         }
     }
@@ -133,7 +145,7 @@ class TestLogins(unittest.TestCase):
                #elif lookup['AUTH'] == 'XXXXXX': # TODO: insert other authentication schemes here
                 elif lookup['AUTH'] in ('native', '',None):
                     scrambled_pw = pw_encode( lookup['PASSWORD'] )
-                cl_env = client_env_from_server_env(cls.UserName)
+                cl_env = client_env_from_server_env(cls.test_rods_user)
                 if lookup.get('AUTH',None) is not None:     # - specify auth scheme only if given
                     cl_env['irods_authentication_scheme'] = lookup['AUTH']
                 dirbase = os.path.join(os.environ['HOME'],dirname)
@@ -171,25 +183,25 @@ class TestLogins(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.admin = helpers.make_session()
-        cls.server_ssl_setting = cls.get_server_ssl_negotiation( cls.admin )
-        cls.envdirs = cls.create_env_dirs()
-        if not cls.envdirs:
-            raise RuntimeError('Could not create one or more client environments')
-
+        if cls.test_rods_user in (row[User.name] for row in cls.admin.query(User.name)):
+            cls.server_ssl_setting = cls.get_server_ssl_negotiation( cls.admin )
+            cls.envdirs = cls.create_env_dirs()
+            if not cls.envdirs:
+                raise RuntimeError('Could not create one or more client environments')
 
     @classmethod
     def tearDownClass(cls):
-        for envdir in cls.envdirs:
+        for envdir in getattr(cls, 'envdirs', []):
             shutil.rmtree(envdir, ignore_errors=True)
         cls.admin.cleanup()
 
-#   def setUp(self):
-#       # - placeholder for per-test setup
-#       super(TestLogins,self).setUp()
+    def setUp(self):
+        if not getattr(self, 'envdirs', []):
+            self.skipTest('The test_rods_user "{}" does not exist'.format(self.test_rods_user))
+        super(TestLogins,self).setUp()
 
-#   def tearDown(self):
-#       # - placeholder for per-test teardown
-#       super(TestLogins,self).tearDown()
+    def tearDown(self):
+        super(TestLogins,self).tearDown()
 
     def validate_session(self, session, verbose=False, **options):
         
@@ -198,7 +210,7 @@ class TestLogins(unittest.TestCase):
         self.assertTrue(session.collections.get(home_coll).path == home_coll)
         if verbose: print(home_coll)
         # - check user is as expected
-        self.assertEqual( session.username, self.UserName )
+        self.assertEqual( session.username, self.test_rods_user )
         # - check socket type (normal vs SSL) against whether ssl requested
         use_ssl = options.pop('ssl',None)
         if use_ssl is not None:
