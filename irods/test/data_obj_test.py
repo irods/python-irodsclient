@@ -323,7 +323,7 @@ class TestDataObjOps(unittest.TestCase):
                 obj_path = "{collection}/{filename}".format(**locals())
                 contents = 'blah' * 100
                 checksum = base64.b64encode(
-                    hashlib.sha256(contents).digest()).decode()
+                    hashlib.sha256(contents.encode()).digest()).decode()
 
                 # make object in test collection
                 options = {kw.OPR_TYPE_KW: 1}   # PUT_OPR
@@ -384,7 +384,8 @@ class TestDataObjOps(unittest.TestCase):
                 # make pseudo-random test file
                 filename = 'test_put_file_trigger_pep.txt'
                 test_file = os.path.join('/tmp', filename)
-                contents = ''.join(random.choice(string.printable) for _ in range(1024))
+                contents = ''.join(random.choice(string.printable) for _ in range(1024)).encode()
+                contents = contents[:1024]
                 with open(test_file, 'wb') as f:
                     f.write(contents)
 
