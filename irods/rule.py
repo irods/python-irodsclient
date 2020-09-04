@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
 from irods.api_number import api_number
+from io import open as io_open
 
 class Rule(object):
     def __init__(self, session, rule_file=None, body='', params=None, output=''):
@@ -20,11 +21,11 @@ class Rule(object):
         if output != '':
             self.output = output
 
-    def load(self, rule_file):
+    def load(self, rule_file, encoding = 'utf-8'):
         self.body = '@external\n'
 
         # parse rule file
-        with open(rule_file) as f:
+        with io_open(rule_file, encoding = encoding) as f:
             for line in f:
                 # parse input line
                 if line.strip().lower().startswith('input'):
