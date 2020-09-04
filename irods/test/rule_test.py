@@ -10,6 +10,7 @@ from irods.models import DataObject
 import irods.test.helpers as helpers
 from irods.rule import Rule
 import six
+from io import open as io_open
 
 
 class TestRule(unittest.TestCase):
@@ -157,11 +158,8 @@ class TestRule(unittest.TestCase):
                                 INPUT *some_string="{some_string}",*some_other_string="{some_other_string}",*err_string="{err_string}"
                                 OUTPUT ruleExecOut'''.format(**locals()))
 
-        with open(rule_file_path, "w") as rule_file:
-            if six.PY2:
-                rule_file.write(rule.encode('utf-8'))
-            else:
-                rule_file.write(rule)
+        with io_open(rule_file_path, "w", encoding='utf-8') as rule_file:
+            rule_file.write(rule)
 
         # run test rule
         myrule = Rule(session, rule_file_path)
