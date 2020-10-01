@@ -23,8 +23,8 @@ class MetadataManager(Manager):
     def _model_class_to_resource_type(model_cls):
         return {
             DataObject: 'd',
-            Collection: 'c',
-            Resource: 'r',
+            Collection: 'C',
+            Resource: 'R',
             User: 'u',
         }[model_cls]
 
@@ -41,8 +41,8 @@ class MetadataManager(Manager):
         resource_type = self._model_class_to_resource_type(model_cls)
         model = {
             'd': DataObjectMeta,
-            'c': CollectionMeta,
-            'r': ResourceMeta,
+            'C': CollectionMeta,
+            'R': ResourceMeta,
             'u': UserMeta
         }[resource_type]
         conditions = {
@@ -50,8 +50,8 @@ class MetadataManager(Manager):
                 Collection.name == dirname(path),
                 DataObject.name == basename(path)
             ],
-            'c': [Collection.name == path],
-            'r': [Resource.name == path],
+            'C': [Collection.name == path],
+            'R': [Resource.name == path],
             'u': [User.name == path]
         }[resource_type]
         results = self.sess.query(model.id, model.name, model.value, model.units)\
