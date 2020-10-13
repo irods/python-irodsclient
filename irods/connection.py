@@ -6,6 +6,7 @@ import hashlib
 import six
 import os
 import ssl
+import datetime
 
 
 from irods.message import (
@@ -56,6 +57,7 @@ class Connection(object):
             self._login_pam()
         else:
             raise ValueError("Unknown authentication scheme %s" % scheme)
+        self.last_used_time = datetime.datetime.now()
 
     @property
     def server_version(self):
