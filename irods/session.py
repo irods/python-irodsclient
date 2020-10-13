@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import os
 import json
+import logging
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount
@@ -14,6 +15,7 @@ from irods.exception import NetworkException
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
 
+logger = logging.getLogger(__name__)
 
 class iRODSSession(object):
 
@@ -94,10 +96,10 @@ class iRODSSession(object):
 
         return iRODSAccount(**creds)
 
-
     def configure(self, **kwargs):
         account = self._configure_account(**kwargs)
-        self.pool = Pool(account, application_name = kwargs.pop('application_name',''))
+        connection_refresh_time = self.get_connection_refresh_time(**kwargs)
+        self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time)
 
     def query(self, *args):
         return Query(self, *args)
@@ -163,8 +165,12 @@ class iRODSSession(object):
 
     @staticmethod
     def get_irods_env(env_file):
-        with open(env_file, 'rt') as f:
-            return json.load(f)
+        try:
+            with open(env_file, 'rt') as f:
+                return json.load(f)
+        except IOError:
+            logger.debug("Could not open file {}".format(env_file))
+            return {}
 
     @staticmethod
     def get_irods_password(**kwargs):
@@ -180,3 +186,20 @@ class iRODSSession(object):
 
         with open(irods_auth_file, 'r') as f:
             return decode(f.read().rstrip('\n'), uid)
+
+    def get_connection_refresh_time(self, **kwargs):
+        connection_refresh_time = -1
+        try:
+            env_file = kwargs['irods_env_file']
+        except KeyError:
+            return connection_refresh_time
+
+        if env_file is not None:
+            env_file_map = self.get_irods_env(env_file)
+            connection_refresh_time = int(env_file_map.get('irods_connection_refresh_time', -1))
+            if connection_refresh_time < 1:
+                # Negative values are not allowed.
+                logger.debug('connection_refresh_time in {} file has value of {}. Only values greater than 1 are allowed.'.format(env_file, connection_refresh_time))
+                connection_refresh_time = -1
+
+        return connection_refresh_time
