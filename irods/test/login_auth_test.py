@@ -17,7 +17,11 @@ from socket import gethostname
 from irods.password_obfuscation import (encode as pw_encode)
 from irods.connection import PlainTextPAMPasswordError
 import contextlib
-from re import (compile as regex,_pattern_type as regex_type)
+from re import compile as regex
+try:
+    from re import _pattern_type as regex_type
+except ImportError:
+    from re import Pattern as regex_type  # Python 3.7+
 
 
 def json_file_update(fname,keys_to_delete=(),**kw):
