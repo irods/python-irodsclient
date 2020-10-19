@@ -6,6 +6,7 @@ Python iRODS Client (PRC)
 
 Currently supported:
 
+- Python 2.7, 3.4 or newer
 - Establish a connection to iRODS
 - Authenticate via password, GSI, PAM
 - iRODS connection over SSL
@@ -34,7 +35,6 @@ Currently supported:
 - Manage resources
 - Unicode strings
 - Ticket based access
-- Python 2.7, 3.4 or newer
 
 
 Installing

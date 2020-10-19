@@ -1,6 +1,20 @@
 Changelog
 =========
 
+v0.8.4 (2020-10-19)
+-------------------
+[#221] fix tests which were failing in Py3.4 and 3.7 [Daniel Moore]
+[#220] Replace stale connections pulled from idle pools [Kaivan Kamali]
+[#3] tests failing on Python3 unicode defaults [Daniel Moore]
+[#214] store/load rules as utf-8 in files [Daniel Moore]
+[#211] set and report application name to server [Daniel Moore]
+[#156] skip ssh/pam login tests if user doesn't exist [Daniel Moore]
+[#209] pam/ssl/env auth tests imported from test harness [Daniel Moore]
+[#209] store hashed PAM pw [Daniel Moore]
+[#205] Disallow PAM plaintext passwords as strong default [Daniel Moore]
+[#156] fix the PAM authentication with env json file. [Patrice Linel]
+[#207] add raw-acl permissions getter [Daniel Moore]
+
 v0.8.3 (2020-06-05)
 -------------------
 - [#3] remove order sensitivity in test_user_dn [Daniel Moore]
