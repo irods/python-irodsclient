@@ -11,6 +11,7 @@ from irods.manager.metadata_manager import MetadataManager
 from irods.manager.access_manager import AccessManager
 from irods.manager.user_manager import UserManager, UserGroupManager
 from irods.manager.resource_manager import ResourceManager
+from irods.manager.zone_manager import ZoneManager
 from irods.exception import NetworkException
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
@@ -33,6 +34,7 @@ class iRODSSession(object):
         self.users = UserManager(self)
         self.user_groups = UserGroupManager(self)
         self.resources = ResourceManager(self)
+        self.zones = ZoneManager(self)
 
     def __enter__(self):
         return self

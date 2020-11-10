@@ -22,6 +22,7 @@ class Model(six.with_metaclass(ModelBase, object)):
 class Zone(Model):
     id = Column(Integer, 'ZONE_ID', 101)
     name = Column(String, 'ZONE_NAME', 102)
+    type = Column(String, 'ZONE_TYPE', 103)
 
 
 class User(Model):
