@@ -57,7 +57,8 @@ class Connection(object):
             self._login_pam()
         else:
             raise ValueError("Unknown authentication scheme %s" % scheme)
-        self.last_used_time = datetime.datetime.now()
+        self.create_time = datetime.datetime.now()
+        self.last_used_time = self.create_time
 
     @property
     def server_version(self):

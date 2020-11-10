@@ -61,21 +61,25 @@ class TestPool(unittest.TestCase):
         self.assertEqual(0, len(self.sess.pool.active))
         self.assertEqual(0, len(self.sess.pool.idle))
 
-    def test_connection_last_used_time(self):
-        # Get a connection and record its object ID and last_used_time
+    def test_connection_create_time(self):
+        # Get a connection and record its object ID and create_time
         # Release the connection (goes from active to idle queue)
         # Again, get a connection. Should get the same connection back.
         # I.e., the object IDs should match. However, the new connection
         # should have a more recent 'last_used_time'
         conn_obj_id_1 = None
         conn_obj_id_2 = None
+        create_time_1 = None
+        create_time_2 = None
         last_used_time_1 = None
         last_used_time_2 = None
 
         with self.sess.pool.get_connection() as conn:
             conn_obj_id_1 = id(conn)
             curr_time = datetime.datetime.now()
+            create_time_1 = conn.create_time
             last_used_time_1 = conn.last_used_time
+            self.assertTrue(curr_time >= create_time_1)
             self.assertTrue(curr_time >= last_used_time_1)
             self.assertEqual(1, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
@@ -87,8 +91,10 @@ class TestPool(unittest.TestCase):
         with self.sess.pool.get_connection() as conn:
             conn_obj_id_2 = id(conn)
             curr_time = datetime.datetime.now()
+            create_time_2 = conn.create_time
             last_used_time_2 = conn.last_used_time
             self.assertEqual(conn_obj_id_1, conn_obj_id_2)
+            self.assertTrue(curr_time >= create_time_2)
             self.assertTrue(curr_time >= last_used_time_2)
             self.assertTrue(last_used_time_2 >= last_used_time_1)
             self.assertEqual(1, len(self.sess.pool.active))
@@ -105,18 +111,22 @@ class TestPool(unittest.TestCase):
     def test_refresh_connection(self):
         # Set 'irods_connection_refresh_time' to '3' (in seconds) in
         # ~/.irods/irods_environment.json file. This means any connection
-        # that is not used more than 3 seconds will be dropped and
+        # that was created more than 3 seconds ago will be dropped and
         # a new connection is created/returned. This is to avoid
         # issue with idle connections that are dropped.
         conn_obj_id_1 = None
         conn_obj_id_2 = None
+        create_time_1 = None
+        create_time_2 = None
         last_used_time_1 = None
         last_used_time_2 = None
 
         with self.sess.pool.get_connection() as conn:
             conn_obj_id_1 = id(conn)
             curr_time = datetime.datetime.now()
+            create_time_1 = conn.create_time
             last_used_time_1 = conn.last_used_time
+            self.assertTrue(curr_time >= create_time_1)
             self.assertTrue(curr_time >= last_used_time_1)
             self.assertEqual(1, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
@@ -133,10 +143,12 @@ class TestPool(unittest.TestCase):
         with self.sess.pool.get_connection() as conn:
             conn_obj_id_2 = id(conn)
             curr_time = datetime.datetime.now()
+            create_time_2 = conn.create_time
             last_used_time_2 = conn.last_used_time
+            self.assertTrue(curr_time >= create_time_2)
             self.assertTrue(curr_time >= last_used_time_2)
             self.assertNotEqual(conn_obj_id_1, conn_obj_id_2)
-            self.assertTrue(last_used_time_2 > last_used_time_1)
+            self.assertTrue(create_time_2 > create_time_1)
             self.assertEqual(1, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
 
@@ -147,18 +159,22 @@ class TestPool(unittest.TestCase):
     def test_no_refresh_connection(self):
         # Set 'irods_connection_refresh_time' to '3' (in seconds) in
         # ~/.irods/irods_environment.json file. This means any connection
-        # that is not used more than 3 seconds will be dropped and
+        # created more than 3 seconds ago will be dropped and
         # a new connection is created/returned. This is to avoid
         # issue with idle connections that are dropped.
         conn_obj_id_1 = None
         conn_obj_id_2 = None
+        create_time_1 = None
+        create_time_2 = None
         last_used_time_1 = None
         last_used_time_2 = None
 
         with self.sess.pool.get_connection() as conn:
             conn_obj_id_1 = id(conn)
             curr_time = datetime.datetime.now()
+            create_time_1 = conn.create_time
             last_used_time_1 = conn.last_used_time
+            self.assertTrue(curr_time >= create_time_1)
             self.assertTrue(curr_time >= last_used_time_1)
             self.assertEqual(1, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
@@ -175,10 +191,12 @@ class TestPool(unittest.TestCase):
         with self.sess.pool.get_connection() as conn:
             conn_obj_id_2 = id(conn)
             curr_time = datetime.datetime.now()
+            create_time_2 = conn.create_time
             last_used_time_2 = conn.last_used_time
+            self.assertTrue(curr_time >= create_time_2)
             self.assertTrue(curr_time >= last_used_time_2)
             self.assertEqual(conn_obj_id_1, conn_obj_id_2)
-            self.assertTrue(last_used_time_2 >= last_used_time_1)
+            self.assertTrue(create_time_2 >= create_time_1)
             self.assertEqual(1, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
 
