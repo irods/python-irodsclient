@@ -99,6 +99,7 @@ class iRODSSession(object):
     def configure(self, **kwargs):
         account = self._configure_account(**kwargs)
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
+        logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
         self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time)
 
     def query(self, *args):
@@ -189,6 +190,11 @@ class iRODSSession(object):
 
     def get_connection_refresh_time(self, **kwargs):
         connection_refresh_time = -1
+        
+        connection_refresh_time = int(kwargs.get('refresh_time', -1))
+        if connection_refresh_time != -1:
+            return connection_refresh_time
+
         try:
             env_file = kwargs['irods_env_file']
         except KeyError:
