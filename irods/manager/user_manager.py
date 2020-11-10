@@ -30,7 +30,8 @@ class UserManager(Manager):
         message_body = GeneralAdminRequest(
             "add",
             "user",
-            user_name,
+            user_name if not user_zone or user_zone == self.sess.zone \
+                      else "{}#{}".format(user_name,user_zone),
             user_type,
             user_zone,
             auth_str

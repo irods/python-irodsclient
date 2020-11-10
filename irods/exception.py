@@ -26,6 +26,10 @@ class CollectionDoesNotExist(DoesNotExist):
     pass
 
 
+class ZoneDoesNotExist(DoesNotExist):
+    pass
+
+
 class UserDoesNotExist(DoesNotExist):
     pass
 
