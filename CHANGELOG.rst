@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.8.5 (2020-11-10)
+-------------------
+[#220] Use connection create time to determine stale connections [Kaivan Kamali]
+
 v0.8.4 (2020-10-19)
 -------------------
 [#221] fix tests which were failing in Py3.4 and 3.7 [Daniel Moore]
