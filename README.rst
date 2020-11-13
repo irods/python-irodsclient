@@ -659,6 +659,16 @@ We can also query on access type using its numeric value, which will seem more n
 >>> data_objects_writable = list(session.query(DataObject,DataAccess,User)).filter(User.name=='alice',  DataAccess.type >= MODIFY)
 
 
+Managing users
+--------------
+
+You can create a user in the current zone using:
+>>> session.users.create('user', 'rodsuser', 'MyZone', auth_str)
+(the auth_str parameter is optional).
+If you want to create a user in a federated zone, use:
+>>> session.users.create('user', 'rodsuser', 'OtherZone', auth_str)
+
+
 And more...
 -----------
 
