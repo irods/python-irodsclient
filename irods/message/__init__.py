@@ -282,6 +282,7 @@ def JSON_Message( msg_struct , server_version = () ):
           else JSON_Binary_Request
     return cls(msg_struct)
 
+
 class PluginAuthMessage(Message):
     _name = 'authPlugReqInp_PI'
     auth_scheme_ = StringProperty()
