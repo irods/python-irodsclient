@@ -10,18 +10,21 @@ import random
 import string
 import unittest
 import contextlib  # check if redundant
+import logging
+import io
+import re
+
 from irods.models import Collection, DataObject
-from irods.session import iRODSSession
 import irods.exception as ex
 from irods.column import Criterion
 from irods.data_object import chunks
 import irods.test.helpers as helpers
 import irods.keywords as kw
+from irods.manager import data_object_manager
 from datetime import datetime
 from tempfile import NamedTemporaryFile, mkdtemp
-# used only in  create_resc_hierarchy  which may be redundant - see later comment
-import shutil
 from irods.test.helpers import (unique_name, my_function_name)
+import irods.parallel
 
 
 def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
@@ -46,6 +49,8 @@ class TestDataObjOps(unittest.TestCase):
         self.sess = helpers.make_session()
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
+        with self.sess.pool.get_connection() as conn:
+            self.SERVER_VERSION = conn.server_version
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -53,24 +58,83 @@ class TestDataObjOps(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
-#-- probably redundant ( see helpers.create_simple_resc (self, rescName = None))
+    @staticmethod
+    def In_Memory_Stream():
+        return io.BytesIO() if sys.version_info < (3,) else io.StringIO()
+
 
     @contextlib.contextmanager
-    def create_resc_hierarchy (self, Root, Leaf):
-        d = mkdtemp()
+    def create_resc_hierarchy (self, Root, Leaf = None):
+        if not Leaf:
+            Leaf = 'simple_leaf_resc_' + unique_name (my_function_name(), datetime.now())
+            y_value = (Root,Leaf)
+        else:
+            y_value = ';'.join([Root,Leaf])
         self.sess.resources.create(Leaf,'unixfilesystem',
                                host = self.sess.host,
-                               path=d)
+                               path='/tmp/' + Leaf)
         self.sess.resources.create(Root,'passthru')
         self.sess.resources.add_child(Root,Leaf)
         try:
-            yield ';'.join([Root,Leaf])
+            yield  y_value
         finally:
             self.sess.resources.remove_child(Root,Leaf)
             self.sess.resources.remove(Leaf)
             self.sess.resources.remove(Root)
-            shutil.rmtree(d)
 
+    def test_put_get_parallel_autoswitch_A__235(self):
+        if not self.sess.data_objects.should_parallelize_transfer(server_version_hint = self.SERVER_VERSION):
+            self.skipTest('Skip unless detected server version is 4.2.9')
+        if getattr(data_object_manager,'DEFAULT_NUMBER_OF_THREADS',None) in (1, None):
+            self.skipTest('Data object manager not configured for parallel puts and gets')
+        Root  = 'pt235'
+        Leaf  = 'resc235'
+        files_to_delete = []
+        # This test does the following:
+        #  - set up a small resource hierarchy and generate a file large enough to trigger parallel transfer
+        #  - `put' the file to iRODS, then `get' it back, comparing the resulting two disk files and making
+        #    sure that the parallel routines were invoked to do both transfers
+
+        with self.create_resc_hierarchy(Root) as (Root_ , Leaf):
+            self.assertEqual(Root , Root_)
+            self.assertIsInstance( Leaf, str)
+            datafile = NamedTemporaryFile (prefix='getfromhier_235_',delete=True)
+            datafile.write( os.urandom( data_object_manager.MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE + 1 ))
+            datafile.flush()
+            base_name = os.path.basename(datafile.name)
+            data_obj_name = '/{0.zone}/home/{0.username}/{1}'.format(self.sess, base_name)
+            options = { kw.DEST_RESC_NAME_KW:Root,
+                        kw.RESC_NAME_KW:Root }
+
+            PUT_LOG = self.In_Memory_Stream()
+            GET_LOG = self.In_Memory_Stream()
+            NumThreadsRegex = re.compile('^num_threads\s*=\s*(\d+)',re.MULTILINE)
+
+            try:
+                with irods.parallel.enableLogging( logging.StreamHandler, (PUT_LOG,), level_=logging.INFO):
+                    self.sess.data_objects.put(datafile.name, data_obj_name, num_threads = 0, **options)  # - PUT
+                    match = NumThreadsRegex.search (PUT_LOG.getvalue())
+                    self.assertTrue (match is not None and int(match.group(1)) >= 1) # - PARALLEL code path taken?
+
+                with irods.parallel.enableLogging( logging.StreamHandler, (GET_LOG,), level_=logging.INFO):
+                    self.sess.data_objects.get(data_obj_name, datafile.name+".get", num_threads = 0, **options) # - GET
+                    match = NumThreadsRegex.search (GET_LOG.getvalue())
+                    self.assertTrue (match is not None and int(match.group(1)) >= 1) # - PARALLEL code path taken?
+
+                files_to_delete += [datafile.name + ".get"]
+
+                with open(datafile.name, "rb") as f1, open(datafile.name + ".get", "rb") as f2:
+                    self.assertEqual ( f1.read(), f2.read() )
+
+                q = self.sess.query (DataObject.name,DataObject.resc_hier).filter( DataObject.name == base_name,
+                                                                                   DataObject.resource_name == Leaf)
+                replicas = list(q)
+                self.assertEqual( len(replicas), 1 )
+                self.assertEqual( replicas[0][DataObject.resc_hier] , ';'.join([Root,Leaf]) )
+
+            finally:
+                self.sess.data_objects.unlink( data_obj_name, force = True)
+                for n in files_to_delete: os.unlink(n)
 
     def test_open_existing_dataobj_in_resource_hierarchy__232(self):
         Root  = 'pt1'

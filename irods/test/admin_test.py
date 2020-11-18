@@ -154,30 +154,33 @@ class TestAdmin(unittest.TestCase):
         session.resources.add_child(comp.name, ufs1.name, 'archive')
         session.resources.add_child(comp.name, ufs2.name, 'cache')
 
-        # create object on compound resource
-        obj = session.data_objects.create(obj_path, comp.name)
+        obj = None
 
-        # write to object
-        with obj.open('w+',**{kw.DEST_RESC_NAME_KW:comp.name}) as obj_desc:
-            obj_desc.write(dummy_str)
+        try:
+            # create object on compound resource
+            obj = session.data_objects.create(obj_path, resource = comp.name)
 
-        # refresh object
-        obj = session.data_objects.get(obj_path)
+            # write to object
+            with obj.open('w+',**{kw.DEST_RESC_NAME_KW:comp.name}) as obj_desc:
+                obj_desc.write(dummy_str)
 
-        # check that we have 2 replicas
-        self.assertEqual(len(obj.replicas), 2)
+            # refresh object
+            obj = session.data_objects.get(obj_path)
 
-        # remove object
-        obj.unlink(force=True)
+            # check that we have 2 replicas
+            self.assertEqual(len(obj.replicas), 2)
+        finally:
+            # remove object
+            if obj: obj.unlink(force=True)
 
-        # remove children from compound resource
-        session.resources.remove_child(comp.name, ufs1.name)
-        session.resources.remove_child(comp.name, ufs2.name)
+            # remove children from compound resource
+            session.resources.remove_child(comp.name, ufs1.name)
+            session.resources.remove_child(comp.name, ufs2.name)
 
-        # remove resources
-        ufs1.remove()
-        ufs2.remove()
-        comp.remove()
+            # remove resources
+            ufs1.remove()
+            ufs2.remove()
+            comp.remove()
 
 
     def test_get_resource_children(self):

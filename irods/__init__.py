@@ -1,7 +1,29 @@
 from .version import __version__
 
 import logging
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+gHandler = None
+
+def client_logging(flag=True,handler=None):
+    """
+    import irods
+    # Enable / Disable general client logging
+    irods.client_logging(True[,handler]) -> handler
+    #    (handler is a StreamHandler to stderr by default)
+    irods.client_logging(False)  # - disable irods client logging
+    """
+    global gHandler
+    if flag:
+        if handler is not None:
+            if gHandler: logger.removeHandler(gHandler)
+            if not handler: handler = logging.StreamHandler()
+            gHandler = handler
+            logger.addHandler(handler)
+    else:
+        if gHandler: logger.removeHandler(gHandler)
+        gHandler = None
+    return gHandler
 
 # Magic Numbers
 MAX_PASSWORD_LENGTH = 50
