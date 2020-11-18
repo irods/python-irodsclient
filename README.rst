@@ -49,6 +49,9 @@ or::
 
  pip install git+https://github.com/irods/python-irodsclient.git[@branch|@commit|@tag]
 
+See [PYTHON_2_7.rst] for instructions relevant to Python2-based installations on older
+Linux distributions.
+
 
 Uninstalling
 ------------
@@ -96,6 +99,28 @@ If you're an administrator acting on behalf of another user:
 >>>
 
 If no ``client_zone`` is provided, the ``zone`` parameter is used in its place.
+
+
+Simple PUTs and GETs
+--------------------
+
+We can use the just-created session object to put files to (or get them from) iRODS.
+
+>>> logical_path = "/{0.zone}/home/{0.username}/{1}".format(session,"myfile.dat")
+>>> session.data_objects.put( "myfile.dat", logical_path)
+>>> session.data_objects.get( logical_path, "/tmp/myfile.dat.copy" )
+
+Note that local file paths may be relative, but iRODS data objects must always be referred to by
+their absolute paths.  This is in contrast to the ``iput`` and ``iget`` icommands, which keep
+track of the current working collection (as modified by ``icd``) for the unix shell.
+
+
+Parallel Transfer
+-----------------
+
+Starting with release 0.9.0, data object transfers using put() and get() will spawn a number
+of threads in order to optimize performance for iRODS server versions 4.2.9+ and file sizes
+larger than a default threshold value of 32 Megabytes.
 
 
 Working with collections

@@ -254,6 +254,11 @@ class JSONMessage(BytesBuf):
         s = json.dumps(msg_struct)
         super(JSONMessage,self).__init__(buf=s,buflen=len(s))
 
+class ReplicaCloseRequest(BytesBuf):
+    pass
+
+class GetFileDescriptorInfo(BytesBuf):
+    pass
 
 class PluginAuthMessage(Message):
     _name = 'authPlugReqInp_PI'

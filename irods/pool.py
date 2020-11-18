@@ -9,9 +9,16 @@ from irods.connection import Connection
 
 logger = logging.getLogger(__name__)
 
+def attribute_from_return_value(attrname):
+    def deco(method):
+        def method_(self,*s,**kw):
+            ret = method(self,*s,**kw)
+            setattr(self,attrname,ret)
+            return ret
+        return method_
+    return deco
 
 DEFAULT_APPLICATION_NAME = 'python-irodsclient'
-
 
 class Pool(object):
 
@@ -21,6 +28,8 @@ class Pool(object):
         Create an iRODS connection pool; 'account' is an irods.account.iRODSAccount instance and
         'application_name' specifies the application name as it should appear in an 'ips' listing.
         '''
+
+        self._thread_local = threading.local()
         self.account = account
         self._lock = threading.RLock()
         self.active = set()
@@ -37,6 +46,13 @@ class Pool(object):
             self.refresh_connection = False
             self.connection_refresh_time = None
 
+    @property
+    def _conn(self): return getattr( self._thread_local, "_conn", None)
+
+    @_conn.setter
+    def _conn(self, conn_): setattr( self._thread_local, "_conn", conn_)
+
+    @attribute_from_return_value("_conn")
     def get_connection(self):
         with self._lock:
             try:

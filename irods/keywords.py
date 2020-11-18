@@ -210,6 +210,7 @@ AGE_KW = "age"  # age of the file for itrim #
 # =-=-=-=-=-=-=-
 # irods general keywords definitions
 RESC_HIER_STR_KW = "resc_hier"
+REPLICA_TOKEN_KW = "replicaToken"
 DEST_RESC_HIER_STR_KW = "dest_resc_hier"
 IN_PDMO_KW = "in_pdmo"
 STAGE_OBJ_KW = "stage_object"
