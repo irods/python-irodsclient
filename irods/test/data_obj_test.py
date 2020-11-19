@@ -9,7 +9,7 @@ import base64
 import random
 import string
 import unittest
-import tempfile
+import contextlib  # check if redundant
 from irods.models import Collection, DataObject
 from irods.session import iRODSSession
 import irods.exception as ex
@@ -18,8 +18,10 @@ from irods.data_object import chunks
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from datetime import datetime
+from tempfile import NamedTemporaryFile, mkdtemp
+# used only in  create_resc_hierarchy  which may be redundant - see later comment
+import shutil
 from irods.test.helpers import (unique_name, my_function_name)
-
 
 
 def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
@@ -51,6 +53,44 @@ class TestDataObjOps(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+#-- probably redundant ( see helpers.create_simple_resc (self, rescName = None))
+
+    @contextlib.contextmanager
+    def create_resc_hierarchy (self, Root, Leaf):
+        d = mkdtemp()
+        self.sess.resources.create(Leaf,'unixfilesystem',
+                               host = self.sess.host,
+                               path=d)
+        self.sess.resources.create(Root,'passthru')
+        self.sess.resources.add_child(Root,Leaf)
+        try:
+            yield ';'.join([Root,Leaf])
+        finally:
+            self.sess.resources.remove_child(Root,Leaf)
+            self.sess.resources.remove(Leaf)
+            self.sess.resources.remove(Root)
+            shutil.rmtree(d)
+
+
+    def test_open_existing_dataobj_in_resource_hierarchy__232(self):
+        Root  = 'pt1'
+        Leaf  = 'resc1'
+        with self.create_resc_hierarchy(Root,Leaf) as hier_str:
+            obj = None
+            try:
+                datafile = NamedTemporaryFile (prefix='getfromhier_232_',delete=True)
+                datafile.write(b'abc\n')
+                datafile.flush()
+                fname = datafile.name
+                bname = os.path.basename(fname)
+                LOGICAL = self.coll_path + '/' + bname
+                self.sess.data_objects.put(fname,LOGICAL, **{kw.DEST_RESC_NAME_KW:Root})
+                self.assertEqual([bname], [res[DataObject.name] for res in
+                                           self.sess.query(DataObject.name).filter(DataObject.resc_hier == hier_str)])
+                obj = self.sess.data_objects.get(LOGICAL)
+                obj.open('a') # prior to #232 fix, raises DIRECT_CHILD_ACCESS
+            finally:
+                if obj: obj.unlink(force=True)
 
     def make_new_server_config_json(self, server_config_filename):
         # load server_config.json to inject a new rule base
@@ -75,7 +115,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_compute_chksum( self ):
 
-        with self.create_simple_resc() as R, tempfile.NamedTemporaryFile(mode = 'wb') as f:
+        with self.create_simple_resc() as R, NamedTemporaryFile(mode = 'wb') as f:
             coll_path = '/{0.zone}/home/{0.username}' .format(self.sess)
             dobj_path = coll_path + '/' + os.path.basename(f.name)
             Data = self.sess.data_objects
