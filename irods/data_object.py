@@ -79,9 +79,6 @@ class iRODSDataObject(object):
         return self._meta
 
     def open(self, mode='r', **options):
-        if kw.DEST_RESC_NAME_KW not in options:
-            options[kw.DEST_RESC_NAME_KW] = self.replicas[0].resource_name
-
         return self.manager.open(self.path, mode, **options)
 
     def unlink(self, force=False, **options):

@@ -17,6 +17,8 @@ from irods.data_object import chunks
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from datetime import datetime
+from tempfile import NamedTemporaryFile, mkdtemp
+import shutil
 
 class TestDataObjOps(unittest.TestCase):
 
@@ -34,6 +36,46 @@ class TestDataObjOps(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
+    def test_open_on_dataobj_in_hier__232(self):
+        d = None
+        obj = None
+        try:
+            datafile = NamedTemporaryFile (prefix='getfromhier_232_',delete=True)
+            datafile.write('abc\n')
+            datafile.flush()
+            Root  = 'pt1'
+            Leaf  = 'resc1'
+            fname = datafile.name
+            bname = os.path.basename(fname)
+            d = mkdtemp()
+
+            self.sess.resources.create(Leaf,'unixfilesystem',
+                                   host = self.sess.host,
+                                   path=d)
+            self.sess.resources.create(Root,'passthru')
+            self.sess.resources.add_child(Root,Leaf)
+
+            LOGICAL = self.coll_path + '/' + bname
+            self.sess.data_objects.put(fname,LOGICAL, **{kw.DEST_RESC_NAME_KW:Root})
+            self.assertEqual([bname], [res[DataObject.name] for res in
+                                       self.sess.query(DataObject.name).filter(DataObject.resc_hier == ';'.join([Root,Leaf]))])
+            obj = self.sess.data_objects.get(LOGICAL)
+            exc = None
+            try:
+                raw = obj.open('a')
+            except KeyError as exc:
+                # Direct child access causes failure as of this 4-2-stable commit:
+                #   https://github.com/irods/irods/commit/a4009e673c0d81f3a68d9e99dadeed7fa83dd022
+                # but this test passes on the previous iRODS server release (tag <4.2.8>)
+                if exc.args[0] != -1816000: # DIRECT_CHILD_ACCESS
+                    raise
+            self.assertIsNone(exc)
+        finally:
+            if obj: obj.unlink(force=True)
+            self.sess.resources.remove_child(Root,Leaf)
+            self.sess.resources.remove(Leaf)
+            self.sess.resources.remove(Root)
+            shutil.rmtree(d)
 
     def make_new_server_config_json(self, server_config_filename):
         # load server_config.json to inject a new rule base
