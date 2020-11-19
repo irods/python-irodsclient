@@ -118,21 +118,21 @@ class DataObjectManager(Manager):
         return self.get(path)
 
 
-    def open(self, path, mode, **options):
+    def open(self, path, mode, create = True, **options):
         if kw.DEST_RESC_NAME_KW not in options:
             # Use client-side default resource if available
             try:
                 options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
             except AttributeError:
                 pass
-
+        createFlag = self.O_CREAT if create else 0
         flags, seek_to_end = {
             'r': (self.O_RDONLY, False),
             'r+': (self.O_RDWR, False),
-            'w': (self.O_WRONLY | self.O_CREAT | self.O_TRUNC, False),
-            'w+': (self.O_RDWR | self.O_CREAT | self.O_TRUNC, False),
-            'a': (self.O_WRONLY | self.O_CREAT, True),
-            'a+': (self.O_RDWR | self.O_CREAT, True),
+            'w': (self.O_WRONLY | createFlag | self.O_TRUNC, False),
+            'w+': (self.O_RDWR | createFlag | self.O_TRUNC, False),
+            'a': (self.O_WRONLY | createFlag, True),
+            'a+': (self.O_RDWR | createFlag, True),
         }[mode]
         # TODO: Use seek_to_end
 
