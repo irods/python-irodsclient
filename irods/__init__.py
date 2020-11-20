@@ -1,5 +1,8 @@
 from .version import __version__
 
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
+
 # Magic Numbers
 MAX_PASSWORD_LENGTH = 50
 MAX_SQL_ATTR = 50
