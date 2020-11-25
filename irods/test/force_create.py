@@ -12,7 +12,6 @@ class TestForceCreate(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session()
 
-
     def tearDown(self):
         """Close connections."""
         self.sess.cleanup()
@@ -20,7 +19,7 @@ class TestForceCreate(unittest.TestCase):
     # This test should pass whether or not federation is configured:
     def test_force_create(self):
         session = self.sess
-        FILE = '/a.txt'
+        FILE = '/{session.zone}/home/{session.username}/a.txt'.format(**locals())
         try:
             session.data_objects.unlink(FILE)
         except:
