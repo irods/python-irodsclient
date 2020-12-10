@@ -45,6 +45,7 @@ class Connection(object):
         self.account = account
         self._client_signature = None
         self._server_version = self._connect()
+        self._disconnected = False
 
         scheme = self.account.authentication_scheme
 
@@ -69,7 +70,7 @@ class Connection(object):
         return self._client_signature
 
     def __del__(self):
-        if self.socket:
+        if self.socket and getattr(self,"_disconnected",False):
             self.disconnect()
 
     def send(self, message):
@@ -193,6 +194,7 @@ class Connection(object):
 
         try:
             s = socket.create_connection(address, timeout)
+            self._disconnected = False
         except socket.error:
             raise NetworkException(
                 "Could not connect to specified host and port: " +
@@ -271,6 +273,7 @@ class Connection(object):
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
         self.socket = None
+        self._disconnected = True
 
     def recvall(self, n):
         # Helper function to recv n bytes or return None if EOF is hit
