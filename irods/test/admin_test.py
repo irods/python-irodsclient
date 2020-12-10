@@ -372,6 +372,26 @@ class TestAdmin(unittest.TestCase):
             self.sess.users.get(self.new_user_name)
 
 
+    def test_set_user_info(self):
+        # make a new user
+        self.sess.users.create(self.new_user_name, self.new_user_type)
+
+        # modify user info
+        new_info = '''info-abc123!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~Z'''
+        self.sess.users.modify(self.new_user_name, 'info', new_info)
+
+        # check info was modified
+        new_user = self.sess.users.get(self.new_user_name)
+        self.assertEqual(new_user.info, new_info)
+
+        # delete new user
+        self.sess.users.remove(self.new_user_name)
+
+        # user should be gone
+        with self.assertRaises(UserDoesNotExist):
+            self.sess.users.get(self.new_user_name)
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
