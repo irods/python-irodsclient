@@ -14,6 +14,7 @@ class iRODSUser(object):
             self.type = result[User.type]
             self.zone = result[User.zone]
             self.comment = result[User.comment]
+            self.info = result[User.info]
         self._meta = None
 
     @property
