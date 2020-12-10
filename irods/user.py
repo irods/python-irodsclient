@@ -13,6 +13,7 @@ class iRODSUser(object):
             self.name = result[User.name]
             self.type = result[User.type]
             self.zone = result[User.zone]
+            self.comment = result[User.comment]
         self._meta = None
 
     @property
