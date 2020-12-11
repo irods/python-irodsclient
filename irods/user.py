@@ -3,6 +3,7 @@ from irods.models import User, UserGroup, UserAuth
 from irods.meta import iRODSMetaCollection
 from irods.exception import NoResultFound
 
+_Not_Defined = ()
 
 class iRODSUser(object):
 
@@ -13,9 +14,23 @@ class iRODSUser(object):
             self.name = result[User.name]
             self.type = result[User.type]
             self.zone = result[User.zone]
-            self.comment = result[User.comment]
-            self.info = result[User.info]
+            self._comment = result.get(User.comment, _Not_Defined)  # these not needed in results for object ident,
+            self._info = result.get(User.info, _Not_Defined)        # so we fetch lazily via a property
         self._meta = None
+
+    @property
+    def comment(self):
+        if self._comment == _Not_Defined:
+            query = self.manager.sess.query(User.id,User.comment).filter(User.id == self.id)
+            self._comment = query.one()[User.comment]
+        return self._comment
+
+    @property
+    def info(self):
+        if self._info == _Not_Defined:
+            query = self.manager.sess.query(User.id,User.info).filter(User.id == self.id)
+            self._info = query.one()[User.info]
+        return self._info
 
     @property
     def dn(self):
