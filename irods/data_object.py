@@ -76,9 +76,6 @@ class iRODSDataObject(object):
             ) for r in replicas]
         self._meta = None
 
-
-
-
     def __repr__(self):
         return "<iRODSDataObject {id} {name}>".format(**vars(self))
 

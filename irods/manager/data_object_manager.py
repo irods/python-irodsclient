@@ -20,7 +20,7 @@ MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE = 32 * ( 1024 ** 2)
 DEFAULT_NUMBER_OF_THREADS = 0   # Defaults for reasonable number of threads -- optimized to be
                                 # performant but allow no more worker threads than available CPUs.
                                 # Setting this to 1 disables automatic use of parallel transfer.
-
+DEFAULT_QUEUE_DEPTH = 32
 
 class DataObjectManager(Manager):
 
@@ -140,7 +140,7 @@ class DataObjectManager(Manager):
 
         return parallel.io_main( self.sess, data_or_path_, parallel.Oper.GET | (parallel.Oper.NONBLOCKING if async_ else 0), file_,
                                  num_threads = num_threads, target_resource_name = target_resource_name,
-                                 queueLength = (32 if progressQueue else 0))
+                                 queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0))
 
     def parallel_put(self,
                      file_ ,
@@ -152,7 +152,7 @@ class DataObjectManager(Manager):
 
         return parallel.io_main( self.sess, data_or_path_, parallel.Oper.PUT | (parallel.Oper.NONBLOCKING if async_ else 0), file_,
                                  num_threads = num_threads, target_resource_name = target_resource_name,
-                                 queueLength = (32 if progressQueue else 0))
+                                 queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0))
 
 
     def create(self, path, resource=None, force=False, **options):

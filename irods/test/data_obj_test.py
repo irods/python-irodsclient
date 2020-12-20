@@ -117,7 +117,7 @@ class TestDataObjOps(unittest.TestCase):
                 self.sess.data_objects.unlink( data_obj_name, force = True)
                 for n in files_to_delete: os.unlink(n)
 
-    def test_open_on_dataobj_in_hier__232(self):
+    def test_open_existing_dataobj_in_resource_hierarchy__232(self):
         Root  = 'pt1'
         Leaf  = 'resc1'
         with self.create_resc_hierarchy(Root,Leaf) as hier_str:
@@ -133,16 +133,7 @@ class TestDataObjOps(unittest.TestCase):
                 self.assertEqual([bname], [res[DataObject.name] for res in
                                            self.sess.query(DataObject.name).filter(DataObject.resc_hier == hier_str)])
                 obj = self.sess.data_objects.get(LOGICAL)
-                exc = None
-                try:
-                    obj.open('a')
-                except KeyError as exc:
-                    # Direct child access causes failure as of this 4-2-stable commit:
-                    #   https://github.com/irods/irods/commit/a4009e673c0d81f3a68d9e99dadeed7fa83dd022
-                    # but this test passes on the previous iRODS server release (tag <4.2.8>)
-                    if exc.args[0] != -1816000: # DIRECT_CHILD_ACCESS
-                        raise
-                self.assertIsNone(exc)
+                obj.open('a') # prior to #232 fix, raises DIRECT_CHILD_ACCESS
             finally:
                 if obj: obj.unlink(force=True)
 

@@ -76,20 +76,24 @@ class TestFiles(unittest.TestCase):
         # from irods.models import Collection, User, DataObject
 
         obj = self.sess.data_objects.get(self.test_obj_path)
-        f = obj.open('w+')
-        f.write(self.write_str.encode('utf-8'))
-        f.seek(-6, 2)
-        f.write(self.write_str1.encode('utf-8'))
+        with obj.open('w+') as f:
+            f.write(self.write_str.encode('utf-8'))
+            f.seek(-6, 2)
+            f.write(self.write_str1.encode('utf-8'))
 
-        # reset stream position for reading
-        f.seek(0, 0)
+            ## seek and re-read of just written bytes doesn't work in current 4-2-stable
+            ## (see https://github.com/irods/irods/issues/5315)
+            ## reset stream position for reading 
+            #f.seek(0, 0)
+            #s = f.read(len(self.write_str))
 
-        # check new content of file after our write
-        str1 = f.read(1024).decode('utf-8')
-        assert str1 == (self.write_str[:-6] + self.write_str1)
+        with obj.open('r+') as f:
+            # check new content of file after our write
+            str1 = f.read(1024).decode('utf-8')
+            assert str1 == (self.write_str[:-6] + self.write_str1)
 
-        # self.assertTrue(expr, msg)
-        f.close()
+        ## self.assertTrue(expr, msg)
+        #f.close()
 
 
 if __name__ == '__main__':

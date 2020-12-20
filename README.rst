@@ -49,7 +49,7 @@ or::
 
  pip install git+https://github.com/irods/python-irodsclient.git[@branch|@commit|@tag]
 
-See [PYTHON_2_7.rst] for instructions relevant to Python2-based installations on older
+See [PYTHON_install_caveats.rst] for instructions relevant to Python2-based installations on older
 Linux distributions.
 
 
