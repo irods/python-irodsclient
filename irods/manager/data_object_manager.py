@@ -199,7 +199,8 @@ class DataObjectManager(Manager):
 
     def open(self, path, mode, create = True, finalize_on_close = True, **options):
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
-        if kw.DEST_RESC_NAME_KW not in options:
+        if kw.DEST_RESC_NAME_KW not in options and \
+           kw.DEST_RESC_HIER_STR_KW not in options:
             # Use client-side default resource if available
             try:
                 options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
