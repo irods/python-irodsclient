@@ -4,8 +4,9 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
-from irods.meta import iRODSMeta
-from irods.models import DataObject, Collection, Resource
+from irods.meta import (iRODSMeta, AVUOperation, BadAVUOperationValue, BadAVUOperationKeyword)
+from irods.manager.metadata_manager import InvalidAtomicAVURequest
+from irods.models import (DataObject, Collection, Resource)
 import irods.test.helpers as helpers
 from six.moves import range
 
@@ -19,7 +20,6 @@ class TestMeta(unittest.TestCase):
 
     def setUp(self):
         self.sess = helpers.make_session()
-
         # test data
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.obj_name = 'test1'
@@ -29,13 +29,76 @@ class TestMeta(unittest.TestCase):
         self.coll = self.sess.collections.create(self.coll_path)
         self.obj = self.sess.data_objects.create(self.obj_path)
 
-
     def tearDown(self):
         '''Remove test data and close connections
         '''
         self.coll.remove(recurse=True, force=True)
+        helpers.remove_unused_metadata(self.sess)
         self.sess.cleanup()
 
+    from irods.test.helpers import create_simple_resc_hierarchy
+
+    def test_atomic_metadata_operations_244(self):
+        user = self.sess.users.get("rods")
+        group = self.sess.user_groups.get("public")
+        m = ( "attr_244","value","units")
+
+        with self.assertRaises(BadAVUOperationValue):
+            AVUOperation(operation="add", avu=m)
+
+        with self.assertRaises(BadAVUOperationValue):
+            AVUOperation(operation="not_add_or_remove", avu=iRODSMeta(*m))
+
+        with self.assertRaises(BadAVUOperationKeyword):
+            AVUOperation(operation="add", avu=iRODSMeta(*m), extra_keyword=None)
+
+
+        with self.assertRaises(InvalidAtomicAVURequest):
+            user.metadata.apply_atomic_operations( tuple() )
+
+        user.metadata.apply_atomic_operations()   # no AVUs applied - no-op without error
+
+        for n,obj in enumerate((group, user, self.coll, self.obj)):
+            avus = [ iRODSMeta('some_attribute',str(i),'some_units') for i in range(n*100,(n+1)*100) ]
+            obj.metadata.apply_atomic_operations(*[AVUOperation(operation="add", avu=avu_) for avu_ in avus])
+            obj.metadata.apply_atomic_operations(*[AVUOperation(operation="remove", avu=avu_) for avu_ in avus])
+
+
+    def test_atomic_metadata_operation_for_resource_244(self):
+        (root,leaf)=('ptX','rescX')
+        with self.create_simple_resc_hierarchy(root,leaf):
+            root_resc = self.sess.resources.get(root)   # resource objects
+            leaf_resc = self.sess.resources.get(leaf)
+            root_tuple = ('role','root','new units #1')    # AVU tuples to apply
+            leaf_tuple = ('role','leaf','new units #2')
+            root_resc.metadata.add( *root_tuple[:2] ) # first apply without units ...
+            leaf_resc.metadata.add( *leaf_tuple[:2] )
+            for resc,resc_tuple in ((root_resc, root_tuple), (leaf_resc, leaf_tuple)):
+                resc.metadata.apply_atomic_operations(  # metadata set operation (remove + add) to add units
+                    AVUOperation(operation="remove", avu=iRODSMeta(*resc_tuple[:2])),
+                    AVUOperation(operation="add", avu=iRODSMeta(*resc_tuple[:3]))
+                )
+                resc_meta = self.sess.metadata.get(Resource, resc.name)
+                avus_to_tuples = lambda avu_list: sorted([(i.name,i.value,i.units) for i in avu_list])
+                self.assertEqual(avus_to_tuples(resc_meta), avus_to_tuples([iRODSMeta(*resc_tuple)]))
+
+
+    def test_atomic_metadata_operation_for_data_object_244(self):
+        AVUs_Equal = lambda avu1,avu2,fn=(lambda x:x): fn(avu1)==fn(avu2)
+        AVU_As_Tuple = lambda avu,length=3:(avu.name,avu.value,avu.units)[:length]
+        AVU_Units_String = lambda avu:"" if not avu.units else avu.units
+        m = iRODSMeta( "attr_244","value","units")
+        self.obj.metadata.add(m)
+        meta = self.sess.metadata.get(DataObject, self.obj_path)
+        self.assertEqual(len(meta), 1)
+        self.assertTrue(AVUs_Equal(m,meta[0],AVU_As_Tuple))
+        self.obj.metadata.apply_atomic_operations(                                  # remove original AVU and replace
+           AVUOperation(operation="remove",avu=m),                                  #   with two altered versions
+           AVUOperation(operation="add",avu=iRODSMeta(m.name,m.value,"units_244")), # (one of them without units) ...
+           AVUOperation(operation="add",avu=iRODSMeta(m.name,m.value))
+        )
+        meta = self.sess.metadata.get(DataObject, self.obj_path)   # ... check integrity of change
+        self.assertEqual(sorted([AVU_Units_String(i) for i in meta]), ["","units_244"])
 
     def test_get_obj_meta(self):
         # get object metadata

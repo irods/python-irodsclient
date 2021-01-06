@@ -277,6 +277,35 @@ of the (type of) catalog object they once annotated:
 0
 
 
+Atomic operations on metadata
+-----------------------------
+
+With release 4.2.8 of iRODS, the atomic metadata API was introduced to allow a group of metadata add and remove
+operations to be performed transactionally, within a single call to the server.  This capability can be leveraged in
+version 0.8.6 of the PRC.
+
+So, for example, if 'obj' is a handle to an object in the iRODS catalog (whether a data object, collection, user or
+storage resource), we can send an arbitrary number of AVUOperation instances to be executed together as one indivisible
+operation on that object:
+
+>>> from irods.meta import iRODSMeta, AVUOperation
+>>> obj.metadata.apply_atomic_operations( AVUOperation(operation='remove', avu=iRODSMeta('a1','v1','these_units')),
+...                                       AVUOperation(operation='add', avu=iRODSMeta('a2','v2','those_units')),
+...                                       AVUOperation(operation='remove', avu=iRODSMeta('a3','v3')) # , ...
+... )
+
+The list of operations will applied in the order given, so that a "remove" followed by an "add" of the same AVU
+is, in effect, a metadata "set" operation.  Also note that a "remove" operation will be ignored if the AVU value given
+does not exist on the target object at that point in the sequence of operations.
+
+We can also source from a pre-built list of AVUOperations using Python's f(*args_list) syntax. For example, this
+function uses the atomic metadata API to very quickly remove all AVUs from an object:
+
+>>> def remove_all_avus( Object ):
+...     avus_on_Object = Object.metadata.items()
+...     Object.metadata.apply_atomic_operations( *[AVUOperation(operation='remove', avu=i) for i in avus_on_Object] )
+
+
 General queries
 ---------------
 

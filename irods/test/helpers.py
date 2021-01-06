@@ -13,6 +13,7 @@ from irods.message import iRODSMessage
 from six.moves import range
 
 
+
 def make_session(**kwargs):
     try:
         env_file = kwargs['irods_env_file']
@@ -108,6 +109,23 @@ def make_flat_test_dir(dir_path, file_count=10, file_size=1024):
         # make random binary file
         with open(file_path, 'wb') as f:
             f.write(os.urandom(file_size))
+
+
+@contextlib.contextmanager
+def create_simple_resc_hierarchy (self, Root, Leaf):
+    d = tempfile.mkdtemp()
+    self.sess.resources.create(Leaf,'unixfilesystem',
+                           host = self.sess.host,
+                           path=d)
+    self.sess.resources.create(Root,'passthru')
+    self.sess.resources.add_child(Root,Leaf)
+    try:
+        yield ';'.join([Root,Leaf])
+    finally:
+        self.sess.resources.remove_child(Root,Leaf)
+        self.sess.resources.remove(Leaf)
+        self.sess.resources.remove(Root)
+        shutil.rmtree(d)
 
 
 def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):

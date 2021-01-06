@@ -176,4 +176,5 @@ api_number = {
     # 1100 - 1200 - SSL API calls
     "SSL_START_AN": 1100,
     "SSL_END_AN": 1101,
+    "ATOMIC_APPLY_METADATA_OPERATIONS_APN": 20002
 }
