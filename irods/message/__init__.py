@@ -1,6 +1,7 @@
 import struct
 import logging
 import socket
+import json
 import xml.etree.ElementTree as ET
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty,
@@ -67,6 +68,10 @@ class iRODSMessage(object):
         self.error = error
         self.bs = bs
         self.int_info = int_info
+
+    def get_json_encoded_struct (self):
+        Xml = ET.fromstring(self.msg.replace(b'\0',b''))
+        return json.loads(Xml.find('buf').text)
 
     @staticmethod
     def recv(sock):
@@ -236,6 +241,18 @@ class BinBytesBuf(Message):
     _name = 'BinBytesBuf_PI'
     buflen = IntegerProperty()
     buf = BinaryProperty()
+
+class BytesBuf(Message):
+    _name = 'BytesBuf_PI'
+    buflen = IntegerProperty()
+    buf = StringProperty()
+
+class JSONMessage(BytesBuf):
+    """A message body whose payload is just a BytesBuf containing JSON."""
+    def __init__(self, msg_struct):
+        """Initialize with a Python data structure that will be converted to JSON."""
+        s = json.dumps(msg_struct)
+        super(JSONMessage,self).__init__(buf=s,buflen=len(s))
 
 
 class PluginAuthMessage(Message):

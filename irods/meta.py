@@ -1,3 +1,5 @@
+
+
 class iRODSMeta(object):
 
     def __init__(self, name, value, units=None, avu_id=None):
@@ -8,6 +10,56 @@ class iRODSMeta(object):
 
     def __repr__(self):
         return "<iRODSMeta {avu_id} {name} {value} {units}>".format(**vars(self))
+
+
+class BadAVUOperationKeyword(Exception): pass
+
+class BadAVUOperationValue(Exception): pass
+
+
+class AVUOperation(dict):
+
+    @property
+    def operation(self):
+        return self['operation']
+
+    @operation.setter
+    def operation(self,Oper):
+        self._check_operation(Oper)
+        self['operation'] = Oper
+
+    @property
+    def avu(self):
+        return self['avu']
+
+    @avu.setter
+    def avu(self,newAVU):
+        self._check_avu(newAVU)
+        self['avu'] = newAVU
+
+    def _check_avu(self,avu_param):
+        if not isinstance(avu_param, iRODSMeta):
+            error_msg = "Nonconforming avu {!r} of type {}; must be an iRODSMeta." \
+                        "".format(avu_param,type(avu_param).__name__)
+            raise BadAVUOperationValue(error_msg)
+
+    def _check_operation(self,operation):
+        if operation not in ('add','remove'):
+            error_msg = "Nonconforming operation {!r}; must be 'add' or 'remove'.".format(operation)
+            raise BadAVUOperationValue(error_msg)
+
+    def __init__(self, operation, avu, **kw):
+        """Constructor:
+           AVUOperation( operation = opstr,  # where opstr is "add" or "remove"
+                         avu = metadata )    # where metadata is an irods.meta.iRODSMeta instance
+        """
+        super(AVUOperation,self).__init__()
+        self._check_operation (operation)
+        self._check_avu (avu)
+        if kw:
+            raise BadAVUOperationKeyword('''Nonconforming keyword (s) {}.'''.format(list(kw.keys())))
+        for atr in ('operation','avu'):
+            setattr(self,atr,locals()[atr])
 
 
 class iRODSMetaCollection(object):
@@ -46,6 +98,9 @@ class iRODSMetaCollection(object):
             raise ValueError(
                 "Must specify an iRODSMeta object or key, value, units)")
         return args[0] if len(args) == 1 else iRODSMeta(*args)
+
+    def apply_atomic_operations(self, *avu_ops):
+        self._manager.apply_atomic_operations(self._model_cls, self._path, *avu_ops)
 
     def add(self, *args):
         """

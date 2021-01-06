@@ -1,15 +1,20 @@
+from __future__ import print_function
 from __future__ import absolute_import
 import logging
 from os.path import dirname, basename
 
 from irods.manager import Manager
-from irods.message import MetadataRequest, iRODSMessage
+from irods.message import MetadataRequest, iRODSMessage, JSONMessage
 from irods.api_number import api_number
 from irods.models import (DataObject, Collection, Resource,
                           User, DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta)
-from irods.meta import iRODSMeta
+from irods.meta import iRODSMeta, AVUOperation
+
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidAtomicAVURequest(Exception): pass
 
 
 class MetadataManager(Manager):
@@ -21,6 +26,15 @@ class MetadataManager(Manager):
             Collection: 'c',
             Resource: 'r',
             User: 'u',
+        }[model_cls]
+
+    @staticmethod
+    def _model_class_to_resource_description(model_cls):
+        return {
+            DataObject: 'data_object',
+            Collection: 'collection',
+            Resource: 'resource',
+            User: 'user',
         }[model_cls]
 
     def get(self, model_cls, path):
@@ -121,3 +135,31 @@ class MetadataManager(Manager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
+
+    @staticmethod
+    def _avu_operation_to_dict( op ):
+        opJSON = { "operation": op.operation,
+                   "attribute": op.avu.name,
+                   "value": op.avu.value
+        }
+        if op.avu.units not in ("",None):
+            opJSON["units"] = op.avu.units
+        return opJSON
+
+    def apply_atomic_operations(self, model_cls, path, *avu_ops):
+        if not all(isinstance(op,AVUOperation) for op in avu_ops):
+            raise InvalidAtomicAVURequest("avu_ops must contain 1 or more AVUOperations")
+        request = {
+            "entity_name": path,
+            "entity_type": self._model_class_to_resource_description(model_cls),
+            "operations" : [self._avu_operation_to_dict(op) for op in avu_ops]
+        }
+        self._call_atomic_metadata_api(request)
+
+    def _call_atomic_metadata_api(self, request):
+        request = iRODSMessage("RODS_API_REQ", msg=JSONMessage(request),
+                               int_info=api_number['ATOMIC_APPLY_METADATA_OPERATIONS_APN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug('atomic metadata api response = %s %s',response.int_info,repr(response.get_json_encoded_struct()))
