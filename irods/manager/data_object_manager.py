@@ -4,7 +4,8 @@ import io
 from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
-    iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta)
+    iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta,
+    DataObjChksumRequest, DataObjChksumResponse)
 import irods.exception as ex
 from irods.api_number import api_number
 from irods.data_object import (
@@ -80,6 +81,18 @@ class DataObjectManager(Manager):
         if return_data_object:
             return self.get(obj)
 
+
+    def chksum(self, path, **options):
+        message_body = DataObjChksumRequest(path, **options)
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['DATA_OBJ_CHKSUM_AN'])
+        checksum = None
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+            results = response.get_main_message(DataObjChksumResponse)
+            checksum = results.myStr
+        return checksum
 
     def create(self, path, resource=None, force=False, **options):
         options[kw.DATA_TYPE_KW] = 'generic'

@@ -406,6 +406,19 @@ class FileOpenRequest(Message):
     oprType = IntegerProperty()
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
+class DataObjChksumRequest(FileOpenRequest):
+    def __init__(self,path,**chksumOptions):
+        super(DataObjChksumRequest,self).__init__()
+        for attr,prop in vars(FileOpenRequest).items():
+            if isinstance(prop, (IntegerProperty,LongProperty)):
+                setattr(self, attr, 0)
+        self.objPath = path
+        self.KeyValPair_PI = StringStringMap(chksumOptions)
+
+class DataObjChksumResponse(Message):
+    name = 'Str_PI'
+    myStr = StringProperty()
+
 # define OpenedDataObjInp_PI "int l1descInx; int len; int whence; int
 # oprType; double offset; double bytesWritten; struct KeyValPair_PI;"
 
