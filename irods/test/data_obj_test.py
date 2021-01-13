@@ -9,6 +9,7 @@ import base64
 import random
 import string
 import unittest
+import tempfile
 from irods.models import Collection, DataObject
 from irods.session import iRODSSession
 import irods.exception as ex
@@ -18,6 +19,7 @@ import irods.test.helpers as helpers
 import irods.keywords as kw
 from datetime import datetime
 from irods.test.helpers import (unique_name, my_function_name)
+
 
 
 def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
@@ -34,6 +36,8 @@ def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
 
 class TestDataObjOps(unittest.TestCase):
 
+
+    from irods.test.helpers import (create_simple_resc)
 
     def setUp(self):
         # Create test collection
@@ -67,6 +71,39 @@ class TestDataObjOps(unittest.TestCase):
             for chunk in chunks(f, block_size):
                 sha256.update(chunk)
         return sha256.hexdigest()
+
+
+    def test_compute_chksum( self ):
+
+        with self.create_simple_resc() as R, tempfile.NamedTemporaryFile(mode = 'wb') as f:
+            coll_path = '/{0.zone}/home/{0.username}' .format(self.sess)
+            dobj_path = coll_path + '/' + os.path.basename(f.name)
+            Data = self.sess.data_objects
+            try:
+                f.write(b'some content bytes ...\n')
+                f.flush()
+                Data.put( f.name, dobj_path )
+
+                # get original checksum and resource name
+                my_object = Data.get(dobj_path)
+                orig_resc = my_object.replicas[0].resource_name
+                chk1 = my_object.chksum()
+
+                # repl to new resource and iput to that new replica
+                Data.replicate( dobj_path, resource = R)
+                f.write(b'...added bytes\n')
+                f.flush()
+                Data.put( f.name, dobj_path, **{kw.DEST_RESC_NAME_KW: R,
+                                                kw.FORCE_FLAG_KW: '1'})
+                # compare checksums
+                my_object = Data.get(dobj_path)
+                chk2 = my_object.chksum( **{kw.RESC_NAME_KW : R} )
+                chk1b = my_object.chksum( **{kw.RESC_NAME_KW : orig_resc} )
+                self.assertEqual (chk1, chk1b)
+                self.assertNotEqual (chk1, chk2)
+
+            finally:
+                if Data.exists (dobj_path): Data.unlink (dobj_path, force = True)
 
 
     def test_obj_exists(self):

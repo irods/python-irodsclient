@@ -11,6 +11,7 @@ import socket
 import inspect
 import threading
 import random
+import datetime
 from pwd import getpwnam
 from irods.session import iRODSSession
 from irods.message import iRODSMessage
@@ -171,6 +172,21 @@ def make_flat_test_dir(dir_path, file_count=10, file_size=1024):
         with open(file_path, 'wb') as f:
             f.write(os.urandom(file_size))
 
+@contextlib.contextmanager
+def create_simple_resc (self, rescName = None):
+    if not rescName: 
+        rescName =  'simple_resc_' + unique_name (my_function_name() + '_simple_resc', datetime.datetime.now())
+    created = False
+    try:
+        self.sess.resources.create(rescName,
+                                   'unixfilesystem',
+                                   host = self.sess.host,
+                                   path = '/tmp/' + rescName)
+        created = True
+        yield rescName
+    finally:
+        if created:
+            self.sess.resources.remove(rescName)
 
 @contextlib.contextmanager
 def create_simple_resc_hierarchy (self, Root, Leaf):
