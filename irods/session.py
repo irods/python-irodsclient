@@ -24,8 +24,10 @@ class iRODSSession(object):
         self.pool = None
         self.numThreads = 0
 
+        self.do_configure = (kwargs if configure else {})
+        self.__configured = None
         if configure:
-            self.configure(**kwargs)
+            self.__configured = self.configure(**kwargs)
 
         self.collections = CollectionManager(self)
         self.data_objects = DataObjectManager(self)
@@ -42,6 +44,10 @@ class iRODSSession(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.cleanup()
 
+    def __del__(self):
+        self.do_configure = {}
+        self.cleanup()
+
     def cleanup(self):
         for conn in self.pool.active | self.pool.idle:
             try:
@@ -49,8 +55,10 @@ class iRODSSession(object):
             except NetworkException:
                 pass
             conn.release(True)
+        if self.do_configure: self.configure(**self.do_configure)
 
     def _configure_account(self, **kwargs):
+
         try:
             env_file = kwargs['irods_env_file']
 
@@ -99,10 +107,13 @@ class iRODSSession(object):
         return iRODSAccount(**creds)
 
     def configure(self, **kwargs):
-        account = self._configure_account(**kwargs)
+        account = self.__configured
+        if not account:
+            account = self._configure_account(**kwargs)
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
         logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
         self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time)
+        return account
 
     def query(self, *args):
         return Query(self, *args)
