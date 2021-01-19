@@ -7,11 +7,35 @@ import shutil
 import hashlib
 import base64
 import math
+import socket
+import inspect
+import threading
+import random
 from pwd import getpwnam
 from irods.session import iRODSSession
 from irods.message import iRODSMessage
 from six.moves import range
 
+
+def my_function_name():
+    '''Returns the name of the calling function or method'''
+    return inspect.getframeinfo(inspect.currentframe().f_back).function
+
+_thrlocal = threading.local()
+
+def unique_name(*seed_tuple):
+    '''For deterministic pseudo-random identifiers based on function/method name
+       to prevent e.g.  ICAT collisions within and between tests.  Example use:
+           def f(session):
+             seq_num = 1
+             a_name = unique_name( my_function_name(), seq_num # [, *optional_further_args]
+                                  )
+             seq_num += 1
+             session.resources.create( a_name, 'unixfilesystem', session.host, '/tmp/' + a_name )
+    '''
+    if not getattr(_thrlocal,"rand_gen",None) : _thrlocal.rand_gen = random.Random()
+    _thrlocal.rand_gen.seed(seed_tuple)
+    return '%016X' % _thrlocal.rand_gen.randint(0,(1<<64)-1)
 
 
 def make_session(**kwargs):
@@ -161,3 +185,29 @@ def file_backed_up(filename):
             yield filename
         finally:
             shutil.copyfile(f.name, filename)
+
+
+def irods_session_host_local (sess):
+    return socket.gethostbyname(sess.host) == \
+           socket.gethostbyname(socket.gethostname())
+
+
+class IrodsServerGeneralCase:
+
+    requireIrodsServerLocal = False
+    __server_determined_local = False
+
+    @classmethod
+    def setUpClass(cls):
+        sess = make_session()
+        if cls.requireIrodsServerLocal:
+            cls.__server_determined_local = irods_session_host_local(sess)
+        sess.cleanup()
+
+    def server_locality_requirements_satisfied(self): 
+        return True if not self.requireIrodsServerLocal \
+                    else self.__server_determined_local
+
+
+class IrodsServerLocalCase(IrodsServerGeneralCase):
+    requireIrodsServerLocal = True

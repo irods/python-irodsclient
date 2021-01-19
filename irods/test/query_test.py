@@ -313,6 +313,8 @@ class TestQuery(unittest.TestCase):
 
     @unittest.skipIf(six.PY3, 'Test is for python2 only')
     def test_query_for_data_object_with_utf8_name_python2(self):
+        if not helpers.irods_session_host_local (self.sess):
+            self.skipTest('for non-local server - registers a file')
         filename_prefix = '_prefix_ǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸ'
         self.assertEqual(self.FILENAME_PREFIX.encode('utf-8'), filename_prefix)
         _,test_file = tempfile.mkstemp(prefix=filename_prefix)
