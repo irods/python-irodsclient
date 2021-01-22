@@ -1,6 +1,17 @@
 Changelog
 =========
 
+v0.8.6 (2021-01-22)
+-------------------
+[#244] added capability to add/remove atomic metadata [Daniel Moore]
+[#226] Document creation of users [Ruben Garcia]
+[#230] Add force option to data_object_manager create [Ruben Garcia]
+[#239] to keep the tests passing [Daniel Moore]
+[#239] add iRODSUser.info attribute [Pierre Gay]
+[#239] add iRODSUser.comment attribute [Pierre Gay]
+[#241] [irods/irods_capability_automated_ingest#136] fix redundant disconnect [Daniel Moore]
+[#227] [#228] enable ICAT entries for zones and foreign-zone users [Daniel Moore]
+
 v0.8.5 (2020-11-10)
 -------------------
 [#220] Use connection create time to determine stale connections [Kaivan Kamali]
