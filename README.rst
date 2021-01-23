@@ -298,7 +298,7 @@ The list of operations will applied in the order given, so that a "remove" follo
 is, in effect, a metadata "set" operation.  Also note that a "remove" operation will be ignored if the AVU value given
 does not exist on the target object at that point in the sequence of operations.
 
-We can also source from a pre-built list of AVUOperations using Python's f(*args_list) syntax. For example, this
+We can also source from a pre-built list of AVUOperations using Python's `f(*args_list)` syntax. For example, this
 function uses the atomic metadata API to very quickly remove all AVUs from an object:
 
 >>> def remove_all_avus( Object ):
@@ -691,10 +691,12 @@ We can also query on access type using its numeric value, which will seem more n
 Managing users
 --------------
 
-You can create a user in the current zone using:
+You can create a user in the current zone (with an optional auth_str):
+
 >>> session.users.create('user', 'rodsuser', 'MyZone', auth_str)
-(the auth_str parameter is optional).
+
 If you want to create a user in a federated zone, use:
+
 >>> session.users.create('user', 'rodsuser', 'OtherZone', auth_str)
 
 
