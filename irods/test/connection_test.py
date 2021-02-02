@@ -83,6 +83,10 @@ class TestConnections(unittest.TestCase):
             # Set a very short socket timeout and remove all pre-existing socket connections.
             # This forces a new connection to be made for any ensuing connections to the iRODS server.
 
+            sess = obj.manager.sess # Because of client-redirect it is possible that self.sess and
+                                    # obj.manager.sess do not refer to the same object. In any case,
+                                    # it is the latter of the two iRODSSession objects that is
+                                    # involved in the data PUT connection.
             sess.connection_timeout = timeout = 0.01
             sess.cleanup()
 
