@@ -74,28 +74,6 @@ except ImportError:                 # ... but otherwise, use this ad hoc:
             self.barrier.release()
             return count - 1
 
-@contextlib.contextmanager
-def enableLogging(handlerType,args,level_ = logging.INFO):
-    """Context manager for temporarily enabling a logger. For debug or test.
-
-    Usage Example -
-    with irods.parallel.enableLogging(logging.FileHandler,('/tmp/logfile.txt',)):
-        # parallel put/get code here
-    """
-    h = None
-    saveLevel = logger.level
-    try:
-        logger.setLevel(level_)
-        h = handlerType(*args)
-        h.setLevel( level_ )
-        logger.addHandler(h)
-        yield
-    finally:
-        logger.setLevel(saveLevel)
-        if h in logger.handlers:
-            logger.removeHandler(h)
-
-
 RECOMMENDED_NUM_THREADS_PER_TRANSFER = 3
 
 verboseConnection = False
@@ -380,12 +358,13 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
     for byte_range in ranges:
         if Io is None:
             Io = session.data_objects.open( Data_object.path, Operation.data_object_mode(initial_open = False),
-                                            create = False, finalize_on_close = False,
+                                            create = False, finalize_on_close = False, allow_redirect = False,
                                             **{ kw.NUM_THREADS_KW: str(num_threads),
                                                 kw.DATA_SIZE_KW: str(total_size),
                                                 kw.RESC_HIER_STR_KW: hier_str,
                                                 kw.REPLICA_TOKEN_KW: replica_token })
         mgr.add_io( Io )
+        logger.debug('target_host = %s', Io.raw.session.pool.account.host)
         if File is None: File = gen_file_handle()
         futures.append(executor.submit( _io_part, Io, byte_range, File, Operation, mgr, str(counter), queueObject))
         counter += 1
@@ -446,21 +425,29 @@ def io_main( session, Data, opr_, fname, R='', **kwopt):
         open_options[kw.NUM_THREADS_KW] = str(num_threads)
         open_options[kw.DATA_SIZE_KW] = str(total_bytes)
 
+    output_values = {}
     if (not Io):
         (Io, rawfile) = session.data_objects.open_with_FileRaw( (d_path or Data.path),
                                                                 Operation.data_object_mode(initial_open = True),
-                                                                finalize_on_close = True, **open_options )
+                                                                finalize_on_close = True, returned_values = output_values, **open_options )
     else:
         if type(Io) is deferred_call:
             Io[kw.NUM_THREADS_KW] = str(num_threads)
-            Io[kw.DATA_SIZE_KW] =  str(total_bytes)
+            Io[kw.DATA_SIZE_KW] = str(total_bytes)
+            Io['returned_values'] = output_values
             Io = Io()
         rawfile = Io.raw
+
+    if not output_values:
+        output_values = kwopt.get('data_open_returned_values',{})
+
+    if 'session' in output_values:
+        session = output_values['session']
 
     # At this point, the data object's existence in the catalog is guaranteed,
     # whether the Operation is a GET or PUT.
 
-    if not isinstance(Data,iRODSDataObject):
+    if not isinstance(Data,iRODSDataObject) or 'session' in output_values:
         Data = session.data_objects.get(d_path)
 
     # Determine total number of bytes for transfer.

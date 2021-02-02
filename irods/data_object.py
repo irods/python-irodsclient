@@ -124,6 +124,8 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
     """The raw object supporting file-like operations (read/write/seek) for the
        iRODSDataObject."""
 
+    session = None      # codacy
+
     def __init__(self, conn, descriptor, finalize_on_close = True, **options):
         """
         Constructor needs a connection and an iRODS data object descriptor. If the

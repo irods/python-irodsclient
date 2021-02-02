@@ -100,6 +100,7 @@ NO_CHK_COPY_LEN_KW = "noChkCopyLen"  # Don't check the len when transfering  #
 TICKET_KW = "ticket"       # for ticket-based-access #
 PURGE_CACHE_KW = "purgeCache"   # purge the cache copy right after the operation JMC - backport 4537
 EMPTY_BUNDLE_ONLY_KW = "emptyBundleOnly"  # delete emptyBundleOnly # # JMC - backport 4552
+GET_RESOURCE_INFO_OP_TYPE_KW = "getResourceInfoOpType"
 
 # =-=-=-=-=-=-=-
 # JMC - backport 4599
@@ -246,6 +247,7 @@ L1_DESC_IDX_KW = "l1_desc_idx"
 SIZE_KW = "file_size"
 REPL_REQUESTED_KW = "repl_requested"
 # borrowed IN_PDMO_KW
+
 
 # =-=-=-=-=-=-=-
 # irods structured_object keyword definitions

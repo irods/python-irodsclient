@@ -12,4 +12,7 @@ class Manager(object):
         return tuple( self.__server_version )
 
     def __init__(self, sess):
+        self._set_manager_session(sess)
+
+    def _set_manager_session(self, sess):
         self.sess = sess

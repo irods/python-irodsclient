@@ -5,6 +5,11 @@ class iRODSAccount(object):
                  password=None, client_user=None,
                  server_dn=None, client_zone=None, **kwargs):
 
+        # Allowed overrides when cloning sessions. (Currently hostname only.)
+        for k,v in kwargs.pop('_overrides',{}).items():
+            if k =='irods_host':
+                irods_host = v
+
         self.authentication_scheme = irods_authentication_scheme.lower()
         self.host = irods_host
         self.port = int(irods_port)
