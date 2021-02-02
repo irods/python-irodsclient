@@ -5,7 +5,8 @@ from irods.models import DataObject, Collection
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta,
-    DataObjChksumRequest, DataObjChksumResponse, RErrorStack)
+    DataObjChksumRequest, DataObjChksumResponse, RErrorStack, STR_PI
+    )
 import irods.exception as ex
 from irods.api_number import api_number
 from irods.collection import iRODSCollection
@@ -296,7 +297,8 @@ class DataObjectManager(Manager):
                                kw.RESC_HIER_STR_KW
                            ))
 
-    def open(self, path, mode, create = True, finalize_on_close = True, **options):
+
+    def open(self, path, mode, create = True, finalize_on_close = True, return_host=None, **options):
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
         # then use the default resource in the client configuration.
@@ -332,10 +334,26 @@ class DataObjectManager(Manager):
             oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage('RODS_API_REQ', msg=message_body,
-                               int_info=api_number['DATA_OBJ_OPEN_AN'])
 
         conn = self.sess.pool.get_connection()
+        in_val = True
+        if isinstance(return_host,dict):
+            choices = ('PUT','GET')
+            key_val = [(k,v) for k,v in return_host.items() if k in choices]
+            if len(key_val) != 1:
+                raise ValueError("If provided, return_host argument must have 1 key in {}".format(choices))
+            (key, in_val) = key_val[0]
+            message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                                   int_info=api_number['GET_HOST_FOR_{}_AN'.format(key)])
+            conn.send(message)
+            response = conn.recv()
+            msg = response.get_main_message( STR_PI )
+            return_host[key] = msg.myStr
+
+        if not in_val: return
+
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['DATA_OBJ_OPEN_AN'])
         conn.send(message)
         desc = conn.recv().int_info
 
