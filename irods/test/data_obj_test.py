@@ -70,6 +70,11 @@ class TestDataObjOps(unittest.TestCase):
         self.assertFalse(self.sess.data_objects.exists(does_not_exist_path))
 
 
+    def test_create_from_invalid_path__250(self):
+        with self.assertRaises(ex.SYS_INVALID_INPUT_PARAM):
+            self.sess.data_objects.create('t')
+
+
     def test_rename_obj(self):
         # test args
         collection = self.coll_path

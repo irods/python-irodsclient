@@ -510,6 +510,10 @@ class SYS_RESC_QUOTA_EXCEEDED(SystemException):
     code = -110000
 
 
+class SYS_INVALID_INPUT_PARAM(SystemException):
+    code = -130000
+
+
 class UserInputException(iRODSException):
     pass
 
