@@ -241,13 +241,15 @@ class TestCollection(unittest.TestCase):
 
 
     def test_register_collection(self):
-        if self.sess.host not in ('localhost', socket.gethostname()):
+        tmp_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(tmp_dir) and not(loc_server):
             self.skipTest('Requires access to server-side file(s)')
 
         # test vars
         file_count = 10
         dir_name = 'register_test_dir'
-        dir_path = os.path.join('/tmp', dir_name)
+        dir_path = os.path.join((tmp_dir or '/tmp'), dir_name)
         coll_path = '{}/{}'.format(self.test_coll.path, dir_name)
 
         # make test dir
@@ -272,13 +274,15 @@ class TestCollection(unittest.TestCase):
 
 
     def test_register_collection_with_checksums(self):
-        if self.sess.host not in ('localhost', socket.gethostname()):
+        tmp_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(tmp_dir) and not(loc_server):
             self.skipTest('Requires access to server-side file(s)')
 
         # test vars
         file_count = 10
-        dir_name = 'register_test_dir'
-        dir_path = os.path.join('/tmp', dir_name)
+        dir_name = 'register_test_dir_with_chksums'
+        dir_path = os.path.join((tmp_dir or '/tmp'), dir_name)
         coll_path = '{}/{}'.format(self.test_coll.path, dir_name)
 
         # make test dir

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+build_deps_list()
+{
+    local -A pkglist
+    local pkg
+    while [ $# -gt 0 ]
+    do
+        while read f
+        do
+            if [[ ! $f =~ \(.*\)\s*$ ]]; then  # todo: include version-specific ?
+               pkglist["$f"]=""
+            fi
+        done < <(dpkg -I "$1"|grep -i '^ *depends:'|tr ',:' \\n | tail -n +2)
+        shift
+    done
+    for pkg in "${!pkglist[@]}"  # package list de-duped by associative array
+    do
+        echo "$pkg"
+    done
+}
+build_deps_list "$@"

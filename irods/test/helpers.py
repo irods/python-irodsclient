@@ -38,6 +38,39 @@ def unique_name(*seed_tuple):
     return '%016X' % _thrlocal.rand_gen.randint(0,(1<<64)-1)
 
 
+IRODS_SHARED_DIR = os.path.join( os.path.sep, 'irods_shared' )
+IRODS_SHARED_TMP_DIR = os.path.join(IRODS_SHARED_DIR,'tmp')
+IRODS_SHARED_REG_RESC_VAULT = os.path.join(IRODS_SHARED_DIR,'reg_resc')
+
+IRODS_REG_RESC = 'MyRegResc'
+Reg_Resc_Name = ''
+
+def irods_shared_tmp_dir():
+    pth = IRODS_SHARED_TMP_DIR
+    can_write = False
+    if os.path.exists(pth):
+        try:     tempfile.NamedTemporaryFile(dir = pth)
+        except:  pass
+        else:    can_write = True 
+    return pth if can_write else ''
+
+def irods_shared_reg_resc_vault() :
+    vault = IRODS_SHARED_REG_RESC_VAULT
+    if os.path.exists(vault):
+        return vault
+    else:
+        return None
+
+def get_register_resource(session):
+    vault_path = irods_shared_reg_resc_vault()
+    Reg_Resc_Name = ''
+    if vault_path:
+        session.resources.create(IRODS_REG_RESC, 'unixfilesystem', session.host, vault_path)
+        Reg_Resc_Name = IRODS_REG_RESC
+    return Reg_Resc_Name
+
+
+
 def make_session(**kwargs):
     try:
         env_file = kwargs['irods_env_file']
@@ -190,24 +223,3 @@ def file_backed_up(filename):
 def irods_session_host_local (sess):
     return socket.gethostbyname(sess.host) == \
            socket.gethostbyname(socket.gethostname())
-
-
-class IrodsServerGeneralCase:
-
-    requireIrodsServerLocal = False
-    __server_determined_local = False
-
-    @classmethod
-    def setUpClass(cls):
-        sess = make_session()
-        if cls.requireIrodsServerLocal:
-            cls.__server_determined_local = irods_session_host_local(sess)
-        sess.cleanup()
-
-    def server_locality_requirements_satisfied(self): 
-        return True if not self.requireIrodsServerLocal \
-                    else self.__server_determined_local
-
-
-class IrodsServerLocalCase(IrodsServerGeneralCase):
-    requireIrodsServerLocal = True

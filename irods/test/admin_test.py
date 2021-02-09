@@ -123,9 +123,6 @@ class TestAdmin(unittest.TestCase):
 
 
     def test_make_compound_resource(self):
-
-        if not helpers.irods_session_host_local (self.sess):
-            self.skipTest('for non-local server')
         if self.sess.server_version < (4, 0, 0):
             self.skipTest('For iRODS 4+')
 
@@ -266,10 +263,9 @@ class TestAdmin(unittest.TestCase):
 
 
     def test_make_ufs_resource(self):
-
-        if not helpers.irods_session_host_local (self.sess):
-            self.skipTest('for non-local server')
-
+        RESC_PATH_BASE = helpers.irods_shared_tmp_dir()
+        if not(RESC_PATH_BASE) and not helpers.irods_session_host_local (self.sess):
+            self.skipTest('for non-local server with shared tmp dir missing')
         # test data
         resc_name = 'temporary_test_resource'
         if self.sess.server_version < (4, 0, 0):

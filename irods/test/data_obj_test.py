@@ -19,16 +19,27 @@ import irods.keywords as kw
 from datetime import datetime
 from irods.test.helpers import (unique_name, my_function_name)
 
-class DataObjectTestSetup:
+
+def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
+    tmpdir = helpers.irods_shared_tmp_dir()
+    if not tmpdir and allow_local:
+        tmpdir = os.getenv('TMPDIR') or '/tmp'
+    if not tmpdir:
+        raise RuntimeError("Must have filesystem path shareable with server.")
+    full_phys_dir = os.path.join(tmpdir,base_name)
+    if not os.path.exists(full_phys_dir): os.mkdir(full_phys_dir)
+    session.resources.create(base_name,'unixfilesystem',session.host,full_phys_dir)
+    return full_phys_dir
+
+
+class TestDataObjOps(unittest.TestCase):
+
 
     def setUp(self):
-        if not self.server_locality_requirements_satisfied():
-            self.skipTest('Server locality condition not met')
-        else:
-            # Create test collection
-            self.sess = helpers.make_session()
-            self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
-            self.coll = helpers.make_collection(self.sess, self.coll_path)
+        # Create test collection
+        self.sess = helpers.make_session()
+        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
+        self.coll = helpers.make_collection(self.sess, self.coll_path)
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -36,8 +47,6 @@ class DataObjectTestSetup:
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
-
-class TestDataObjOps(helpers.IrodsServerGeneralCase, DataObjectTestSetup, unittest.TestCase):
 
     def make_new_server_config_json(self, server_config_filename):
         # load server_config.json to inject a new rule base
@@ -940,23 +949,26 @@ class TestDataObjOps(helpers.IrodsServerGeneralCase, DataObjectTestSetup, unitte
 
 
     def test_modDataObjMeta(self):
+        test_dir = helpers.irods_shared_tmp_dir()
         # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not (loc_server):
             self.skipTest('Requires access to server-side file(s)')
 
         # test vars
-        test_dir = '/tmp'
+        resc_name = 'testDataObjMetaResc'
         filename = 'register_test_file'
-        test_file = os.path.join(test_dir, filename)
         collection = self.coll.path
         obj_path = '{collection}/{filename}'.format(**locals())
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
         with open(test_file, 'wb') as f:
             f.write(os.urandom(1024 * 4))
 
         # register file in test collection
-        self.sess.data_objects.register(test_file, obj_path)
+        self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW:resc_name})
 
         qu = self.sess.query(Collection.id).filter(Collection.name == collection)
         for res in qu:
@@ -1048,25 +1060,20 @@ class TestDataObjOps(helpers.IrodsServerGeneralCase, DataObjectTestSetup, unitte
             resource.remove()
 
 
-
-class TestDataObjOpsLocal(helpers.IrodsServerLocalCase, DataObjectTestSetup, unittest.TestCase):
-    '''These tests are now separated out to be skipped for the CI test case in
-       which the iRODS server instance is not local to the client, as for instance
-       when tests depend on
-          - being able to register a file into iRODS, or
-          - physical paths being mutually visible between client and server.
-    '''
     def test_register(self):
-        # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
-            self.skipTest('Requires access to server-side file(s)')
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
 
         # test vars
-        test_dir = '/tmp'
+        resc_name = "testRegisterOpResc"
         filename = 'register_test_file'
-        test_file = os.path.join(test_dir, filename)
         collection = self.coll.path
         obj_path = '{collection}/{filename}'.format(**locals())
+
+        test_path = make_ufs_resc_in_tmpdir(self.sess,resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
         with open(test_file, 'wb') as f:
@@ -1087,23 +1094,26 @@ class TestDataObjOpsLocal(helpers.IrodsServerLocalCase, DataObjectTestSetup, uni
 
 
     def test_register_with_checksum(self):
-        # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
-            self.skipTest('Requires access to server-side file(s)')
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
 
         # test vars
-        test_dir = '/tmp'
+        resc_name= 'regWithChksumResc'
         filename = 'register_test_file'
-        test_file = os.path.join(test_dir, filename)
         collection = self.coll.path
         obj_path = '{collection}/{filename}'.format(**locals())
+
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
         with open(test_file, 'wb') as f:
             f.write(os.urandom(1024 * 4))
 
         # register file in test collection
-        options = {kw.VERIFY_CHKSUM_KW: ''}
+        options = {kw.VERIFY_CHKSUM_KW: '', kw.RESC_NAME_KW: resc_name}
         self.sess.data_objects.register(test_file, obj_path, **options)
 
         # confirm object presence and verify checksum
@@ -1121,15 +1131,17 @@ class TestDataObjOpsLocal(helpers.IrodsServerLocalCase, DataObjectTestSetup, uni
         os.remove(test_file)
 
     def test_register_with_xml_special_chars(self):
-        # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
-            self.skipTest('Requires access to server-side file(s)')
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
 
         # test vars
-        test_dir = '/tmp'
-        filename = '''aaa'"<&test&>"'_file'''
-        test_file = os.path.join(test_dir, filename)
+        resc_name = 'regWithXmlSpecialCharsResc'
         collection = self.coll.path
+        filename = '''aaa'"<&test&>"'_file'''
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
         obj_path = '{collection}/{filename}'.format(**locals())
 
         # make random 4K binary file
@@ -1137,7 +1149,7 @@ class TestDataObjOpsLocal(helpers.IrodsServerLocalCase, DataObjectTestSetup, uni
             f.write(os.urandom(1024 * 4))
 
         # register file in test collection
-        self.sess.data_objects.register(test_file, obj_path)
+        self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW: resc_name})
 
         # confirm object presence
         obj = self.sess.data_objects.get(obj_path)
