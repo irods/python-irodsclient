@@ -23,7 +23,7 @@ RUN  python${py_N} repo/docker_build/iinit.py \
         zone tempZone \
         password rods
 
-SHELL ["/bin/bash","-c"] 
+SHELL ["/bin/bash","-c"]
 
 # -- At runtime: --
 #  1. wait for provider to run.
