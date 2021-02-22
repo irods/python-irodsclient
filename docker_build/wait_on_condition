@@ -12,7 +12,7 @@ usage() {
   exit 1
 } >&2
 
-while [[ "$1" = -* ]] ; do 
+while [[ "$1" = -* ]] ; do
     case $1 in
 	-i) shift; interval=$1; shift ;;
 	-n) shift; ntimes=$1; shift ;;

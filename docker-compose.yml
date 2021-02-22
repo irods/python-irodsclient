@@ -21,7 +21,7 @@ services:
       default:
         aliases:
           - irods-provider
- 
+
   client-runner:
     env_file: client-runner.env
     volumes:

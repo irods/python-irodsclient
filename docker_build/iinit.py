@@ -32,7 +32,7 @@ def do_iinit(host, port, user, zone, password):
 def get_kv_pairs_from_cmdline(*args):
     arglist = list(args)
     while arglist:
-       k = arglist.pop(0)       
+       k = arglist.pop(0)
        v = arglist.pop(0)
        yield k,v
 
