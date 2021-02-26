@@ -101,6 +101,7 @@ class iRODSMetaCollection(object):
 
     def apply_atomic_operations(self, *avu_ops):
         self._manager.apply_atomic_operations(self._model_cls, self._path, *avu_ops)
+        self._reset_metadata()
 
     def add(self, *args):
         """
