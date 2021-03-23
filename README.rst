@@ -74,7 +74,7 @@ Using environment files (including any SSL settings) in ``~/.irods/``:
 >>> ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=None, capath=None, cadata=None)
 >>> ssl_settings = {'ssl_context': ssl_context}
 >>> with iRODSSession(irods_env_file=env_file, **ssl_settings) as session:
-...     pass
+...     # workload
 ...
 >>>
 
@@ -82,7 +82,7 @@ Passing iRODS credentials as keyword arguments:
 
 >>> from irods.session import iRODSSession
 >>> with iRODSSession(host='localhost', port=1247, user='bob', password='1234', zone='tempZone') as session:
-...     pass
+...     # workload
 ...
 >>>
 
@@ -91,12 +91,28 @@ If you're an administrator acting on behalf of another user:
 >>> from irods.session import iRODSSession
 >>> with iRODSSession(host='localhost', port=1247, user='rods', password='1234', zone='tempZone',
            client_user='bob', client_zone='possibly_another_zone') as session:
-...     pass
+...     # workload
 ...
 >>>
 
 If no ``client_zone`` is provided, the ``zone`` parameter is used in its place.
 
+A pure Python SSL session (without a local `env_file`) requires a few more things defined:
+
+>>> import ssl
+>>> from irods.session import iRODSSession 
+>>> ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile='CERTNAME.crt', capath=None, cadata=None)
+>>> ssl_settings = {'client_server_negotiation': 'request_server_negotiation',
+...                'client_server_policy': 'CS_NEG_REQUIRE',
+...                'encryption_algorithm': 'AES-256-CBC',
+...                'encryption_key_size': 32,
+...                'encryption_num_hash_rounds': 16,
+...                'encryption_salt_size': 8,                        
+...                'ssl_context': ssl_context}
+>>>
+>>> with iRODSSession(host='HOSTNAME_DEFINED_IN_CERTNAME.crt', port=1247, user='bob', password='1234', zone='tempZone', **ssl_settings) as session:
+...	# workload
+>>>
 
 Working with collections
 ------------------------
