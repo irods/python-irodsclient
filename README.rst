@@ -110,7 +110,7 @@ A pure Python SSL session (without a local `env_file`) requires a few more thing
 ...                'encryption_salt_size': 8,                        
 ...                'ssl_context': ssl_context}
 >>>
->>> with iRODSSession(host='HOSTNAME_DEFINED_IN_CERTNAME.crt', port=1247, user='bob', password='1234', zone='tempZone', **ssl_settings) as session:
+>>> with iRODSSession(host='HOSTNAME_DEFINED_IN_CAFILE_ABOVE', port=1247, user='bob', password='1234', zone='tempZone', **ssl_settings) as session:
 ...	# workload
 >>>
 
