@@ -1,3 +1,4 @@
+import base64
 import struct
 import logging
 import socket
@@ -59,6 +60,15 @@ def _recv_message_into(sock, buffer, size):
         index += rsize
     return mv[:index]
 
+#------------------------------------
+
+class BinBytesBuf(Message):
+    _name = 'BinBytesBuf_PI'
+    buflen = IntegerProperty()
+    buf = BinaryProperty()
+
+class JSON_Binary_Response(BinBytesBuf):
+    pass
 
 class iRODSMessage(object):
 
@@ -71,7 +81,12 @@ class iRODSMessage(object):
 
     def get_json_encoded_struct (self):
         Xml = ET.fromstring(self.msg.replace(b'\0',b''))
-        return json.loads(Xml.find('buf').text)
+        json_str = Xml.find('buf').text
+        if Xml.tag == 'BinBytesBuf_PI':
+            mybin = JSON_Binary_Response()
+            mybin.unpack(Xml)
+            json_str = mybin.buf.replace(b'\0',b'').decode()
+        return json.loads( json_str )
 
     @staticmethod
     def recv(sock):
@@ -236,24 +251,36 @@ class AuthPluginOut(Message):
 
 # define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 
-
-class BinBytesBuf(Message):
-    _name = 'BinBytesBuf_PI'
-    buflen = IntegerProperty()
-    buf = BinaryProperty()
+class JSON_Binary_Request(BinBytesBuf):
+    """A message body whose payload is BinBytesBuf containing JSON."""
+    def __init__(self,msg_struct):
+        """Initialize with a Python data structure that will be converted to JSON."""
+        super(JSON_Binary_Request,self).__init__()
+        string = json.dumps(msg_struct)
+        self.buf = string
+        self.buflen = len(string)
 
 class BytesBuf(Message):
     _name = 'BytesBuf_PI'
     buflen = IntegerProperty()
     buf = StringProperty()
+    def __init__(self,string,*v,**kw):
+      super(BytesBuf,self).__init__(*v,**kw)
+      _buf = StringProperty.escape_xml_string( string )
+      self.buf = string
+      self.buflen = len(self.buf)
 
-class JSONMessage(BytesBuf):
-    """A message body whose payload is just a BytesBuf containing JSON."""
+class JSON_XMLFramed_Request(BytesBuf):
+    """A message body whose payload is a BytesBuf containing JSON."""
     def __init__(self, msg_struct):
         """Initialize with a Python data structure that will be converted to JSON."""
         s = json.dumps(msg_struct)
-        super(JSONMessage,self).__init__(buf=s,buflen=len(s))
+        super(JSON_XMLFramed_Request,self).__init__(s)
 
+def JSON_Message( msg_struct , server_version = () ):
+    cls = JSON_XMLFramed_Request if server_version < (4,2,9) \
+          else JSON_Binary_Request
+    return cls(msg_struct)
 
 class PluginAuthMessage(Message):
     _name = 'authPlugReqInp_PI'

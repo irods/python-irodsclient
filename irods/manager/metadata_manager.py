@@ -4,7 +4,7 @@ import logging
 from os.path import dirname, basename
 
 from irods.manager import Manager
-from irods.message import MetadataRequest, iRODSMessage, JSONMessage
+from irods.message import MetadataRequest, iRODSMessage, JSON_Message
 from irods.api_number import api_number
 from irods.models import (DataObject, Collection, Resource,
                           User, DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta)
@@ -156,10 +156,12 @@ class MetadataManager(Manager):
         }
         self._call_atomic_metadata_api(request)
 
-    def _call_atomic_metadata_api(self, request):
-        request = iRODSMessage("RODS_API_REQ", msg=JSONMessage(request),
-                               int_info=api_number['ATOMIC_APPLY_METADATA_OPERATIONS_APN'])
+    def _call_atomic_metadata_api(self, request_text):
         with self.sess.pool.get_connection() as conn:
-            conn.send(request)
+            request_msg = iRODSMessage("RODS_API_REQ",  JSON_Message( request_text, conn.server_version ),
+                                       int_info=api_number['ATOMIC_APPLY_METADATA_OPERATIONS_APN'])
+            conn.send( request_msg )
             response = conn.recv()
-        logger.debug('atomic metadata api response = %s %s',response.int_info,repr(response.get_json_encoded_struct()))
+        response_msg = response.get_json_encoded_struct()
+        logger.debug("in atomic_metadata, server responded with: %r",response_msg)
+
