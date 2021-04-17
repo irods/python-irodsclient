@@ -71,8 +71,17 @@ class TestDataObjOps(unittest.TestCase):
 
 
     def test_create_from_invalid_path__250(self):
-        with self.assertRaises(ex.SYS_INVALID_INPUT_PARAM):
+        possible_exceptions = { ex.CAT_UNKNOWN_COLLECTION:  (lambda serv_vsn : serv_vsn >= (4,2,9)),
+                                ex.SYS_INVALID_INPUT_PARAM: (lambda serv_vsn : serv_vsn <= (4,2,8))
+                              }
+        raisedExc = None
+        try:
             self.sess.data_objects.create('t')
+        except Exception as exc:
+            raisedExc = exc
+        server_version_cond = possible_exceptions.get(type(raisedExc))
+        self.assertTrue(server_version_cond is not None)
+        self.assertTrue(server_version_cond(self.sess.server_version))
 
 
     def test_rename_obj(self):
