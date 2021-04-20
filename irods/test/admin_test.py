@@ -8,6 +8,7 @@ from irods.exception import UserDoesNotExist, ResourceDoesNotExist
 from irods.session import iRODSSession
 from irods.resource import iRODSResource
 import irods.test.helpers as helpers
+import irods.keywords as kw
 
 
 class TestAdmin(unittest.TestCase):
@@ -157,7 +158,7 @@ class TestAdmin(unittest.TestCase):
         obj = session.data_objects.create(obj_path, comp.name)
 
         # write to object
-        with obj.open('w+') as obj_desc:
+        with obj.open('w+',**{kw.DEST_RESC_NAME_KW:comp.name}) as obj_desc:
             obj_desc.write(dummy_str)
 
         # refresh object
@@ -304,7 +305,9 @@ class TestAdmin(unittest.TestCase):
         obj = self.sess.data_objects.create(obj_path, resc_name)
 
         # write something to the file
-        with obj.open('w+') as obj_desc:
+        # (can omit use of DEST_RESC_NAME_KW on resolution of
+        #  https://github.com/irods/irods/issues/5548 )
+        with obj.open('w+', **{kw.DEST_RESC_NAME_KW: resc_name} ) as obj_desc:
             obj_desc.write(dummy_str)
 
         # refresh object (size has changed)
