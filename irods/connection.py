@@ -8,6 +8,8 @@ import os
 import ssl
 import datetime
 import irods.password_obfuscation as obf
+from ast import literal_eval as safe_eval
+
 
 from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge, AuthPluginOut,
@@ -63,8 +65,9 @@ class Connection(object):
 
     @property
     def server_version(self):
-        return tuple(int(x) for x in self._server_version.relVersion.replace('rods', '').split('.'))
-
+        detected = tuple(int(x) for x in self._server_version.relVersion.replace('rods', '').split('.'))
+        return (safe_eval(os.environ.get('IRODS_SERVER_VERSION','()'))
+                or detected)
     @property
     def client_signature(self):
         return self._client_signature
