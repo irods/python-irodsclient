@@ -113,7 +113,7 @@ class TestDataObjOps(unittest.TestCase):
         self.assertEqual(obj.id, saved_id)
 
         # remove object
-        self.sess.data_objects.unlink(new_path)
+        self.sess.data_objects.unlink(new_path, force = True)
 
 
     def test_move_obj_to_coll(self):
