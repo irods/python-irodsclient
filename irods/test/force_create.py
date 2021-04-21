@@ -18,6 +18,8 @@ class TestForceCreate(unittest.TestCase):
 
     # This test should pass whether or not federation is configured:
     def test_force_create(self):
+        if self.sess.server_version > (4, 2, 8):
+                        self.skipTest('force flag unneeded for create in iRODS > 4.2.8')
         session = self.sess
         FILE = '/{session.zone}/home/{session.username}/a.txt'.format(**locals())
         try:
