@@ -264,6 +264,9 @@ class TestAdmin(unittest.TestCase):
 
 
     def test_make_ufs_resource(self):
+        RESC_PATH_BASE = helpers.irods_shared_tmp_dir()
+        if not(RESC_PATH_BASE) and not helpers.irods_session_host_local (self.sess):
+            self.skipTest('for non-local server with shared tmp dir missing')
         # test data
         resc_name = 'temporary_test_resource'
         if self.sess.server_version < (4, 0, 0):
