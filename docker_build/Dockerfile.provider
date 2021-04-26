@@ -1,0 +1,38 @@
+FROM ubuntu:18.04
+
+ARG irods_pkg_dir
+
+RUN apt update
+RUN apt install -y wget sudo lsb-release apt-transport-https gnupg2 postgresql-client
+RUN wget -qO - https://packages.irods.org/irods-signing-key.asc | sudo apt-key add -
+RUN echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/renci-irods.list
+RUN apt update
+
+SHELL [ "/bin/bash","-c" ]
+
+COPY ICAT.sql /tmp
+COPY pgpass root/.pgpass
+RUN chmod 600 root/.pgpass
+
+ADD build_deps_list wait_on_condition /tmp/
+
+# At Runtime: 1. Install apt dependencies for the iRODS package files given.
+#             2. Install the package files.
+#             3. Wait on database container.
+#             4. Configure iRODS provider and make sure it is running.
+#             5. Configure shared folder for tests that need to register data objects.
+#                (We opt out if /irods_shared does not exist, ie is omitted in the docker-compose.yml).
+#             6. Wait forever.
+
+CMD apt install -y $(/tmp/build_deps_list /irods_packages/irods*{serv,dev,icommand,runtime,database-*postgres}*.deb) && \
+    dpkg -i /irods_packages/irods*{serv,dev,icommand,runtime,database-*postgres}*.deb && \
+    /tmp/wait_on_condition -i 5 -n 12 "psql -h icat -U postgres -c '\\l' >/dev/null" && \
+      psql -h icat -U postgres -f /tmp/ICAT.sql && \
+    sed 's/localhost/icat/' < /var/lib/irods/packaging/localhost_setup_postgres.input \
+        | python /var/lib/irods/scripts/setup_irods.py && \
+    { pgrep -u irods irodsServer >/dev/null || su irods -c '~/irodsctl start'; } && \
+    { [ ! -d /irods_shared ] || { mkdir -p /irods_shared/reg_resc && mkdir -p /irods_shared/tmp && \
+                                  chown -R irods.irods /irods_shared && chmod g+ws /irods_shared/tmp && \
+                                  chmod 777 /irods_shared/reg_resc ; } } && \
+    echo $'*********\n' $'*********\n' $'*********\n' $'*********\n' $'*********\n' IRODS IS UP  && \
+    tail -f /dev/null
