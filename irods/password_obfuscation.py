@@ -275,3 +275,11 @@ def obfuscate_new_password(new, old, signature):
         new = new + padding[:lcopy]
 
     return scramble_v2(new, old, signature)
+
+
+def create_temp_password(temp_hash, source_password):
+    password = (temp_hash + source_password).ljust(100, chr(0))
+    password_md5 = hashlib.md5(password.encode('utf-8'))
+
+    # Return hexdigest
+    return password_md5.hexdigest()
