@@ -114,6 +114,19 @@ A pure Python SSL session (without a local `env_file`) requires a few more thing
 ...	# workload
 >>>
 
+
+Maintaining a connection
+------------------------
+
+The default library timeout for a connection to an iRODS Server is 120 seconds.
+
+This can be overridden by changing the session `connection_timeout` immediately after creation of the session object:
+
+>>> session.connection_timeout = 300
+
+This will set the timeout to five minutes for any associated connections.
+
+
 Working with collections
 ------------------------
 
