@@ -1,0 +1,36 @@
+version: '3'
+services:
+
+  icat:
+    image: postgres:10
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=md5
+      - POSTGRES_PASSWORD=pg_password
+
+  irods-provider:
+    hostname: irods-provider
+    build:
+      context: docker_build
+      dockerfile: Dockerfile.provider
+    volumes:
+      - "${irods_pkg_dir}:/irods_packages:ro"
+      - ./irods_shared:/irods_shared:rw
+    depends_on:
+      - icat
+    networks:
+      default:
+        aliases:
+          - irods-provider
+
+  client-runner:
+    env_file: client-runner.env
+    volumes:
+      - ./irods_shared:/irods_shared:rw
+    build:
+      context: .
+      dockerfile: Dockerfile.prc_test.${client_os_generic}
+      args:
+        os_image: "$client_os_image"
+        py_N: "$python_version"
+    depends_on:
+      - irods-provider

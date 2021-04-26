@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# wait for a program to run with 0 return status
+
+interval=3; ntimes=20; verbose=""
+
+usage() {
+  echo "$0 [options] <command args...>"
+  printf "\t options are: -i <sleep interval_secs> (default %d)\n" $interval
+  printf "\t              -n <integer_number_of_tries> (default %d)\n" $ntimes
+  printf "\t              -v : for verbose reporting\n"
+  exit 1
+} >&2
+
+while [[ "$1" = -* ]] ; do
+    case $1 in
+	-i) shift; interval=$1; shift ;;
+	-n) shift; ntimes=$1; shift ;;
+	-v) verbose=1 ; shift;;
+	 *) usage;;
+    esac
+done
+[ $# -eq 0 ] && usage
+
+n=1
+while : ; do
+	eval "$@"
+	STATUS=$?
+	[ -n "$verbose" ] && echo "$n:" 'STATUS =' $STATUS `date`
+	[ $((++n)) -gt $ntimes -o $STATUS -eq 0 ] && break
+        sleep $interval
+done
+
+exit $STATUS

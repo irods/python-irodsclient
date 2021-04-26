@@ -17,16 +17,29 @@ from irods.data_object import chunks
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from datetime import datetime
+from irods.test.helpers import (unique_name, my_function_name)
+
+
+def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
+    tmpdir = helpers.irods_shared_tmp_dir()
+    if not tmpdir and allow_local:
+        tmpdir = os.getenv('TMPDIR') or '/tmp'
+    if not tmpdir:
+        raise RuntimeError("Must have filesystem path shareable with server.")
+    full_phys_dir = os.path.join(tmpdir,base_name)
+    if not os.path.exists(full_phys_dir): os.mkdir(full_phys_dir)
+    session.resources.create(base_name,'unixfilesystem',session.host,full_phys_dir)
+    return full_phys_dir
+
 
 class TestDataObjOps(unittest.TestCase):
 
-    def setUp(self):
-        self.sess = helpers.make_session()
 
+    def setUp(self):
         # Create test collection
+        self.sess = helpers.make_session()
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
-
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -528,7 +541,7 @@ class TestDataObjOps(unittest.TestCase):
         # make ufs resources
         ufs_resources = []
         for i in range(number_of_replicas):
-            resource_name = 'ufs{}'.format(i)
+            resource_name = unique_name(my_function_name(),i)
             resource_type = 'unixfilesystem'
             resource_host = session.host
             resource_path = '/tmp/' + resource_name
@@ -614,7 +627,7 @@ class TestDataObjOps(unittest.TestCase):
         # make ufs resources and replicate object
         ufs_resources = []
         for i in range(number_of_replicas):
-            resource_name = 'ufs{}'.format(i)
+            resource_name = unique_name(my_function_name(),i)
             resource_type = 'unixfilesystem'
             resource_host = session.host
             resource_path = '/tmp/{}'.format(resource_name)
@@ -652,6 +665,7 @@ class TestDataObjOps(unittest.TestCase):
         for resource in ufs_resources:
             resource.remove()
 
+
     def test_get_replica_size(self):
         session = self.sess
 
@@ -673,7 +687,7 @@ class TestDataObjOps(unittest.TestCase):
         # make ufs resources
         ufs_resources = []
         for i in range(2):
-            resource_name = 'ufs{}'.format(i)
+            resource_name = unique_name(my_function_name(),i)
             resource_type = 'unixfilesystem'
             resource_host = session.host
             resource_path = '/tmp/{}'.format(resource_name)
@@ -711,6 +725,7 @@ class TestDataObjOps(unittest.TestCase):
         # remove ufs resources
         for resource in ufs_resources:
             resource.remove()
+
 
     def test_obj_put_get(self):
         # Can't do one step open/create with older servers
@@ -942,88 +957,27 @@ class TestDataObjOps(unittest.TestCase):
         os.remove(test_file)
 
 
-    def test_register(self):
-        # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
-            self.skipTest('Requires access to server-side file(s)')
-
-        # test vars
-        test_dir = '/tmp'
-        filename = 'register_test_file'
-        test_file = os.path.join(test_dir, filename)
-        collection = self.coll.path
-        obj_path = '{collection}/{filename}'.format(**locals())
-
-        # make random 4K binary file
-        with open(test_file, 'wb') as f:
-            f.write(os.urandom(1024 * 4))
-
-        # register file in test collection
-        self.sess.data_objects.register(test_file, obj_path)
-
-        # confirm object presence
-        obj = self.sess.data_objects.get(obj_path)
-
-        # in a real use case we would likely
-        # want to leave the physical file on disk
-        obj.unregister()
-
-        # delete file
-        os.remove(test_file)
-
-
-    def test_register_with_checksum(self):
-        # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
-            self.skipTest('Requires access to server-side file(s)')
-
-        # test vars
-        test_dir = '/tmp'
-        filename = 'register_test_file'
-        test_file = os.path.join(test_dir, filename)
-        collection = self.coll.path
-        obj_path = '{collection}/{filename}'.format(**locals())
-
-        # make random 4K binary file
-        with open(test_file, 'wb') as f:
-            f.write(os.urandom(1024 * 4))
-
-        # register file in test collection
-        options = {kw.VERIFY_CHKSUM_KW: ''}
-        self.sess.data_objects.register(test_file, obj_path, **options)
-
-        # confirm object presence and verify checksum
-        obj = self.sess.data_objects.get(obj_path)
-
-        # don't use obj.path (aka logical path)
-        phys_path = obj.replicas[0].path
-        digest = helpers.compute_sha256_digest(phys_path)
-        self.assertEqual(obj.checksum, "sha2:{}".format(digest))
-
-        # leave physical file on disk
-        obj.unregister()
-
-        # delete file
-        os.remove(test_file)
-
     def test_modDataObjMeta(self):
+        test_dir = helpers.irods_shared_tmp_dir()
         # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not (loc_server):
             self.skipTest('Requires access to server-side file(s)')
 
         # test vars
-        test_dir = '/tmp'
+        resc_name = 'testDataObjMetaResc'
         filename = 'register_test_file'
-        test_file = os.path.join(test_dir, filename)
         collection = self.coll.path
         obj_path = '{collection}/{filename}'.format(**locals())
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
         with open(test_file, 'wb') as f:
             f.write(os.urandom(1024 * 4))
 
         # register file in test collection
-        self.sess.data_objects.register(test_file, obj_path)
+        self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW:resc_name})
 
         qu = self.sess.query(Collection.id).filter(Collection.name == collection)
         for res in qu:
@@ -1045,34 +999,6 @@ class TestDataObjOps(unittest.TestCase):
         # delete file
         os.remove(test_file)
 
-    def test_register_with_xml_special_chars(self):
-        # skip if server is remote
-        if self.sess.host not in ('localhost', socket.gethostname()):
-            self.skipTest('Requires access to server-side file(s)')
-
-        # test vars
-        test_dir = '/tmp'
-        filename = '''aaa'"<&test&>"'_file'''
-        test_file = os.path.join(test_dir, filename)
-        collection = self.coll.path
-        obj_path = '{collection}/{filename}'.format(**locals())
-
-        # make random 4K binary file
-        with open(test_file, 'wb') as f:
-            f.write(os.urandom(1024 * 4))
-
-        # register file in test collection
-        self.sess.data_objects.register(test_file, obj_path)
-
-        # confirm object presence
-        obj = self.sess.data_objects.get(obj_path)
-
-        # in a real use case we would likely
-        # want to leave the physical file on disk
-        obj.unregister()
-
-        # delete file
-        os.remove(test_file)
 
     def test_get_data_objects(self):
         # Can't do one step open/create with older servers
@@ -1093,12 +1019,13 @@ class TestDataObjOps(unittest.TestCase):
         # make ufs resources
         ufs_resources = []
         for i in range(2):
-            resource_name = 'ufs{}'.format(i)
+            resource_name = unique_name(my_function_name(),i)
             resource_type = 'unixfilesystem'
             resource_host = self.sess.host
             resource_path = '/tmp/{}'.format(resource_name)
             ufs_resources.append(self.sess.resources.create(
                 resource_name, resource_type, resource_host, resource_path))
+
 
         # make passthru resource and add ufs1 as a child
         passthru_resource = self.sess.resources.create('pt', 'passthru')
@@ -1140,6 +1067,108 @@ class TestDataObjOps(unittest.TestCase):
         passthru_resource.remove()
         for resource in ufs_resources:
             resource.remove()
+
+
+    def test_register(self):
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
+
+        # test vars
+        resc_name = "testRegisterOpResc"
+        filename = 'register_test_file'
+        collection = self.coll.path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        test_path = make_ufs_resc_in_tmpdir(self.sess,resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
+
+        # make random 4K binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 4))
+
+        # register file in test collection
+        self.sess.data_objects.register(test_file, obj_path)
+
+        # confirm object presence
+        obj = self.sess.data_objects.get(obj_path)
+
+        # in a real use case we would likely
+        # want to leave the physical file on disk
+        obj.unregister()
+
+        # delete file
+        os.remove(test_file)
+
+
+    def test_register_with_checksum(self):
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
+
+        # test vars
+        resc_name= 'regWithChksumResc'
+        filename = 'register_test_file'
+        collection = self.coll.path
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
+
+        # make random 4K binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 4))
+
+        # register file in test collection
+        options = {kw.VERIFY_CHKSUM_KW: '', kw.RESC_NAME_KW: resc_name}
+        self.sess.data_objects.register(test_file, obj_path, **options)
+
+        # confirm object presence and verify checksum
+        obj = self.sess.data_objects.get(obj_path)
+
+        # don't use obj.path (aka logical path)
+        phys_path = obj.replicas[0].path
+        digest = helpers.compute_sha256_digest(phys_path)
+        self.assertEqual(obj.checksum, "sha2:{}".format(digest))
+
+        # leave physical file on disk
+        obj.unregister()
+
+        # delete file
+        os.remove(test_file)
+
+    def test_register_with_xml_special_chars(self):
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
+
+        # test vars
+        resc_name = 'regWithXmlSpecialCharsResc'
+        collection = self.coll.path
+        filename = '''aaa'"<&test&>"'_file'''
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+        test_file = os.path.join(test_path, filename)
+        obj_path = '{collection}/{filename}'.format(**locals())
+
+        # make random 4K binary file
+        with open(test_file, 'wb') as f:
+            f.write(os.urandom(1024 * 4))
+
+        # register file in test collection
+        self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW: resc_name})
+
+        # confirm object presence
+        obj = self.sess.data_objects.get(obj_path)
+
+        # in a real use case we would likely
+        # want to leave the physical file on disk
+        obj.unregister()
+
+        # delete file
+        os.remove(test_file)
 
 
 if __name__ == '__main__':
