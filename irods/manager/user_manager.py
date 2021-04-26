@@ -3,8 +3,8 @@ import logging
 
 from irods.models import User, UserGroup
 from irods.manager import Manager
-from irods.message import GeneralAdminRequest, iRODSMessage
-from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFound
+from irods.message import GeneralAdminRequest, iRODSMessage, GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut
+from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFound, CAT_SQL_ERR
 from irods.api_number import api_number
 from irods.user import iRODSUser, iRODSUserGroup
 import irods.password_obfuscation as obf
@@ -57,6 +57,30 @@ class UserManager(Manager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
+
+    def temp_password_for_user(self, user_name):
+        with self.sess.pool.get_connection() as conn:
+            message_body = GetTempPasswordForOtherRequest(
+                targetUser=user_name,
+                unused=None
+            )
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['GET_TEMP_PASSWORD_FOR_OTHER_AN'])
+
+            # Send request
+            conn.send(request)
+
+            # Receive answer
+            try:
+                response = conn.recv()
+                logger.debug(response.int_info)
+            except CAT_SQL_ERR:
+                raise UserDoesNotExist()
+
+            # Convert and return answer
+            msg = response.get_main_message(GetTempPasswordForOtherOut)
+            return obf.create_temp_password(msg.stringToHashWith, conn.account.password)
+
 
     def modify(self, user_name, option, new_value, user_zone=""):
 

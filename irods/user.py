@@ -53,6 +53,9 @@ class iRODSUser(object):
     def remove(self):
         self.manager.remove(self.name, self.zone)
 
+    def temp_password(self):
+        return self.manager.temp_password_for_user(self.name)
+
 
 class iRODSUserGroup(object):
 

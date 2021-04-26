@@ -7,12 +7,12 @@ import six
 import os
 import ssl
 import datetime
-
+import irods.password_obfuscation as obf
 
 from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge, AuthPluginOut,
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
-    PluginAuthMessage, ClientServerNegotiation, Error)
+    PluginAuthMessage, ClientServerNegotiation, Error, GetTempPasswordOut)
 from irods.exception import get_exception_by_code, NetworkException
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
@@ -566,3 +566,16 @@ class Connection(object):
 
         self.send(message)
         self.recv()
+
+    def temp_password(self):
+        request = iRODSMessage("RODS_API_REQ", msg=None,
+                               int_info=api_number['GET_TEMP_PASSWORD_AN'])
+
+        # Send and receive request
+        self.send(request)
+        response = self.recv()
+        logger.debug(response.int_info)
+
+        # Convert and return answer
+        msg = response.get_main_message(GetTempPasswordOut)
+        return obf.create_temp_password(msg.stringToHashWith, self.account.password)
