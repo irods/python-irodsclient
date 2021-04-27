@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 from __future__ import absolute_import
 import os
 import sys
@@ -9,20 +10,32 @@ import irods.test.helpers as helpers
 
 class TestContinueQuery(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # once only (before all tests), set up large collection
+        print ("Creating a large collection...", file = sys.stderr)
+        with helpers.make_session() as sess:
+            # Create test collection
+            cls.coll_path = '/{}/home/{}/test_dir'.format(sess.zone, sess.username)
+            cls.obj_count = 2500
+            cls.coll = helpers.make_test_collection( sess, cls.coll_path, cls.obj_count)
+
     def setUp(self):
+        # open the session (per-test)
         self.sess = helpers.make_session()
 
-        # Create test collection
-        self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
-        self.obj_count = 2500
-        self.coll = helpers.make_test_collection(
-            self.sess, self.coll_path, self.obj_count)
-
     def tearDown(self):
-        '''Remove test data and close connections
-        '''
-        self.coll.remove(recurse=True, force=True)
+        # close the session (per-test)
         self.sess.cleanup()
+
+    @classmethod
+    def tearDownClass(cls):
+        '''Remove test data
+        '''
+        # once only (after all tests), delete large collection
+        print ("Deleting the large collection...", file = sys.stderr)
+        with helpers.make_session() as sess:
+            sess.collections.remove(cls.coll_path, recurse=True, force=True)
 
     def test_walk_large_collection(self):
         for current_coll, subcolls, objects in self.coll.walk():

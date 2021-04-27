@@ -95,10 +95,14 @@ def make_object(session, path, content=None, **options):
 
     content = iRODSMessage.encode_unicode(content)
 
-    # 2 step open-create necessary for iRODS 4.1.4 or older
-    obj = session.data_objects.create(path)
-    with obj.open('w', **options) as obj_desc:
-        obj_desc.write(content)
+    if session.server_version <= (4,1,4):
+        # 2 step open-create necessary for iRODS 4.1.4 or older
+        obj = session.data_objects.create(path)
+        with obj.open('w', **options) as obj_desc:
+            obj_desc.write(content)
+    else:
+        with session.data_objects.open(path, 'w', **options) as obj_desc:
+            obj_desc.write(content)
 
     # refresh object after write
     return session.data_objects.get(path)
