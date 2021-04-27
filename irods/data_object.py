@@ -81,6 +81,9 @@ class iRODSDataObject(object):
     def open(self, mode='r', **options):
         return self.manager.open(self.path, mode, **options)
 
+    def chksum(self, **options):
+        return self.manager.chksum(self.path, **options)
+
     def unlink(self, force=False, **options):
         self.manager.unlink(self.path, force, **options)
 
