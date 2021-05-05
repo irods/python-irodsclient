@@ -12,12 +12,15 @@ from datetime import datetime
 from irods.models import (User, UserMeta,
                           Resource, ResourceMeta,
                           Collection, CollectionMeta,
-                          DataObject, DataObjectMeta  )
+                          DataObject, DataObjectMeta,
+                          RuleExec)
 
+from tempfile import NamedTemporaryFile
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import SpecificQuery
 from irods.column import Like, Between, In
 from irods.meta import iRODSMeta
+from irods.rule import Rule
 from irods import MAX_SQL_ROWS
 import irods.test.helpers as helpers
 from six.moves import range as py3_range
@@ -470,6 +473,23 @@ class TestQuery(unittest.TestCase):
                     if iters == batch_size - 1:
                         break # leave iteration unfinished
 
+    def test_rules_query__267(self):
+        unique = "Testing prc #267: queryable rule objects"
+        with NamedTemporaryFile(mode='w') as rfile:
+            rfile.write("""f() {{ delay('<EF>1m</EF>') {{ writeLine('serverLog','{unique}') }} }}\n"""
+                        """OUTPUT null\n""".format(**locals()))
+            rfile.flush()
+            ## create a delayed rule we can query against
+            myrule = Rule(self.sess, rule_file = rfile.name)
+            myrule.execute()
+        qu = self.sess.query(RuleExec.id).filter( Like(RuleExec.frequency,'%1m%'),
+                                                  Like(RuleExec.name, '%{unique}%'.format(**locals())) )
+        results = [row for row in qu]
+        self.assertEqual(1, len(results))
+        if results:
+            Rule(self.sess).remove_by_id( results[0][RuleExec.id] )
+
+
 class TestSpecificQuery(unittest.TestCase):
 
     def setUp(self):
@@ -581,6 +601,7 @@ class TestSpecificQuery(unittest.TestCase):
         with self.assertRaises(CAT_UNKNOWN_SPECIFIC_QUERY):
             res = query.get_results()
             next(res)
+
 
 
 if __name__ == '__main__':

@@ -19,6 +19,26 @@ class Model(six.with_metaclass(ModelBase, object)):
     pass
 
 
+class RuleExec(Model):
+    id = Column(Integer, 'RULE_EXEC_ID', 1000)
+    name = Column(String, 'RULE_EXEC_NAME', 1001)
+    rei_file_path = Column(String,'RULE_EXEC_REI_FILE_PATH', 1002)
+    user_name = Column(String, 'RULE_EXEC_USER_NAME', 1003)
+    time = Column(DateTime,'RULE_EXEC_TIME',    1005)
+    last_exe_time = Column(DateTime,'RULE_EXEC_LAST_EXE_TIME', 1010)
+    frequency = Column(String,'RULE_EXEC_FREQUENCY', 1006)
+    priority = Column(String, 'RULE_EXEC_PRIORITY', 1007)
+
+#   # If needed in 4.2.9, we can update the Query class to dynamically
+#   #  attach this field based on server version:
+#   context = Column(String, 'RULE_EXEC_CONTEXT', 1012)
+
+#   # These are either unused or usually absent:
+#   exec_status = Column(String,'RULE_EXEC_STATUS', 1011)
+#   address = Column(String,'RULE_EXEC_ADDRESS', 1004)
+#   notification_addr = Column('RULE_EXEC_NOTIFICATION_ADDR', 1009)
+
+
 class Zone(Model):
     id = Column(Integer, 'ZONE_ID', 101)
     name = Column(String, 'ZONE_NAME', 102)

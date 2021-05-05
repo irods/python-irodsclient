@@ -2,6 +2,15 @@ from __future__ import absolute_import
 from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
 from irods.api_number import api_number
 from io import open as io_open
+from irods.message import Message, StringProperty
+
+class RemoveRuleMessage(Message):
+    #define RULE_EXEC_DEL_INP_PI "str ruleExecId[NAME_LEN];"
+    _name = 'RULE_EXEC_DEL_INP_PI'
+    ruleExecId = StringProperty()
+    def __init__(self,id_):
+        super(RemoveRuleMessage,self).__init__()
+        self.ruleExecId = str(id_)
 
 class Rule(object):
     def __init__(self, session, rule_file=None, body='', params=None, output=''):
@@ -20,6 +29,16 @@ class Rule(object):
             self.params = params
         if output != '':
             self.output = output
+
+    def remove_by_id(self,*ids):
+        with self.session.pool.get_connection() as conn:
+            for id_ in ids:
+                request = iRODSMessage("RODS_API_REQ", msg=RemoveRuleMessage(id_),
+                                       int_info=api_number['RULE_EXEC_DEL_AN'])
+                conn.send(request)
+                response = conn.recv()
+                if response.int_info != 0:
+                    raise RuntimeError("Error removing rule {id_}".format(**locals()))
 
     def load(self, rule_file, encoding = 'utf-8'):
         self.body = '@external\n'
