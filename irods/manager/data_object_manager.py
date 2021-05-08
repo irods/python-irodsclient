@@ -111,7 +111,7 @@ class DataObjectManager(Manager):
         with open(local_path, 'rb') as f, self.open(obj, 'w', **options) as o:
 
             if self.should_parallelize_transfer (num_threads, f):
-                f.close();
+                f.close()
                 if not self.parallel_put( local_path, (obj,o), num_threads = num_threads,
                                           target_resource_name = options.get(kw.RESC_NAME_KW,'') or
                                                                  options.get(kw.DEST_RESC_NAME_KW,'')):
@@ -205,9 +205,9 @@ class DataObjectManager(Manager):
         return self.get(path)
 
 
-    def open_with_FileRaw(self, *arg, **kw):
+    def open_with_FileRaw(self, *arg, **kw_options):
         holder = []
-        handle = self.open(*arg,_raw_fd_holder=holder,**kw)
+        handle = self.open(*arg,_raw_fd_holder=holder,**kw_options)
         return (handle, holder[-1])
 
     def open(self, path, mode, create = True, finalize_on_close = True, **options):

@@ -3,16 +3,14 @@ import io
 import sys
 import logging
 import six
-import json
 import os
 import ast
 
-import xml.etree.ElementTree as ET
 from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
 from irods.api_number import api_number
-from irods.message import (StringStringMap, FileOpenRequest, JSON_Message, iRODSMessage)
+from irods.message import (JSON_Message, iRODSMessage)
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +109,17 @@ class iRODSDataObject(object):
 
 class iRODSDataObjectFileRaw(io.RawIOBase):
 
+    """The raw object supporting file-like operations (read/write/seek) for the
+       iRODSDataObject."""
+
     def __init__(self, conn, descriptor, finalize_on_close = True, **options):
+        """
+        Constructor needs a connection and an iRODS data object descriptor. If the
+        finalize_on_close flag evaluates False, close() will invoke the REPLICA_CLOSE
+        API instead of closing and finalizing the object (useful for parallel
+        transfers using multiple threads).
+        """
+        super(iRODSDataObjectFileRaw,self).__init__()
         self.conn = conn
         self.desc = descriptor
         self.options = options
@@ -128,7 +136,7 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
             result = self.conn.recv()
         except Exception as e:
             logger.warning('''Couldn't receive or process response to GET_FILE_DESCRIPTOR_INFO_APN -- '''
-                           '''caught: {0!r}'''.format(e))
+                           '''caught: %r''',e)
             raise
         dobj_info = result.get_json_encoded_struct()
         replica_token = dobj_info.get("replica_token","")
@@ -142,14 +150,13 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
                                        "send_notification": False,
                                        "update_size": False,
                                        "update_status": False,
-                                       "send_notification": False,
                                        "compute_checksum": False },
                                      server_version = self.conn.server_version )
         self.conn.send( iRODSMessage('RODS_API_REQ', msg = message_body,
                                      int_info=api_number['REPLICA_CLOSE_APN']) )
         try:
             self.conn.recv().int_info
-        except Exception as e:
+        except Exception:
             logger.warning ('** ERROR on closing replica **')
             raise
         return True

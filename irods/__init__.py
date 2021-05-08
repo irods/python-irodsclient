@@ -7,6 +7,8 @@ gHandler = None
 
 def client_logging(flag=True,handler=None):
     """
+    Example of use:
+
     import irods
     # Enable / Disable general client logging
     irods.client_logging(True[,handler]) -> handler

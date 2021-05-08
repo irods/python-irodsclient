@@ -30,8 +30,7 @@ class TestContinueQuery(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        '''Remove test data
-        '''
+        """Remove test data."""
         # once only (after all tests), delete large collection
         print ("Deleting the large collection...", file = sys.stderr)
         with helpers.make_session() as sess:

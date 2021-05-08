@@ -22,7 +22,7 @@ import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.manager import data_object_manager
 from datetime import datetime
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import NamedTemporaryFile
 from irods.test.helpers import (unique_name, my_function_name)
 import irods.parallel
 
