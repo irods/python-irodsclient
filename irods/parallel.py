@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import os
 import ssl
-import json
 import time
 import sys
 import logging
@@ -13,14 +12,9 @@ import threading
 import multiprocessing
 import six
 
-import irods
-import irods.data_object
-from irods.data_object import iRODSDataObjectFileRaw, iRODSDataObject
+from irods.data_object import iRODSDataObject
 from irods.exception import DataObjectDoesNotExist
-from irods.message import ( StringStringMap, FileOpenRequest, iRODSMessage )
-from irods.api_number import api_number
 import irods.keywords as kw
-from collections import OrderedDict
 from six.moves.queue import Queue,Full,Empty
 
 
@@ -44,6 +38,7 @@ except ImportError:                 # ... but otherwise, use this ad hoc:
             self.barrier = threading.Semaphore(0)
         def wait(self):
             """Per-thread wait function.
+
             As in Python3.2 threading, returns 0 <= wait_serial_int < n
             """
             self.mutex.acquire()
@@ -58,6 +53,7 @@ except ImportError:                 # ... but otherwise, use this ad hoc:
 @contextlib.contextmanager
 def enableLogging(handlerType,args,level_ = logging.INFO):
     """Context manager for temporarily enabling a logger. For debug or test.
+
     Usage Example -
     with irods.parallel.enableLogging(logging.FileHandler,('/tmp/logfile.txt',)):
         # parallel put/get code here
@@ -98,6 +94,10 @@ class AsyncNotify (object):
         self.done_callback = callback
 
     def __init__(self, futuresList, callback = None, progress_Queue = None, total = None, keep_ = ()):
+        """AsyncNotify initialization (used internally to the io.parallel library).
+           The casual user will only be concerned with the callback parameter, called when all threads
+           of the parallel PUT or GET have been terminated and the data object closed.
+        """
         self._futures = set(futuresList)
         self._futures_done = dict()
         self.keep = dict(keep_)
@@ -173,15 +173,21 @@ class AsyncNotify (object):
 
 
 class Oper(object):
-
     """A custom enum-type class with utility methods.  """
 
     GET = 0
     PUT = 1
     NONBLOCKING = 2
 
-    def __int__(self): return self._opr
-    def __init__(self, rhs): self._opr = int(rhs)
+    def __int__(self):
+        """Return the stored flags as an integer bitmask. """
+        return self._opr
+
+    def __init__(self, rhs):
+        """Initialize with a bit mask of flags ie. whether Operation PUT or GET, 
+        and whether NONBLOCKING."""
+        self._opr = int(rhs)
+
     def isPut(self): return 0 != (self._opr & self.PUT)
     def isGet(self): return not self.isPut()
     def isNonBlocking(self): return 0 != (self._opr & self.NONBLOCKING)
@@ -290,7 +296,6 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
                            total_size, num_threads = 0, **extra_options):
     """Called by _io_main.
     Carve up (0,total_size) range into `num_threads` parts and initiate a transfer thread for each one."""
-
     (D, Io) = dataObj_and_IO
     Operation = Oper( operation_ )
 

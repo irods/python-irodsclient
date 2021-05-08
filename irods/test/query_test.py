@@ -23,7 +23,7 @@ from irods.column import Like, Between, In
 from irods.meta import iRODSMeta
 from irods.rule import Rule
 from irods import MAX_SQL_ROWS
-from irods.test.helpers import (irods_shared_reg_resc_vault, get_register_resource)
+from irods.test.helpers import irods_shared_reg_resc_vault
 import irods.test.helpers as helpers
 from six.moves import range as py3_range
 import irods.keywords as kw

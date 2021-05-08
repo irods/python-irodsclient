@@ -1,4 +1,5 @@
-import base64
+"""Define objects related to communication with iRODS server API endpoints."""
+
 import struct
 import logging
 import socket
@@ -252,7 +253,9 @@ class AuthPluginOut(Message):
 # define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 
 class JSON_Binary_Request(BinBytesBuf):
+
     """A message body whose payload is BinBytesBuf containing JSON."""
+
     def __init__(self,msg_struct):
         """Initialize with a Python data structure that will be converted to JSON."""
         super(JSON_Binary_Request,self).__init__()
@@ -261,16 +264,19 @@ class JSON_Binary_Request(BinBytesBuf):
         self.buflen = len(string)
 
 class BytesBuf(Message):
+
+    """A generic structure carrying text content"""
+
     _name = 'BytesBuf_PI'
     buflen = IntegerProperty()
     buf = StringProperty()
     def __init__(self,string,*v,**kw):
-      super(BytesBuf,self).__init__(*v,**kw)
-      _buf = StringProperty.escape_xml_string( string )
-      self.buf = string
-      self.buflen = len(self.buf)
+        super(BytesBuf,self).__init__(*v,**kw)
+        self.buf = string
+        self.buflen = len(self.buf)
 
 class JSON_XMLFramed_Request(BytesBuf):
+
     """A message body whose payload is a BytesBuf containing JSON."""
     def __init__(self, msg_struct):
         """Initialize with a Python data structure that will be converted to JSON."""
@@ -408,7 +414,10 @@ class FileOpenRequest(Message):
     KeyValPair_PI = SubmessageProperty(StringStringMap)
 
 class DataObjChksumRequest(FileOpenRequest):
+    """Report and/or generate a data object's checksum."""
+
     def __init__(self,path,**chksumOptions):
+        """Construct the request using the path of a data object."""
         super(DataObjChksumRequest,self).__init__()
         for attr,prop in vars(FileOpenRequest).items():
             if isinstance(prop, (IntegerProperty,LongProperty)):
