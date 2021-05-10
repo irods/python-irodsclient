@@ -41,7 +41,7 @@ Installing
 ----------
 
 PRC requires Python 2.7 or 3.4+.
-To install with pip::
+Canonically, to install with pip::
 
  pip install python-irodsclient
 
@@ -49,16 +49,27 @@ or::
 
  pip install git+https://github.com/irods/python-irodsclient.git[@branch|@commit|@tag]
 
-See also [these instructions](PYTHON_install_caveats.rst), with hints about pip and
-virtualenv, relevant to installation on older Linux distributions.
-
-
 Uninstalling
 ------------
 
 ::
 
  pip uninstall python-irodsclient
+
+Hazard: Outdated Python
+--------------------------
+With older versions of Python (as of this writing, the aforementioned 2.7 and 3.4), we
+can take preparatory steps toward securing workable versions of pip and virtualenv by
+using these commands::
+
+    $ pip install --upgrade --user pip'<21.0'
+    $ python -m pip install --user virtualenv
+
+We are then ready to use any of the following commands relevant to and required for the
+installation::
+
+    $ python -m virtualenv ... 
+    $ python -m pip install ...
 
 
 Establishing a (secure) connection
