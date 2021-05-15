@@ -16,7 +16,7 @@ Currently supported:
 - Execute direct SQL queries
 - Execute iRODS rules
 - Support read, write, and seek operations for files
-- PUT/GET data objects
+- Parallel PUT/GET data objects
 - Create collections
 - Rename collections
 - Delete collections

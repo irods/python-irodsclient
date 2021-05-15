@@ -1,6 +1,23 @@
 Changelog
 =========
 
+v0.9.0 (2021-05-14)
+-------------------
+[#269] cleanup() is now automatic with session destruct [Daniel Moore]
+[#235] multithreaded parallel transfer for PUT and GET [Daniel Moore]
+[#232] do not arbitrarily pick first replica for DEST RESC [Daniel Moore]
+[#233] add null handler for irods package root [Daniel Moore]
+[#246] implementation of checksum for data object manager [Daniel Moore]
+[#270] speed up tests [Daniel Moore]
+[#260] [irods/irods#5520] XML protocol will use BinBytesBuf in 4.2.9 [Daniel Moore]
+[#221] prepare test suite for CI [Daniel Moore]
+[#267] add RuleExec model for genquery [Daniel Moore]
+[#263] update documentation for connection_timeout [Terrell Russell]
+[#261] add temporary password support [Paul van Schayck]
+[#257] better SSL examples [Terrell Russell]
+[#255] make results of atomic metadata operations visible [Daniel Moore]
+[#250] add exception for SYS_INVALID_INPUT_PARAM [Daniel Moore]
+
 v0.8.6 (2021-01-22)
 -------------------
 [#244] added capability to add/remove atomic metadata [Daniel Moore]
