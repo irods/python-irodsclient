@@ -140,6 +140,19 @@ This can be overridden by changing the session `connection_timeout` immediately 
 
 This will set the timeout to five minutes for any associated connections.
 
+Session objects and cleanup
+---------------------------
+
+When iRODSSession objects are kept as state in an application, spurious SYS_HEADER_READ_LEN_ERR errors
+can sometimes be seen in the connected iRODS server's log file. This is frequently seen at program exit
+because socket connections are terminated without having been closed out by the session object's 
+cleanup() method.
+
+Starting with PRC Release 0.9.0, code has been included in the session object's __del__ method to call
+cleanup(), properly closing out network connections.  However, __del__ cannot be relied to run under all
+circumstances (Python2 being more problematic), so an alternative may be to call session.cleanup() on
+any session variable which might not be used again.
+
 
 Simple PUTs and GETs
 --------------------
