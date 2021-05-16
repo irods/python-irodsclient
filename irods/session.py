@@ -55,7 +55,8 @@ class iRODSSession(object):
             except NetworkException:
                 pass
             conn.release(True)
-        if self.do_configure: self.configure(**self.do_configure)
+        if self.do_configure: 
+            self.__configured = self.configure(**self.do_configure)
 
     def _configure_account(self, **kwargs):
 
