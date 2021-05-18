@@ -6,6 +6,10 @@ class Element():
     """Represents <name>body</name>.
        body is either a string or a list of sub-elements.
     """
+
+    @property
+    def tag(self): return self.name
+
     def __init__(self, name, body):
         if body == []:
             # Empty element.
@@ -42,7 +46,7 @@ class Element():
         return '{}({})'.format(self.name, repr(self.body))
 
 
-class Token():
+class Token(object):
     def __init__(self, s):
         self.text = s
     def __repr__(self):
