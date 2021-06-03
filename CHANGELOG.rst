@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v1.0.0 (2021-06-03)
+-------------------
+[#274] calculate common vault dir for unicode query tests [Daniel Moore]
+[#269] better session cleanup [Daniel Moore]
+
 v0.9.0 (2021-05-14)
 -------------------
 [#269] cleanup() is now automatic with session destruct [Daniel Moore]
