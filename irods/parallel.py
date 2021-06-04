@@ -26,9 +26,33 @@ logger.addHandler( _nullh )
 MINIMUM_SERVER_VERSION = (4,2,9)
 
 
+class deferred_call(object):
+
+    """
+    A callable object that stores a function to be called later, along
+    with its parameters.
+    """
+
+    def __init__(self, function, args, keywords):
+        """Initialize the object with a function and its call parameters."""
+        self.function = function
+        self.args = args
+        self.keywords = keywords
+
+    def __setitem__(self, key, val):
+        """Allow changing a keyword option for the deferred function call."""
+        self.keywords[key] = val
+
+    def __call__(self):
+        """Call the stored function, using the arguments and keywords also stored
+        in the instance."""
+        return self.function(*self.args, **self.keywords)
+
+
 try:
     from threading import Barrier   # Use 'Barrier' class if included (as in Python >= 3.2) ...
 except ImportError:                 # ... but otherwise, use this ad hoc:
+    # Based on https://stackoverflow.com/questions/26622745/implementing-barrier-in-python2-7 :
     class Barrier(object):
         def __init__(self, n):
             """Initialize a Barrier to wait on n threads."""
@@ -173,7 +197,13 @@ class AsyncNotify (object):
 
 
 class Oper(object):
-    """A custom enum-type class with utility methods.  """
+
+    """A custom enum-type class with utility methods.
+
+    It makes some logic clearer, including succinct calculation of file and data
+    object open() modes based on whether the operation is a PUT or GET and whether
+    we are doing the "initial" open of the file or object.
+    """
 
     GET = 0
     PUT = 1
@@ -216,7 +246,12 @@ def _io_send_bytes_progress (queueObject, item):
 COPY_BUF_SIZE = (1024 ** 2) * 4
 
 def _copy_part( src, dst, length, queueObject, debug_info, mgr):
+    """
+    The work-horse for performing the copy between file and data object.
 
+    It also helps determine whether there has been a large enough increment of
+    bytes to inform the progress bar of a need to update.
+    """
     bytecount = 0
     accum = 0
     while True and bytecount < length:
@@ -241,7 +276,15 @@ def _copy_part( src, dst, length, queueObject, debug_info, mgr):
 
 
 class _Multipart_close_manager:
+    """An object used to ensure that the initial transfer thread is also the last one to
+    call the close method on its `Io' object.  The caller is responsible for setting up the
+    conditions that the initial thread's close() is the one performing the catalog update.
 
+    All non-initial transfer threads just call close() as soon as they are done transferring
+    the byte range for which they are responsible, whereas we block the initial thread
+    using a threading Barrier until we know all other threads have called close().
+
+    """
     def __init__(self, initial_io_, exit_barrier_):
         self.exit_barrier = exit_barrier_
         self.initial_io = initial_io_
@@ -281,31 +324,45 @@ class _Multipart_close_manager:
 
 
 def _io_part (objHandle, range_, file_, opr_, mgr_, thread_debug_id = '', queueObject = None ):
+    """
+    Runs in a separate thread to manage the transfer of a range of bytes within the data object.
+
+    The particular range is defined by the end of the range_ parameter, which should be of type
+    (Py2) xrange or (Py3) range.
+    """
     if 0 == len(range_): return 0
     Operation = Oper(opr_)
     (offset,length) = (range_[0], len(range_))
     objHandle.seek(offset)
     file_.seek(offset)
-    if thread_debug_id == '':
+    if thread_debug_id == '':  # for more succinct thread identifiers while debugging.
         thread_debug_id = str(threading.currentThread().ident)
     return ( _copy_part (file_, objHandle, length, queueObject, thread_debug_id, mgr_) if Operation.isPut()
         else _copy_part (objHandle, file_, length, queueObject, thread_debug_id, mgr_) )
 
 
 def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str, session, fname,
-                           total_size, num_threads = 0, **extra_options):
+                           total_size, num_threads, **extra_options):
     """Called by _io_main.
-    Carve up (0,total_size) range into `num_threads` parts and initiate a transfer thread for each one."""
-    (D, Io) = dataObj_and_IO
+
+    Carve up (0,total_size) range into `num_threads` parts and initiate a transfer thread for each one.
+    """
+    (Data_object, Io) = dataObj_and_IO
     Operation = Oper( operation_ )
 
-    if num_threads < 1:
-        num_threads = RECOMMENDED_NUM_THREADS_PER_TRANSFER
-    num_threads = max(1, min(multiprocessing.cpu_count(), num_threads))
+    def bytes_range_for_thread( i, num_threads, total_bytes,  chunk ):
+        begin_offs = i * chunk
+        if i + 1 < num_threads:
+            end_offs = (i + 1) * chunk
+        else:
+            end_offs = total_bytes
+        return six.moves.range(begin_offs, end_offs)
 
-    P = 1 + (total_size // num_threads)
-    logger.info("num_threads = %s ; (P)artitionSize = %s", num_threads, P)
-    ranges = [six.moves.range(i*P,min(i*P+P,total_size)) for i in range(num_threads) if i*P < total_size]
+    bytes_per_thread = total_size // num_threads
+
+    ranges = [bytes_range_for_thread(i, num_threads, total_size, bytes_per_thread) for i in range(num_threads)]
+
+    logger.info("num_threads = %s ; bytes_per_thread = %s", num_threads, bytes_per_thread)
 
     _queueLength = extra_options.get('_queueLength',0)
     if _queueLength > 0:
@@ -320,14 +377,17 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
     counter = 1
     gen_file_handle = lambda: open(fname, Operation.disk_file_mode(initial_open = (counter == 1)))
     File = gen_file_handle()
-    for r in ranges:
+    for byte_range in ranges:
         if Io is None:
-            Io = session.data_objects.open( D.path, Operation.data_object_mode(initial_open = False),
+            Io = session.data_objects.open( Data_object.path, Operation.data_object_mode(initial_open = False),
                                             create = False, finalize_on_close = False,
-                                            **{kw.RESC_HIER_STR_KW: hier_str, kw.REPLICA_TOKEN_KW: replica_token} )
+                                            **{ kw.NUM_THREADS_KW: str(num_threads),
+                                                kw.DATA_SIZE_KW: str(total_size),
+                                                kw.RESC_HIER_STR_KW: hier_str,
+                                                kw.REPLICA_TOKEN_KW: replica_token })
         mgr.add_io( Io )
         if File is None: File = gen_file_handle()
-        futures.append(executor.submit( _io_part, Io, r, File, Operation, mgr, str(counter), queueObject))
+        futures.append(executor.submit( _io_part, Io, byte_range, File, Operation, mgr, str(counter), queueObject))
         counter += 1
         Io = File = None
 
@@ -341,18 +401,25 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
         return sum(bytecounts), total_size
 
 
-# _io_main
-#    * Entry point for parallel transfers (multithreaded PUT and GET operations) 
-#    * determine replica information
-#    * call multithread manager
 
 def io_main( session, Data, opr_, fname, R='', **kwopt):
+    """
+    The entry point for parallel transfers (multithreaded PUT and GET operations).
 
+    Here, we do the following:
+    * instantiate the data object, if this has not already been done.
+    * determine replica information and the appropriate number of threads.
+    * call the multithread manager to initiate multiple data transfer threads
+
+    """
+    total_bytes = kwopt.pop('total_bytes', -1)
     Operation = Oper(opr_)
     d_path = None
     Io = None
+
     if isinstance(Data,tuple):
         (Data, Io) = Data[:2]
+
     if isinstance (Data, six.string_types):
         d_path = Data
         try:
@@ -365,36 +432,51 @@ def io_main( session, Data, opr_, fname, R='', **kwopt):
     if R_via_libcall:
         R = R_via_libcall
 
-    resc_options = {}
+    num_threads = kwopt.get( 'num_threads', None)
+    if num_threads is None: num_threads = int(kwopt.get('N','0'))
+    if num_threads < 1:
+        num_threads = RECOMMENDED_NUM_THREADS_PER_TRANSFER
+    num_threads = max(1, min(multiprocessing.cpu_count(), num_threads))
+
+    open_options = {}
     if Operation.isPut():
         if R:
-            resc_options [kw.RESC_NAME_KW] = R
-            resc_options [kw.DEST_RESC_NAME_KW] = R
+            open_options [kw.RESC_NAME_KW] = R
+            open_options [kw.DEST_RESC_NAME_KW] = R
+        open_options[kw.NUM_THREADS_KW] = str(num_threads)
+        open_options[kw.DATA_SIZE_KW] = str(total_bytes)
 
     if (not Io):
         (Io, rawfile) = session.data_objects.open_with_FileRaw( (d_path or Data.path),
                                                                 Operation.data_object_mode(initial_open = True),
-                                                                finalize_on_close = True, **resc_options )
+                                                                finalize_on_close = True, **open_options )
     else:
+        if type(Io) is deferred_call:
+            Io[kw.NUM_THREADS_KW] = str(num_threads)
+            Io[kw.DATA_SIZE_KW] =  str(total_bytes)
+            Io = Io()
         rawfile = Io.raw
 
-    # data object should now exist
+    # At this point, the data object's existence in the catalog is guaranteed,
+    # whether the Operation is a GET or PUT.
+
     if not isinstance(Data,iRODSDataObject):
         Data = session.data_objects.get(d_path)
+
+    # Determine total number of bytes for transfer.
 
     if Operation.isGet():
         total_bytes = Io.seek(0,os.SEEK_END)
         Io.seek(0,os.SEEK_SET)
-    else:
-        with open(fname, 'rb') as f:
-            f.seek(0,os.SEEK_END)
-            total_bytes = f.tell()
+    else: # isPut
+        if total_bytes < 0:
+            with open(fname, 'rb') as f:
+                f.seek(0,os.SEEK_END)
+                total_bytes = f.tell()
+
+    # Get necessary info and initiate threaded transfers.
 
     (replica_token , resc_hier) = rawfile.replica_access_info()
-
-    num_threads = kwopt.pop( 'num_threads', None)
-
-    if num_threads is None: num_threads = int(kwopt.get('N','0'))
 
     queueLength = kwopt.get('queueLength',0)
     retval = _io_multipart_threaded (Operation, (Data, Io), replica_token, resc_hier, session, fname, total_bytes,

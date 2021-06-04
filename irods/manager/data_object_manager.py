@@ -13,6 +13,7 @@ from irods.data_object import (
     iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
 import irods.keywords as kw
 import irods.parallel as parallel
+from irods.parallel import deferred_call
 import six
 import ast
 import json
@@ -23,7 +24,7 @@ MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE = 32 * ( 1024 ** 2)
 
 DEFAULT_NUMBER_OF_THREADS = 0   # Defaults for reasonable number of threads -- optimized to be
                                 # performant but allow no more worker threads than available CPUs.
-                                # Setting this to 1 disables automatic use of parallel transfer.
+
 DEFAULT_QUEUE_DEPTH = 32
 
 
@@ -53,7 +54,12 @@ class DataObjectManager(Manager):
     def should_parallelize_transfer( self,
                                      num_threads = 0,
                                      obj_sz = 1+MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE,
-                                     server_version_hint = ()):
+                                     server_version_hint = (),
+                                     measured_obj_size = ()  ## output variable. If a list is provided, it shall
+                                                              # be truncated to contain one value, the size of the
+                                                              # seekable object (if one is provided for `obj_sz').
+        ):
+
         # Allow an environment variable to override the detection of the server version.
         # Example: $ export IRODS_VERSION_OVERRIDE="4,2,9" ;  python -m irods.parallel ...
         # ---
@@ -69,6 +75,7 @@ class DataObjectManager(Manager):
             if not isinstance(size,six.integer_types):
                 size = obj_sz.tell()
             obj_sz.seek(pos,os.SEEK_SET)
+            if isinstance(measured_obj_size,list): measured_obj_size[:] = [size]
         else:
             size = obj_sz
             assert (size > -1)
@@ -76,7 +83,10 @@ class DataObjectManager(Manager):
 
 
     def _download(self, obj, local_path, num_threads, **options):
+        """Transfer the contents of a data object to a local file.
 
+        Called from get() when a local path is named.
+        """
         if os.path.isdir(local_path):
             local_file = os.path.join(local_path, irods_basename(obj))
         else:
@@ -99,6 +109,12 @@ class DataObjectManager(Manager):
 
 
     def get(self, path, local_path = None, num_threads = DEFAULT_NUMBER_OF_THREADS, **options):
+        """
+        Get a reference to the data object at the specified `path'.
+
+        Only download the object if the local_path is a string (specifying
+        a path in the local filesystem to use as a destination file).
+        """
         parent = self.sess.collections.get(irods_dirname(path))
 
         # TODO: optimize
@@ -127,21 +143,23 @@ class DataObjectManager(Manager):
         else:
             obj = irods_path
 
-        with open(local_path, 'rb') as f, self.open(obj, 'w', **options) as o:
-
-            if self.should_parallelize_transfer (num_threads, f):
+        with open(local_path, 'rb') as f:
+            sizelist = []
+            if self.should_parallelize_transfer (num_threads, f, measured_obj_size = sizelist):
+                o = deferred_call( self.open, (obj, 'w'), options)
                 f.close()
-                if not self.parallel_put( local_path, (obj,o), num_threads = num_threads,
+                if not self.parallel_put( local_path, (obj,o), total_bytes = sizelist[0], num_threads = num_threads,
                                           target_resource_name = options.get(kw.RESC_NAME_KW,'') or
-                                                                 options.get(kw.DEST_RESC_NAME_KW,'')):
+                                                                 options.get(kw.DEST_RESC_NAME_KW,''),
+                                          open_options = options ):
                     raise RuntimeError("parallel put failed")
             else:
-                # Set operation type to trigger acPostProcForPut
-                if kw.OPR_TYPE_KW not in options:
-                    options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
-                for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
-                    o.write(chunk)
-
+                with self.open(obj, 'w', **options) as o:
+                    # Set operation type to trigger acPostProcForPut
+                    if kw.OPR_TYPE_KW not in options:
+                        options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
+                    for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
+                        o.write(chunk)
         if kw.ALL_KW in options:
             options[kw.UPDATE_REPL_KW] = ''
             self.replicate(obj, **options)
@@ -191,7 +209,13 @@ class DataObjectManager(Manager):
                      num_threads = 0,
                      target_resource_name = '',
                      progressQueue = False):
+        """Call into the irods.parallel library for multi-1247 GET.
 
+        Called from a session.data_objects.get(...) (via the _download method) on
+        the condition that the data object is determined to be of appropriate size
+        for parallel download.
+
+        """
         return parallel.io_main( self.sess, data_or_path_, parallel.Oper.GET | (parallel.Oper.NONBLOCKING if async_ else 0), file_,
                                  num_threads = num_threads, target_resource_name = target_resource_name,
                                  queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0))
@@ -200,13 +224,22 @@ class DataObjectManager(Manager):
                      file_ ,
                      data_or_path_ ,
                      async_ = False,
+                     total_bytes = -1,
                      num_threads = 0,
                      target_resource_name = '',
+                     open_options = {},
                      progressQueue = False):
+        """Call into the irods.parallel library for multi-1247 PUT.
 
+        Called from a session.data_objects.put(...) on the condition that the
+        data object is determined to be of appropriate size for parallel upload.
+
+        """
         return parallel.io_main( self.sess, data_or_path_, parallel.Oper.PUT | (parallel.Oper.NONBLOCKING if async_ else 0), file_,
-                                 num_threads = num_threads, target_resource_name = target_resource_name,
-                                 queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0))
+                                 num_threads = num_threads, total_bytes = total_bytes,  target_resource_name = target_resource_name,
+                                 open_options = open_options,
+                                 queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0)
+                               )
 
 
     def create(self, path, resource=None, force=False, **options):

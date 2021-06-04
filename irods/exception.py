@@ -746,6 +746,10 @@ class NO_LOCAL_FILE_RSYNC_IN_MSI(UserInputException):
     code = -356000
 
 
+class OBJ_PATH_DOES_NOT_EXIST(iRODSException):
+    code = -358000
+
+
 class LOCKED_DATA_OBJECT_ACCESS(SystemException):
     code = -406000
 
