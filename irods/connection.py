@@ -8,6 +8,7 @@ import os
 import ssl
 import datetime
 import irods.password_obfuscation as obf
+from irods import MAX_NAME_LEN
 from ast import literal_eval as safe_eval
 
 
@@ -16,6 +17,12 @@ from irods.message import (
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
     PluginAuthMessage, ClientServerNegotiation, Error, GetTempPasswordOut)
 from irods.exception import (get_exception_by_code, NetworkException, nominal_code)
+from irods.message import (PamAuthRequest, PamAuthRequestOut)
+
+
+ALLOW_PAM_LONG_TOKENS = True      # True to fix [#279]
+
+
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
     AUTH_SCHEME_KEY, AUTH_USER_KEY, AUTH_PWD_KEY, AUTH_TTL_KEY,
@@ -402,9 +409,11 @@ class Connection(object):
 
     def _login_pam(self):
 
+        time_to_live_in_seconds = 60
+
         ctx_user = '%s=%s' % (AUTH_USER_KEY, self.account.client_user)
         ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, self.account.password)
-        ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, "60")
+        ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, str(time_to_live_in_seconds))
 
         ctx = ";".join([ctx_user, ctx_pwd, ctx_ttl])
 
@@ -412,23 +421,34 @@ class Connection(object):
             if getattr(self,'DISALLOWING_PAM_PLAINTEXT',True):
                 raise PlainTextPAMPasswordError
 
-        message_body = PluginAuthMessage(
-            auth_scheme_=PAM_AUTH_SCHEME,
-            context_=ctx
-        )
+        Pam_Long_Tokens = (ALLOW_PAM_LONG_TOKENS and (len(ctx) >= MAX_NAME_LEN))
+
+        if Pam_Long_Tokens:
+
+            message_body = PamAuthRequest(
+                pamUser=self.account.client_user,
+                pamPassword=self.account.password,
+                timeToLive=time_to_live_in_seconds)
+        else:
+
+            message_body = PluginAuthMessage(
+                auth_scheme_ = PAM_AUTH_SCHEME,
+                context_ = ctx)
 
         auth_req = iRODSMessage(
             msg_type='RODS_API_REQ',
             msg=message_body,
-            # int_info=725
-            int_info=1201
+            int_info=(725 if Pam_Long_Tokens else 1201)
         )
 
         self.send(auth_req)
         # Getting the new password
         output_message = self.recv()
 
-        auth_out = output_message.get_main_message(AuthPluginOut)
+        Pam_Response_Class = (PamAuthRequestOut if Pam_Long_Tokens
+                         else AuthPluginOut)
+
+        auth_out = output_message.get_main_message( Pam_Response_Class )
 
         self.disconnect()
         self._connect()
