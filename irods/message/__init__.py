@@ -372,6 +372,25 @@ class AuthPluginOut(Message):
     result_ = StringProperty()
     # result_ = BinaryProperty(16)
 
+
+# The following PamAuthRequest* classes correspond to older, less generic
+# PAM auth api in iRODS, but one which allowed longer password tokens.
+# They are contributed by Rick van de Hoef at Utrecht Univ, c. June 2021:
+
+class PamAuthRequest(Message):
+    _name = 'pamAuthRequestInp_PI'
+    pamUser = StringProperty()
+    pamPassword = StringProperty()
+    timeToLive = IntegerProperty()
+
+class PamAuthRequestOut(Message):
+    _name = 'pamAuthRequestOut_PI'
+    irodsPamPassword = StringProperty()
+    @builtins.property
+    def result_(self): return self.irodsPamPassword
+
+
+
 # define InxIvalPair_PI "int iiLen; int *inx(iiLen); int *ivalue(iiLen);"
 
 class JSON_Binary_Request(BinBytesBuf):
