@@ -17,6 +17,7 @@ from socket import gethostname
 from irods.password_obfuscation import (encode as pw_encode)
 from irods.connection import PlainTextPAMPasswordError
 import contextlib
+import socket
 from re import compile as regex
 try:
     from re import _pattern_type as regex_type
@@ -25,7 +26,8 @@ except ImportError:
 
 
 def json_file_update(fname,keys_to_delete=(),**kw):
-    j = json.load(open(fname,'r'))
+    with open(fname,'r') as f:
+        j = json.load(f)
     j.update(**kw)
     for k in keys_to_delete:
         if k in j: del j [k]
@@ -87,12 +89,29 @@ def pam_password_in_plaintext(allow=True):
 
 class TestLogins(unittest.TestCase):
     '''
-    This is due to be moved into Jenkins CI along core and other iRODS tests.
-    Until  then, for these tests to run successfully, we require:
-      1. First run ./setupssl.py (sets up SSL keys etc. in /etc/irods/ssl)
-      2. Add & override configuration entries in /var/lib/irods/irods_environment
+    Ideally, these tests should move into CI, but that would require the server
+    (currently a different node than the client) to have SSL certs created and
+    enabled.
+
+    Until then, we require these tests to be run manually on a server node,
+    with:
+
+        python -m unittest "irods.test.login_auth_test[.XX[.YY]]'
+
+    Additionally:
+
+      1. The PAM/SSL tests under the TestLogins class should be run on a
+         single-node iRODS system, by the service account user. This ensures
+         the /etc/irods directory is local and writable.
+
+      2. ./setupssl.py (sets up SSL keys etc. in /etc/irods/ssl) should be run
+         first to create (or overwrite, if appropriate) the /etc/irods/ssl directory
+         and its contents.
+
+      3. Must add & override configuration entries in /var/lib/irods/irods_environment
          Per https://slides.com/irods/ugm2018-ssl-and-pam-configuration#/3/7
-      3. Create rodsuser alissa and corresponding unix user with the appropriate
+
+      4. Create rodsuser alissa and corresponding unix user with the appropriate
          passwords as below.
     '''
 
@@ -162,7 +181,7 @@ class TestLogins(unittest.TestCase):
             with open(os.path.join(absdir,'irods_environment.json'),'w') as envfile:
                 envfile.write('{}')
             json_file_update(envfile.name, **dirs[absdir]['client_environment'])
-            with open(os.path.join(absdir,'.irodsA'),'wb') as secrets_file:
+            with open(os.path.join(absdir,'.irodsA'),'w') as secrets_file:
                 secrets_file.write(dirs[absdir]['secrets'])
             os.chmod(secrets_file.name,0o600)
 
@@ -202,6 +221,8 @@ class TestLogins(unittest.TestCase):
     def setUp(self):
         if not getattr(self, 'envdirs', []):
             self.skipTest('The test_rods_user "{}" does not exist'.format(self.test_rods_user))
+        if os.environ['HOME'] != '/var/lib/irods':
+            self.skipTest('Must be run as irods')
         super(TestLogins,self).setUp()
 
     def tearDown(self):
@@ -247,7 +268,8 @@ class TestLogins(unittest.TestCase):
                 with helpers.file_backed_up(env_file):
                     json_file_update( env_file, keys_to_delete=remove, **cli_env_extras )
                     session = iRODSSession(irods_env_file=env_file)
-                    out =  json.load(open(env_file))
+                    with open(env_file) as f:
+                        out =  json.load(f)
                     self.validate_session( session, verbose = verbosity, ssl = ssl_opt )
                     session.cleanup()
             out['ARGS']='no'
@@ -327,6 +349,20 @@ class TestLogins(unittest.TestCase):
 
 
 class TestWithSSL(unittest.TestCase):
+    '''
+    The tests within this class should be run by an account other than the
+    service account.  Otherwise there is risk of corrupting the server setup.
+    '''
+
+    def setUp(self):
+        if os.path.expanduser('~') == '/var/lib/irods':
+            self.skipTest('TestWithSSL may not be run by user irods')
+        if not os.path.exists('/etc/irods/ssl'):
+            self.skipTest('Running setupssl.py as irods user is prerequisite for this test.')
+        with helpers.make_session() as session:
+            if not session.host in ('localhost', socket.gethostname()):
+                self.skipTest('Test must be run co-resident with server')
+
 
     def test_ssl_with_server_verify_set_to_none_281(self):
         env_file = os.path.expanduser('~/.irods/irods_environment.json')
