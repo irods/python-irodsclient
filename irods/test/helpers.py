@@ -74,7 +74,7 @@ def get_register_resource(session):
 
 def make_session(**kwargs):
     try:
-        env_file = kwargs['irods_env_file']
+        env_file = kwargs.pop('irods_env_file')
     except KeyError:
         try:
             env_file = os.environ['IRODS_ENVIRONMENT_FILE']
@@ -87,7 +87,7 @@ def make_session(**kwargs):
     except KeyError:
         uid = None
 
-    return iRODSSession(irods_authentication_uid=uid, irods_env_file=env_file)
+    return iRODSSession( irods_authentication_uid = uid, irods_env_file = env_file, **kwargs )
 
 
 def make_object(session, path, content=None, **options):
