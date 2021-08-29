@@ -161,7 +161,13 @@ class Connection(object):
             context = self.account.ssl_context
         except AttributeError:
             CA_file = getattr(self.account, 'ssl_ca_certificate_file', None)
+            verify_server_mode = getattr(self.account,'ssl_verify_server', 'hostname')
+            if verify_server_mode == 'none':
+                CA_file = None
             context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_file)
+            if CA_file is None:
+                context.check_hostname = False
+                context.verify_mode = 0  # VERIFY_NONE
 
         # Wrap socket with context
         wrapped_socket = context.wrap_socket(self.socket, server_hostname=host)

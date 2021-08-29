@@ -326,6 +326,27 @@ class TestLogins(unittest.TestCase):
         self.tst0 ( ssl_opt = False, auth_opt = 'pam'    , env_opt = True  )
 
 
+class TestWithSSL(unittest.TestCase):
+
+    def test_ssl_with_server_verify_set_to_none_281(self):
+        env_file = os.path.expanduser('~/.irods/irods_environment.json')
+        with helpers.file_backed_up(env_file):
+            with open(env_file) as env_file_handle:
+                env = json.load( env_file_handle )
+            env.update({ "irods_client_server_negotiation": "request_server_negotiation",
+                         "irods_client_server_policy": "CS_NEG_REQUIRE",
+                         "irods_ssl_ca_certificate_file": "/path/to/some/file.crt",  # does not need to exist
+                         "irods_ssl_verify_server": "none",
+                         "irods_encryption_key_size": 32,
+                         "irods_encryption_salt_size": 8,
+                         "irods_encryption_num_hash_rounds": 16,
+                         "irods_encryption_algorithm": "AES-256-CBC" })
+            with open(env_file,'w') as f:
+                json.dump(env,f)
+            with helpers.make_session() as session:
+                session.collections.get('/{session.zone}/home/{session.username}'.format(**locals()))
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
