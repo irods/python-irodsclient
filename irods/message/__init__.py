@@ -73,6 +73,15 @@ class JSON_Binary_Response(BinBytesBuf):
 
 class iRODSMessage(object):
 
+    class ResponseNotParseable(Exception):
+        """
+        Raised by get_main_message(ResponseClass) to indicate a server response
+        wraps a msg string that is the `None' object rather than an XML String.
+        (Not raised for the ResponseClass is irods.message.Error; see source of
+        get_main_message for further detail.)
+        """
+        pass
+
     def __init__(self, msg_type=b'', msg=None, error=b'', bs=b'', int_info=0):
         self.msg_type = msg_type
         self.msg = msg
@@ -188,7 +197,14 @@ class iRODSMessage(object):
 
     def get_main_message(self, cls):
         msg = cls()
-        logger.debug(self.msg)
+        logger.debug('Attempt to parse server response [%r] as class [%r].',self.msg,cls)
+        if self.msg is None:
+            if cls is not Error:
+                # - For dedicated API response classes being built from server response, allow catching
+                #   of the exception.  However, let iRODS errors such as CAT_NO_ROWS_FOUND to filter
+                #   through as usual for express reporting by instances of irods.connection.Connection .
+                message = "Server response was {self.msg} while parsing as [{cls}]".format(**locals())
+                raise self.ResponseNotParseable( message )
         msg.unpack(ET.fromstring(self.msg))
         return msg
 

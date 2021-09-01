@@ -22,6 +22,7 @@ Currently supported:
 - Delete collections
 - Create data objects
 - Rename data objects
+- Checksum data objects
 - Delete data objects
 - Register files and directories
 - Query metadata for collections and data objects
@@ -260,6 +261,24 @@ PRC provides `file-like objects <http://docs.python.org/2/library/stdtypes.html#
 ...
 foo
 bar
+
+
+Computing and Retrieving Checksums
+----------------------------------
+
+Each data object may be associated with a checksum by calling chksum() on the object in question.  Various 
+behaviors can be elicited by passing in combinations of keywords (for a description of which, please consult the
+`header documentation <https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h>`_ .)
+
+As with most other iRODS APIs, it is straightforward to specify keywords by adding them to an option dictionary:
+
+>>> data_object_1.chksum()  # - computes the checksum if already in the catalog, otherwise computes and stores it
+...                         #   (ie. default behavior with no keywords passed in.)
+>>> import irods.keywords as kw
+>>> opts = { kw.VERIFY_CHKSUM_KW:'' }
+>>> data_object_2.chksum( **opts )  # - Uses verification option. (Does not auto-vivify a checksum field).
+>>> opts[ kw.NO_COMPUTE_KW ] = ''
+>>> data_object_3.chksum( **opts )  # - Uses both verification and no-compute options. (Like ichksum -K --no-compute)
 
 
 Working with metadata
