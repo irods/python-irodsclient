@@ -8,6 +8,7 @@ FORCE_FLAG_KW = "forceFlag"    # force update #
 CLI_IN_SVR_FIREWALL_KW = "cliInSvrFirewall"  # cli behind same firewall #
 REG_CHKSUM_KW = "regChksum"    # register checksum #
 VERIFY_CHKSUM_KW = "verifyChksum"   # verify checksum #
+NO_COMPUTE_KW = "no_compute"
 VERIFY_BY_SIZE_KW = "verifyBySize"  # verify by size - used by irsync #
 OBJ_PATH_KW = "objPath"   # logical path of the object #
 RESC_NAME_KW = "rescName"   # resource name #

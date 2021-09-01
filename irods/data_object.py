@@ -90,6 +90,10 @@ class iRODSDataObject(object):
         return self.manager.open(self.path, mode, finalize_on_close = finalize_on_close, **options)
 
     def chksum(self, **options):
+        """
+        See: https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h
+        for a list of applicable irods.keywords options.
+        """
         return self.manager.chksum(self.path, **options)
 
     def unlink(self, force=False, **options):
