@@ -5,7 +5,7 @@ from irods.models import DataObject
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta,
-    DataObjChksumRequest, DataObjChksumResponse)
+    DataObjChksumRequest, DataObjChksumResponse, RErrorStack)
 import irods.exception as ex
 from irods.api_number import api_number
 from irods.data_object import (
@@ -135,6 +135,7 @@ class DataObjectManager(Manager):
         See: https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h
         for a list of applicable irods.keywords options.
         """
+        r_error_stack = options.pop('r_error',None)
         message_body = DataObjChksumRequest(path, **options)
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_CHKSUM_AN'])
@@ -143,7 +144,7 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
             try:
-                results = response.get_main_message(DataObjChksumResponse)
+                results = response.get_main_message(DataObjChksumResponse, r_error = r_error_stack)
                 checksum = results.myStr
             except iRODSMessage.ResponseNotParseable:
                 # response.msg is None when VERIFY_CHKSUM_KW is used

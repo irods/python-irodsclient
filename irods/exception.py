@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import
 import six
+import numbers
 
 
 class PycommandsException(Exception):
@@ -68,6 +69,23 @@ class iRODSExceptionMeta(type):
 
 class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
     pass
+
+
+def rounded_code( the_code ):
+    if isinstance(the_code,str):
+        return globals()[the_code].code
+    elif isinstance(the_code,numbers.Integral):
+        return 1000  * ((-abs(the_code) - 1) // 1000 + 1)
+    else:
+        message = 'Supplied code {the_code!r} must be integer or string'.format(**locals()) 
+        raise RuntimeError(message)
+
+
+def get_exception_class_by_code(code, name_only=False):
+    rounded = rounded_code (code)
+    cls = iRODSExceptionMeta.codes.get( rounded )
+    return cls if not name_only \
+      else (cls.__name__ if cls is not None else 'Unknown_iRODS_error')
 
 
 def get_exception_by_code(code, message=None):
@@ -1004,7 +1022,9 @@ class CAT_NO_ROWS_FOUND(CatalogLibraryException):
 
 class CATALOG_ALREADY_HAS_ITEM_BY_THAT_NAME(CatalogLibraryException):
     code = -809000
-
+ 
+class CAT_NO_CHECKSUM_FOR_REPLICA (CatalogLibraryException):
+    code = -862000
 
 class CAT_INVALID_RESOURCE_TYPE(CatalogLibraryException):
     code = -810000
@@ -1907,3 +1927,5 @@ class PAM_AUTH_PASSWORD_FAILED(PAMException):
 
 class PAM_AUTH_PASSWORD_INVALID_TTL(PAMException):
     code = -994000
+
+
