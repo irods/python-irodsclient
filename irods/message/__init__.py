@@ -4,6 +4,8 @@ import struct
 import logging
 import socket
 import json
+from six.moves import builtins
+import irods.exception as ex
 import xml.etree.ElementTree as ET
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty,
@@ -195,9 +197,11 @@ class iRODSMessage(object):
         return packed_header + main_msg + self.error + self.bs
 
 
-    def get_main_message(self, cls):
+    def get_main_message(self, cls, r_error = None):
         msg = cls()
         logger.debug('Attempt to parse server response [%r] as class [%r].',self.msg,cls)
+        if self.error and isinstance(r_error, RErrorStack):
+            r_error.fill( iRODSMessage(msg=self.error).get_main_message(Error) )
         if self.msg is None:
             if cls is not Error:
                 # - For dedicated API response classes being built from server response, allow catching
@@ -773,6 +777,47 @@ class ModDataObjMeta(Message):
     _name = "ModDataObjMeta_PI"
     dataObjInfo = SubmessageProperty(DataObjInfo)
     regParam = SubmessageProperty(StringStringMap)
+
+
+class RErrorStack(list):
+
+    def __init__(self,Err = None):
+        super(RErrorStack,self).__init__() # 'list' class initialization
+        self.fill(Err)
+
+    def fill(self,Err = None):
+        if Err is not None:
+            transl = [ RError(Err.RErrMsg_PI[i]) for i in range(Err.count) ]
+            self[:] = transl
+            pass
+
+
+class RError(object):
+
+    def __init__(self,entry):
+        self.raw_msg_ = entry.msg
+        self.status_ = entry.status
+
+    @builtins.property
+    def message(self): #return self.raw_msg_.decode(self.Encoding)
+      msg_ = self.raw_msg_
+      if type(msg_) is UNICODE: return msg_ 
+      elif type(msg_) is bytes : return msg_.decode(self.Encoding)
+      else: raise RuntimeError('bad msg type in',msg_)
+
+    @builtins.property
+    def status(self): return int(self.status_)
+
+    @builtins.property
+    def status_str(self): return ex . get_exception_class_by_code( self.status, name_only=True )
+
+    def __str__(self): return self.message
+    def __int__(self): return self.status
+    def __cmp__(self,int_code):
+        return cmp(self.status,int_code)
+    def __repr__(self):
+        return "<message = {self.message!r}, status = {self.status} {self.status_str}>".format(**locals())
+
 
 #define RErrMsg_PI "int status; str msg[ERR_MSG_LEN];"
 

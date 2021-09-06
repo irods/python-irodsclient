@@ -93,6 +93,10 @@ class iRODSDataObject(object):
         """
         See: https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h
         for a list of applicable irods.keywords options.
+
+        NB options dict may also include a default-constructed RErrorStack object under the key r_error.
+        If passed, this object can receive a list of warnings, one for each existing replica lacking a
+        checksum.  (Relevant only in combination with VERIFY_CHKSUM_KW).
         """
         return self.manager.chksum(self.path, **options)
 
