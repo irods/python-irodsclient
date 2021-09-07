@@ -76,6 +76,7 @@ class JSON_Binary_Response(BinBytesBuf):
 class iRODSMessage(object):
 
     class ResponseNotParseable(Exception):
+
         """
         Raised by get_main_message(ResponseClass) to indicate a server response
         wraps a msg string that is the `None' object rather than an XML String.
@@ -781,41 +782,58 @@ class ModDataObjMeta(Message):
 
 class RErrorStack(list):
 
+    """A list of returned RErrors."""
+
     def __init__(self,Err = None):
+        """Initialize from the `errors' member of an API return message."""
         super(RErrorStack,self).__init__() # 'list' class initialization
         self.fill(Err)
 
     def fill(self,Err = None):
         if Err is not None:
-            transl = [ RError(Err.RErrMsg_PI[i]) for i in range(Err.count) ]
-            self[:] = transl
-            pass
+            self[:] = [ RError(Err.RErrMsg_PI[i]) for i in range(Err.count) ]
 
 
 class RError(object):
 
+    """One of a list of RError messages potentially returned to the client
+       from an iRODS API call.  """
+
+    Encoding = 'utf-8'
+
     def __init__(self,entry):
+        """Initialize from one member of the RErrMsg_PI array."""
         self.raw_msg_ = entry.msg
         self.status_ = entry.status
 
     @builtins.property
     def message(self): #return self.raw_msg_.decode(self.Encoding)
-      msg_ = self.raw_msg_
-      if type(msg_) is UNICODE: return msg_ 
-      elif type(msg_) is bytes : return msg_.decode(self.Encoding)
-      else: raise RuntimeError('bad msg type in',msg_)
+        msg_ = self.raw_msg_
+        if type(msg_) is UNICODE:
+            return msg_
+        elif type(msg_) is bytes:
+            return msg_.decode(self.Encoding)
+        else:
+            raise RuntimeError('bad msg type in',msg_)
 
     @builtins.property
     def status(self): return int(self.status_)
 
     @builtins.property
-    def status_str(self): return ex . get_exception_class_by_code( self.status, name_only=True )
+    def status_str(self):
+        """Retrieve the IRODS error identifier."""
+        return ex.get_exception_class_by_code( self.status, name_only=True )
 
-    def __str__(self): return self.message
-    def __int__(self): return self.status
-    def __cmp__(self,int_code):
-        return cmp(self.status,int_code)
+    def __str__(self):
+        """Retrieve the error message text."""
+        return self.message
+
+    def __int__(self):
+        """Retrieve integer error code."""
+        return self.status
+
     def __repr__(self):
+        """Show both the message and iRODS error type (both integer and human-readable)."""
         return "<message = {self.message!r}, status = {self.status} {self.status_str}>".format(**locals())
 
 
