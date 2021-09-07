@@ -266,7 +266,7 @@ bar
 Computing and Retrieving Checksums
 ----------------------------------
 
-Each data object may be associated with a checksum by calling chksum() on the object in question.  Various 
+Each data object may be associated with a checksum by calling chksum() on the object in question.  Various
 behaviors can be elicited by passing in combinations of keywords (for a description of which, please consult the
 `header documentation <https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h>`_ .)
 

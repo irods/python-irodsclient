@@ -21,6 +21,7 @@ from irods.data_object import chunks
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.manager import data_object_manager
+from irods.message import RErrorStack
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from irods.test.helpers import (unique_name, my_function_name)
@@ -175,6 +176,45 @@ class TestDataObjOps(unittest.TestCase):
             for chunk in chunks(f, block_size):
                 sha256.update(chunk)
         return sha256.hexdigest()
+
+
+    def test_verify_chksum__282_287( self ):
+        with self.create_simple_resc() as R, self.create_simple_resc() as R2, NamedTemporaryFile(mode = 'wb') as f:
+            f.write(b'abcxyz\n')
+            f.flush()
+            coll_path = '/{0.zone}/home/{0.username}' .format(self.sess)
+            dobj_path = coll_path + '/' + os.path.basename(f.name)
+            Data = self.sess.data_objects
+            r_err_stk = RErrorStack()
+            try:
+                demoR = self.sess.resources.get('demoResc').name  # Assert presence of demoResc and
+                Data.put( f.name, dobj_path )                     # Establish three replicas of data object.
+                Data.replicate( dobj_path, resource = R)
+                Data.replicate( dobj_path, resource = R2)
+                my_object = Data.get(dobj_path)
+
+                my_object.chksum( **{kw.RESC_NAME_KW:demoR} )  # Make sure demoResc has the only checksummed replica of the three.
+                my_object = Data.get(dobj_path)                # Refresh replica list to get checksum(s).
+
+                Baseline_repls_without_checksum = set( r.number for r in my_object.replicas if not r.checksum )
+
+                my_object.chksum( r_error = r_err_stk, **{kw.VERIFY_CHKSUM_KW:''} )   # Verify checksums without auto-vivify.
+
+                # -- Make sure the integer codes and string representations of RError statuses are properly reflected.
+                self.assertEqual (2, len([e for e in r_err_stk if 'CAT_NO_CHECKSUM_FOR_REPLICA' in repr(e)]))
+                self.assertEqual (2, len([e for e in r_err_stk if e.status == ex.rounded_code('CAT_NO_CHECKSUM_FOR_REPLICA')]))
+
+                NO_CHECKSUM_MESSAGE = re.compile( 'No\s+Checksum\s+Available.+\s+Replica\s\[(\d+)\]', re.IGNORECASE)
+
+                Reported_repls_without_checksum = set( int(match.group(1)) for match in [NO_CHECKSUM_MESSAGE.search(e.message) for e in r_err_stk]
+                                                       if match is not None)
+
+                # Ensure that VERIFY_CHKSUM_KW reported all replicas lacking a checksum
+                self.assertEqual (Reported_repls_without_checksum,
+                                  Baseline_repls_without_checksum)
+            finally:
+                if Data.exists (dobj_path):
+                    Data.unlink (dobj_path, force = True)
 
 
     def test_compute_chksum( self ):

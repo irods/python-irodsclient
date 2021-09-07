@@ -77,7 +77,7 @@ def rounded_code( the_code ):
     elif isinstance(the_code,numbers.Integral):
         return 1000  * ((-abs(the_code) - 1) // 1000 + 1)
     else:
-        message = 'Supplied code {the_code!r} must be integer or string'.format(**locals()) 
+        message = 'Supplied code {the_code!r} must be integer or string'.format(**locals())
         raise RuntimeError(message)
 
 
@@ -1022,7 +1022,7 @@ class CAT_NO_ROWS_FOUND(CatalogLibraryException):
 
 class CATALOG_ALREADY_HAS_ITEM_BY_THAT_NAME(CatalogLibraryException):
     code = -809000
- 
+
 class CAT_NO_CHECKSUM_FOR_REPLICA (CatalogLibraryException):
     code = -862000
 
@@ -1927,5 +1927,3 @@ class PAM_AUTH_PASSWORD_FAILED(PAMException):
 
 class PAM_AUTH_PASSWORD_INVALID_TTL(PAMException):
     code = -994000
-
-
