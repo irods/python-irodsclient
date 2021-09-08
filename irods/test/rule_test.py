@@ -76,6 +76,71 @@ class TestRule(unittest.TestCase):
         # remove rule file
         os.remove(rule_file_path)
 
+    def test_set_metadata_288(self):
+
+        session = self.sess
+
+        # rule body
+        rule_body = textwrap.dedent('''\
+                                    *attribute.*attr_name = "*attr_value"
+                                    msiAssociateKeyValuePairsToObj(*attribute, *object, "-d")
+                                    # (: -- just a comment -- :)  writeLine("serverLog","*value")
+                                    ''')
+
+        input_params = { '*value': "3334" , "*object": '/tempZone/home/rods/runner.py' ,
+                                          '*attr_name':'XX',
+                                          '*attr_value':'YY'
+        }
+
+        output = 'ruleExecOut'
+
+        myrule = Rule(session, body=rule_body, params=input_params, output=output)
+        myrule.execute()
+
+
+    def test_specifying_rule_instance(self):
+
+        self._helper_writeline_to_stream(
+                stream_name = 'stdout',
+                rule_engine_instance = "irods_rule_engine_plugin-irods_rule_language-instance" )
+
+
+    def _helper_writeline_to_stream(self, stream_name = "serverLog",
+                                          output_string = 'test-writeline-to-stream',
+                                          alternate_input_params = {},
+                                          rule_engine_instance = ""):
+
+        session = self.sess
+
+        # rule body
+        rule_body = textwrap.dedent('''\
+                                    writeLine("{stream_name}","*value")
+                                    '''.format(**locals()))
+
+        input_params = { '*value': output_string }
+        input_params.update( alternate_input_params )
+
+        output_param = 'ruleExecOut'
+
+        extra_options = {}
+
+        if rule_engine_instance:
+            extra_options [ 'instance_name' ] = rule_engine_instance
+
+        myrule = Rule(session, body=rule_body, params=input_params, output=output_param, **extra_options)
+        output = myrule.execute()
+
+        buf = None
+        if stream_name == 'stdout':
+            buf = output.MsParam_PI[0].inOutStruct.stdoutBuf.buf
+        elif stream_name == 'stderr':
+            buf = output.MsParam_PI[0].inOutStruct.stderrBuf.buf
+
+        if buf is not None:
+            buf = buf.decode('utf-8')
+            self.assertEqual (output_string, buf.rstrip('\0').rstrip())
+
+
     def test_add_metadata_from_rule(self):
         '''
         Runs a rule whose body and input parameters are created in our script.
@@ -115,7 +180,7 @@ class TestRule(unittest.TestCase):
         output = 'ruleExecOut'
 
         # run test rule
-        myrule = Rule(session, body=rule_body,
+        myrule = Rule(session, body=rule_body, irods_3_literal_style = True,
                       params=input_params, output=output)
         myrule.execute()
 
@@ -126,6 +191,7 @@ class TestRule(unittest.TestCase):
 
         # remove test object
         obj.unlink(force=True)
+
 
     def test_retrieve_std_streams_from_rule(self):
         '''
