@@ -15,7 +15,7 @@ from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge, AuthPluginOut,
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
     PluginAuthMessage, ClientServerNegotiation, Error, GetTempPasswordOut)
-from irods.exception import get_exception_by_code, NetworkException
+from irods.exception import get_exception_by_code, NetworkException, rounded_code, nominal_code
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
     AUTH_SCHEME_KEY, AUTH_USER_KEY, AUTH_PWD_KEY, AUTH_TTL_KEY,
@@ -91,9 +91,16 @@ class Connection(object):
             self.release(True)
             raise NetworkException("Unable to send message")
 
-    def recv(self, return_message = ()):
+    def recv(self, into_buffer = None
+                 , return_message = ()
+                 , acceptable_errors = ()
+                 , use_rounded_code = False):
+        acceptable_codes =  set(nominal_code(e) for e in acceptable_errors)
         try:
-            msg = iRODSMessage.recv(self.socket)
+            if into_buffer is None:
+                msg = iRODSMessage.recv(self.socket)
+            else:
+                msg = iRODSMessage.recv_into(self.socket, into_buffer)
         except socket.error:
             logger.error("Could not receive server response")
             self.release(True)
@@ -103,26 +110,13 @@ class Connection(object):
             try:
                 err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
             except TypeError:
-                raise get_exception_by_code(msg.int_info)
-            raise get_exception_by_code(msg.int_info, err_msg)
+                err_msg = None
+            if nominal_code(msg.int_info) not in acceptable_codes:
+                raise get_exception_by_code(msg.int_info, err_msg, use_rounded_code = use_rounded_code)
         return msg
 
-    def recv_into(self, buffer):
-        try:
-            msg = iRODSMessage.recv_into(self.socket, buffer)
-        except socket.error:
-            logger.error("Could not receive server response")
-            self.release(True)
-            raise NetworkException("Could not receive server response")
-
-        if msg.int_info < 0:
-            try:
-                err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
-            except TypeError:
-                raise get_exception_by_code(msg.int_info)
-            raise get_exception_by_code(msg.int_info, err_msg)
-
-        return msg
+    def recv_into(self, buffer, **options):
+        return self.recv( into_buffer = buffer, **options )
 
     def __enter__(self):
         return self

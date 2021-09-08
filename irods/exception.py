@@ -71,25 +71,51 @@ class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
     pass
 
 
-def rounded_code( the_code ):
-    if isinstance(the_code,str):
-        return globals()[the_code].code
-    elif isinstance(the_code,numbers.Integral):
-        return 1000  * ((-abs(the_code) - 1) // 1000 + 1)
-    else:
-        message = 'Supplied code {the_code!r} must be integer or string'.format(**locals())
-        raise RuntimeError(message)
+def nominal_code( the_code, THRESHOLD = 1000 ):
+        nominal = []
+        c = rounded_code( the_code , nominal_int_repo = nominal )
+        negated = -abs(nominal[0])
+        return c if (negated <= -abs(THRESHOLD)) else negated  # produce a negative for nonzero integer input
+
+def rounded_code( the_code , nominal_int_repo = () ):
+    nom_err = None
+    try:
+        if isinstance(the_code,type) and \
+           issubclass(the_code, iRODSException): the_code = getattr( the_code, 'code', the_code )
+        if isinstance(the_code,str):
+            nom_err = globals()[the_code].code
+            return nom_err
+        elif isinstance(the_code,numbers.Integral):
+            nom_err = the_code
+            return 1000 * ((-abs(the_code) - 1) // 1000 + 1)
+        else:
+            message = 'Supplied code {the_code!r} must be integer or string'.format(**locals())
+            raise RuntimeError(message)
+    finally:
+        if nom_err is not None and isinstance(nominal_int_repo,list):
+            nominal_int_repo[:] = [nom_err]
 
 
 def get_exception_class_by_code(code, name_only=False):
-    rounded = rounded_code (code)
+    rounded = rounded_code (code)  # rounded up to -1000 if code <= -1000
     cls = iRODSExceptionMeta.codes.get( rounded )
     return cls if not name_only \
       else (cls.__name__ if cls is not None else 'Unknown_iRODS_error')
 
 
-def get_exception_by_code(code, message=None):
-    return iRODSExceptionMeta.codes[code](message)
+def get_exception_by_code(code, message = None, use_rounded_code = False):
+    if use_rounded_code:
+        code_ = rounded_code( code )
+    else:
+        code_ = code
+
+    exc = iRODSExceptionMeta.codes[code_](message)
+    exc.code = code
+    return exc
+
+
+class UnknowniRODSError(iRODSException):
+    code = 0  # covers rounded_code (errcode) if 0 > errcode > -1000
 
 
 class SystemException(iRODSException):
@@ -1913,6 +1939,10 @@ class MSI_OPERATION_NOT_ALLOWED(RuleEngineException):
     code = -1110000
 
 
+class RULE_ENGINE_ERROR(RuleEngineException):
+    code = -1828000
+
+
 class PHPException(iRODSException):
     pass
 
@@ -1927,7 +1957,6 @@ class PHP_REQUEST_STARTUP_ERR(PHPException):
 
 class PHP_OPEN_SCRIPT_FILE_ERR(PHPException):
     code = -1602000
-
 
 class PAMException(iRODSException):
     pass

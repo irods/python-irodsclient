@@ -928,8 +928,6 @@ class RErrorStack(list):
             self[:] = [ RError(Err.RErrMsg_PI[i]) for i in range(Err.count) ]
 
 
-
-
 class RError(object):
 
     """One of a list of RError messages potentially returned to the client
@@ -939,9 +937,10 @@ class RError(object):
 
     def __init__(self,entry):
         """Initialize from one member of the RErrMsg_PI array."""
-
+        super(RError,self).__init__()
         self.raw_msg_ = entry.msg
         self.status_ = entry.status
+
 
     @builtins.property
     def message(self): #return self.raw_msg_.decode(self.Encoding)
@@ -956,10 +955,12 @@ class RError(object):
     @builtins.property
     def status(self): return int(self.status_)
 
+
     @builtins.property
     def status_str(self):
         """Retrieve the IRODS error identifier."""
         return ex.get_exception_class_by_code( self.status, name_only=True )
+
 
     def __str__(self):
         """Retrieve the error message text."""
