@@ -724,6 +724,10 @@ class NO_LOCAL_FILE_RSYNC_IN_MSI(UserInputException):
     code = -356000
 
 
+class LOCKED_DATA_OBJECT_ACCESS(SystemException):
+    code = -406000
+
+
 class FileDriverException(iRODSException):
     pass
 
