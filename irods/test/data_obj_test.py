@@ -13,6 +13,7 @@ import contextlib  # check if redundant
 import logging
 import io
 import re
+import time
 
 from irods.models import Collection, DataObject
 import irods.exception as ex
@@ -82,6 +83,115 @@ class TestDataObjOps(unittest.TestCase):
             self.sess.resources.remove_child(Root,Leaf)
             self.sess.resources.remove(Leaf)
             self.sess.resources.remove(Root)
+
+    def test_data_write_stales_other_repls__ref_irods_5548(self):
+        test_data = 'irods_5548_testfile'
+        test_coll = '/{0.zone}/home/{0.username}'.format(self.sess)
+        test_path = test_coll + "/" + test_data
+        demoResc = self.sess.resources.get('demoResc').name
+        self.sess.data_objects.open(test_path, 'w',**{kw.DEST_RESC_NAME_KW: demoResc}).write(b'random dater')
+
+        with self.create_simple_resc() as newResc:
+            try:
+                with self.sess.data_objects.open(test_path, 'a', **{kw.DEST_RESC_NAME_KW: newResc}) as d:
+                    d.seek(0,2)
+                    d.write(b'z')
+                data = self.sess.data_objects.get(test_path)
+                statuses = { repl.resource_name: repl.status for repl in data.replicas }
+                self.assertEqual( '0', statuses[demoResc] )
+                self.assertEqual( '1', statuses[newResc] )
+            finally:
+                self.cleanup_data_object(test_path)
+
+
+    def cleanup_data_object(self,data_logical_path):
+        try:
+            self.sess.data_objects.get(data_logical_path).unlink(force = True)
+        except ex.DataObjectDoesNotExist:
+            pass
+
+
+    def write_and_check_replica_on_parallel_connections( self, data_object_path, root_resc, caller_func, required_num_replicas = 1, seconds_to_wait_for_replicas = 10):
+        """Helper function for testing irods/irods#5548 and irods/irods#5848.
+
+        Writes the  string "books\n" to a replica, but not as a single write operation.
+        It is done piecewise on two independent connections, essentially simulating parallel "put".
+        Then we assert the file contents and dispose of the data object."""
+
+        try:
+            self.sess.data_objects.create(data_object_path, **{kw.RESC_NAME_KW: root_resc} )
+            for _ in range( seconds_to_wait_for_replicas ):
+                if required_num_replicas <= len( self.sess.data_objects.get(data_object_path).replicas ): break
+                time.sleep(1)
+            else:
+                raise RuntimeError("Did not see %d replicas" % required_num_replicas)
+            fd1 = self.sess.data_objects.open(data_object_path, 'w', **{kw.DEST_RESC_NAME_KW: root_resc} )
+            (replica_token, hier_str) = fd1.raw.replica_access_info()
+            fd2 = self.sess.data_objects.open(data_object_path, 'a', finalize_on_close = False, **{kw.RESC_HIER_STR_KW: hier_str,
+                                                                                                   kw.REPLICA_TOKEN_KW: replica_token})
+            fd2.seek(4) ; fd2.write(b's\n')
+            fd1.write(b'book')
+            fd2.close()
+            fd1.close()
+            with self.sess.data_objects.open(data_object_path, 'r', **{kw.RESC_NAME_KW: root_resc} ) as f:
+                self.assertEqual(f.read(), b'books\n')
+        except Exception as e:
+            logging.debug('Exception %r in [%s], called from [%s]', e, my_function_name(), caller_func)
+            raise
+        finally:
+            if 'fd2' in locals() and not fd2.closed: fd2.close()
+            if 'fd1' in locals() and not fd1.closed: fd1.close()
+            self.cleanup_data_object( data_object_path )
+
+
+    def test_parallel_conns_to_repl_with_cousin__irods_5848(self):
+        """Cousins = resource nodes not sharing any common parent nodes."""
+        data_path = '/{0.zone}/home/{0.username}/cousin_resc_5848.dat'.format(self.sess)
+
+        #
+        # -- Create replicas of a data object under two different root resources and test parallel write: --
+
+        with self.create_simple_resc() as newResc:
+
+            # - create empty data object on demoResc
+            self.sess.data_objects.open(data_path, 'w',**{kw.DEST_RESC_NAME_KW: 'demoResc'})
+
+            # - replicate data object to newResc
+            self.sess.data_objects.get(data_path).replicate(newResc)
+
+            # - test whether a write to the replica on newResc functions correctly.
+            self.write_and_check_replica_on_parallel_connections( data_path, newResc, my_function_name(), required_num_replicas = 2)
+
+
+    def test_parallel_conns_with_replResc__irods_5848(self):
+        session = self.sess
+        replication_resource = None
+        ufs_resources = []
+        replication_resource = self.sess.resources.create('repl_resc_1_5848', 'replication')
+        number_of_replicas = 2
+        # -- Create replicas of a data object by opening it on a replication resource; then, test parallel write --
+        try:
+            # Build up the replication resource with `number_of_replicas' being the # of children
+            for i in range(number_of_replicas):
+                resource_name = unique_name(my_function_name(),i)
+                resource_type = 'unixfilesystem'
+                resource_host = session.host
+                resource_path = '/tmp/' + resource_name
+                ufs_resources.append(session.resources.create(
+                    resource_name, resource_type, resource_host, resource_path))
+                session.resources.add_child(replication_resource.name, resource_name)
+            data_path = '/{0.zone}/home/{0.username}/Replicated_5848.dat'.format(self.sess)
+
+            # -- Perform the check of writing by a single replica (which is unspecified, but one of the `number_of_replicas`
+            #    will be selected by voting)
+
+            self.write_and_check_replica_on_parallel_connections (data_path, replication_resource.name, my_function_name(), required_num_replicas = 2)
+        finally:
+            for resource in ufs_resources:
+                session.resources.remove_child(replication_resource.name, resource.name)
+                resource.remove()
+            if replication_resource:
+                replication_resource.remove()
 
     def test_put_get_parallel_autoswitch_A__235(self):
         if not self.sess.data_objects.should_parallelize_transfer(server_version_hint = self.SERVER_VERSION):
@@ -703,7 +813,6 @@ class TestDataObjOps(unittest.TestCase):
 
         # delete second resource
         self.sess.resources.remove(resc_name)
-
 
     def test_replica_number(self):
         if self.sess.server_version < (4, 0, 0):
