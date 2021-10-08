@@ -16,6 +16,7 @@ from irods.models import User
 from socket import gethostname
 from irods.password_obfuscation import (encode as pw_encode)
 from irods.connection import PlainTextPAMPasswordError
+from irods.access import iRODSAccess
 import contextlib
 import socket
 from re import compile as regex
@@ -347,6 +348,43 @@ class TestLogins(unittest.TestCase):
     def test_8(self):
         self.tst0 ( ssl_opt = False, auth_opt = 'pam'    , env_opt = True  )
 
+class TestAnonymousUser(unittest.TestCase):
+
+    def setUp(self):
+#       import pdb; pdb.set_trace();
+        admin = self.admin = helpers.make_session()
+
+        user = self.user = admin.users.create('anonymous', 'rodsuser', admin.zone)
+        self.home = '/{admin.zone}/home/{user.name}'.format(**locals())
+
+        admin.collections.create(self.home)
+        acl = iRODSAccess('own', self.home, user.name)
+        admin.permissions.set(acl)
+
+        self.env_file = os.path.expanduser('~/.irods.anon/irods_environment.json')
+        self.env_dir = ( os.path.dirname(self.env_file))
+        self.auth_file = os.path.expanduser('~/.irods.anon/.irodsA')
+        os.mkdir( os.path.dirname(self.env_file))
+        json.dump( { "irods_host": admin.host,
+                     "irods_port": admin.port,
+                     "irods_user_name": user.name,
+                     "irods_zone_name": admin.zone }, open(self.env_file,'w'), indent=4 )
+
+    def tearDown(self):
+        self.admin.collections.remove(self.home, recurse = True, force = True)
+        self.admin.users.remove(self.user.name)
+        shutil.rmtree (self.env_dir, ignore_errors = True)
+
+    def test_login_from_environment(self):
+        orig_env = os.environ.copy()
+        try:
+            os.environ["IRODS_ENVIRONMENT_FILE"] = self.env_file
+            os.environ["IRODS_AUTHENTICATION_FILE"] = self.auth_file
+            ses = helpers.make_session()
+            ses.collections.get(self.home)
+        finally:
+            os.environ.clear()
+            os.environ.update( orig_env )
 
 class TestWithSSL(unittest.TestCase):
     '''
