@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import os
 import json
+import errno
 import logging
 from irods.query import Query
 from irods.pool import Pool
@@ -199,8 +200,12 @@ class iRODSSession(object):
         except KeyError:
             uid = None
 
-        with open(irods_auth_file, 'r') as f:
-            return decode(f.read().rstrip('\n'), uid)
+        try:
+            with open(irods_auth_file, 'r') as f:
+                return decode(f.read().rstrip('\n'), uid)
+        except IOError as exc:
+            if exc.errno != errno.ENOENT: raise # Auth file exists but can't be read
+            return ''                           # No auth file (as with anonymous user)
 
     def get_connection_refresh_time(self, **kwargs):
         connection_refresh_time = -1
