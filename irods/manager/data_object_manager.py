@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import os
 import io
-from irods.models import DataObject
+from irods.models import DataObject, Collection
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta,
@@ -44,6 +44,9 @@ class DataObjectManager(Manager):
                                      server_version_hint = ()):
         # Allow an environment variable to override the detection of the server version.
         # Example: $ export IRODS_VERSION_OVERRIDE="4,2,9" ;  python -m irods.parallel ...
+        # ---
+        # Delete the following line on resolution of https://github.com/irods/irods/issues/5932 :
+        if getattr(self.sess,'ticket__',None) is not None: return False
         server_version = ( ast.literal_eval(os.environ.get('IRODS_VERSION_OVERRIDE', '()' )) or server_version_hint or 
                            self.server_version )
         if num_threads == 1 or ( server_version < parallel.MINIMUM_SERVER_VERSION ):
@@ -94,6 +97,10 @@ class DataObjectManager(Manager):
             .filter(DataObject.name == irods_basename(path))\
             .filter(DataObject.collection_id == parent.id)\
             .add_keyword(kw.ZONE_KW, path.split('/')[1])
+
+        if hasattr(self.sess,'ticket__'):
+            query = query.filter(Collection.id != 0) # a no-op, but necessary because CAT_SQL_ERR results if the ticket
+                                                     # is for a DataObject and we don't explicitly join to Collection
 
         results = query.all() # get up to max_rows replicas
         if len(results) <= 0:
