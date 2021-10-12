@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from irods.models import Collection
+from irods.models import Collection, DataObject
 from irods.manager import Manager
 from irods.message import iRODSMessage, CollectionRequest, FileOpenRequest, ObjCopyRequest, StringStringMap
 from irods.exception import CollectionDoesNotExist, NoResultFound
@@ -12,12 +12,20 @@ import irods.keywords as kw
 class CollectionManager(Manager):
 
     def get(self, path):
-        query = self.sess.query(Collection).filter(Collection.name == path)
-        try:
-            result = query.one()
-        except NoResultFound:
-            raise CollectionDoesNotExist()
-        return iRODSCollection(self, result)
+        filters = [Collection.name == path]
+        # if a ticket is supplied for this session, try both without and with DataObject join
+        repeats = (True,False) if hasattr(self.sess,'ticket__') \
+             else (False,)
+        for rep in repeats:
+            query = self.sess.query(Collection).filter(*filters)
+            try:
+                result = query.one()
+            except NoResultFound:
+                if rep:
+                    filters += [DataObject.id != 0]
+                    continue
+                raise CollectionDoesNotExist()
+            return iRODSCollection(self, result)
 
 
     def create(self, path, recurse=True, **options):
