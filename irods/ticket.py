@@ -36,6 +36,8 @@ class Ticket(object):
             conn.send(message)
             response = conn.recv()
 
+        self.session._ticket = self._ticket
+
 
     def issue(self, permission, target):
         message_body = TicketAdminRequest("create", self.ticket, permission, target)

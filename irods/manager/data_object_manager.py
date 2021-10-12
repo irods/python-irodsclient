@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import os
 import io
-from irods.models import DataObject
+from irods.models import DataObject, Collection
 from irods.manager import Manager
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta,
@@ -94,6 +94,10 @@ class DataObjectManager(Manager):
             .filter(DataObject.name == irods_basename(path))\
             .filter(DataObject.collection_id == parent.id)\
             .add_keyword(kw.ZONE_KW, path.split('/')[1])
+
+        if hasattr(self.sess,'_ticket'):
+            query = query.filter(Collection.id != 0) # a no-op, but necessary because CAT_SQL_ERR results if the ticket
+                                                     # is for a DataObject and we don't explicitly join to Collection
 
         results = query.all() # get up to max_rows replicas
         if len(results) <= 0:
