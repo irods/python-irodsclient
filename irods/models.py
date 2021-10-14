@@ -196,30 +196,75 @@ class Keywords(Model):
     chksum = Keyword(String, 'chksum')
 
 
-class Ticket(Model):
-    id = Column(Integer, 'TICKET_ID', 2200)
-    string = Column(String, 'TICKET_STRING', 2201)
-    type = Column(String, 'TICKET_TYPE', 2202)
-    user_id = Column(Integer, 'TICKET_USER_ID', 2203)
-    object_id = Column(Integer, 'TICKET_OBJECT_ID', 2204)
-    object_type = Column(String, 'TICKET_OBJECT_TYPE', 2205)
-    uses_limit = Column(Integer, 'TICKET_USES_LIMIT', 2206)
-    uses_count = Column(Integer, 'TICKET_USES_COUNT', 2207)
-    expiry_ts = Column(String, 'TICKET_EXPIRY_TS', 2208)
-    create_time = Column(String, 'TICKET_CREATE_TIME', 2209)
-    modify_time = Column(String, 'TICKET_MODIFY_TIME', 2210)
-    write_file_count = Column(Integer, 'TICKET_WRITE_FILE_COUNT', 2211)
-    write_file_limit = Column(Integer, 'TICKET_WRITE_FILE_LIMIT', 2212)
-    write_byte_count = Column(Integer, 'TICKET_WRITE_BYTE_COUNT', 2213)
-    write_byte_limit = Column(Integer, 'TICKET_WRITE_BYTE_LIMIT', 2214)
-    allowed_host_ticket_id = Column(String, 'TICKET_ALLOWED_HOST_TICKET_ID', 2220)
-    allowed_host = Column(String, 'TICKET_ALLOWED_HOST', 2221)
-    allowed_user_ticket_id = Column(String, 'TICKET_ALLOWED_USER_TICKET_ID', 2222)
-    allowed_user_name = Column(String, 'TICKET_ALLOWED_USER_NAME', 2223)
-    allowed_group_ticket_id = Column(String, 'TICKET_ALLOWED_GROUP_TICKET_ID', 2224)
-    allowed_group_name = Column(String, 'TICKET_ALLOWED_GROUP_NAME', 2225)
-    data_name = Column(String, 'TICKET_DATA_NAME', 2226)
-    data_collection_name = Column(String, 'TICKET_DATA_COLL_NAME', 2227)
-    collection_name = Column(String, 'TICKET_COLL_NAME', 2228)
-    owner_name = Column(String, 'TICKET_OWNER_NAME', 2229)
-    owner_zone = Column(String, 'TICKET_OWNER_ZONE', 2230)
+class TicketQuery:
+    """Various model classes for querying attributes of iRODS tickets.
+
+    Namespacing these model classes under the TicketQuery parent class allows
+    a simple import (not conflicting with irods.ticket.Ticket) and a usage
+    that reflects ICAT table structure:
+
+        from irods.models import TicketQuery
+        # ...
+        for row in session.query( TicketQuery.Ticket )\
+                          .filter( TicketQuery.Owner.name == 'alice' ):
+            print( row [TicketQuery.Ticket.string] )
+
+    (For more examples, see irods/test/ticket_test.py)
+
+    """
+    class Ticket(Model):
+        """For queries of R_TICKET_MAIN."""
+        id = Column(Integer, 'TICKET_ID', 2200)
+        string = Column(String, 'TICKET_STRING', 2201)
+        type = Column(String, 'TICKET_TYPE', 2202)
+        user_id = Column(Integer, 'TICKET_USER_ID', 2203)
+        object_id = Column(Integer, 'TICKET_OBJECT_ID', 2204)
+        object_type = Column(String, 'TICKET_OBJECT_TYPE', 2205)
+        uses_limit = Column(Integer, 'TICKET_USES_LIMIT', 2206)
+        uses_count = Column(Integer, 'TICKET_USES_COUNT', 2207)
+        expiry_ts = Column(String, 'TICKET_EXPIRY_TS', 2208)
+        write_file_count = Column(Integer, 'TICKET_WRITE_FILE_COUNT', 2211)
+        write_file_limit = Column(Integer, 'TICKET_WRITE_FILE_LIMIT', 2212)
+        write_byte_count = Column(Integer, 'TICKET_WRITE_BYTE_COUNT', 2213)
+        write_byte_limit = Column(Integer, 'TICKET_WRITE_BYTE_LIMIT', 2214)
+## For now, use of these columns raises CAT_SQL_ERR in both PRC and iquest: (irods/irods#5929)
+#       create_time = Column(String, 'TICKET_CREATE_TIME', 2209)
+#       modify_time = Column(String, 'TICKET_MODIFY_TIME', 2210)
+
+    class DataObject(Model):
+        """For queries of R_DATA_MAIN when joining to R_TICKET_MAIN.
+
+        The ticket(s) in question should be for a data object; otherwise
+        CAT_SQL_ERR is thrown.
+
+        """
+        name = Column(String, 'TICKET_DATA_NAME', 2226)
+        coll = Column(String, 'TICKET_DATA_COLL_NAME', 2227)
+
+    class Collection(Model):
+        """For queries of R_COLL_MAIN when joining to R_TICKET_MAIN.
+
+        The returned ticket(s) will be limited to those issued for collections.
+
+        """
+        name = Column(String, 'TICKET_COLL_NAME', 2228)
+
+    class Owner(Model):
+        """For queries concerning R_TICKET_USER_MAIN."""
+        name = Column(String, 'TICKET_OWNER_NAME', 2229)
+        zone = Column(String, 'TICKET_OWNER_ZONE', 2230)
+
+    class AllowedHosts(Model):
+        """For queries concerning R_TICKET_ALLOWED_HOSTS."""
+        ticket_id = Column(String, 'COL_TICKET_ALLOWED_HOST_TICKET_ID', 2220)
+        host = Column(String, 'COL_TICKET_ALLOWED_HOST', 2221)
+
+    class AllowedUsers(Model):
+        """For queries concerning R_TICKET_ALLOWED_USERS."""
+        ticket_id = Column(String, 'COL_TICKET_ALLOWED_USER_TICKET_ID', 2222)
+        user_name = Column(String, 'COL_TICKET_ALLOWED_USER', 2223)
+
+    class AllowedGroups(Model):
+        """For queries concerning R_TICKET_ALLOWED_GROUPS."""
+        ticket_id = Column(String, 'COL_TICKET_ALLOWED_GROUP_TICKET_ID', 2224)
+        group_name = Column(String, 'COL_TICKET_ALLOWED_GROUP', 2225)
