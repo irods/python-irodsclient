@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from irods.api_number import api_number
 from irods.message import iRODSMessage, TicketAdminRequest
+from irods.models import TicketQuery
 
 import random
 import string
@@ -10,9 +11,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Ticket(object):
-    def __init__(self, session, ticket=None):
+    def __init__(self, session,  ticket = '', result = None, allow_punctuation = False):
         self._session = session
-        self._ticket = ticket if ticket else self.generate()
+        try:
+            if result is not None: ticket = result[TicketQuery.Ticket.string]
+        except TypeError:
+            raise RuntimeError( "If specified, 'result' parameter must be a TicketQuery.Ticket search result")
+        self._ticket = ticket if ticket else self._generate(allow_punctuation = allow_punctuation)
 
     @property
     def session(self):
@@ -20,31 +25,49 @@ class Ticket(object):
 
     @property
     def ticket(self):
+        """Return the unique string associated with the ticket object."""
         return self._ticket
 
-    def generate(self, length=15):
-        return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(length))
+    # Provide 'string' property such that self.string is a synonym for self.ticket
+    string = ticket
+
+    def _generate(self, length=15, allow_punctuation = False):
+        source_characters = string.ascii_letters + string.digits
+        if allow_punctuation:
+            source_characters += string.punctuation
+        return ''.join(random.SystemRandom().choice(source_characters) for _ in range(length))
+
+    def _api_request(self,cmd_string,*args):
+        message_body = TicketAdminRequest(cmd_string, self.ticket, *args)
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
+
+        with self.session.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+        return self
+
+    def issue(self,permission,target): return self._api_request("create",permission,target)
+
+    create = issue
+
+    def modify(self,*args):  return self._api_request("mod",*args)
 
     def supply(self):
-        message_body = TicketAdminRequest("session", self.ticket)
-        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
-
-        with self.session.pool.get_connection() as conn:
-            conn.send(message)
-            response = conn.recv()
-
-    def issue(self, permission, target):
-        message_body = TicketAdminRequest("create", self.ticket, permission, target)
-        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
-
-        with self.session.pool.get_connection() as conn:
-            conn.send(message)
-            response = conn.recv()
+        object_ = self._api_request("session")
+        self.session.ticket__ = self._ticket
+        return object_
 
     def delete(self):
-        message_body = TicketAdminRequest("delete", self.ticket)
-        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
+        """
+        Delete the iRODS ticket.
 
-        with self.session.pool.get_connection() as conn:
-            conn.send(message)
-            response = conn.recv()
+        This applies to a Ticket object on which issue() has been called or, as the case may
+        be, to a Ticket initialized with a ticket string already existing in the object catalog.
+        The deleted object is returned, but may not be used further except for local purposes
+        such as extracting the string.  E.g.
+
+            for t in tickets:
+                print(t.delete().string, "being deleted")
+
+        """
+        return self._api_request("delete")
