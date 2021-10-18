@@ -27,6 +27,7 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 from irods.test.helpers import (unique_name, my_function_name)
 import irods.parallel
+from irods.manager.data_object_manager import Server_Checksum_Warning
 
 
 def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False):
@@ -287,8 +288,35 @@ class TestDataObjOps(unittest.TestCase):
                 sha256.update(chunk)
         return sha256.hexdigest()
 
+    def test_routine_verify_chksum_operation( self ):
+
+        if self.sess.server_version < (4, 2, 11):
+            self.skipTest('iRODS servers < 4.2.11 do not raise a checksum warning')
+
+        dobj_path =  '/{0.zone}/home/{0.username}/verify_chksum.dat'.format(self.sess)
+        self.sess.data_objects.create(dobj_path)
+        try:
+            with self.sess.data_objects.open(dobj_path,'w') as f:
+                f.write(b'abcd')
+            checksum = self.sess.data_objects.chksum(dobj_path)
+            self.assertGreater(len(checksum),0)
+            r_err_stk = RErrorStack()
+            warning = None
+            try:
+                self.sess.data_objects.chksum(dobj_path, **{'r_error': r_err_stk, kw.VERIFY_CHKSUM_KW:''})
+            except Server_Checksum_Warning as exc_:
+                warning = exc_
+            # There's one replica and it has a checksum, so expect no errors or hints from error stack.
+            self.assertIsNone(warning)
+            self.assertEqual(0, len(r_err_stk))
+        finally:
+            self.sess.data_objects.unlink(dobj_path, force = True)
 
     def test_verify_chksum__282_287( self ):
+
+        if self.sess.server_version < (4, 2, 11):
+            self.skipTest('iRODS servers < 4.2.11 do not raise a checksum warning')
+
         with self.create_simple_resc() as R, self.create_simple_resc() as R2, NamedTemporaryFile(mode = 'wb') as f:
             f.write(b'abcxyz\n')
             f.flush()
@@ -308,16 +336,22 @@ class TestDataObjOps(unittest.TestCase):
 
                 Baseline_repls_without_checksum = set( r.number for r in my_object.replicas if not r.checksum )
 
-                my_object.chksum( r_error = r_err_stk, **{kw.VERIFY_CHKSUM_KW:''} )   # Verify checksums without auto-vivify.
+                warn_exception = None
+                try:
+                    my_object.chksum( r_error = r_err_stk, **{kw.VERIFY_CHKSUM_KW:''} )   # Verify checksums without auto-vivify.
+                except Server_Checksum_Warning as warn:
+                    warn_exception = warn
 
-                # -- Make sure the integer codes and string representations of RError statuses are properly reflected.
-                self.assertEqual (2, len([e for e in r_err_stk if 'CAT_NO_CHECKSUM_FOR_REPLICA' in repr(e)]))
-                self.assertEqual (2, len([e for e in r_err_stk if e.status == ex.rounded_code('CAT_NO_CHECKSUM_FOR_REPLICA')]))
+                self.assertIsNotNone(warn_exception, msg = "Expected exception of type [Server_Checksum_Warning] was not received.")
 
-                NO_CHECKSUM_MESSAGE = re.compile( 'No\s+Checksum\s+Available.+\s+Replica\s\[(\d+)\]', re.IGNORECASE)
+                # -- Make sure integer codes are properly reflected for checksum warnings.
+                self.assertEqual (2, len([e for e in r_err_stk if e.status_ == ex.rounded_code('CAT_NO_CHECKSUM_FOR_REPLICA')]))
 
-                Reported_repls_without_checksum = set( int(match.group(1)) for match in [NO_CHECKSUM_MESSAGE.search(e.message) for e in r_err_stk]
-                                                       if match is not None)
+                NO_CHECKSUM_MESSAGE_PATTERN = re.compile( 'No\s+Checksum\s+Available.+\s+Replica\s\[(\d+)\]', re.IGNORECASE)
+
+                Reported_repls_without_checksum = set( int(match.group(1)) for match in [ NO_CHECKSUM_MESSAGE_PATTERN.search(e.raw_msg_)
+                                                                                          for e in r_err_stk ]
+                                                       if match is not None )
 
                 # Ensure that VERIFY_CHKSUM_KW reported all replicas lacking a checksum
                 self.assertEqual (Reported_repls_without_checksum,

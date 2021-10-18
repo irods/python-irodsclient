@@ -22,6 +22,7 @@ def my_function_name():
     """Returns the name of the calling function or method"""
     return inspect.getframeinfo(inspect.currentframe().f_back).function
 
+
 _thrlocal = threading.local()
 
 def unique_name(*seed_tuple):

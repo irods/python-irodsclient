@@ -91,13 +91,14 @@ class Connection(object):
             self.release(True)
             raise NetworkException("Unable to send message")
 
-    def recv(self):
+    def recv(self, return_message = ()):
         try:
             msg = iRODSMessage.recv(self.socket)
         except socket.error:
             logger.error("Could not receive server response")
             self.release(True)
             raise NetworkException("Could not receive server response")
+        if isinstance(return_message,list): return_message[:] = [msg]
         if msg.int_info < 0:
             try:
                 err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
