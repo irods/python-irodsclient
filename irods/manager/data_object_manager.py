@@ -14,6 +14,8 @@ import irods.keywords as kw
 import irods.parallel as parallel
 import six
 import ast
+import json
+import logging
 
 
 MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE = 32 * ( 1024 ** 2)
@@ -22,6 +24,15 @@ DEFAULT_NUMBER_OF_THREADS = 0   # Defaults for reasonable number of threads -- o
                                 # performant but allow no more worker threads than available CPUs.
                                 # Setting this to 1 disables automatic use of parallel transfer.
 DEFAULT_QUEUE_DEPTH = 32
+
+
+class Server_Checksum_Warning(Exception):
+    """Error from iRODS server indicating some replica checksums are missing or incorrect."""
+    def __init__(self,json_response):
+        """Initialize the exception object with a checksum field from the server response message."""
+        super(Server_Checksum_Warning,self).__init__()
+        self.response = json.loads(json_response)
+
 
 class DataObjectManager(Manager):
 
@@ -137,6 +148,7 @@ class DataObjectManager(Manager):
         if return_data_object:
             return self.get(obj)
 
+
     def chksum(self, path, **options):
         """
         See: https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h
@@ -147,15 +159,27 @@ class DataObjectManager(Manager):
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_CHKSUM_AN'])
         checksum = ""
+        msg_retn = []
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
-            response = conn.recv()
             try:
-                results = response.get_main_message(DataObjChksumResponse, r_error = r_error_stack)
-                checksum = results.myStr
-            except iRODSMessage.ResponseNotParseable:
-                # response.msg is None when VERIFY_CHKSUM_KW is used
-                pass
+                response = conn.recv(return_message = msg_retn)
+            except ex.CHECK_VERIFICATION_RESULTS as exc:
+                # We'll get a response in the client to help qualify or elaborate on the error thrown.
+                if msg_retn: response = msg_retn[0]
+                logging.warning("Exception checksumming data object %r - %r",path,exc)
+            if 'response' in locals():
+                try:
+                    results = response.get_main_message(DataObjChksumResponse, r_error = r_error_stack)
+                    checksum = results.myStr.strip()
+                    if checksum[0] in ( '[','{' ):  # in iRODS 4.2.11 and later, myStr is in JSON format.
+                        exc = Server_Checksum_Warning( checksum )
+                        if not r_error_stack:
+                            r_error_stack.fill(exc.response)
+                        raise exc
+                except iRODSMessage.ResponseNotParseable:
+                    # response.msg is None when VERIFY_CHKSUM_KW is used
+                    pass
         return checksum
 
 

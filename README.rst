@@ -274,11 +274,28 @@ As with most other iRODS APIs, it is straightforward to specify keywords by addi
 
 >>> data_object_1.chksum()  # - computes the checksum if already in the catalog, otherwise computes and stores it
 ...                         #   (ie. default behavior with no keywords passed in.)
+>>> from irods.manager.data_object_manager import Server_Checksum_Warning
 >>> import irods.keywords as kw
 >>> opts = { kw.VERIFY_CHKSUM_KW:'' }
->>> data_object_2.chksum( **opts )  # - Uses verification option. (Does not auto-vivify a checksum field).
->>> opts[ kw.NO_COMPUTE_KW ] = ''
->>> data_object_3.chksum( **opts )  # - Uses both verification and no-compute options. (Like ichksum -K --no-compute)
+>>> try:
+...     data_object_2.chksum( **opts )  # - Uses verification option. (Does not auto-vivify a checksum field).
+...     # or:
+...     opts[ kw.NO_COMPUTE_KW ] = ''
+...     data_object_2.chksum( **opts )  # - Uses both verification and no-compute options. (Like ichksum -K --no-compute)
+... except Server_Checksum_Warning:
+...     print('some checksums are missing or wrong')
+
+Additionally, if a freshly created irods.message.RErrorStack instance is given, information can be returned and read by
+the client:
+
+>>> r_err_stk = RErrorStack()
+>>> warn = None
+>>> try:  # Here, data_obj has one replica, not yet checksummed.
+...     data_obj.chksum( r_error = r_err_stk , **{kw.VERIFY_CHKSUM_KW:''} )
+... except Server_Checksum_Warning as exc:
+...     warn = exc
+>>> print(r_err_stk)
+[RError<message = u'WARNING: No checksum available for replica [0].', status = -862000 CAT_NO_CHECKSUM_FOR_REPLICA>]
 
 
 Working with metadata

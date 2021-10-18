@@ -728,6 +728,10 @@ class LOCKED_DATA_OBJECT_ACCESS(SystemException):
     code = -406000
 
 
+class CHECK_VERIFICATION_RESULTS(SystemException):
+    code = -407000
+
+
 class FileDriverException(iRODSException):
     pass
 

@@ -7,6 +7,7 @@ import json
 from six.moves import builtins
 import irods.exception as ex
 import xml.etree.ElementTree as ET
+from collections import namedtuple
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty,
                                     IntegerProperty, LongProperty, ArrayProperty,
@@ -780,6 +781,12 @@ class ModDataObjMeta(Message):
     regParam = SubmessageProperty(StringStringMap)
 
 
+#  -- A tuple-descended class which facilitates filling in a
+#     quasi-RError stack from a JSON formatted list.
+
+_Server_Status_Message = namedtuple('server_status_msg',('msg','status'))
+
+
 class RErrorStack(list):
 
     """A list of returned RErrors."""
@@ -790,8 +797,20 @@ class RErrorStack(list):
         self.fill(Err)
 
     def fill(self,Err = None):
+
+        # first, we try to parse from a JSON list, as this is how message and status return the Data.chksum call.
+        if isinstance (Err, (tuple,list)):
+            self[:] = [ RError( _Server_Status_Message( msg = elem["message"],
+                                                        status = elem["error_code"] )
+                               ) for elem in Err
+                       ]
+            return
+
+        # next, we try to parse from a a response message - eg. as returned by the Rule.execute API call when a rule fails.
         if Err is not None:
             self[:] = [ RError(Err.RErrMsg_PI[i]) for i in range(Err.count) ]
+
+
 
 
 class RError(object):
@@ -803,6 +822,7 @@ class RError(object):
 
     def __init__(self,entry):
         """Initialize from one member of the RErrMsg_PI array."""
+
         self.raw_msg_ = entry.msg
         self.status_ = entry.status
 
@@ -834,7 +854,8 @@ class RError(object):
 
     def __repr__(self):
         """Show both the message and iRODS error type (both integer and human-readable)."""
-        return "<message = {self.message!r}, status = {self.status} {self.status_str}>".format(**locals())
+        return "{self.__class__.__name__}"\
+               "<message = {self.message!r}, status = {self.status} {self.status_str}>".format(**locals())
 
 
 #define RErrMsg_PI "int status; str msg[ERR_MSG_LEN];"
