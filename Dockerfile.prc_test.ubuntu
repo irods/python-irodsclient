@@ -15,7 +15,7 @@ COPY ./ ./repo/
 RUN chown -R user repo/
 USER user
 RUN  pip${py_N} install --user --upgrade pip==20.3.4  # -- version specified for Ub16
-RUN  cd repo && python${py_N} -m pip install --user .
+RUN  cd repo && python${py_N} -m pip install --user '.[tests]'
 RUN  python${py_N} repo/docker_build/iinit.py \
         host irods-provider \
         port 1247     \
