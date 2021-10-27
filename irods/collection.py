@@ -15,6 +15,11 @@ class iRODSCollection(object):
             self.id = result[Collection.id]
             self.path = result[Collection.name]
             self.name = irods_basename(result[Collection.name])
+            self.create_time = result[Collection.create_time]
+            self.modify_time = result[Collection.modify_time]
+            self.inheritance = result[Collection.inheritance]
+            self.owner_name = result[Collection.owner_name]
+            self.owner_zone = result[Collection.owner_zone]
         self._meta = None
 
     @property
