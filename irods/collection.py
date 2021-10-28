@@ -48,6 +48,9 @@ class iRODSCollection(object):
             for _, replicas in grouped
         ]
 
+    def get_recursive( self , *arg, **kw):
+        self.manager.get_recursive( self.path, *arg, **kw )
+
     def remove(self, recurse=True, force=False, **options):
         self.manager.remove(self.path, recurse, force, **options)
 

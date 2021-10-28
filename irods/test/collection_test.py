@@ -72,6 +72,35 @@ class TestCollection(unittest.TestCase):
         with self.assertRaises(CollectionDoesNotExist):
             self.sess.collections.get(root_coll_path)
 
+
+    def test_recursive_collection_get_and_put_276(self):
+        try:
+            test_dir = '/tmp/testdir_276'
+            root_coll_path = self.test_coll_path + "/my_deep_collection_276"
+            Depth = 5
+            Objs_per_level = 2
+            Content = 'hello-world'
+            helpers.make_deep_collection(
+                self.sess, root_coll_path, depth=Depth, objects_per_level=Objs_per_level, object_content=Content)
+
+            self.sess.collections.get_recursive(root_coll_path, test_dir)
+            self.sess.collections.put_recursive(test_dir,root_coll_path+"_2")
+            summary = [(elem[0].path,elem[2]) for elem in self.sess.collections.get(root_coll_path+"_2").walk(topdown=True)]
+
+            # check final destination for objects' expected content
+            obj_payloads = [d.open('r').read() for cpath,datas in summary for d in datas]
+            self.assertEqual(obj_payloads, [Content.encode('utf-8')] * (Depth * Objs_per_level))
+
+            # check for increase by 1 in successive collection depths
+            coll_depths =  [elem[0].count('/') for elem in summary]
+            self.assertEqual(list(range(len(coll_depths))), [depth - coll_depths[0] for depth in coll_depths])
+        finally:
+            for c in root_coll_path , root_coll_path + "_2":
+                if self.sess.collections.exists(c):
+                    self.sess.collections.remove(c, force = True)
+            shutil.rmtree(test_dir,ignore_errors = True)
+
+
     def test_remove_deep_collection(self):
         # depth = 100
         depth = 20  # placeholder
