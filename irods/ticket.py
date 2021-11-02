@@ -7,8 +7,28 @@ from irods.models import TicketQuery
 import random
 import string
 import logging
+import datetime
+import calendar
+
 
 logger = logging.getLogger(__name__)
+
+
+def get_epoch_seconds (utc_timestamp):
+    epoch = None
+    try:
+        epoch = int(utc_timestamp)
+    except ValueError:
+        pass
+    if epoch is not None:
+        return epoch
+    HUMAN_READABLE_DATE = '%Y-%m-%d.%H:%M:%S'
+    try:
+        x = datetime.datetime.strptime(utc_timestamp,HUMAN_READABLE_DATE)
+        return calendar.timegm( x.timetuple() )
+    except ValueError:
+        raise # final try at conversion, so a failure is an error
+
 
 class Ticket(object):
     def __init__(self, session,  ticket = '', result = None, allow_punctuation = False):
@@ -50,7 +70,11 @@ class Ticket(object):
 
     create = issue
 
-    def modify(self,*args):  return self._api_request("mod",*args)
+    def modify(self,*args):
+        arglist = list(args)
+        if arglist[0].lower().startswith('expir'):
+            arglist[1] = str(get_epoch_seconds(utc_timestamp = arglist[1]))
+        return self._api_request("mod",*arglist)
 
     def supply(self):
         object_ = self._api_request("session")

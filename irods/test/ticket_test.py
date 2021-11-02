@@ -4,6 +4,8 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
+import time
+import calendar
 
 import irods.test.helpers as helpers
 import tempfile
@@ -12,6 +14,11 @@ import irods.exception as ex
 import irods.keywords as kw
 from irods.ticket import Ticket
 from irods.models import (TicketQuery,DataObject,Collection)
+
+
+def gmtime_to_timestamp (gmt_struct):
+    return "{0.tm_year:04d}-{0.tm_mon:02d}-{0.tm_mday:02d}."\
+           "{0.tm_hour:02d}:{0.tm_min:02d}:{0.tm_sec:02d}".format(gmt_struct)
 
 
 def delete_my_tickets(session):
@@ -62,6 +69,62 @@ class TestRodsUserTicketOps(unittest.TestCase):
         with helpers.make_session() as ses:
             for u in self.users:
                 ses.users.remove(u)
+
+
+    def test_ticket_expiry (self):
+        with helpers.make_session() as ses:
+            t1 = t2 = dobj = None
+            try:
+                gm_now = time.gmtime()
+                gm_later = time.gmtime( calendar.timegm( gm_now ) + 10 )
+                home = self.irods_homedir(ses)
+                dobj = helpers.make_object(ses, home.path+'/dummy', content='abcxyz')
+
+                later_ts = gmtime_to_timestamp (gm_later)
+                later_epoch = calendar.timegm (gm_later)
+
+                t1 = Ticket(ses)
+                t2 = Ticket(ses)
+
+                tickets = [ _.issue('read',dobj.path).string for _ in (t1,t2) ]
+                t1.modify('expiry',later_ts)  # -- specify expiry with the human readable timestamp
+                t2.modify('expiry',later_epoch)  # -- specify expiry formatted as epoch seconds
+
+                # - check normal access succeeds prior to expiration
+                for ticket_string in tickets:
+                    with self.login(self.alice) as alice:
+                        Ticket(alice, ticket_string).supply()
+                        alice.data_objects.get(dobj.path)
+
+                # - check that both time formats have effected the same expiry time (The catalog returns epoch secs.)
+                timestamps = []
+                for ticket_string in tickets:
+                    t = ses.query(TicketQuery.Ticket).filter(TicketQuery.Ticket.string == ticket_string).one()
+                    timestamps.append( t [TicketQuery.Ticket.expiry_ts] )
+                self.assertEqual (len(timestamps),2)
+                self.assertEqual (timestamps[0],timestamps[1])
+
+                # - wait for tickets to expire
+                epoch = int(time.time())
+                while epoch <= later_epoch:
+                    time.sleep(later_epoch - epoch + 1)
+                    epoch = int(time.time())
+
+                Expected_Exception = ex.CAT_TICKET_EXPIRED if ses.server_version >= (4,2,9) \
+                        else ex.SYS_FILE_DESC_OUT_OF_RANGE
+
+                # - check tickets no longer allow access
+                for ticket_string in tickets:
+                    with self.login(self.alice) as alice, tempfile.NamedTemporaryFile() as f:
+                        Ticket(alice, ticket_string).supply()
+                        with self.assertRaises( Expected_Exception ):
+                            alice.data_objects.get(dobj.path,f.name, **{kw.FORCE_FLAG_KW:''})
+
+            finally:
+                if t1: t1.delete()
+                if t2: t2.delete()
+                if dobj: dobj.unlink(force=True)
+
 
     def test_object_read_and_write_tickets(self):
         if self.alice is None or self.bob is None:
