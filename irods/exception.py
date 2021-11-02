@@ -1213,6 +1213,18 @@ class RDA_NAME_NOT_FOUND(RDSException):
     code = -889000
 
 
+class TicketException(CatalogLibraryException):
+    pass
+
+
+class CAT_TICKET_INVALID(TicketException):
+    code = -890000
+
+
+class CAT_TICKET_EXPIRED(TicketException):
+    code = -891000
+
+
 class MiscException(iRODSException):
     pass
 
