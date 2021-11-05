@@ -670,6 +670,81 @@ As stated, this type of object discovery requires some extra study and effort, b
 (to which we are federated and have the user permissions) is powerful indeed.
 
 
+Tickets
+-------
+
+The irods.ticket.Ticket class lets us issue "tickets" which grant limited
+permissions for other users to access our own data objects (or collections of
+data objects).   As with the iticket client, the access may be either "read"
+or "write".  The recipient of the ticket could be a rodsuser, or even an
+anonymous user.
+
+This is how we would generate a new ticket for access to a logical path - in
+this case, say a collection containing 1 or more data objects:
+
+>>> from irods.ticket import Ticket
+>>> new_ticket = Ticket (granting_session)
+>>> ticket_string = new_ticket.issue('read', '/zone/home/my/collection_with_data_objects_for/somebody').string
+
+At this point, another user (including the anonymous user) could then apply the
+ticket (knowing only its identifying string) to any session object and thus
+access the intended object(s):
+
+>>> from irods.models import Collection, DataObject
+>>> recv_t = Ticket( receiving_session, ticket_string )
+>>> Ticket(ses, ticket_string).supply()
+>>> c_result = ses.query(Collection).one()
+>>> c = iRODSCollection( ses.collections, c_result)
+>>> for dobj in (c.data_objects):
+...     ses.data_objects.get( dobj.path, '/tmp/' + dobj.name ) # download objects
+
+The following, however, will not be allowed because the ticket is for read only:
+
+>>> c.data_objects[0].open('w').write(  # raises
+...     b'new content')                 #  CAT_NO_ACCESS_PERMISSION
+
+Similarly, we could use a ticket that has been provided for e.g. write access to
+a specific data object, and that object can then be both read and written:
+
+>>> ses = iRODSSession( user = 'anonymous', password = '', host = 'localhost',
+                        port = 1247, zone = 'tempZone')
+>>> Ticket(ses, write_data_ticket_string ).supply()
+>>> d_result = ses.query(DataObject.name,Collection.name).one()
+>>> d_path = ( d_result[Collection.name] + '/' +
+...            d_result[DataObject.name] )
+>>> old_content = ses.data_objects.open(d_path,'r').read()
+>>> with tempfile.NamedTemporaryFile() as f:
+...     f.write(b'blah'); f.flush()
+...     ses.data_objects.put(f.name,d_path)
+
+As in iticket, we may set a time limit on the availability of a ticket, either
+as a timestamp or in epoch seconds:
+
+>>> t=Ticket(ses); s = t.string
+vIOQ6qzrWWPO9X7
+>>> t.issue('read','/some/path')
+>>> t.modify('expiry','2021-04-01.12:34:56')  # timestamp assumed as UTC
+
+To check the results of the above, we could invoke the icommand:
+
+iticket ls vIOQ6qzrWWPO9X7
+
+in another terminal window, and the server should report back the same expiration
+timestamp.
+
+And, if we are the issuer of a ticket, we may also query, filter on, and
+extract information based on a ticket's attributes and catalog relations:
+
+>>> from irods.models import TicketQuery
+>>> delay = lambda secs: int( time.time() + secs + 1)
+>>> Ticket(ses).issue('read','/path/to/data_object').modify(
+                      'expiry',delay(7*24*3600))             # lasts 1 week
+>>> Q = ses.query (TicketQuery.Ticket, TicketQuery.DataObject).filter(
+...                                                            TicketQuery.DataObject.name == 'data_object')
+>>> print ([ _[TicketQuery.Ticket.expiry_ts] for _ in Q ])
+['1636757427']
+
+
 Tracking and manipulating replicas of Data objects
 --------------------------------------------------
 
