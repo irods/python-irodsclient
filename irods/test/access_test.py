@@ -5,9 +5,11 @@ import sys
 import unittest
 from irods.access import iRODSAccess
 from irods.user import iRODSUser
-from irods.models import User
+from irods.session import iRODSSession
+from irods.models import User,Collection,DataObject
+from irods.collection import iRODSCollection
 import irods.test.helpers as helpers
-from irods.column import In
+from irods.column import In, Like
 
 
 class TestAccess(unittest.TestCase):
@@ -60,6 +62,100 @@ class TestAccess(unittest.TestCase):
 
         # remove object
         self.sess.data_objects.unlink(path)
+
+
+    def test_set_inherit_acl(self):
+
+        acl1 = iRODSAccess('inherit', self.coll_path)
+        self.sess.permissions.set(acl1)
+        c = self.sess.collections.get(self.coll_path)
+        self.assertTrue(c.inheritance)
+
+        acl2 = iRODSAccess('noinherit', self.coll_path)
+        self.sess.permissions.set(acl2)
+        c = self.sess.collections.get(self.coll_path)
+        self.assertFalse(c.inheritance)
+
+    def test_set_inherit_and_test_sub_objects (self):
+        DEPTH = 3
+        OBJ_PER_LVL = 1
+        deepcoll = user = None
+        test_coll_path = self.coll_path + "/test"
+        try:
+            deepcoll = helpers.make_deep_collection(self.sess, test_coll_path, object_content = 'arbitrary',
+                                                    depth=DEPTH, objects_per_level=OBJ_PER_LVL)
+            user = self.sess.users.create('bob','rodsuser')
+            user.modify ('password','bpass')
+
+            acl_inherit = iRODSAccess('inherit', deepcoll.path)
+            acl_read = iRODSAccess('read', deepcoll.path, 'bob')
+
+            self.sess.permissions.set(acl_read)
+            self.sess.permissions.set(acl_inherit)
+
+            # create one new object and one new collection *after* ACL's are applied
+            new_object_path = test_coll_path + "/my_data_obj"
+            with self.sess.data_objects.open( new_object_path ,'w') as f: f.write(b'some_content')
+
+            new_collection_path = test_coll_path + "/my_colln_obj"
+            new_collection = self.sess.collections.create( new_collection_path )
+
+            coll_IDs = [c[Collection.id] for c in
+                            self.sess.query(Collection.id).filter(Like(Collection.name , deepcoll.path + "%"))]
+
+            D_rods = list(self.sess.query(Collection.name,DataObject.name).filter(
+                                                                          In(DataObject.collection_id, coll_IDs )))
+
+            self.assertEqual (len(D_rods), OBJ_PER_LVL*DEPTH+1) # counts the 'older' objects plus one new object
+
+            with iRODSSession (port=self.sess.port, zone=self.sess.zone, host=self.sess.host,
+                               user='bob', password='bpass') as bob:
+
+                D = list(bob.query(Collection.name,DataObject.name).filter(
+                                                                    In(DataObject.collection_id, coll_IDs )))
+
+                # - bob should only see the new data object, but none existing before ACLs were applied
+
+                self.assertEqual( len(D), 1 )
+                D_names = [_[Collection.name] + "/" + _[DataObject.name] for _ in D]
+                self.assertEqual( D[0][DataObject.name], 'my_data_obj' )
+
+                # - bob should be able to read the new data object
+
+                with bob.data_objects.get(D_names[0]).open('r') as f:
+                    self.assertGreater( len(f.read()), 0)
+
+                C = list(bob.query(Collection).filter( In(Collection.id, coll_IDs )))
+                self.assertEqual( len(C), 2 ) # query should return only the top-level and newly created collections
+                self.assertEqual( sorted([c[Collection.name] for c in C]),
+                                  sorted([new_collection.path, deepcoll.path]) )
+        finally:
+            if user: user.remove()
+            if deepcoll: deepcoll.remove(force = True, recurse = True)
+
+    def test_set_inherit_acl_depth_test(self):
+        DEPTH = 3  # But test is valid for any DEPTH > 1
+        for recursionTruth in (True, False):
+            deepcoll = None
+            try:
+                test_coll_path = self.coll_path + "/test"
+                deepcoll = helpers.make_deep_collection(self.sess, test_coll_path, depth=DEPTH, objects_per_level=2)
+                acl1 = iRODSAccess('inherit', deepcoll.path)
+                self.sess.permissions.set( acl1, recursive = recursionTruth )
+                test_subcolls = set( iRODSCollection(self.sess.collections,_)
+                                for _ in self.sess.query(Collection).filter(Like(Collection.name, deepcoll.path + "/%")) )
+
+                # assert top level collection affected
+                test_coll = self.sess.collections.get(test_coll_path)
+                self.assertTrue( test_coll.inheritance )
+                #
+                # assert lower level collections affected only for case when recursive = True
+                subcoll_truths = [ (_.inheritance == recursionTruth) for _ in test_subcolls ]
+                self.assertEqual( len(subcoll_truths), DEPTH-1 )
+                self.assertTrue( all(subcoll_truths) )
+            finally:
+                if deepcoll: deepcoll.remove(force = True, recurse = True)
+
 
     def test_set_data_acl(self):
         # test args

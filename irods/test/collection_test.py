@@ -37,7 +37,7 @@ class TestCollection(unittest.TestCase):
         coll = self.sess.collections.get(self.test_coll_path)
         self.assertIsNotNone(coll.create_time)
         self.assertIsNotNone(coll.modify_time)
-        self.assertIsNotNone(coll.inheritance)
+        self.assertFalse(coll.inheritance)
         self.assertIsNotNone(coll.owner_name)
         self.assertIsNotNone(coll.owner_zone)
 
