@@ -673,38 +673,42 @@ As stated, this type of object discovery requires some extra study and effort, b
 Tickets
 -------
 
-The irods.ticket.Ticket class lets us issue "tickets" which grant limited
+The :code:`irods.ticket.Ticket` class lets us issue "tickets" which grant limited
 permissions for other users to access our own data objects (or collections of
 data objects).   As with the iticket client, the access may be either "read"
 or "write".  The recipient of the ticket could be a rodsuser, or even an
 anonymous user.
 
-This is how we would generate a new ticket for access to a logical path - in
-this case, say a collection containing 1 or more data objects:
+Below is a demonstration of how to generate a new ticket for access to a
+logical path - in this case, say a collection containing 1 or more data objects.
+(We assume the creation of the granting_session and receiving_session for the users
+respectively for the users providing and consuming the ticket access.)
+
+The user who wishes to provide an access may execute the following:
 
 >>> from irods.ticket import Ticket
 >>> new_ticket = Ticket (granting_session)
->>> ticket_string = new_ticket.issue('read', '/zone/home/my/collection_with_data_objects_for/somebody').string
+>>> The_Ticket_String = new_ticket.issue('read', 
+...     '/zone/home/my/collection_with_data_objects_for/somebody').string
 
-At this point, another user (including the anonymous user) could then apply the
-ticket (knowing only its identifying string) to any session object and thus
-access the intended object(s):
+at which point that ticket's unique string may be given to other users, who can then apply the
+ticket to any existing session object in order to gain access to the intended object(s):
 
 >>> from irods.models import Collection, DataObject
->>> recv_t = Ticket( receiving_session, ticket_string )
->>> Ticket(ses, ticket_string).supply()
+>>> ses = receiving_session
+>>> Ticket(ses, The_Ticket_String).supply()
 >>> c_result = ses.query(Collection).one()
 >>> c = iRODSCollection( ses.collections, c_result)
 >>> for dobj in (c.data_objects):
 ...     ses.data_objects.get( dobj.path, '/tmp/' + dobj.name ) # download objects
 
-The following, however, will not be allowed because the ticket is for read only:
+In this case, however, modification will not be allowed because the ticket is for read only:
 
 >>> c.data_objects[0].open('w').write(  # raises
 ...     b'new content')                 #  CAT_NO_ACCESS_PERMISSION
 
-Similarly, we could use a ticket that has been provided for e.g. write access to
-a specific data object, and that object can then be both read and written:
+In another example, we could generate a ticket that explicitly allows 'write' access on a
+specific data object, thus granting other users the permissions to modify as well as read it:
 
 >>> ses = iRODSSession( user = 'anonymous', password = '', host = 'localhost',
                         port = 1247, zone = 'tempZone')
@@ -717,20 +721,19 @@ a specific data object, and that object can then be both read and written:
 ...     f.write(b'blah'); f.flush()
 ...     ses.data_objects.put(f.name,d_path)
 
-As in iticket, we may set a time limit on the availability of a ticket, either
-as a timestamp or in epoch seconds:
+As with iticket, we may set a time limit on the availability of a ticket, either as a
+timestamp or in seconds since the epoch:
 
 >>> t=Ticket(ses); s = t.string
 vIOQ6qzrWWPO9X7
 >>> t.issue('read','/some/path')
 >>> t.modify('expiry','2021-04-01.12:34:56')  # timestamp assumed as UTC
 
-To check the results of the above, we could invoke the icommand:
+To check the results of the above, we could invoke this icommand elsewhere in a shell prompt:
 
-iticket ls vIOQ6qzrWWPO9X7
+:code:`iticket ls vIOQ6qzrWWPO9X7`
 
-in another terminal window, and the server should report back the same expiration
-timestamp.
+and the server should report back the same expiration timestamp.
 
 And, if we are the issuer of a ticket, we may also query, filter on, and
 extract information based on a ticket's attributes and catalog relations:
