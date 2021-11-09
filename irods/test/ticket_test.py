@@ -16,6 +16,13 @@ from irods.ticket import Ticket
 from irods.models import (TicketQuery,DataObject,Collection)
 
 
+# As with most of the modules in this test suite, session objects created via
+# make_session() are implicitly agents of a rodsadmin unless otherwise indicated.
+# Counterexamples within this module shall be obvious as they are instantiated by
+# the login() method, and always tied to one of the traditional rodsuser names
+# widely used in iRODS test suites, ie. 'alice' or 'bob'.
+
+
 def gmtime_to_timestamp (gmt_struct):
     return "{0.tm_year:04d}-{0.tm_mon:02d}-{0.tm_mday:02d}."\
            "{0.tm_hour:02d}:{0.tm_min:02d}:{0.tm_sec:02d}".format(gmt_struct)
@@ -35,8 +42,10 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 user=user.name,password=self.users[user.name])
 
     @staticmethod
-    def irods_homedir(sess):
+    def irods_homedir(sess, path_only = False):
         path = '/{0.zone}/home/{0.username}'.format(sess)
+        if path_only:
+            return path
         return sess.collections.get(path)
 
     @staticmethod
@@ -71,6 +80,27 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 ses.users.remove(u)
 
 
+    def test_admin_keyword_for_tickets (self):
+
+        N_TICKETS = 3
+
+        # Create some tickets as alice.
+
+        with self.login(self.alice) as alice:
+            alice_home_path = self.irods_homedir(alice, path_only = True)
+            ticket_strings = [ Ticket(alice).issue('read', alice_home_path).string for _ in range(N_TICKETS) ]
+
+        # As rodsadmin, use the ADMIN_KW flag to delete alice's tickets.
+
+        with helpers.make_session() as ses:
+            alices_tickets = [t[TicketQuery.Ticket.string] for t in ses.query(TicketQuery.Ticket).filter(TicketQuery.Owner.name == 'alice')]
+            self.assertEqual(len(alices_tickets),N_TICKETS)
+            for s in alices_tickets:
+                Ticket( ses, s ).delete(**{kw.ADMIN_KW:''})
+            alices_tickets = [t[TicketQuery.Ticket.string] for t in ses.query(TicketQuery.Ticket).filter(TicketQuery.Owner.name == 'alice')]
+            self.assertEqual(len(alices_tickets),0)
+
+
     def test_ticket_expiry (self):
         with helpers.make_session() as ses:
             t1 = t2 = dobj = None
@@ -86,17 +116,18 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 t1 = Ticket(ses)
                 t2 = Ticket(ses)
 
-                tickets = [ _.issue('read',dobj.path).string for _ in (t1,t2) ]
-                t1.modify('expiry',later_ts)  # -- specify expiry with the human readable timestamp
-                t2.modify('expiry',later_epoch)  # -- specify expiry formatted as epoch seconds
+                tickets = [ _.issue('read',dobj.path).string for _ in (t1,
+                                                                       t2,) ]
+                t1.modify('expire',later_ts)    # - Specify expiry with the human readable timestamp.
+                t2.modify('expire',later_epoch) # - Specify expiry formatted as epoch seconds.
 
-                # - check normal access succeeds prior to expiration
+                # Check normal access succeeds prior to expiration
                 for ticket_string in tickets:
                     with self.login(self.alice) as alice:
                         Ticket(alice, ticket_string).supply()
                         alice.data_objects.get(dobj.path)
 
-                # - check that both time formats have effected the same expiry time (The catalog returns epoch secs.)
+                # Check that both time formats have effected the same expiry time (The catalog returns epoch secs.)
                 timestamps = []
                 for ticket_string in tickets:
                     t = ses.query(TicketQuery.Ticket).filter(TicketQuery.Ticket.string == ticket_string).one()
@@ -104,7 +135,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 self.assertEqual (len(timestamps),2)
                 self.assertEqual (timestamps[0],timestamps[1])
 
-                # - wait for tickets to expire
+                # Wait for tickets to expire.
                 epoch = int(time.time())
                 while epoch <= later_epoch:
                     time.sleep(later_epoch - epoch + 1)
@@ -113,7 +144,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 Expected_Exception = ex.CAT_TICKET_EXPIRED if ses.server_version >= (4,2,9) \
                         else ex.SYS_FILE_DESC_OUT_OF_RANGE
 
-                # - check tickets no longer allow access
+                # Check tickets no longer allow access.
                 for ticket_string in tickets:
                     with self.login(self.alice) as alice, tempfile.NamedTemporaryFile() as f:
                         Ticket(alice, ticket_string).supply()

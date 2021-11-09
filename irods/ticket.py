@@ -57,8 +57,8 @@ class Ticket(object):
             source_characters += string.punctuation
         return ''.join(random.SystemRandom().choice(source_characters) for _ in range(length))
 
-    def _api_request(self,cmd_string,*args):
-        message_body = TicketAdminRequest(cmd_string, self.ticket, *args)
+    def _api_request(self,cmd_string,*args, **opts):
+        message_body = TicketAdminRequest(self.session)(cmd_string, self.ticket, *args, **opts)
         message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
 
         with self.session.pool.get_connection() as conn:
@@ -66,22 +66,22 @@ class Ticket(object):
             response = conn.recv()
         return self
 
-    def issue(self,permission,target): return self._api_request("create",permission,target)
+    def issue(self,permission,target,**opt): return self._api_request("create",permission,target,**opt)
 
     create = issue
 
-    def modify(self,*args):
+    def modify(self,*args,**opt):
         arglist = list(args)
         if arglist[0].lower().startswith('expir'):
             arglist[1] = str(get_epoch_seconds(utc_timestamp = arglist[1]))
-        return self._api_request("mod",*arglist)
+        return self._api_request("mod",*arglist,**opt)
 
-    def supply(self):
-        object_ = self._api_request("session")
+    def supply(self,**opt):
+        object_ = self._api_request("session",**opt)
         self.session.ticket__ = self._ticket
         return object_
 
-    def delete(self):
+    def delete(self,**opt):
         """
         Delete the iRODS ticket.
 
@@ -94,4 +94,4 @@ class Ticket(object):
                 print(t.delete().string, "being deleted")
 
         """
-        return self._api_request("delete")
+        return self._api_request("delete",**opt)

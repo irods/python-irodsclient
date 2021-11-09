@@ -582,25 +582,42 @@ class GetTempPasswordOut(Message):
     stringToHashWith = StringProperty()
 
 
+#in iRODS <= 4.2.10:
 #define ticketAdminInp_PI "str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6;"
 
-class TicketAdminRequest(Message):
-    _name = 'ticketAdminInp_PI'
+#in iRODS <= 4.2.11:
+#define ticketAdminInp_PI "str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; struct KeyValPair_PI;"
 
-    def __init__(self, *args):
-        super(TicketAdminRequest, self).__init__()
-        for i in range(6):
-            if i < len(args) and args[i]:
-                setattr(self, 'arg{0}'.format(i+1), str(args[i]))
-            else:
-                setattr(self, 'arg{0}'.format(i+1), "")
+def TicketAdminRequest(session):
 
-    arg1 = StringProperty()
-    arg2 = StringProperty()
-    arg3 = StringProperty()
-    arg4 = StringProperty()
-    arg5 = StringProperty()
-    arg6 = StringProperty()
+    # class is different depending on server version
+
+    SERVER_REQUIRES_KEYVAL_PAIRS = (session.server_version >= (4,2,11))
+
+    class TicketAdminRequest_(Message):
+        _name = 'ticketAdminInp_PI'
+
+        def __init__(self, *args,**ticketOpts):
+            super(TicketAdminRequest_, self).__init__()
+            for i in range(6):
+                if i < len(args) and args[i]:
+                    setattr(self, 'arg{0}'.format(i+1), str(args[i]))
+                else:
+                    setattr(self, 'arg{0}'.format(i+1), "")
+            if SERVER_REQUIRES_KEYVAL_PAIRS:
+                self.KeyValPair_PI = StringStringMap(ticketOpts)
+
+        arg1 = StringProperty()
+        arg2 = StringProperty()
+        arg3 = StringProperty()
+        arg4 = StringProperty()
+        arg5 = StringProperty()
+        arg6 = StringProperty()
+
+        if SERVER_REQUIRES_KEYVAL_PAIRS:
+            KeyValPair_PI = SubmessageProperty(StringStringMap)
+
+    return TicketAdminRequest_
 
 
 #define specificQueryInp_PI "str *sql; str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; str *arg7; str *arg8; str *arg9; str *arg10; int maxRows; int continueInx; int rowOffset; int options; struct KeyValPair_PI;"
