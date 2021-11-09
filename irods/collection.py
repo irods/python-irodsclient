@@ -17,10 +17,14 @@ class iRODSCollection(object):
             self.name = irods_basename(result[Collection.name])
             self.create_time = result[Collection.create_time]
             self.modify_time = result[Collection.modify_time]
-            self.inheritance = result[Collection.inheritance]
+            self._inheritance = result[Collection.inheritance]
             self.owner_name = result[Collection.owner_name]
             self.owner_zone = result[Collection.owner_zone]
         self._meta = None
+
+    @property
+    def inheritance(self):
+        return bool(self._inheritance) and self._inheritance != "0"
 
     @property
     def metadata(self):

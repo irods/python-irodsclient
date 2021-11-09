@@ -113,14 +113,19 @@ class AccessManager(Manager):
                                user_lookup[r[access_column.user_id]].zone  ) for r in rows ]
         return acls
 
+
     def set(self, acl, recursive=False, admin=False):
         prefix = 'admin:' if admin else ''
+
+        userName_=acl.user_name
+        zone_=acl.user_zone
+        if acl.access_name.endswith('inherit'): zone_ = userName_ = ''
 
         message_body = ModAclRequest(
             recursiveFlag=int(recursive),
             accessLevel='{prefix}{access_name}'.format(prefix=prefix, **vars(acl)),
-            userName=acl.user_name,
-            zone=acl.user_zone,
+            userName=userName_,
+            zone=zone_,
             path=acl.path
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
