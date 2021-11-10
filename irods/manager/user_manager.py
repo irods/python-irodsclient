@@ -45,6 +45,11 @@ class UserManager(Manager):
         return self.get(user_name, user_zone)
 
     def remove(self, user_name, user_zone=""):
+        # allows the zone test to pass because in 4.2.11 we do " 'rm' 'user' userName#userZone " ( 3 args )
+        #                                       ... instead of " 'rm' 'user' userName  userZone " (4 args )
+        if user_zone and self.sess.server_version >= (4,2,11):
+            user_name += ("#" + user_zone)
+            user_zone = ""
         message_body = GeneralAdminRequest(
             "rm",
             "user",
