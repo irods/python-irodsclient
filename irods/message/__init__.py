@@ -1,17 +1,117 @@
 """Define objects related to communication with iRODS server API endpoints."""
 
+import sys
 import struct
 import logging
 import socket
 import json
 from six.moves import builtins
 import irods.exception as ex
-from irods.message import quasixml as ET
+import xml.etree.ElementTree as ET_xml
+from . import quasixml as ET_quasixml
 from collections import namedtuple
+import os
+import ast
+import threading
 from irods.message.message import Message
 from irods.message.property import (BinaryProperty, StringProperty,
                                     IntegerProperty, LongProperty, ArrayProperty,
                                     SubmessageProperty)
+
+_TUPLE_LIKE_TYPES = (tuple, list)
+
+def _qxml_server_version( var ):
+    val = os.environ.get( var, '' )
+    vsn = (val and ast.literal_eval( val ))
+    if not isinstance( vsn, _TUPLE_LIKE_TYPES ): return None
+    return tuple( vsn )
+
+if sys.version_info >= (3,):
+    import enum
+    class XML_Parser_Type(enum.Enum):
+        _invalid = 0
+        STANDARD_XML = 1
+        QUASI_XML = 2
+else:
+    class MyIntEnum(int):
+        """An integer enum class suited to the purpose. A shim until we get rid of Python2."""
+        def __init__(self,i):
+            """Initialize based on an integer or another instance."""
+            super(MyIntEnum,self).__init__()
+            try:self.i = i._value()
+            except AttributeError:
+                self.i = i
+        def _value(self): return self.i
+        @builtins.property
+        def value(self): return self._value()
+
+    class XML_Parser_Type(MyIntEnum):
+        """An enum specifying which XML parser is active."""
+        pass
+    XML_Parser_Type.STANDARD_XML = XML_Parser_Type (1)
+    XML_Parser_Type.QUASI_XML = XML_Parser_Type (2)
+
+# We maintain values on a per-thread basis of:
+#   - the server version with which we're communicating
+#   - which of the choices of parser (STANDARD_XML or QUASI_XML) we're using
+
+_thrlocal = threading.local()
+
+# The packStruct message parser defaults to STANDARD_XML but you can override it by setting the
+# environment variable PYTHON_IRODSCLIENT_QUASI_XML_DEFAULT_SERVER_VERSION.
+# If this variable is defined in the environment, its value:
+#    * must be tuple-like and of a commensurate or compatible version with the connected server.
+#    * should be <= 4,2,8 for older servers wherein backticks were incorrectly encoded as '&apos;'
+#    * can be () or >=4,2,9 for newer servers to allow a flexible character set within iRODS protocol.
+#    * empty or not defined, in which case the standard XML protocol is used.
+
+_Quasi_Xml_Default_Server_Version = _qxml_server_version('PYTHON_IRODSCLIENT_QUASI_XML_DEFAULT_SERVER_VERSION')
+
+_current_XML_parser = XML_Parser_Type.QUASI_XML if _Quasi_Xml_Default_Server_Version is not None \
+                 else XML_Parser_Type.STANDARD_XML
+
+def current_XML_parser():
+    return getattr(_thrlocal,'xml_type',_current_XML_parser)
+
+_XML_parsers = {
+    XML_Parser_Type.STANDARD_XML : ET_xml,
+    XML_Parser_Type.QUASI_XML : ET_quasixml
+}
+
+
+def XML_entities_active():
+    Server = getattr(_thrlocal,'irods_server_version',_Quasi_Xml_Default_Server_Version)
+    return [ ('&', '&amp;'), # note: order matters. & must be encoded first.
+             ('<', '&lt;'),
+             ('>', '&gt;'),
+             ('"', '&quot;'),
+             ("'" if not(Server) or Server >= (4,2,9) else '`',
+               '&apos;') # https://github.com/irods/irods/issues/4132
+            ]
+
+
+# ET() [no-args form] will just fetch the current thread's XML parser settings
+
+def ET(xml_type = 0, server_version = None):
+    """
+    Return the module used to parse XML from iRODS protocol messages text.
+
+    May also be used to specify the following attributes of the currently running thread:
+
+    `xml_type', if given, should be 1 for STANDARD_XML or 2 for QUASI_XML.
+      * QUASI_XML is custom parser designed to be more compatible with the use of
+        non-printable characters in object names.
+      * STANDARD_XML uses the standard module, xml.etree.ElementTree.
+
+    `server_version', if given, should be a list or tuple specifying the version of the connected iRODS server.
+
+    """
+    if xml_type:
+        _thrlocal.xml_type = xml_type = XML_Parser_Type(xml_type)
+    if isinstance(server_version, _TUPLE_LIKE_TYPES):
+        _thrlocal.irods_server_version = tuple(server_version)  #  A default server version for Quasi-XML parsing is set (from the environment) and
+    return _XML_parsers[current_XML_parser()]                   #  applies to all threads in which ET() has not been called to update the value.
+
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +194,7 @@ class iRODSMessage(object):
         self.int_info = int_info
 
     def get_json_encoded_struct (self):
-        Xml = ET.fromstring(self.msg.replace(b'\0',b''))
+        Xml = ET().fromstring(self.msg.replace(b'\0',b''))
         json_str = Xml.find('buf').text
         if Xml.tag == 'BinBytesBuf_PI':
             mybin = JSON_Binary_Response()
@@ -110,7 +210,7 @@ class iRODSMessage(object):
         # rsp_header = sock.recv(rsp_header_size, socket.MSG_WAITALL)
         rsp_header = _recv_message_in_len(sock, rsp_header_size)
 
-        xml_root = ET.fromstring(rsp_header)
+        xml_root = ET().fromstring(rsp_header)
         msg_type = xml_root.find('type').text
         msg_len = int(xml_root.find('msgLen').text)
         err_len = int(xml_root.find('errorLen').text)
@@ -137,7 +237,7 @@ class iRODSMessage(object):
         rsp_header_size = struct.unpack(">i", rsp_header_size)[0]
         rsp_header = _recv_message_in_len(sock, rsp_header_size)
 
-        xml_root = ET.fromstring(rsp_header)
+        xml_root = ET().fromstring(rsp_header)
         msg_type = xml_root.find('type').text
         msg_len = int(xml_root.find('msgLen').text)
         err_len = int(xml_root.find('errorLen').text)
@@ -211,7 +311,7 @@ class iRODSMessage(object):
                 #   through as usual for express reporting by instances of irods.connection.Connection .
                 message = "Server response was {self.msg} while parsing as [{cls}]".format(**locals())
                 raise self.ResponseNotParseable( message )
-        msg.unpack(ET.fromstring(self.msg))
+        msg.unpack(ET().fromstring(self.msg))
         return msg
 
 

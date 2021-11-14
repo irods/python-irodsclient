@@ -8,7 +8,8 @@ import unittest
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath('../..'))
 
-from xml.etree import ElementTree as ET
+from irods.message import ET
+
 # from base64 import b64encode, b64decode
 from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap,
                            IntegerStringMap, StringStringMap, GenQueryRequest,
@@ -44,7 +45,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(xml_str, expected)
 
         sup2 = StartupPack(('rods', 'tempZone'), ('rods', 'tempZone'))
-        sup2.unpack(ET.fromstring(expected))
+        sup2.unpack(ET().fromstring(expected))
         self.assertEqual(sup2.irodsProt, 2)
         self.assertEqual(sup2.reconnFlag, 3)
         self.assertEqual(sup2.proxyUser, "rods")
@@ -66,7 +67,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(ar.pack(), expected)
 
         ar2 = AuthResponse()
-        ar2.unpack(ET.fromstring(expected))
+        ar2.unpack(ET().fromstring(expected))
         self.assertEqual(ar2.response, b"hello")
         self.assertEqual(ar2.username, "rods")
 
@@ -85,7 +86,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(iip.pack(), expected)
 
         iip2 = IntegerIntegerMap()
-        iip2.unpack(ET.fromstring(expected))
+        iip2.unpack(ET().fromstring(expected))
         self.assertEqual(iip2.iiLen, 2)
         self.assertEqual(iip2.inx, [4, 5])
         self.assertEqual(iip2.ivalue, [1, 2])
@@ -105,7 +106,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(kvp.pack(), expected)
 
         kvp2 = StringStringMap()
-        kvp2.unpack(ET.fromstring(expected))
+        kvp2.unpack(ET().fromstring(expected))
         self.assertEqual(kvp2.ssLen, 2)
         self.assertEqual(kvp2.keyWord, ["one", "two"])
         self.assertEqual(kvp2.svalue, ["three", "four"])
@@ -140,7 +141,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(gq.pack(), expected)
 
         gq2 = GenQueryRequest()
-        gq2.unpack(ET.fromstring(expected))
+        gq2.unpack(ET().fromstring(expected))
         self.assertEqual(gq2.maxRows, 4)
         self.assertEqual(gq2.continueInx, 3)
         self.assertEqual(gq2.partialStartIndex, 2)
@@ -170,7 +171,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(sr.pack(), expected)
 
         sr2 = GenQueryResponseColumn()
-        sr2.unpack(ET.fromstring(expected))
+        sr2.unpack(ET().fromstring(expected))
         self.assertEqual(sr2.attriInx, 504)
         self.assertEqual(sr2.reslen, 64)
         self.assertEqual(sr2.value, ["one", "two"])
@@ -193,7 +194,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(gqo.pack(), expected)
 
         gqo2 = GenQueryResponse()
-        gqo2.unpack(ET.fromstring(expected))
+        gqo2.unpack(ET().fromstring(expected))
 
         self.assertEqual(gqo2.rowCnt, 2)
         self.assertEqual(gqo2.pack(), expected)
