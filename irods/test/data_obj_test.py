@@ -14,6 +14,7 @@ import logging
 import io
 import re
 import time
+import concurrent.futures
 
 from irods.models import Collection, DataObject
 import irods.exception as ex
@@ -23,6 +24,7 @@ import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.manager import data_object_manager
 from irods.message import RErrorStack
+from irods.message import ( ET, XML_Parser_Type )
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from irods.test.helpers import (unique_name, my_function_name)
@@ -1463,6 +1465,52 @@ class TestDataObjOps(unittest.TestCase):
         # delete file
         os.remove(test_file)
 
+
+    def test_object_names_with_nonprintable_chars (self):
+        if  (4,2,8) < self.sess.server_version < (4,2,11):
+            self.skipTest('4.2.9 and 4.2.10 are known to fail as apostrophes in object names are problematic')
+        test_dir = helpers.irods_shared_tmp_dir()
+        loc_server = self.sess.host in ('localhost', socket.gethostname())
+        if not(test_dir) and not(loc_server):
+            self.skipTest('data_obj register requires server has access to local or shared files')
+        temp_names = []
+        vault = ''
+        try:
+            resc_name = 'regWithNonPrintableNamesResc'
+            vault = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
+            def enter_file_into_irods( session, filename, **kw_opt ):
+                ET( XML_Parser_Type.QUASI_XML, session.server_version)
+                basename = os.path.basename(filename)
+                logical_path = '/{0.zone}/home/{0.username}/{basename}'.format(session,**locals())
+                bound_method = getattr(session.data_objects, kw_opt['method'])
+                bound_method( os.path.abspath(filename), logical_path, **kw_opt['options'] )
+                d = session.data_objects.get(logical_path)
+                Path_Good = (d.path == logical_path)
+                session.data_objects.unlink( logical_path, force = True )
+                session.cleanup()
+                return Path_Good
+            futr = []
+            threadpool = concurrent.futures.ThreadPoolExecutor()
+            fname = re.sub( r'[/]', '',
+                            ''.join(map(chr,range(1,128))) )
+            for opts in [
+                    {'method':'put',     'options':{}},
+                    {'method':'register','options':{kw.RESC_NAME_KW: resc_name}}
+                ]:
+                with NamedTemporaryFile(prefix=opts["method"]+"_"+fname, delete=False) as f:
+                    f.write(b'hello')
+                    temp_names += [f.name]
+                ses = helpers.make_session()
+                futr.append( threadpool.submit( enter_file_into_irods, ses, f.name, **opts ))
+            results = [ f.result() for f in futr ]
+            self.assertEqual (results, [True, True])
+        finally:
+            for name in temp_names:
+                if os.path.exists(name):
+                    os.unlink(name)
+            if vault:
+                self.sess.resources.remove( resc_name )
+
     def test_register_with_xml_special_chars(self):
         test_dir = helpers.irods_shared_tmp_dir()
         loc_server = self.sess.host in ('localhost', socket.gethostname())
@@ -1474,25 +1522,28 @@ class TestDataObjOps(unittest.TestCase):
         collection = self.coll.path
         filename = '''aaa'"<&test&>"'_file'''
         test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local = loc_server)
-        test_file = os.path.join(test_path, filename)
-        obj_path = '{collection}/{filename}'.format(**locals())
+        try:
+            test_file = os.path.join(test_path, filename)
+            obj_path = '{collection}/{filename}'.format(**locals())
 
-        # make random 4K binary file
-        with open(test_file, 'wb') as f:
-            f.write(os.urandom(1024 * 4))
+            # make random 4K binary file
+            with open(test_file, 'wb') as f:
+                f.write(os.urandom(1024 * 4))
 
-        # register file in test collection
-        self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW: resc_name})
+            # register file in test collection
+            self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW: resc_name})
 
-        # confirm object presence
-        obj = self.sess.data_objects.get(obj_path)
+            # confirm object presence
+            obj = self.sess.data_objects.get(obj_path)
 
-        # in a real use case we would likely
-        # want to leave the physical file on disk
-        obj.unregister()
-
-        # delete file
-        os.remove(test_file)
+        finally:
+            # in a real use case we would likely
+            # want to leave the physical file on disk
+            obj.unregister()
+            # delete file
+            os.remove(test_file)
+            # delete resource
+            self.sess.resources.get(resc_name).remove()
 
 
 if __name__ == '__main__':

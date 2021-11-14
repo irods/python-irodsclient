@@ -3,14 +3,17 @@
 # at least for the features used by python-irodsclient.
 
 class Element():
-    """Represents <name>body</name>.
-       body is either a string or a list of sub-elements.
+    """
+    Represents <name>body</name>.
+
+    (Where `body' is either a string or a list of sub-elements.)
     """
 
     @property
     def tag(self): return self.name
 
     def __init__(self, name, body):
+        """Initialize with the tag's name and the body (i.e. content)."""
         if body == []:
             # Empty element.
             self.text = None
@@ -23,16 +26,16 @@ class Element():
         self.body = body
 
     def find(self, name):
-        """Get first matching child element by name"""
+        """Get first matching child element by name."""
         for x in self.findall(name):
             return x
 
     def findall(self, name):
-        """Get matching child elements by name"""
+        """Get matching child elements by name."""
         return list(self.findall_(name))
 
     def findall_(self, name):
-        """Get matching child elements by name (generator variant)"""
+        """Get matching child elements by name (generator variant)."""
         return (el for el in self.body if el.name == name)
 
     # For debugging convenience:
@@ -47,7 +50,9 @@ class Element():
 
 
 class Token(object):
+    """A utility class for parsing XML."""
     def __init__(self, s):
+        """Create a `Token' object from `s', the text comprising the parsed token."""
         self.text = s
     def __repr__(self):
         return str(type(self).__name__) + '(' + self.text.decode('utf-8') + ')'
@@ -62,10 +67,10 @@ class TokenCData(Token):
     """Textual element body"""
 
 class QuasiXmlParseError(Exception):
-    """Indicates parse failure of XML protocol data"""
+    """Indicates parse failure of XML protocol data."""
 
 def tokenize(s):
-    """Parse an XML-ish string into a list of tokens"""
+    """Parse an XML-ish string into a list of tokens."""
     tokens = []
 
     # Consume input until empty.
@@ -106,10 +111,10 @@ def tokenize(s):
             tokens.append(TokenCData(cdata))
 
 def fromtokens(tokens):
-    """Parse XML-ish tokens into an Element"""
+    """Parse XML-ish tokens into an Element."""
 
     def parse_elem(tokens):
-        """Parse some tokens into one Element, and return unconsumed tokens"""
+        """Parse some tokens into one Element, and return unconsumed tokens."""
         topen, tokens = tokens[0], tokens[1:]
         if type(topen) is not TokenTagOpen:
             raise QuasiXmlParseError('protocol error: data does not start with open tag')
@@ -148,19 +153,15 @@ def fromstring(s):
     return fromtokens(tokenize(s))
 
 
-entities = [('&', '&amp;'), # note: order matters. & must be encoded first.
-            ('<', '&lt;'),
-            ('>', '&gt;'),
-            ('`', '&apos;'), # https://github.com/irods/irods/issues/4132
-            ('"', '&quot;')]
-
 def encode_entities(s):
-    for k, v in entities:
+    from . import XML_entities_active
+    for k, v in XML_entities_active():
         s = s.replace(k, v)
     return s
 
 def decode_entities(s):
-    rev = list(entities)
+    from . import XML_entities_active
+    rev = list(XML_entities_active())
     rev.reverse() # (make sure &amp; is decoded last)
     for k, v in rev:
         s = s.replace(v, k)
