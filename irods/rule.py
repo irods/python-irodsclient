@@ -84,32 +84,36 @@ class Rule(object):
                     self.body += line
 
 
-    def execute(self, acceptable_errors = (ex.FAIL_ACTION_ENCOUNTERED_ERR,)
-                    , r_error_stack = None
-                    , return_message = () ):
+    def execute(self, session_cleanup = True,
+                      acceptable_errors = (ex.FAIL_ACTION_ENCOUNTERED_ERR,),
+                      r_error_stack = None,
+                      return_message = ()):
+        try:
+            # rule input
+            param_array = []
+            for label, value in self.params.items():
+                inOutStruct = STR_PI(myStr=value)
+                param_array.append(MsParam(label=label, type='STR_PI', inOutStruct=inOutStruct))
 
-        # rule input
-        param_array = []
-        for label, value in self.params.items():
-            inOutStruct = STR_PI(myStr=value)
-            param_array.append(MsParam(label=label, type='STR_PI', inOutStruct=inOutStruct))
+            inpParamArray = MsParamArray(paramLen=len(param_array), oprType=0, MsParam_PI=param_array)
 
-        inpParamArray = MsParamArray(paramLen=len(param_array), oprType=0, MsParam_PI=param_array)
+            # rule body
+            addr = RodsHostAddress(hostAddr='', rodsZone='', port=0, dummyInt=0)
+            condInput = StringStringMap( {} if self.instance_name is None
+                                            else {'instance_name':self.instance_name} )
+            message_body = RuleExecutionRequest(myRule=self.body, addr=addr, condInput=condInput, outParamDesc=self.output, inpParamArray=inpParamArray)
 
-        # rule body
-        addr = RodsHostAddress(hostAddr='', rodsZone='', port=0, dummyInt=0)
-        condInput = StringStringMap( {} if self.instance_name is None
-                                        else {'instance_name':self.instance_name} )
-        message_body = RuleExecutionRequest(myRule=self.body, addr=addr, condInput=condInput, outParamDesc=self.output, inpParamArray=inpParamArray)
+            request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['EXEC_MY_RULE_AN'])
 
-        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['EXEC_MY_RULE_AN'])
+            with self.session.pool.get_connection() as conn:
+                conn.send(request)
+                response = conn.recv(acceptable_errors = acceptable_errors, return_message = return_message, use_rounded_code = True)
+                try:
+                    out_param_array = response.get_main_message(MsParamArray, r_error = r_error_stack)
+                except iRODSMessage.ResponseNotParseable:
+                    return MsParamArray() # Ergo, no useful return value - but the RError stack will be accessible
+        finally:
+            if session_cleanup:
+                self.session.cleanup()
 
-        with self.session.pool.get_connection() as conn:
-            conn.send(request)
-            response = conn.recv(acceptable_errors = acceptable_errors, return_message = return_message, use_rounded_code = True)
-            try:
-                out_param_array = response.get_main_message(MsParamArray, r_error = r_error_stack)
-            except iRODSMessage.ResponseNotParseable:
-                return MsParamArray() # Ergo, no useful return value - but the RError stack will be accessible
-            self.session.cleanup()
         return out_param_array
