@@ -48,7 +48,12 @@ class Rule(object):
             for line in f:
                 # parse input line
                 if line.strip().lower().startswith('input'):
+
                     input_header, input_line = line.split(None, 1)
+
+                    if input_line.strip().lower() == 'null':
+                        self.params = {}
+                        continue
 
                     # sanity check
                     if input_header.lower() != 'input':
