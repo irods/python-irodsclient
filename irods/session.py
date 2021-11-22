@@ -58,7 +58,10 @@ class iRODSSession(object):
 
     def __del__(self):
         self.do_configure = {}
-        self.cleanup()
+        # If self.pool has been fully initialized (ie. no exception was
+        #   raised during __init__), then try to clean up.
+        if self.pool is not None:
+            self.cleanup()
 
     def cleanup(self):
         for conn in self.pool.active | self.pool.idle:
