@@ -19,6 +19,8 @@ from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
 
 logger = logging.getLogger(__name__)
 
+class NonAnonymousLoginWithoutPassword(RuntimeError): pass
+
 class iRODSSession(object):
 
     @property
@@ -113,7 +115,13 @@ class iRODSSession(object):
         except KeyError:
             pass
 
-        creds['password'] = self.get_irods_password(session_ = self, **creds)
+        missing_file_path = []
+        error_args = []
+        pw = creds['password'] = self.get_irods_password(session_ = self, file_path_if_not_found = missing_file_path, **creds)
+        if not pw and creds.get('irods_user_name') != 'anonymous':
+            if missing_file_path:
+                error_args += ["Authentication file not found at {!r}".format(missing_file_path[0])]
+            raise NonAnonymousLoginWithoutPassword(*error_args)
 
         return iRODSAccount(**creds)
 
@@ -201,7 +209,8 @@ class iRODSSession(object):
             return {}
 
     @staticmethod
-    def get_irods_password(session_ = None, **kwargs):
+    def get_irods_password(session_ = None, file_path_if_not_found = (), **kwargs):
+        path_memo  = []
         try:
             irods_auth_file = kwargs['irods_authentication_file']
         except KeyError:
@@ -219,9 +228,13 @@ class iRODSSession(object):
                 _retval = decode(f.read().rstrip('\n'), uid)
                 return _retval
         except IOError as exc:
-            if exc.errno != errno.ENOENT: raise # Auth file exists but can't be read
+            if exc.errno != errno.ENOENT:
+                raise  # Auth file exists but can't be read
+            path_memo = [ irods_auth_file ]
             return ''                           # No auth file (as with anonymous user)
         finally:
+            if isinstance(file_path_if_not_found, list) and path_memo:
+                file_path_if_not_found[:] = path_memo
             if session_ is not None and _retval:
                 session_._auth_file = irods_auth_file
 
