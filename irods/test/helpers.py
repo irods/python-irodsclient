@@ -72,7 +72,6 @@ def get_register_resource(session):
     return Reg_Resc_Name
 
 
-
 def make_session(**kwargs):
     try:
         env_file = kwargs.pop('irods_env_file')
@@ -89,6 +88,10 @@ def make_session(**kwargs):
         uid = None
 
     return iRODSSession( irods_authentication_uid = uid, irods_env_file = env_file, **kwargs )
+
+
+def home_collection(session):
+    return "/{0.zone}/home/{0.username}".format(session)
 
 
 def make_object(session, path, content=None, **options):
