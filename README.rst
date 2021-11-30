@@ -420,6 +420,57 @@ function uses the atomic metadata API to very quickly remove all AVUs from an ob
 ...     Object.metadata.apply_atomic_operations( *[AVUOperation(operation='remove', avu=i) for i in avus_on_Object] )
 
 
+Special Characters
+------------------
+
+Of course, it is fine to put Unicode characters into your collection and data object names.  However, certain
+non-printable ASCII characters, and the backquote character as well, have historically presented problems -
+especially for clients using iRODS's human readable XML protocol.  Consider this small, only slighly contrived,
+application:
+::
+
+    from irods.test.helpers import make_session
+
+    def create_notes( session, obj_name, content = u'' ):
+        get_home_coll = lambda ses: "/{0.zone}/home/{0.username}".format(ses)
+        path = get_home_coll(session) + "/" + obj_name
+        with session.data_objects.open(path,"a") as f:
+            f.seek(0, 2) # SEEK_END
+            f.write(content.encode('utf8'))
+        return session.data_objects.get(path)
+
+    with make_session() as session:
+
+        # Example 1 : exception thrown when name has non-printable character
+        try:
+            create_notes( session, "lucky\033.dat", content = u'test' )
+        except:
+            pass
+
+        # Example 2 (Ref. issue: irods/irods #4132, fixed for 4.2.9 release of iRODS)
+        print(
+            create_notes( session, "Alice`s diary").name  # note diff (' != `) in printed name
+        )
+
+
+This creates two data objects, but with less than optimal success.  The first example object
+is created but receives no content because an exception is thrown trying to query its name after
+creation.   In the second example, for iRODS 4.2.8 and before, a deficiency in packStruct XML protocol causes
+the backtick to be read back as an apostrophe, which could create problems manipulating or deleting the object later.
+
+As of PRC v1.1.0, we can mitigate both problems by switching in the QUASI_XML parser for the default one:
+::
+    from irods.message import (XML_Parser_Type, ET)
+    ET( XML_Parser.QUASI_XML, session.server_version )
+
+The same can be accomplished by putting a server-version-specific tuple into a special environment variable prior to running
+any application code:
+::
+    Bash-Shell> export PYTHON_IRODSCLIENT_QUASI_XML_DEFAULT_SERVER_VERSION=4,2,8
+
+This example causes the Python iRODS Client to select the QUASI_XML parser with a 4.2.8 server dialect as the default for
+any operations on iRODS client APIs.  This may also be overridden, on a per-thread basis, using the aforementioned ET() call.
+
 General queries
 ---------------
 
