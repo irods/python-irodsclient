@@ -72,10 +72,10 @@ class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
 
 
 def nominal_code( the_code, THRESHOLD = 1000 ):
-        nominal = []
-        c = rounded_code( the_code , nominal_int_repo = nominal )
-        negated = -abs(nominal[0])
-        return c if (negated <= -abs(THRESHOLD)) else negated  # produce a negative for nonzero integer input
+    nominal = []
+    c = rounded_code( the_code , nominal_int_repo = nominal )
+    negated = -abs(nominal[0])
+    return c if (negated <= -abs(THRESHOLD)) else negated  # produce a negative for nonzero integer input
 
 def rounded_code( the_code , nominal_int_repo = () ):
     nom_err = None
@@ -103,15 +103,11 @@ def get_exception_class_by_code(code, name_only=False):
       else (cls.__name__ if cls is not None else 'Unknown_iRODS_error')
 
 
-def get_exception_by_code(code, message = None, use_rounded_code = False):
-    if use_rounded_code:
-        code_ = rounded_code( code )
-    else:
-        code_ = code
-
-    exc = iRODSExceptionMeta.codes[code_](message)
-    exc.code = code
-    return exc
+def get_exception_by_code(code, message = None):
+    exc_class = iRODSExceptionMeta.codes[ rounded_code( code ) ]
+    exc_instance = exc_class( message )
+    exc_instance.code = code
+    return exc_instance
 
 
 class UnknowniRODSError(iRODSException):
@@ -1569,6 +1565,10 @@ class DATAACCESS_EMPTY_IN_STRUCT_ERR(RuleEngineException):
 
 class DATAACCESSINX_EMPTY_IN_STRUCT_ERR(RuleEngineException):
     code = -1016000
+
+
+class RE_TYPE_ERROR(RuleEngineException):
+    code = -1230000
 
 
 class NO_RULE_FOUND_ERR(RuleEngineException):

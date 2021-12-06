@@ -8,6 +8,8 @@ services:
       - POSTGRES_PASSWORD=pg_password
 
   irods-provider:
+    environment:
+      - PYTHON_RULE_ENGINE_INSTALLED=${python_rule_engine_installed}
     hostname: irods-provider
     build:
       context: docker_build
@@ -24,6 +26,8 @@ services:
 
   client-runner:
     env_file: client-runner.env
+    environment:
+      - PYTHON_RULE_ENGINE_INSTALLED=${python_rule_engine_installed}
     volumes:
       - ./irods_shared:/irods_shared:rw
     build:

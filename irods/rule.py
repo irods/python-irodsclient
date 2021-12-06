@@ -15,6 +15,19 @@ class RemoveRuleMessage(Message):
 
 class Rule(object):
     def __init__(self, session, rule_file=None, body='', params=None, output='', instance_name = None, irods_3_literal_style = False):
+        """
+        Initialize a rule object.
+
+        Arguments:
+        Use one of:
+          * rule_file : the name of an existing rule script ending in '.r' and containing iRODS rules
+          * body: the text of the rule code or rule call(s) to be run.
+        * instance_name: the name of the rule engine instance in the context of which to run the rule(s).
+        * output may be set to 'ruleExecOut' if console output is expected on stderr or stdout streams.
+        * params are key/value pairs to be sent into a rule_file.
+        * irods_3_literal_style: affects the format of the @external directive. Use `True' for iRODS 3.x.
+
+        """
         self.session = session
 
         self.params = {}
@@ -27,8 +40,12 @@ class Rule(object):
                    else '@external rule { ' + body + ' }'
 
         # overwrite params and output if received arguments
-        if params is not None:
-            self.params = (self.params or params)
+        if isinstance( params , dict ):
+            if self.params:
+                self.params.update( params )
+            else:
+                self.params = params
+
         if output != '':
             self.output = output
 
@@ -86,7 +103,7 @@ class Rule(object):
 
     def execute(self, session_cleanup = True,
                       acceptable_errors = (ex.FAIL_ACTION_ENCOUNTERED_ERR,),
-                      r_error_stack = None,
+                      r_error = None,
                       return_message = ()):
         try:
             # rule input
@@ -107,9 +124,9 @@ class Rule(object):
 
             with self.session.pool.get_connection() as conn:
                 conn.send(request)
-                response = conn.recv(acceptable_errors = acceptable_errors, return_message = return_message, use_rounded_code = True)
+                response = conn.recv(acceptable_errors = acceptable_errors, return_message = return_message)
                 try:
-                    out_param_array = response.get_main_message(MsParamArray, r_error = r_error_stack)
+                    out_param_array = response.get_main_message(MsParamArray, r_error = r_error)
                 except iRODSMessage.ResponseNotParseable:
                     return MsParamArray() # Ergo, no useful return value - but the RError stack will be accessible
         finally:

@@ -15,7 +15,7 @@ from irods.message import (
     iRODSMessage, StartupPack, AuthResponse, AuthChallenge, AuthPluginOut,
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
     PluginAuthMessage, ClientServerNegotiation, Error, GetTempPasswordOut)
-from irods.exception import get_exception_by_code, NetworkException, rounded_code, nominal_code
+from irods.exception import (get_exception_by_code, NetworkException, nominal_code)
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
     AUTH_SCHEME_KEY, AUTH_USER_KEY, AUTH_PWD_KEY, AUTH_TTL_KEY,
@@ -93,9 +93,8 @@ class Connection(object):
 
     def recv(self, into_buffer = None
                  , return_message = ()
-                 , acceptable_errors = ()
-                 , use_rounded_code = False):
-        acceptable_codes =  set(nominal_code(e) for e in acceptable_errors)
+                 , acceptable_errors = ()):
+        acceptable_codes = set(nominal_code(e) for e in acceptable_errors)
         try:
             if into_buffer is None:
                 msg = iRODSMessage.recv(self.socket)
@@ -112,7 +111,7 @@ class Connection(object):
             except TypeError:
                 err_msg = None
             if nominal_code(msg.int_info) not in acceptable_codes:
-                raise get_exception_by_code(msg.int_info, err_msg, use_rounded_code = use_rounded_code)
+                raise get_exception_by_code(msg.int_info, err_msg)
         return msg
 
     def recv_into(self, buffer, **options):

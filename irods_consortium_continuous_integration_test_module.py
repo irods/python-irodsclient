@@ -8,7 +8,8 @@ def run (CI):
             "yaml_substitutions": {       # -> written to ".env"
                 "python_version" : "3",
                 "client_os_generic": "ubuntu",
-                "client_os_image": "ubuntu:18.04"
+                "client_os_image": "ubuntu:18.04",
+                "python_rule_engine_installed": "y"
             },
             "container_environments": {
                 "client-runner" : {       # -> written to "client-runner.env"

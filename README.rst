@@ -471,6 +471,120 @@ any application code:
 This example causes the Python iRODS Client to select the QUASI_XML parser with a 4.2.8 server dialect as the default for
 any operations on iRODS client APIs.  This may also be overridden, on a per-thread basis, using the aforementioned ET() call.
 
+
+Rule Execution
+--------------
+
+A simple example of how to execute an iRODS rule from the Python client is as follows.  Suppose we have a rule file
+:code:`native1.r` which contains a rule in native iRODS Rule Language::
+
+  main() {
+      writeLine("*stream",
+                *X ++ " squared is " ++ str(double(*X)^2) )
+  }
+
+  INPUT *X="3", *stream="serverLog"
+  OUTPUT null
+
+The following Python client code will run the rule and produce the appropriate output in the
+irods server log::
+
+  r = irods.rule.Rule( session, rule_file = 'native1.r')
+  r.execute()
+
+Release v1.1.0 includes the ability to target a specific rule engine instance by name, so if other rule engine instances are present, we may want
+to instantiate using::
+
+  Rule( ... , instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance' )
+
+Additionally, if we wanted to have the :code:`native1.r` rule code print to stdout instead, we could also set :code:`*stream` in the :code:`INPUT`
+parameters for the rule and change the :code:`OUTPUT` parameter from :code:`null` to :code:`ruleExecOut` to accommodate the output stream::
+
+  r = irods.rule.Rule( session, rule_file = 'native1.r',
+             instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance',
+             params={'*stream':'"stdout"'} , output = 'ruleExecOut' )
+  output = r.execute( )
+  if output and len(output.MsParam_PI):
+      buf = output.MsParam_PI[0].inOutStruct.stdoutBuf.buf
+      if buf: print(buf.rstrip(b'\0').decode('utf8'))
+
+(Changing the input value to be squared in this example is left as an exercise for the reader!)
+
+To deal with errors resulting from rule execution failure, two approaches can be taken. Suppose we
+have defined this in the :code:`/etc/irods/core.re` rule-base::
+
+  rule_that_fails_with_error_code(*x) {
+    *y = (if (*x!="") then int(*x) else 0)
+  # if (SOME_PROCEDURE_GOES_WRONG) {
+      if (*y < 0) { failmsg(*y,"-- my error message --"); }  #-> throws an error code of int(*x) in REPF
+      else { fail(); }                                       #-> throws FAIL_ACTION_ENCOUNTERED_ERR in REPF
+  # }
+  }
+
+We can run the rule thus:
+
+>>> Rule( session, body='rule_that_fails_with_error_code(""), instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance',
+...     ).execute( r_error = (r_errs:= irods.message.RErrorStack()) )
+
+Where we've used the Python 3.8 "walrus operator" for brevity.  The error will automatically be caught and translated to a
+returned-error stack::
+
+  >>> pprint.pprint([vars(r) for r in r_errs])
+  [{'raw_msg_': 'DEBUG: fail action encountered\n'
+                'line 14, col 15, rule base core\n'
+                '        else { fail(); }\n'
+                '               ^\n'
+                '\n',
+    'status_': -1220000}]
+
+Note, if a stringized negative integer is given , ie. as a special fail code to be thrown within the rule,
+we must add this code into a special parameter to have this automatically caught as well:
+
+>>> Rule( session, body='rule_that_fails_with_error_code("-2")',instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance'
+...     ).execute( acceptable_errors = ( FAIL_ACTION_ENCOUNTERED_ERR, -2),
+...                r_error = (r_errs := irods.message.RErrorStack()) )
+
+Because the rule is written to emit a custom error message via failmsg in this case, the resulting r_error stack will now include that
+custom error message as a substring::
+
+  >>> pprint.pprint([vars(r) for r in r_errs])
+  [{'raw_msg_': 'DEBUG: -- my error message --\n'
+                'line 21, col 20, rule base core\n'
+                '      if (*y < 0) { failmsg(*y,"-- my error message --"); }  '
+                '#-> throws an error code of int(*x) in REPF\n'
+                '                    ^\n'
+                '\n',
+    'status_': -1220000}]
+
+Alternatively, or in combination with the automatic catching of errors, we may also catch errors as exceptions on the client
+side.  For example, if the Python rule engine is configured, and the following rule is placed in :code:`/etc/irods/core.py`::
+
+  def python_rule(rule_args, callback, rei):
+  #   if some operation fails():
+          raise RuntimeError
+
+we can trap the error thus::
+
+  try:
+      Rule( body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance' ).execute()
+  except irods.exception.RE_RULE_ENGINE_ERROR:
+      print('Rule execution failed!')
+      exit(1)
+  print('Rule execution succeeded!')
+
+As fail actions from native rules are not thrown by default (refer to the help text for :code:`Rule.execute`), if we
+anticipate these and prefer to catch them as exceptions, we can do it this way::
+
+  try:
+      Rule( body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance'
+           ).execute( acceptable_errors = () )
+  except (irods.exception.RE_RULE_ENGINE_ERROR,
+          irods.exception.FAIL_ACTION_ENCOUNTERED_ERR) as e:
+      print('Rule execution failed!')
+      exit(1)
+  print('Rule execution succeeded!')
+
+
 General queries
 ---------------
 
