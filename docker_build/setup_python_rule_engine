@@ -1,0 +1,48 @@
+#!/bin/bash
+
+jq_process_in_place() {
+    local filename=$1
+    shift
+    local basenm=$(basename "$filename")
+    local tempname=/tmp/.$$.$basenm
+
+    jq "$@" <"$filename" >"$tempname" && \
+    cp "$tempname" "$filename"
+    STATUS=$?
+    rm -f "$tempname"
+    [ $STATUS = 0 ] || echo "**** jq process error" >&2
+}
+
+jq_process_in_place /etc/irods/server_config.json \
+   '.plugin_configuration.rule_engines[1:1]=[ { "instance_name": "irods_rule_engine_plugin-python-instance",
+                                                "plugin_name": "irods_rule_engine_plugin-python",
+                                                "plugin_specific_configuration": {}
+                                              }
+                                            ]'
+
+echo '
+defined_in_both {
+    writeLine("stdout", "native rule")
+}
+
+generic_failing_rule {
+    fail
+}
+
+failing_with_message {
+    failmsg(-2, "error with code of minus 2")
+}
+
+' >> /etc/irods/core.re
+
+echo '
+def defined_in_both(rule_args,callback,rei):
+    callback.writeLine("stdout", "python rule")
+
+def generic_failing_rule(*_):
+    raise RuntimeError
+
+def failing_with_message_py(rule_args,callback,rei):
+    callback.failing_with_message()
+
+' > /etc/irods/core.py

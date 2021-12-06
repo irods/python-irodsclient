@@ -15,7 +15,8 @@ COPY pgpass root/.pgpass
 RUN chmod 600 root/.pgpass
 
 RUN apt install -y rsyslog gawk
-ADD build_deps_list wait_on_condition send_oneshot /tmp/
+RUN apt install -y jq
+ADD build_deps_list wait_on_condition send_oneshot setup_python_rule_engine /tmp/
 
 # At Runtime: 1. Install apt dependencies for the iRODS package files given.
 #             2. Install the package files.
@@ -32,6 +33,7 @@ CMD apt install -y $(/tmp/build_deps_list /irods_packages/irods*{serv,dev,icomma
       psql -h icat -U postgres -f /tmp/ICAT.sql && \
     sed 's/localhost/icat/' < /var/lib/irods/packaging/localhost_setup_postgres.input \
         | python /var/lib/irods/scripts/setup_irods.py && \
+    { [ "${PYTHON_RULE_ENGINE_INSTALLED}" = '' ] || { apt install -y irods-rule-engine-plugin-python && /tmp/setup_python_rule_engine; } } && \
     { pgrep -u irods irodsServer >/dev/null || su irods -c '~/irodsctl start'; \
       env PORT=8888 /tmp/send_oneshot "iRODS is running..." & } && \
     { [ ! -d /irods_shared ] || { mkdir -p /irods_shared/reg_resc && mkdir -p /irods_shared/tmp && \

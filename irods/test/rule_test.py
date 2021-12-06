@@ -7,10 +7,15 @@ import time
 import textwrap
 import unittest
 from irods.models import DataObject
+from irods.exception import (FAIL_ACTION_ENCOUNTERED_ERR, RULE_ENGINE_ERROR, UnknowniRODSError)
 import irods.test.helpers as helpers
 from irods.rule import Rule
 import six
 from io import open as io_open
+
+
+RE_Plugins_installed_run_condition_args = ( os.environ.get('PYTHON_RULE_ENGINE_INSTALLED','*').lower()[:1]=='y',
+                                           'Test depends on server having Python-REP installed beyond the default options' )
 
 
 class TestRule(unittest.TestCase):
@@ -98,16 +103,100 @@ class TestRule(unittest.TestCase):
         myrule.execute()
 
 
+    # test catching fail-type actions initiated directly in the instance being called.
+    #
+    @unittest.skipUnless (*RE_Plugins_installed_run_condition_args)
+    def test_with_fail_in_targeted_rule_engines(self):
+        self._failing_in_targeted_rule_engines(rule_to_call = "generic_failing_rule")
+
+
+    # test catching rule fail actions initiated using the native 'failmsg' microservice.
+    #
+    @unittest.skipUnless (*RE_Plugins_installed_run_condition_args)
+    def test_with_using_native_fail_msvc(self):
+        error_dict = \
+        self._failing_in_targeted_rule_engines(rule_to_call = [('irods_rule_engine_plugin-python-instance','failing_with_message_py'),
+                                                               ('irods_rule_engine_plugin-irods_rule_language-instance','failing_with_message')])
+        for v in error_dict.values():
+            self.assertIn('code of minus 2', v[1].args[0])
+
+    # helper for the previous two tests.
+    #
+    def _failing_in_targeted_rule_engines(self, rule_to_call = None):
+        session = self.sess
+        if isinstance(rule_to_call,(list,tuple)):
+            rule_dict = dict(rule_to_call)
+        else:
+            rule_dict = {}
+
+        rule_instances_list = ( 'irods_rule_engine_plugin-irods_rule_language-instance',
+                                'irods_rule_engine_plugin-python-instance' )
+        err_hash = {}
+
+        for i in rule_instances_list:
+
+            if rule_dict:
+                rule_to_call = rule_dict[i]
+
+            rule = Rule( session, body = rule_to_call,
+                         instance_name = i )
+            try:
+                rule.execute( acceptable_errors = (-1,) )
+            except UnknowniRODSError as e:
+                err_hash[i] = ('rule exec failed! - misc - ',(e)) # 2-tuple = failure
+            except RULE_ENGINE_ERROR as e:
+                err_hash[i] = ('rule exec failed! - python - ',(e)) # 2-tuple = failure
+            except FAIL_ACTION_ENCOUNTERED_ERR as e:
+                err_hash[i] = ('rule exec failed! - native - ',(e))
+            else:
+                err_hash[i] = ('rule exec succeeded!',) # 1-tuple = success
+
+        self.assertEqual( len(err_hash), len(rule_instances_list) )
+        self.assertEqual( len(err_hash), len([val for val in err_hash.values() if val[0].startswith('rule exec failed')]) )
+        return err_hash
+
+
+    @unittest.skipUnless (*RE_Plugins_installed_run_condition_args)
+    def test_targeting_Python_instance_when_rule_multiply_defined(self):
+        self._with_X_instance_when_rule_multiply_defined(
+            instance_name  = 'irods_rule_engine_plugin-python-instance',
+            test_condition = lambda bstring: b'python' in bstring
+            )
+
+    @unittest.skipUnless (*RE_Plugins_installed_run_condition_args)
+    def test_targeting_Native_instance_when_rule_multiply_defined(self):
+        self._with_X_instance_when_rule_multiply_defined(
+            instance_name  = 'irods_rule_engine_plugin-irods_rule_language-instance',
+            test_condition = lambda bstring: b'native' in bstring
+            )
+
+    @unittest.skipUnless (*RE_Plugins_installed_run_condition_args)
+    def test_targeting_Unspecified_instance_when_rule_multiply_defined(self):
+        self._with_X_instance_when_rule_multiply_defined(
+            test_condition = lambda bstring: b'native' in bstring and b'python' in bstring
+            )
+
+    def _with_X_instance_when_rule_multiply_defined(self,**kw):
+        session = self.sess
+        rule = Rule( session, body = 'defined_in_both',
+                     output = 'ruleExecOut',
+                     **{key:val for key,val in kw.items() if key == 'instance_name'}
+                   )
+        output  = rule.execute()
+        buf = output.MsParam_PI[0].inOutStruct.stdoutBuf.buf
+        self.assertTrue(kw['test_condition'](buf.rstrip(b'\0').rstrip()))
+
+
     def test_specifying_rule_instance(self):
 
-        self._helper_writeline_to_stream(
+        self._with_writeline_to_stream(
                 stream_name = 'stdout',
                 rule_engine_instance = "irods_rule_engine_plugin-irods_rule_language-instance" )
 
 
-    def _helper_writeline_to_stream(self, stream_name = "serverLog",
+    def _with_writeline_to_stream(self, stream_name = "serverLog",
                                           output_string = 'test-writeline-to-stream',
-                                          alternate_input_params = {},
+                                          alternate_input_params = (),
                                           rule_engine_instance = ""):
 
         session = self.sess
