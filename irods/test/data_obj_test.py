@@ -15,6 +15,7 @@ import io
 import re
 import time
 import concurrent.futures
+import xml.etree.ElementTree
 
 from irods.models import Collection, DataObject
 import irods.exception as ex
@@ -1495,9 +1496,9 @@ class TestDataObjOps(unittest.TestCase):
                             ''.join(map(chr,range(1,128))) )
             for opts in [
                     {'method':'put',     'options':{}},
-                    {'method':'register','options':{kw.RESC_NAME_KW: resc_name}}
+                    {'method':'register','options':{kw.RESC_NAME_KW: resc_name}, 'dir':(test_dir or None)}
                 ]:
-                with NamedTemporaryFile(prefix=opts["method"]+"_"+fname, delete=False) as f:
+                with NamedTemporaryFile(prefix=opts["method"]+"_"+fname, dir=opts.get("dir"), delete=False) as f:
                     f.write(b'hello')
                     temp_names += [f.name]
                 ses = helpers.make_session()
@@ -1510,6 +1511,7 @@ class TestDataObjOps(unittest.TestCase):
                     os.unlink(name)
             if vault:
                 self.sess.resources.remove( resc_name )
+        self.assertIs( ET(), xml.etree.ElementTree )
 
     def test_register_with_xml_special_chars(self):
         test_dir = helpers.irods_shared_tmp_dir()
