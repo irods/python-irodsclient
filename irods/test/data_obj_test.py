@@ -25,7 +25,7 @@ import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.manager import data_object_manager
 from irods.message import RErrorStack
-from irods.message import ( ET, XML_Parser_Type )
+from irods.message import ( ET, XML_Parser_Type, default_XML_parser, current_XML_parser )
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from irods.test.helpers import (unique_name, my_function_name)
@@ -1511,7 +1511,7 @@ class TestDataObjOps(unittest.TestCase):
                     os.unlink(name)
             if vault:
                 self.sess.resources.remove( resc_name )
-        self.assertIs( ET(), xml.etree.ElementTree )
+        self.assertIs( default_XML_parser(), current_XML_parser() )
 
     def test_register_with_xml_special_chars(self):
         test_dir = helpers.irods_shared_tmp_dir()

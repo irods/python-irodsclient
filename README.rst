@@ -463,13 +463,22 @@ As of PRC v1.1.0, we can mitigate both problems by switching in the QUASI_XML pa
     from irods.message import (XML_Parser_Type, ET)
     ET( XML_Parser.QUASI_XML, session.server_version )
 
-The same can be accomplished by putting a server-version-specific tuple into a special environment variable prior to running
-any application code:
-::
-    Bash-Shell> export PYTHON_IRODSCLIENT_QUASI_XML_DEFAULT_SERVER_VERSION=4,2,8
+Two dedicated environment variables may also be used to customize the Python client's XML parsing behavior via the
+setting of global defaults during start-up.
 
-This example causes the Python iRODS Client to select the QUASI_XML parser with a 4.2.8 server dialect as the default for
-any operations on iRODS client APIs.  This may also be overridden, on a per-thread basis, using the aforementioned ET() call.
+For example, we can set the default parser to QUASI_XML, optimized for use with version 4.2.8 of the iRODS server,
+in the following manner:
+::
+    Bash-Shell> export PYTHON_IRODSCLIENT_DEFAULT_XML=QUASI_XML PYTHON_IRODSCLIENT_QUASI_XML_SERVER_VERSION=4,2,8
+
+Other alternatives for PYTHON_IRODSCLIENT_DEFAULT_XML are "STANDARD_XML" and "SECURE_XML".  These two latter options
+denote use of the xml.etree and defusedxml modules, respectively.
+
+Only the choice of "QUASI_XML" is affected by the specification of a particular server version.
+
+Finally, note that these global defaults, once set, may be overridden on a per-thread basis using
+:code:`ET(parser_type, server_version)`.  We can also revert the current thread's XML parser back to the
+global default by calling :code:`ET(None)`.
 
 
 Rule Execution
