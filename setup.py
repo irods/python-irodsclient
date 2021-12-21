@@ -39,6 +39,7 @@ setup(name='python-irodsclient',
       install_requires=[
                         'six>=1.10.0',
                         'PrettyTable>=0.7.2',
+                        'defusedxml',
                         # - the new syntax:
                         #'futures; python_version == "2.7"'
                         ],

@@ -6,7 +6,7 @@ import sys
 import unittest
 from irods.models import Collection, DataObject
 import xml.etree.ElementTree as ET
-from irods.message import (ET as ET_set, XML_Parser_Type)
+from irods.message import (ET as ET_set, XML_Parser_Type, current_XML_parser, default_XML_parser)
 import logging
 import irods.test.helpers as helpers
 
@@ -79,11 +79,11 @@ class TestUnicodeNames(unittest.TestCase):
             path = homepath + "/" + dataname
             self.sess.data_objects.create( path )
         finally:
-            ET_set( XML_Parser_Type.STANDARD_XML )
+            ET_set( None )
             self.sess.data_objects.unlink (path, force = True)
 
-        # assert successful switch back to STANDARD_XML parser
-        self.assertTrue( ET_set(), ET )
+        # assert successful switch back to global default
+        self.assertIs( current_XML_parser(), default_XML_parser() )
 
     def test_files(self):
         # Query for all files in test collection

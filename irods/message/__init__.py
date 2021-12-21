@@ -8,7 +8,8 @@ import json
 from six.moves import builtins
 import irods.exception as ex
 import xml.etree.ElementTree as ET_xml
-from . import quasixml as ET_quasixml
+import defusedxml.ElementTree as ET_secure_xml
+from . import quasixml as ET_quasi_xml
 from collections import namedtuple
 import os
 import ast
@@ -21,7 +22,7 @@ from irods.message.property import (BinaryProperty, StringProperty,
 _TUPLE_LIKE_TYPES = (tuple, list)
 
 def _qxml_server_version( var ):
-    val = os.environ.get( var, '' )
+    val = os.environ.get( var, '()' )
     vsn = (val and ast.literal_eval( val ))
     if not isinstance( vsn, _TUPLE_LIKE_TYPES ): return None
     return tuple( vsn )
@@ -32,6 +33,7 @@ if sys.version_info >= (3,):
         _invalid = 0
         STANDARD_XML = 1
         QUASI_XML = 2
+        SECURE_XML = 3
 else:
     class MyIntEnum(int):
         """An integer enum class suited to the purpose. A shim until we get rid of Python2."""
@@ -50,6 +52,7 @@ else:
         pass
     XML_Parser_Type.STANDARD_XML = XML_Parser_Type (1)
     XML_Parser_Type.QUASI_XML = XML_Parser_Type (2)
+    XML_Parser_Type.SECURE_XML = XML_Parser_Type (3)
 
 # We maintain values on a per-thread basis of:
 #   - the server version with which we're communicating
@@ -57,30 +60,51 @@ else:
 
 _thrlocal = threading.local()
 
-# The packStruct message parser defaults to STANDARD_XML but you can override it by setting the
-# environment variable PYTHON_IRODSCLIENT_QUASI_XML_DEFAULT_SERVER_VERSION.
-# If this variable is defined in the environment, its value:
-#    * must be tuple-like and of a commensurate or compatible version with the connected server.
-#    * should be <= 4,2,8 for older servers wherein backticks were incorrectly encoded as '&apos;'
-#    * can be () or >=4,2,9 for newer servers to allow a flexible character set within iRODS protocol.
-#    * empty or not defined, in which case the standard XML protocol is used.
+# The packStruct message parser defaults to STANDARD_XML but we can override it by setting the
+# environment variable PYTHON_IRODSCLIENT_DEFAULT_XML to either 'SECURE_XML' or 'QUASI_XML'.
+# If QUASI_XML is selected, the environment variable PYTHON_IRODSCLIENT_QUASI_XML_SERVER_VERSION
+# may also be set to a tuple "X,Y,Z" to inform the client of the connected iRODS server version.
+# If we set a value for the version, it can be either:
+#    * 4,2,8 to work with that server version and older ones which incorrectly encoded back-ticks as '&apos;'
+#    * an empty tuple "()" or something >= 4,2,9 to work with newer servers to allow a flexible character
+#      set within iRODS protocol.
 
-_Quasi_Xml_Default_Server_Version = _qxml_server_version('PYTHON_IRODSCLIENT_QUASI_XML_DEFAULT_SERVER_VERSION')
+class BadXMLSpec(RuntimeError): pass
 
-_current_XML_parser = XML_Parser_Type.QUASI_XML if _Quasi_Xml_Default_Server_Version is not None \
-                 else XML_Parser_Type.STANDARD_XML
+_Quasi_Xml_Server_Version = _qxml_server_version('PYTHON_IRODSCLIENT_QUASI_XML_SERVER_VERSION')
+if _Quasi_Xml_Server_Version is None:  # unspecified in environment yields empty tuple ()
+    raise BadXMLSpec('Must properly specify a server version to use QUASI_XML')
 
-def current_XML_parser():
-    return getattr(_thrlocal,'xml_type',_current_XML_parser)
+_XML_strings = { k:v for k,v in vars(XML_Parser_Type).items() if k.endswith('_XML')}
+
+
+_default_XML = os.environ.get('PYTHON_IRODSCLIENT_DEFAULT_XML','')
+if not _default_XML:
+    _default_XML = XML_Parser_Type.STANDARD_XML
+else:
+    try:
+        _default_XML = _XML_strings[_default_XML]
+    except KeyError:
+        raise BadXMLSpec('XML parser type not recognized')
+
+
+def current_XML_parser(get_module = False):
+    d = getattr(_thrlocal,'xml_type',_default_XML)
+    return d if not get_module else _XML_parsers[d]
+
+def default_XML_parser(get_module = False):
+    d = _default_XML
+    return d if not get_module else _XML_parsers[d]
 
 _XML_parsers = {
     XML_Parser_Type.STANDARD_XML : ET_xml,
-    XML_Parser_Type.QUASI_XML : ET_quasixml
+    XML_Parser_Type.QUASI_XML : ET_quasi_xml,
+    XML_Parser_Type.SECURE_XML : ET_secure_xml
 }
 
 
 def XML_entities_active():
-    Server = getattr(_thrlocal,'irods_server_version',_Quasi_Xml_Default_Server_Version)
+    Server = getattr(_thrlocal,'irods_server_version',_Quasi_Xml_Server_Version)
     return [ ('&', '&amp;'), # note: order matters. & must be encoded first.
              ('<', '&lt;'),
              ('>', '&gt;'),
@@ -106,8 +130,9 @@ def ET(xml_type = 0, server_version = None):
     `server_version', if given, should be a list or tuple specifying the version of the connected iRODS server.
 
     """
-    if xml_type:
-        _thrlocal.xml_type = xml_type = XML_Parser_Type(xml_type)
+    if xml_type is not 0:
+        _thrlocal.xml_type = default_XML_parser() if xml_type in (None, XML_Parser_Type(0)) \
+                        else XML_Parser_Type(xml_type)
     if isinstance(server_version, _TUPLE_LIKE_TYPES):
         _thrlocal.irods_server_version = tuple(server_version)  #  A default server version for Quasi-XML parsing is set (from the environment) and
     return _XML_parsers[current_XML_parser()]                   #  applies to all threads in which ET() has not been called to update the value.
