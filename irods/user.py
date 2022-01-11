@@ -44,6 +44,11 @@ class iRODSUser(object):
                  self.manager.sess.metadata, User, self.name)
         return self._meta
 
+    def modify_password(self, old_value, new_value, modify_irods_authentication_file = False):
+        self.manager.modify_password(old_value,
+                                         new_value,
+                                         modify_irods_authentication_file = modify_irods_authentication_file)
+
     def modify(self, *args, **kwargs):
         self.manager.modify(self.name, *args, **kwargs)
 

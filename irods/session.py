@@ -21,10 +21,19 @@ logger = logging.getLogger(__name__)
 
 class iRODSSession(object):
 
+    @property
+    def env_file (self):
+        return self._env_file
+
+    @property
+    def auth_file (self):
+        return self._auth_file
+
     def __init__(self, configure=True, **kwargs):
         self.pool = None
         self.numThreads = 0
-
+        self._env_file = ''
+        self._auth_file = ''
         self.do_configure = (kwargs if configure else {})
         self.__configured = None
         if configure:
@@ -77,7 +86,7 @@ class iRODSSession(object):
             return iRODSAccount(**kwargs)
 
         # Get credentials from irods environment file
-        creds = self.get_irods_env(env_file)
+        creds = self.get_irods_env(env_file, session_ = self)
 
         # Update with new keywords arguments only
         creds.update((key, value) for key, value in kwargs.items() if key not in creds)
@@ -104,7 +113,7 @@ class iRODSSession(object):
         except KeyError:
             pass
 
-        creds['password'] = self.get_irods_password(**creds)
+        creds['password'] = self.get_irods_password(session_ = self, **creds)
 
         return iRODSAccount(**creds)
 
@@ -180,16 +189,19 @@ class iRODSSession(object):
             return os.path.expanduser('~/.irods/.irodsA')
 
     @staticmethod
-    def get_irods_env(env_file):
+    def get_irods_env(env_file, session_ = None):
         try:
             with open(env_file, 'rt') as f:
-                return json.load(f)
+                j = json.load(f)
+                if session_ is not None:
+                    session_._env_file = env_file
+                return j
         except IOError:
             logger.debug("Could not open file {}".format(env_file))
             return {}
 
     @staticmethod
-    def get_irods_password(**kwargs):
+    def get_irods_password(session_ = None, **kwargs):
         try:
             irods_auth_file = kwargs['irods_authentication_file']
         except KeyError:
@@ -200,12 +212,18 @@ class iRODSSession(object):
         except KeyError:
             uid = None
 
+        _retval = ''
+
         try:
             with open(irods_auth_file, 'r') as f:
-                return decode(f.read().rstrip('\n'), uid)
+                _retval = decode(f.read().rstrip('\n'), uid)
+                return _retval
         except IOError as exc:
             if exc.errno != errno.ENOENT: raise # Auth file exists but can't be read
             return ''                           # No auth file (as with anonymous user)
+        finally:
+            if session_ is not None and _retval:
+                session_._auth_file = irods_auth_file
 
     def get_connection_refresh_time(self, **kwargs):
         connection_refresh_time = -1

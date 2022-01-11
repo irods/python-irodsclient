@@ -12,9 +12,11 @@ import inspect
 import threading
 import random
 import datetime
+import json
 from pwd import getpwnam
 from irods.session import iRODSSession
 from irods.message import iRODSMessage
+from irods.password_obfuscation import encode
 from six.moves import range
 
 
@@ -70,6 +72,20 @@ def get_register_resource(session):
         session.resources.create(IRODS_REG_RESC, 'unixfilesystem', session.host, vault_path)
         Reg_Resc_Name = IRODS_REG_RESC
     return Reg_Resc_Name
+
+
+def make_environment_and_auth_files( dir_, **params ):
+    if not os.path.exists(dir_): os.mkdir(dir_)
+    def recast(k):
+        return 'irods_' + k + ('_name' if k in ('user','zone') else '')
+    config = os.path.join(dir_,'irods_environment.json')
+    with open(config,'w') as f1:
+        json.dump({recast(k):v for k,v in params.items() if k != 'password'},f1,indent=4)
+    auth = os.path.join(dir_,'.irodsA')
+    with open(auth,'w') as f2:
+        f2.write(encode(params['password']))
+    os.chmod(auth,0o600)
+    return (config, auth)
 
 
 def make_session(**kwargs):

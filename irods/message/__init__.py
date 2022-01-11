@@ -685,14 +685,14 @@ class VersionResponse(Message):
     cookie = IntegerProperty()
 
 
-# define generalAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
-# str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
+class _admin_request_base(Message):
 
-class GeneralAdminRequest(Message):
-    _name = 'generalAdminInp_PI'
+    _name = None
 
     def __init__(self, *args):
-        super(GeneralAdminRequest, self).__init__()
+        if self.__class__._name is None:
+            raise NotImplementedError
+        super(_admin_request_base, self).__init__()
         for i in range(10):
             if i < len(args) and args[i]:
                 setattr(self, 'arg{0}'.format(i), args[i])
@@ -709,6 +709,20 @@ class GeneralAdminRequest(Message):
     arg7 = StringProperty()
     arg8 = StringProperty()
     arg9 = StringProperty()
+
+
+# define generalAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
+# str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
+
+class GeneralAdminRequest(_admin_request_base):
+    _name = 'generalAdminInp_PI'
+
+
+# define userAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
+# str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
+
+class UserAdminRequest(_admin_request_base):
+    _name = 'userAdminInp_PI'
 
 
 class GetTempPasswordForOtherRequest(Message):

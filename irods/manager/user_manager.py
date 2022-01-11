@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 import logging
+import os
 
 from irods.models import User, UserGroup
 from irods.manager import Manager
-from irods.message import GeneralAdminRequest, iRODSMessage, GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut
+from irods.message import UserAdminRequest, GeneralAdminRequest, iRODSMessage, GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut
 from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFound, CAT_SQL_ERR
 from irods.api_number import api_number
 from irods.user import iRODSUser, iRODSUserGroup
@@ -81,6 +82,70 @@ class UserManager(Manager):
             msg = response.get_main_message(GetTempPasswordForOtherOut)
             return obf.create_temp_password(msg.stringToHashWith, conn.account.password)
 
+
+    class EnvStoredPasswordNotEdited(RuntimeError):
+
+        """
+        Error thrown by a password change attempt if a login password encoded in the
+        irods environment could not be updated.
+
+        This error will be seen when `modify_irods_authentication_file' is set True and the
+        authentication scheme in effect for the session is other than iRODS native,
+        using a password loaded from the client environment.
+        """
+
+        pass
+
+    @staticmethod
+    def abspath_exists(path):
+        return (isinstance(path,str) and
+                os.path.isabs(path) and
+                os.path.exists(path))
+
+    def modify_password(self, old_value, new_value, modify_irods_authentication_file = False):
+
+        """
+        Change the password for the current user (in the manner of `ipasswd').
+
+        Parameters:
+            old_value - the currently valid (old) password
+            new_value - the desired (new) password
+            modify_irods_authentication_file - Can be False, True, or a string.  If a string, it should indicate
+                                  the absolute path of an IRODS_AUTHENTICATION_FILE to be altered.
+        """
+        with self.sess.pool.get_connection() as conn:
+
+            hash_new_value = obf.obfuscate_new_password(new_value, old_value, conn.client_signature)
+
+            message_body = UserAdminRequest(
+                "userpw",
+                self.sess.username,
+                "password",
+                hash_new_value
+            )
+            request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                                   int_info=api_number['USER_ADMIN_AN'])
+
+            conn.send(request)
+            response = conn.recv()
+            if modify_irods_authentication_file:
+                auth_file = self.sess.auth_file
+                if not auth_file or isinstance(modify_irods_authentication_file, str):
+                    auth_file = (modify_irods_authentication_file if self.abspath_exists(modify_irods_authentication_file) else '')
+                if not auth_file:
+                    message = "Session not loaded from an environment file."
+                    raise UserManager.EnvStoredPasswordNotEdited(message)
+                else:
+                    with open(auth_file) as f:
+                        stored_pw = obf.decode(f.read())
+                    if stored_pw != old_value:
+                        message = "Not changing contents of '{}' - "\
+                                  "stored password is non-native or false match to old password".format(auth_file)
+                        raise UserManager.EnvStoredPasswordNotEdited(message)
+                    with open(auth_file,'w') as f:
+                        f.write(obf.encode(new_value))
+
+        logger.debug(response.int_info)
 
     def modify(self, user_name, option, new_value, user_zone=""):
 
