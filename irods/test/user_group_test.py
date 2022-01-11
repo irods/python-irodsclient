@@ -3,9 +3,13 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
-from irods.exception import UserGroupDoesNotExist
+import tempfile
+import shutil
+from irods.exception import UserGroupDoesNotExist, UserDoesNotExist
 from irods.meta import iRODSMetaCollection, iRODSMeta
 from irods.models import User, UserGroup, UserMeta
+from irods.session import iRODSSession
+import irods.exception as ex
 import irods.test.helpers as helpers
 from six.moves import range
 
@@ -19,6 +23,95 @@ class TestUserGroup(unittest.TestCase):
         '''Close connections
         '''
         self.sess.cleanup()
+
+    def test_modify_password__328(self):
+        ses = self.sess
+        if ses.users.get( ses.username ).type != 'rodsadmin':
+            self.skipTest( 'Only a rodsadmin may run this test.')
+
+        OLDPASS = 'apass'
+        NEWPASS = 'newpass'
+        try:
+            ses.users.create('alice', 'rodsuser')
+            ses.users.modify('alice', 'password', OLDPASS)
+
+            with iRODSSession(user='alice', password=OLDPASS, host=ses.host, port=ses.port, zone=ses.zone) as alice:
+                me = alice.users.get(alice.username)
+                me.modify_password(OLDPASS, NEWPASS)
+
+            with iRODSSession(user='alice', password=NEWPASS, host=ses.host, port=ses.port, zone=ses.zone) as alice:
+                home = helpers.home_collection( alice )
+                alice.collections.get( home ) # Non-trivial operation to test success!
+        finally:
+            try:
+                ses.users.get('alice').remove()
+            except UserDoesNotExist:
+                pass
+
+    @staticmethod
+    def do_something(session):
+        return session.username in [i[User.name] for i in session.query(User)]
+
+    def test_modify_password_with_changing_auth_file__328(self):
+        ses = self.sess
+        if ses.users.get( ses.username ).type != 'rodsadmin':
+            self.skipTest( 'Only a rodsadmin may run this test.')
+        OLDPASS = 'apass'
+        def generator(p = OLDPASS):
+            n = 1
+            old_pw = p
+            while True:
+                pw = p + str(n)
+                yield old_pw, pw
+                n += 1; old_pw = pw
+        password_generator = generator()
+        ENV_DIR = tempfile.mkdtemp()
+        d = dict(password = OLDPASS, user = 'alice', host = ses.host, port = ses.port, zone = ses.zone)
+        (alice_env, alice_auth) = helpers.make_environment_and_auth_files(ENV_DIR, **d)
+        try:
+            ses.users.create('alice', 'rodsuser')
+            ses.users.modify('alice', 'password', OLDPASS)
+            for modify_option, sess_factory in [ (alice_auth, lambda: iRODSSession(**d)),
+                                                 (True,
+                                                 lambda: helpers.make_session(irods_env_file = alice_env,
+                                                                              irods_authentication_file = alice_auth)) ]:
+                OLDPASS,NEWPASS=next(password_generator)
+                with sess_factory() as alice_ses:
+                    alice = alice_ses.users.get(alice_ses.username)
+                    alice.modify_password(OLDPASS, NEWPASS, modify_irods_authentication_file = modify_option)
+            d['password'] = NEWPASS
+            with iRODSSession(**d) as session:
+                self.do_something(session)           # can we still do stuff with the final value of the password?
+        finally:
+            shutil.rmtree(ENV_DIR)
+            ses.users.remove('alice')
+
+    def test_modify_password_with_incorrect_old_value__328(self):
+        ses = self.sess
+        if ses.users.get( ses.username ).type != 'rodsadmin':
+            self.skipTest( 'Only a rodsadmin may run this test.')
+        OLDPASS = 'apass'
+        NEWPASS = 'newpass'
+        ENV_DIR = tempfile.mkdtemp()
+        try:
+            ses.users.create('alice', 'rodsuser')
+            ses.users.modify('alice', 'password', OLDPASS)
+            d = dict(password = OLDPASS, user = 'alice', host = ses.host, port = ses.port, zone = ses.zone)
+            (alice_env, alice_auth) = helpers.make_environment_and_auth_files(ENV_DIR, **d)
+            session_factories = [
+                       (lambda: iRODSSession(**d)),
+                       (lambda: helpers.make_session( irods_env_file = alice_env, irods_authentication_file = alice_auth)),
+            ]
+            for factory in session_factories:
+                with factory() as alice_ses:
+                    alice = alice_ses.users.get(alice_ses.username)
+                    with self.assertRaises( ex.CAT_PASSWORD_ENCODING_ERROR ):
+                        alice.modify_password(OLDPASS + ".", NEWPASS)
+            with iRODSSession(**d) as alice_ses:
+                self.do_something(alice_ses)
+        finally:
+            shutil.rmtree(ENV_DIR)
+            ses.users.remove('alice')
 
     def test_create_group(self):
         group_name = "test_group"
