@@ -123,7 +123,7 @@ class TestDataObjOps(unittest.TestCase):
         Then we assert the file contents and dispose of the data object."""
 
         try:
-            self.sess.data_objects.create(data_object_path, **{kw.RESC_NAME_KW: root_resc} )
+            self.sess.data_objects.create(data_object_path, resource = root_resc)
             for _ in range( seconds_to_wait_for_replicas ):
                 if required_num_replicas <= len( self.sess.data_objects.get(data_object_path).replicas ): break
                 time.sleep(1)
@@ -137,7 +137,7 @@ class TestDataObjOps(unittest.TestCase):
             fd1.write(b'book')
             fd2.close()
             fd1.close()
-            with self.sess.data_objects.open(data_object_path, 'r', **{kw.RESC_NAME_KW: root_resc} ) as f:
+            with self.sess.data_objects.open(data_object_path, 'r', **{kw.DEST_RESC_NAME_KW: root_resc} ) as f:
                 self.assertEqual(f.read(), b'books\n')
         except Exception as e:
             logging.debug('Exception %r in [%s], called from [%s]', e, my_function_name(), caller_func)

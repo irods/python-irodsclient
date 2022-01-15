@@ -369,8 +369,8 @@ class TestQuery(unittest.TestCase):
             results = self.sess.query(DataObject, Collection.name).filter(DataObject.path == test_file).first()
             result_logical_path = os.path.join(results[Collection.name], results[DataObject.name])
             result_physical_path = results[DataObject.path]
-            self.assertEqual(result_logical_path, obj_path.decode('utf8'))
-            self.assertEqual(result_physical_path, test_file.decode('utf8'))
+            self.assertEqual(result_logical_path, obj_path)
+            self.assertEqual(result_physical_path, test_file)
         finally:
             if results: self.sess.data_objects.unregister(obj_path)
             os.remove(test_file)

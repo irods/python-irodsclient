@@ -9,6 +9,7 @@ from irods.manager.metadata_manager import InvalidAtomicAVURequest
 from irods.models import (DataObject, Collection, Resource)
 import irods.test.helpers as helpers
 from six.moves import range
+from six import PY3
 
 
 class TestMeta(unittest.TestCase):
@@ -165,7 +166,8 @@ class TestMeta(unittest.TestCase):
         assert meta[1].units == self.unit1
 
         assert meta[2].name == attribute
-        assert meta[2].value == value
+        testValue = (value if PY3 else value.encode('utf8'))
+        assert meta[2].value == testValue
 
 
     def test_add_obj_meta_empty(self):
