@@ -1,6 +1,32 @@
 Changelog
 =========
 
+v1.1.0 (2022-01-20)
+-------------------
+- [#334] add SECURE_XML to parser selection [Daniel Moore]
+- [#279] allow long tokens via PamAuthRequest [Daniel Moore]
+- [#190] session_cleanup is optional after rule execution. [Daniel Moore]
+- [#288] Rule execute method can target an instance by name [Daniel Moore]
+- [#314] allow null parameter on INPUT line of a rule file [Daniel Moore]
+- [#318] correction for unicode name queries in Python 2 [Daniel Moore]
+- [#170] fixes for Python2 / ElementTree compatibility [Daniel Moore]
+- [#170] Fix exception handling QuasiXML parser [Sietse Snel]
+- [#170] Parse current iRODS XML protocol [Chris Smeele]
+- [#306] test setting/resetting inheritance [Daniel Moore]
+- [#297] deal with CHECK_VERIFICATION_RESULTS for checksums [Daniel Moore]
+- [irods/irods#5933] PRC ticket API now working with ADMIN_KW [Daniel Moore]
+- [#292] Correct tickets section in README [Daniel Moore]
+- [#290] allow skipping of password file in anonymous user case [Daniel Moore]
+- [irods/irods#5954] interpret timestamps as UTC instead of local time [Daniel Moore]
+- [#294] allow data object get() to work with tickets enabled [Daniel Moore]
+- [#303] Expose additional iRODS collection information in the Collection object. [Ruben Garcia]
+- [#143] Use unittest-xml-reporting package, move to extra [Michael R. Crusoe]
+- [#299] Added GenQuery support for tickets. [Kory Draughn]
+- [#285] adds tests for irods/irods#5548 and irods/irods#5848 [Daniel Moore]
+- [#281] honor the irods_ssl_verify_server setting. [Daniel Moore]
+- [#287] allow passing RError stack through CHKSUM library call [Daniel Moore]
+- [#282] add NO_COMPUTE keyword [Daniel Moore]
+
 v1.0.0 (2021-06-03)
 -------------------
 - [#274] calculate common vault dir for unicode query tests [Daniel Moore]
