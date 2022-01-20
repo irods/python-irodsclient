@@ -460,6 +460,7 @@ the backtick to be read back as an apostrophe, which could create problems manip
 
 As of PRC v1.1.0, we can mitigate both problems by switching in the QUASI_XML parser for the default one:
 ::
+
     from irods.message import (XML_Parser_Type, ET)
     ET( XML_Parser.QUASI_XML, session.server_version )
 
@@ -469,6 +470,7 @@ setting of global defaults during start-up.
 For example, we can set the default parser to QUASI_XML, optimized for use with version 4.2.8 of the iRODS server,
 in the following manner:
 ::
+
     Bash-Shell> export PYTHON_IRODSCLIENT_DEFAULT_XML=QUASI_XML PYTHON_IRODSCLIENT_QUASI_XML_SERVER_VERSION=4,2,8
 
 Other alternatives for PYTHON_IRODSCLIENT_DEFAULT_XML are "STANDARD_XML" and "SECURE_XML".  These two latter options

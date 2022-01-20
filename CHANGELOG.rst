@@ -3,54 +3,54 @@ Changelog
 
 v1.0.0 (2021-06-03)
 -------------------
-[#274] calculate common vault dir for unicode query tests [Daniel Moore]
-[#269] better session cleanup [Daniel Moore]
+- [#274] calculate common vault dir for unicode query tests [Daniel Moore]
+- [#269] better session cleanup [Daniel Moore]
 
 v0.9.0 (2021-05-14)
 -------------------
-[#269] cleanup() is now automatic with session destruct [Daniel Moore]
-[#235] multithreaded parallel transfer for PUT and GET [Daniel Moore]
-[#232] do not arbitrarily pick first replica for DEST RESC [Daniel Moore]
-[#233] add null handler for irods package root [Daniel Moore]
-[#246] implementation of checksum for data object manager [Daniel Moore]
-[#270] speed up tests [Daniel Moore]
-[#260] [irods/irods#5520] XML protocol will use BinBytesBuf in 4.2.9 [Daniel Moore]
-[#221] prepare test suite for CI [Daniel Moore]
-[#267] add RuleExec model for genquery [Daniel Moore]
-[#263] update documentation for connection_timeout [Terrell Russell]
-[#261] add temporary password support [Paul van Schayck]
-[#257] better SSL examples [Terrell Russell]
-[#255] make results of atomic metadata operations visible [Daniel Moore]
-[#250] add exception for SYS_INVALID_INPUT_PARAM [Daniel Moore]
+- [#269] cleanup() is now automatic with session destruct [Daniel Moore]
+- [#235] multithreaded parallel transfer for PUT and GET [Daniel Moore]
+- [#232] do not arbitrarily pick first replica for DEST RESC [Daniel Moore]
+- [#233] add null handler for irods package root [Daniel Moore]
+- [#246] implementation of checksum for data object manager [Daniel Moore]
+- [#270] speed up tests [Daniel Moore]
+- [#260] [irods/irods#5520] XML protocol will use BinBytesBuf in 4.2.9 [Daniel Moore]
+- [#221] prepare test suite for CI [Daniel Moore]
+- [#267] add RuleExec model for genquery [Daniel Moore]
+- [#263] update documentation for connection_timeout [Terrell Russell]
+- [#261] add temporary password support [Paul van Schayck]
+- [#257] better SSL examples [Terrell Russell]
+- [#255] make results of atomic metadata operations visible [Daniel Moore]
+- [#250] add exception for SYS_INVALID_INPUT_PARAM [Daniel Moore]
 
 v0.8.6 (2021-01-22)
 -------------------
-[#244] added capability to add/remove atomic metadata [Daniel Moore]
-[#226] Document creation of users [Ruben Garcia]
-[#230] Add force option to data_object_manager create [Ruben Garcia]
-[#239] to keep the tests passing [Daniel Moore]
-[#239] add iRODSUser.info attribute [Pierre Gay]
-[#239] add iRODSUser.comment attribute [Pierre Gay]
-[#241] [irods/irods_capability_automated_ingest#136] fix redundant disconnect [Daniel Moore]
-[#227] [#228] enable ICAT entries for zones and foreign-zone users [Daniel Moore]
+- [#244] added capability to add/remove atomic metadata [Daniel Moore]
+- [#226] Document creation of users [Ruben Garcia]
+- [#230] Add force option to data_object_manager create [Ruben Garcia]
+- [#239] to keep the tests passing [Daniel Moore]
+- [#239] add iRODSUser.info attribute [Pierre Gay]
+- [#239] add iRODSUser.comment attribute [Pierre Gay]
+- [#241] [irods/irods_capability_automated_ingest#136] fix redundant disconnect [Daniel Moore]
+- [#227] [#228] enable ICAT entries for zones and foreign-zone users [Daniel Moore]
 
 v0.8.5 (2020-11-10)
 -------------------
-[#220] Use connection create time to determine stale connections [Kaivan Kamali]
+- [#220] Use connection create time to determine stale connections [Kaivan Kamali]
 
 v0.8.4 (2020-10-19)
 -------------------
-[#221] fix tests which were failing in Py3.4 and 3.7 [Daniel Moore]
-[#220] Replace stale connections pulled from idle pools [Kaivan Kamali]
-[#3] tests failing on Python3 unicode defaults [Daniel Moore]
-[#214] store/load rules as utf-8 in files [Daniel Moore]
-[#211] set and report application name to server [Daniel Moore]
-[#156] skip ssh/pam login tests if user doesn't exist [Daniel Moore]
-[#209] pam/ssl/env auth tests imported from test harness [Daniel Moore]
-[#209] store hashed PAM pw [Daniel Moore]
-[#205] Disallow PAM plaintext passwords as strong default [Daniel Moore]
-[#156] fix the PAM authentication with env json file. [Patrice Linel]
-[#207] add raw-acl permissions getter [Daniel Moore]
+- [#221] fix tests which were failing in Py3.4 and 3.7 [Daniel Moore]
+- [#220] Replace stale connections pulled from idle pools [Kaivan Kamali]
+- [#3] tests failing on Python3 unicode defaults [Daniel Moore]
+- [#214] store/load rules as utf-8 in files [Daniel Moore]
+- [#211] set and report application name to server [Daniel Moore]
+- [#156] skip ssh/pam login tests if user doesn't exist [Daniel Moore]
+- [#209] pam/ssl/env auth tests imported from test harness [Daniel Moore]
+- [#209] store hashed PAM pw [Daniel Moore]
+- [#205] Disallow PAM plaintext passwords as strong default [Daniel Moore]
+- [#156] fix the PAM authentication with env json file. [Patrice Linel]
+- [#207] add raw-acl permissions getter [Daniel Moore]
 
 v0.8.3 (2020-06-05)
 -------------------
