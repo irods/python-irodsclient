@@ -4,6 +4,7 @@ from irods.api_number import api_number
 import irods.exception as ex
 from io import open as io_open
 from irods.message import Message, StringProperty
+import six
 
 class RemoveRuleMessage(Message):
     #define RULE_EXEC_DEL_INP_PI "str ruleExecId[NAME_LEN];"
@@ -20,8 +21,11 @@ class Rule(object):
 
         Arguments:
         Use one of:
-          * rule_file : the name of an existing rule script ending in '.r' and containing iRODS rules
-          * body: the text of the rule code or rule call(s) to be run.
+          * rule_file : the name of an existing file containint "rule script" style code. In the context of
+            the native iRODS Rule Language, this is a file ending in '.r' and containing iRODS rules.
+            Optionally, this parameter can be a file-like object containing the rule script text.
+          * body: the text of block of rule code (possibly including rule calls) to be run as if it were
+            the body of a rule, e.g. the part between the braces of a rule definition in the iRODS rule language.
         * instance_name: the name of the rule engine instance in the context of which to run the rule(s).
         * output may be set to 'ruleExecOut' if console output is expected on stderr or stdout streams.
         * params are key/value pairs to be sent into a rule_file.
@@ -62,11 +66,37 @@ class Rule(object):
                     raise RuntimeError("Error removing rule {id_}".format(**locals()))
 
     def load(self, rule_file, encoding = 'utf-8'):
+        """Load rule code with rule-file (*.r) semantics.
+
+        A "main" rule is defined first; name does not matter. Other rules may follow, which will be
+        callable from the first rule.  Any rules defined in active rule-bases within the server are
+        also callable.
+
+        The `rule_file' parameter is a filename or file-like object.  We give it either:
+           - a string holding the path to a rule-file in the local filesystem, or
+           - an in-memory object (eg. io.StringIO or io.BytesIO) whose content is that of a rule-file.
+
+        This addresses a regression in v1.1.0; see issue #336.  In v1.1.1+, if rule code is passed in literally via
+        the `body' parameter of the Rule constructor, it is interpreted as if it were the body of a rule, and
+        therefore it may not contain internal rule definitions.  However, if rule code is submitted as the content
+        of a file or file-like object referred to by the `rule_file' parameter of the Rule constructor, will be
+        interpreted as .r-file content.  Therefore, it must contain a main rule definition first, followed
+        possibly by others which will be callable from the main rule as if they were part of the core rule-base.
+
+        """
         self.body = '@external\n'
 
-        # parse rule file
-        with io_open(rule_file, encoding = encoding) as f:
+
+        with (io_open(rule_file, encoding = encoding) if isinstance(rule_file,six.string_types) else rule_file
+        ) as f:
+
+            # parse rule file line-by-line
             for line in f:
+
+                # convert input line to Unicode if necessary
+                if isinstance(line, bytes):
+                    line = line.decode(encoding)
+
                 # parse input line
                 if line.strip().lower().startswith('input'):
 

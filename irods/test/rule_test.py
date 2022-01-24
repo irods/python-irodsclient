@@ -12,6 +12,7 @@ import irods.test.helpers as helpers
 from irods.rule import Rule
 import six
 from io import open as io_open
+import io
 
 
 RE_Plugins_installed_run_condition_args = ( os.environ.get('PYTHON_RULE_ENGINE_INSTALLED','*').lower()[:1]=='y',
@@ -339,6 +340,64 @@ class TestRule(unittest.TestCase):
 
         # remove rule file
         os.remove(rule_file_path)
+
+
+    @staticmethod
+    def lines_from_stdout_buf(output):
+        buf = ""
+        if output and len(output.MsParam_PI):
+            buf = output.MsParam_PI[0].inOutStruct.stdoutBuf.buf
+            if buf:
+                buf = buf.rstrip(b'\0').decode('utf8')
+        return buf.splitlines()
+
+
+    def test_rulefile_in_file_like_object_1__336(self):
+
+        rule_file_contents = textwrap.dedent(u"""\
+        hw {
+                helloWorld(*message);
+                writeLine("stdout", "Message is: [*message] ...");
+        }
+        helloWorld(*OUT)
+        {
+          *OUT = "Hello world!"
+        }
+        """)
+        r = Rule(self.sess, rule_file = io.StringIO( rule_file_contents ),
+                            output = 'ruleExecOut', instance_name='irods_rule_engine_plugin-irods_rule_language-instance')
+        output = r.execute()
+        lines = self.lines_from_stdout_buf(output)
+        self.assertRegexpMatches (lines[0], '.*\[Hello world!\]')
+
+
+    def test_rulefile_in_file_like_object_2__336(self):
+
+        rule_file_contents = textwrap.dedent("""\
+        main {
+          other_rule()
+          writeLine("stdout","["++type(*msg2)++"][*msg2]");
+        }
+        other_rule {
+          writeLine("stdout","["++type(*msg1)++"][*msg1]");
+        }
+
+        INPUT *msg1="",*msg2=""
+        OUTPUT ruleExecOut
+        """)
+
+        r = Rule(self.sess, rule_file = io.BytesIO( rule_file_contents.encode('utf-8') ))
+        output = r.execute()
+        lines = self.lines_from_stdout_buf(output)
+        self.assertRegexpMatches (lines[0], '\[STRING\]\[\]')
+        self.assertRegexpMatches (lines[1], '\[STRING\]\[\]')
+
+        r = Rule(self.sess, rule_file = io.BytesIO( rule_file_contents.encode('utf-8') )
+                          , params = {'*msg1':5, '*msg2':'"A String"'})
+        output = r.execute()
+        lines = self.lines_from_stdout_buf(output)
+        self.assertRegexpMatches (lines[0], '\[INTEGER\]\[5\]')
+        self.assertRegexpMatches (lines[1], '\[STRING\]\[A String\]')
 
 
 if __name__ == '__main__':

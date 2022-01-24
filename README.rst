@@ -503,13 +503,18 @@ irods server log::
   r = irods.rule.Rule( session, rule_file = 'native1.r')
   r.execute()
 
-Release v1.1.0 includes the ability to target a specific rule engine instance by name, so if other rule engine instances are present, we may want
-to instantiate using::
+With release v1.1.1, not only can we target a specific rule engine instance by name (which is useful when
+more than one is present), but we can also use a file-like object for the :code:`rule_file` parameter::
 
-  Rule( ... , instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance' )
+  Rule( session, rule_file = io.StringIO(u'''mainRule() { anotherRule(*x); writeLine('stdout',*x) }\n'''
+                                         u'''anotherRule(*OUT) {*OUT='hello world!'}\n\n'''
+                                         u'''OUTPUT ruleExecOut\n'''),
+        instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance' )
 
-Additionally, if we wanted to have the :code:`native1.r` rule code print to stdout instead, we could also set :code:`*stream` in the :code:`INPUT`
-parameters for the rule and change the :code:`OUTPUT` parameter from :code:`null` to :code:`ruleExecOut` to accommodate the output stream::
+Incidentally, if we wanted to change the :code:`native1.r` rule code print to stdout also, we could set the
+:code:`INPUT` parameter, :code:`*stream`, using the Rule constructor's :code:`params` keyword argument.
+Similarly, we can change the :code:`OUTPUT` parameter from :code:`null` to :code:`ruleExecOut`, to accommodate
+the output stream, via the :code:`output` argument::
 
   r = irods.rule.Rule( session, rule_file = 'native1.r',
              instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance',
