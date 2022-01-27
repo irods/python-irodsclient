@@ -80,7 +80,7 @@ class Connection(object):
         return self._client_signature
 
     def __del__(self):
-        if self.socket and getattr(self,"_disconnected",False):
+        if self.socket and getattr(self,"_disconnected",False) == False:
             self.disconnect()
 
     def send(self, message):
