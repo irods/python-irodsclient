@@ -582,8 +582,8 @@ side.  For example, if the Python rule engine is configured, and the following r
 we can trap the error thus::
 
   try:
-      Rule( body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance' ).execute()
-  except irods.exception.RE_RULE_ENGINE_ERROR:
+      Rule( session, body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance' ).execute()
+  except irods.exception.RULE_ENGINE_ERROR:
       print('Rule execution failed!')
       exit(1)
   print('Rule execution succeeded!')
@@ -592,9 +592,9 @@ As fail actions from native rules are not thrown by default (refer to the help t
 anticipate these and prefer to catch them as exceptions, we can do it this way::
 
   try:
-      Rule( body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance'
+      Rule( session, body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance'
            ).execute( acceptable_errors = () )
-  except (irods.exception.RE_RULE_ENGINE_ERROR,
+  except (irods.exception.RULE_ENGINE_ERROR,
           irods.exception.FAIL_ACTION_ENCOUNTERED_ERR) as e:
       print('Rule execution failed!')
       exit(1)
