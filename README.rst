@@ -600,6 +600,15 @@ anticipate these and prefer to catch them as exceptions, we can do it this way::
       exit(1)
   print('Rule execution succeeded!')
 
+Finally,  keep in mind that rule code submitted through an :code:`irods.rule.Rule` object is processed by the
+exec_rule_text function in the targeted plugin instance.  This may be a limitation for plugins not equipped to
+handle rule code in this way.  In a sort of middle-ground case, the iRODS Python Rule Engine Plugin is not
+currently able to handle simple rule calls and the manipulation of iRODS core primitives (like simple parameter
+passing and variable expansion') as flexibly as the iRODS Rule Language.
+
+Also, core.py rules may not be run directly (as is also true with :code:`irule`) by other than a rodsadmin user
+pending the resolution of `this issue <https://github.com/irods/irods_rule_engine_plugin_python/issues/105>`_.
+
 
 General queries
 ---------------
