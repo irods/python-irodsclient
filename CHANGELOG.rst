@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v1.1.1 (2022-01-31)
+-------------------
+- [#338] clarify Python RE Plugin limitations [Daniel Moore]
+- [#339] correction to README regarding RULE_ENGINE_ERROR [Daniel Moore]
+- [#336] rule files can now be submitted from a memory file object [Daniel Moore]
+
 v1.1.0 (2022-01-20)
 -------------------
 - [#334] add SECURE_XML to parser selection [Daniel Moore]
