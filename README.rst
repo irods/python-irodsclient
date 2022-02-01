@@ -503,13 +503,18 @@ irods server log::
   r = irods.rule.Rule( session, rule_file = 'native1.r')
   r.execute()
 
-Release v1.1.0 includes the ability to target a specific rule engine instance by name, so if other rule engine instances are present, we may want
-to instantiate using::
+With release v1.1.1, not only can we target a specific rule engine instance by name (which is useful when
+more than one is present), but we can also use a file-like object for the :code:`rule_file` parameter::
 
-  Rule( ... , instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance' )
+  Rule( session, rule_file = io.StringIO(u'''mainRule() { anotherRule(*x); writeLine('stdout',*x) }\n'''
+                                         u'''anotherRule(*OUT) {*OUT='hello world!'}\n\n'''
+                                         u'''OUTPUT ruleExecOut\n'''),
+        instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance' )
 
-Additionally, if we wanted to have the :code:`native1.r` rule code print to stdout instead, we could also set :code:`*stream` in the :code:`INPUT`
-parameters for the rule and change the :code:`OUTPUT` parameter from :code:`null` to :code:`ruleExecOut` to accommodate the output stream::
+Incidentally, if we wanted to change the :code:`native1.r` rule code print to stdout also, we could set the
+:code:`INPUT` parameter, :code:`*stream`, using the Rule constructor's :code:`params` keyword argument.
+Similarly, we can change the :code:`OUTPUT` parameter from :code:`null` to :code:`ruleExecOut`, to accommodate
+the output stream, via the :code:`output` argument::
 
   r = irods.rule.Rule( session, rule_file = 'native1.r',
              instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance',
@@ -577,8 +582,8 @@ side.  For example, if the Python rule engine is configured, and the following r
 we can trap the error thus::
 
   try:
-      Rule( body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance' ).execute()
-  except irods.exception.RE_RULE_ENGINE_ERROR:
+      Rule( session, body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance' ).execute()
+  except irods.exception.RULE_ENGINE_ERROR:
       print('Rule execution failed!')
       exit(1)
   print('Rule execution succeeded!')
@@ -587,13 +592,22 @@ As fail actions from native rules are not thrown by default (refer to the help t
 anticipate these and prefer to catch them as exceptions, we can do it this way::
 
   try:
-      Rule( body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance'
+      Rule( session, body = 'python_rule', instance_name = 'irods_rule_engine_plugin-python-instance'
            ).execute( acceptable_errors = () )
-  except (irods.exception.RE_RULE_ENGINE_ERROR,
+  except (irods.exception.RULE_ENGINE_ERROR,
           irods.exception.FAIL_ACTION_ENCOUNTERED_ERR) as e:
       print('Rule execution failed!')
       exit(1)
   print('Rule execution succeeded!')
+
+Finally,  keep in mind that rule code submitted through an :code:`irods.rule.Rule` object is processed by the
+exec_rule_text function in the targeted plugin instance.  This may be a limitation for plugins not equipped to
+handle rule code in this way.  In a sort of middle-ground case, the iRODS Python Rule Engine Plugin is not
+currently able to handle simple rule calls and the manipulation of iRODS core primitives (like simple parameter
+passing and variable expansion') as flexibly as the iRODS Rule Language.
+
+Also, core.py rules may not be run directly (as is also true with :code:`irule`) by other than a rodsadmin user
+pending the resolution of `this issue <https://github.com/irods/irods_rule_engine_plugin_python/issues/105>`_.
 
 
 General queries
