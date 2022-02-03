@@ -1106,4 +1106,88 @@ If you want to create a user in a federated zone, use:
 And more...
 -----------
 
-Additional code samples are available in the `test directory <https://github.com/irods/python-irodsclient/tree/master/irods/test>`_
+Additional code samples are available in the `test directory <https://github.com/irods/python-irodsclient/tree/main/irods/test>`_
+
+
+=======
+Testing
+=======
+
+Setting up and running tests
+----------------------------
+
+The Python iRODS Client comes with its own suite of tests.  Some amount of setting up may be necessary first:
+
+1. Use :code:`iinit` to specify the iRODS client environment.
+   For best results, point the client at a server running on the local host.
+
+2. Install the python-irodsclient along with the :code:`unittest unittest_xml_reporting` module or the older :code:`xmlrunner` equivalent.
+
+   - for PRC versions 1.1.1 and later:
+
+     *  :code:`pip install ./path-to-python-irodsclient-repo[tests]`  (when using a local Git repo); or,
+     *  :code:`pip install python-irodsclient[tests]'>=1.1.1'`  (when installing directly from PyPI).
+
+   - earlier releases (<= 1.1.0) will install the outdated :code:`xmlrunner` module automatically
+
+3. Follow further instructions in the `test directory <https://github.com/irods/python-irodsclient/tree/main/irods/test>`_
+
+
+Testing S3 parallel transfer
+----------------------------
+
+System requirements::
+
+- Ubuntu 18 user with Docker installed.
+- Local instance of iRODS server running.
+- Logged in sudo privileges.
+
+Run a MinIO service::
+
+  $ docker run -d -p 9000:9000 -p 9001:9001 minio/minio server /data --console-address ":9001"
+
+Set up a bucket :code:`s3://irods` under MinIO::
+
+  $ pip install awscli
+
+  $ aws configure
+  AWS Access Key ID [None]: minioadmin
+  AWS Secret Access Key [None]: minioadmin
+  Default region name [None]:
+  Default output format [None]:
+
+  $ aws --endpoint-url http://127.0.0.1:9000 s3 mb s3://irods
+
+Set up s3 credentials for the iRODS s3 storage resource::
+
+  $ sudo su - irods -c "/bin/echo -e 'minioadmin\nminioadmin' >/var/lib/irods/s3-credentials"
+  $ sudo chown 600 /var/lib/irods/s3-credentials
+
+Create the s3 storage resource::
+
+  $ sudo apt install irods-resource-plugin-s3
+
+As the 'irods' service account user::
+
+  $ iadmin mkresc s3resc s3 $(hostname):/irods/ \
+    "S3_DEFAULT_HOSTNAME=localhost:9000;"\
+    "S3_AUTH_FILE=/var/lib/irods/s3-credentials;"\
+    "S3_REGIONNAME=us-east-1;"\
+    "S3_RETRY_COUNT=1;"\
+    "S3_WAIT_TIME_SEC=3;"\
+    "S3_PROTO=HTTP;"\
+    "ARCHIVE_NAMING_POLICY=consistent;"\
+    "HOST_MODE=cacheless_attached"
+
+  $ dd if=/dev/urandom of=largefile count=40k bs=1k # create 40-megabyte test file
+
+  $ pip install 'python-irodsclient>=1.1.2'
+
+  $ python -c"from irods.test.helpers import make_session
+              import irods.keywords as kw
+              with make_session() as sess:
+                  sess.data_objects.put( 'largefile',
+                                         '/tempZone/home/rods/largeFile1',
+                                         **{kw.DEST_RESC_NAME_KW:'s3resc'} )
+                  sess.data_objects.get( '/tempZone/home/rods/largeFile1',
+                                         '/tmp/largefile')"
