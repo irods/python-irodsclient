@@ -12,6 +12,7 @@ import irods.keywords as kw
 class CollectionManager(Manager):
 
     def get(self, path):
+        path = iRODSCollection.normalize_path( path )
         filters = [Collection.name == path]
         # if a ticket is supplied for this session, try both without and with DataObject join
         repeats = (True,False) if hasattr(self.sess,'ticket__') \
@@ -29,6 +30,7 @@ class CollectionManager(Manager):
 
 
     def create(self, path, recurse=True, **options):
+        path = iRODSCollection.normalize_path( path )
         if recurse:
             options[kw.RECURSIVE_OPR__KW] = ''
        

@@ -5,12 +5,15 @@ import sys
 import socket
 import shutil
 import unittest
+import time
 from irods.meta import iRODSMetaCollection
 from irods.exception import CollectionDoesNotExist
 from irods.models import Collection, DataObject
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from six.moves import range
+from irods.test.helpers import my_function_name, unique_name
+from irods.collection import iRODSCollection
 
 
 class TestCollection(unittest.TestCase):
@@ -320,6 +323,62 @@ class TestCollection(unittest.TestCase):
 
         # delete test dir
         shutil.rmtree(dir_path)
+
+
+    def test_collection_with_trailing_slash__323(self):
+        Home = helpers.home_collection(self.sess)
+        subcoll, dataobj = [unique_name(my_function_name(),time.time()) for x in range(2)]
+        subcoll_fullpath = "{}/{}".format(Home,subcoll)
+        subcoll_unnormalized = subcoll_fullpath + "/"
+        try:
+            # Test create and exists with trailing slashes.
+            self.sess.collections.create(subcoll_unnormalized)
+            c1 = self.sess.collections.get(subcoll_unnormalized)
+            c2 = self.sess.collections.get(subcoll_fullpath)
+            self.assertEqual(c1.id, c2.id)
+            self.assertTrue(self.sess.collections.exists(subcoll_unnormalized))
+
+            # Test data put to unnormalized collection name.
+            with open(dataobj, "wb") as f: f.write(b'hello')
+            self.sess.data_objects.put(dataobj, subcoll_unnormalized)
+            self.assertEqual(
+                self.sess.query(DataObject).filter(DataObject.name == dataobj).one()[DataObject.collection_id]
+               ,c1.id
+            )
+        finally:
+            if self.sess.collections.exists(subcoll_fullpath):
+                self.sess.collections.remove(subcoll_fullpath, recurse = True, force = True)
+            if os.path.exists(dataobj):
+                os.unlink(dataobj)
+
+
+    def test_concatenation__323(self):
+        coll = iRODSCollection.normalize_path('/zone/','/home/','/dan//','subdir///')
+        self.assertEqual(coll, '/zone/home/dan/subdir')
+
+    def test_object_paths_with_dot_and_dotdot__323(self):
+
+        normalize = iRODSCollection.normalize_path
+        session = self.sess
+        home = helpers.home_collection( session )
+
+        # Test requirement for collection names to be absolute
+        with self.assertRaises(iRODSCollection.AbsolutePathRequired):
+            normalize('../public')
+
+        # Test '.' and double slashes
+        public_home = normalize(home,'..//public/.//')
+        self.assertEqual(public_home, '/{sess.zone}/home/public'.format(sess = session))
+
+        # Test that '..' cancels last nontrival path element
+        subpath = normalize(home,'./collA/coll2/./../collB')
+        self.assertEqual(subpath, home + "/collA/collB")
+
+        # Test multiple '..'
+        home1 = normalize('/zone','holmes','public/../..','home','user')
+        self.assertEqual(home1, '/zone/home/user')
+        home2 = normalize('/zone','holmes','..','home','public','..','user')
+        self.assertEqual(home2, '/zone/home/user')
 
 
 if __name__ == "__main__":

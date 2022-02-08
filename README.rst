@@ -247,6 +247,27 @@ Put an existing file as a new data object:
 56789
 
 
+Specifying paths
+----------------
+
+Path strings for collection and data objects are usually expected to be absolute in most contexts in the PRC. They
+must also be normalized to a form including single slashes separating path elements and no slashes at the string's end.
+If there is any doubt that a path string fulfills this requirement, the wrapper class :code:`irods.path.iRODSPath`
+(a subclass of :code:`str`) may be used to normalize it::
+
+    if not session.collections.exists( iRODSPath( potentially_unnormalized_path )): #....
+
+The wrapper serves also as a path joiner; thus::
+
+    iRODSPath( zone, "home", user )
+
+may replace::
+
+    "/".join(["", zone, "home", user])
+
+:code:`iRODSPath` is available beginning with PRC release :code:`v1.1.2`.
+
+
 Reading and writing files
 -------------------------
 

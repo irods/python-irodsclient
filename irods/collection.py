@@ -6,8 +6,21 @@ from irods.models import Collection, DataObject
 from irods.data_object import iRODSDataObject, irods_basename
 from irods.meta import iRODSMetaCollection
 
+def _first_char( *Strings ):
+    for s in Strings:
+        if s: return s[0]
+    return ''
 
 class iRODSCollection(object):
+
+    class AbsolutePathRequired(Exception):
+        """Exception raised by iRODSCollection.normalize_path.
+
+        AbsolutePathRequired is raised by normalize_path( *paths ) when the leading path element
+        does not start with '/'.  The exception will not be raised, however, if enforce_absolute = False
+        is passed to normalize_path as a keyword option.
+        """
+        pass
 
     def __init__(self, manager, result=None):
         self.manager = manager
@@ -78,5 +91,19 @@ class iRODSCollection(object):
         if not topdown:
             yield (self, self.subcollections, self.data_objects)
 
+    @staticmethod
+    def normalize_path(*paths_, **kw_):
+        """Normalize a path or list of paths.
+
+        We use the iRODSPath class to eliminate extra slashes in,
+        and (if more than one parameter is given) concatenate, paths.
+        If keywords include enforce_absolute, this function requires
+        the first character of path(s) passed in should be '/'.
+        """
+        import irods.path
+        if kw_.get('enforce_absolute',True) and _first_char(*paths_) != '/':
+            raise iRODSCollection.AbsolutePathRequired
+        return irods.path.iRODSPath( *paths_ )
+
     def __repr__(self):
-        return "<iRODSCollection {id} {name}>".format(id=self.id, name=self.name.encode('utf-8'))
+        return "<iRODSCollection {id} {name}>".format(id = self.id, name = self.name.encode('utf-8'))

@@ -8,6 +8,7 @@ from irods.message import (
     DataObjChksumRequest, DataObjChksumResponse, RErrorStack)
 import irods.exception as ex
 from irods.api_number import api_number
+from irods.collection import iRODSCollection
 from irods.data_object import (
     iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
 import irods.keywords as kw
@@ -121,8 +122,8 @@ class DataObjectManager(Manager):
 
     def put(self, local_path, irods_path, return_data_object = False, num_threads = DEFAULT_NUMBER_OF_THREADS, **options):
 
-        if irods_path.endswith('/'):
-            obj = irods_path + os.path.basename(local_path)
+        if self.sess.collections.exists(irods_path):
+            obj = iRODSCollection.normalize_path(irods_path, os.path.basename(local_path))
         else:
             obj = irods_path
 
