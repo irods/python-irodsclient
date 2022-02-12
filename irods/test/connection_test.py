@@ -24,6 +24,8 @@ class TestConnections(unittest.TestCase):
     def test_connection_destructor(self):
         conn = self.sess.pool.get_connection()
         conn.__del__()
+        self.assertIsNone(conn.socket)
+        self.assertTrue(conn._disconnected)
         conn.release(destroy=True)
 
     def test_failed_connection(self):
