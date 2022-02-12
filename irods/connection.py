@@ -21,7 +21,7 @@ from irods.message import (PamAuthRequest, PamAuthRequestOut)
 
 
 ALLOW_PAM_LONG_TOKENS = True      # True to fix [#279]
-
+DESTRUCTOR_MSG = "connection __del__() called"
 
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
@@ -80,8 +80,8 @@ class Connection(object):
         return self._client_signature
 
     def __del__(self):
-        if self.socket and getattr(self,"_disconnected",False) == False:
-            self.disconnect()
+        self.disconnect()
+        logger.debug(DESTRUCTOR_MSG)
 
     def send(self, message):
         string = message.pack()
@@ -273,17 +273,19 @@ class Connection(object):
         return version_msg.get_main_message(VersionResponse)
 
     def disconnect(self):
-        disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
-        self.send(disconnect_msg)
-        try:
-            # SSL shutdown handshake
-            self.socket = self.socket.unwrap()
-        except AttributeError:
-            pass
-        self.socket.shutdown(socket.SHUT_RDWR)
-        self.socket.close()
-        self.socket = None
-        self._disconnected = True
+        # fileno() returns -1 for a closed socket
+        if self.socket and getattr(self, "_disconnected", False) == False and self.socket.fileno() != -1:
+            disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
+            self.send(disconnect_msg)
+            try:
+                # SSL shutdown handshake
+                self.socket = self.socket.unwrap()
+            except AttributeError:
+                pass
+            self.socket.shutdown(socket.SHUT_RDWR)
+            self.socket.close()
+            self.socket = None
+            self._disconnected = True
 
     def recvall(self, n):
         # Helper function to recv n bytes or return None if EOF is hit

@@ -64,9 +64,6 @@ class Pool(object):
                 # release the connection (as its stale) and create a new one
                 if self.refresh_connection and (curr_time - conn.create_time).total_seconds() > self.connection_refresh_time:
                     logger.debug('Connection with id {} was created more than {} seconds ago. Releasing the connection and creating a new one.'.format(id(conn), self.connection_refresh_time))
-                    # The destructor calls the disconnect() method to cleanup the
-                    # socket before we create a new connection and assign it to conn
-                    del conn
                     conn = Connection(self, self.account)
                     logger.debug("Created new connection with id: {}".format(id(conn)))
             except KeyError:
