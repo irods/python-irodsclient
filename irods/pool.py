@@ -64,7 +64,11 @@ class Pool(object):
                 # release the connection (as its stale) and create a new one
                 if self.refresh_connection and (curr_time - conn.create_time).total_seconds() > self.connection_refresh_time:
                     logger.debug('Connection with id {} was created more than {} seconds ago. Releasing the connection and creating a new one.'.format(id(conn), self.connection_refresh_time))
-                    self.release_connection(conn, True)
+                    # Since calling disconnect() repeatedly is safe, we call disconnect()
+                    # here explicitly, instead of relying on the garbage collector to clean
+                    # up the object and call disconnect(). This makes the behavior of the
+                    # code more predictable as we are not relying on when garbage collector is called
+                    conn.disconnect()
                     conn = Connection(self, self.account)
                     logger.debug("Created new connection with id: {}".format(id(conn)))
             except KeyError:

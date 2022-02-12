@@ -21,7 +21,9 @@ from irods.message import (PamAuthRequest, PamAuthRequestOut)
 
 
 ALLOW_PAM_LONG_TOKENS = True      # True to fix [#279]
-
+# Message to be logged when the connection
+# destructor is called. Used in a unit test
+DESTRUCTOR_MSG = "connection __del__() called"
 
 from irods import (
     MAX_PASSWORD_LENGTH, RESPONSE_LEN,
@@ -80,8 +82,8 @@ class Connection(object):
         return self._client_signature
 
     def __del__(self):
-        if self.socket and getattr(self,"_disconnected",False):
-            self.disconnect()
+        self.disconnect()
+        logger.debug(DESTRUCTOR_MSG)
 
     def send(self, message):
         string = message.pack()
@@ -107,7 +109,12 @@ class Connection(object):
                 msg = iRODSMessage.recv(self.socket)
             else:
                 msg = iRODSMessage.recv_into(self.socket, into_buffer)
-        except socket.error:
+        except (socket.error, socket.timeout) as e:
+            # If _recv_message_in_len() fails in recv() or recv_into(),
+            # it will throw a socket.error exception. The exception is
+            # caught here, a critical message is logged, and is wrapped
+            # in a NetworkException with a more user friendly message
+            logger.critical(e)
             logger.error("Could not receive server response")
             self.release(True)
             raise NetworkException("Could not receive server response")
@@ -273,17 +280,24 @@ class Connection(object):
         return version_msg.get_main_message(VersionResponse)
 
     def disconnect(self):
-        disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
-        self.send(disconnect_msg)
-        try:
-            # SSL shutdown handshake
-            self.socket = self.socket.unwrap()
-        except AttributeError:
-            pass
-        self.socket.shutdown(socket.SHUT_RDWR)
-        self.socket.close()
-        self.socket = None
-        self._disconnected = True
+        # Moved the conditions to call disconnect() inside the function.
+        # Added a new criteria for calling disconnect(); Only call
+        # disconnect() if fileno is not -1 (fileno -1 indicates the socket
+        # is already closed). This makes it safe to call disconnect multiple
+        # times on the same connection. The first call cleans up the resources
+        # and next calls are no-ops
+        if self.socket and getattr(self, "_disconnected", False) == False and self.socket.fileno() != -1:
+            disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
+            self.send(disconnect_msg)
+            try:
+                # SSL shutdown handshake
+                self.socket = self.socket.unwrap()
+            except AttributeError:
+                pass
+            self.socket.shutdown(socket.SHUT_RDWR)
+            self.socket.close()
+            self.socket = None
+            self._disconnected = True
 
     def recvall(self, n):
         # Helper function to recv n bytes or return None if EOF is hit
