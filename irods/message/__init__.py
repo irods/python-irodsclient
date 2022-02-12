@@ -153,6 +153,17 @@ except NameError:
 def _recv_message_in_len(sock, size):
     size_left = size
     retbuf = None
+
+    # Get socket properties for debug and exception messages.
+    host, port = sock.getpeername()
+    is_blocking = sock.getblocking()
+    timeout = sock.gettimeout()
+
+    logger.debug(f'host: {host}')
+    logger.debug(f'port: {port}')
+    logger.debug(f'is_blocking: {is_blocking}')
+    logger.debug(f'timeout: {timeout}')
+
     while size_left > 0:
         try:
             buf = sock.recv(size_left, socket.MSG_WAITALL)
@@ -163,11 +174,27 @@ def _recv_message_in_len(sock, size):
             if getattr(e, 'winerror', 0) != 10045:
                 raise
             buf = sock.recv(size_left)
+
+        # This prevents an infinite loop. If the call to recv()
+        # returns an empty buffer, break out of the loop.
+        if len(buf) == 0:
+            break
         size_left -= len(buf)
         if retbuf is None:
             retbuf = buf
         else:
             retbuf += buf
+
+    # This method is supposed to read and return 'size'
+    # bytes from the socket. If it reads no bytes (retbuf
+    # will be None), or if it reads less number of bytes
+    # than 'size', throw a socket.error exception
+    if retbuf is None or len(retbuf) != size:
+        retbuf_size = len(retbuf) if retbuf is not None else 0
+        msg = 'Read {} bytes from the socket (host {}, port {}) instead of expected {} bytes'.format(
+               retbuf_size, host, port, size)
+        raise socket.error(msg)
+
     return retbuf
 
 

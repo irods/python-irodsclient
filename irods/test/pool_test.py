@@ -1,13 +1,17 @@
 #! /usr/bin/env python
 from __future__ import absolute_import
 import datetime
+import gc
+import logging
 import os
 import re
 import sys
+import tempfile
 import time
 import json
 import unittest
 import irods.test.helpers as helpers
+from irods.connection import DESTRUCTOR_MSG
 
 #  Regular expression to match common synonyms for localhost.
 #
@@ -237,6 +241,76 @@ class TestPool(unittest.TestCase):
             self.assertEqual(0, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
 
+    # Test to confirm the connection destructor log message is actually
+    # logged to file, to confirm the destructor is called
+    def test_connection_destructor_called(self):
+        # Set 'irods_connection_refresh_time' to '3' (in seconds) in
+        # ~/.irods/irods_environment.json file. This means any connection
+        # that was created more than 3 seconds ago will be dropped and
+        # a new connection is created/returned. This is to avoid
+        # issue with idle connections that are dropped.
+        conn_obj_id_1 = None
+        conn_obj_id_2 = None
+        create_time_1 = None
+        create_time_2 = None
+        last_used_time_1 = None
+        last_used_time_2 = None
+
+        try:
+
+            # Create a temporary log file
+            my_log_file = tempfile.NamedTemporaryFile()
+
+            logging.getLogger('irods.connection').setLevel(logging.DEBUG)
+            file_handler = logging.FileHandler(my_log_file.name, mode='a')
+            file_handler.setLevel(logging.DEBUG)
+            logging.getLogger('irods.connection').addHandler(file_handler)
+
+            with self.sess.pool.get_connection() as conn:
+                conn_obj_id_1 = id(conn)
+                curr_time = datetime.datetime.now()
+                create_time_1 = conn.create_time
+                last_used_time_1 = conn.last_used_time
+                self.assertTrue(curr_time >= create_time_1)
+                self.assertTrue(curr_time >= last_used_time_1)
+                self.assertEqual(1, len(self.sess.pool.active))
+                self.assertEqual(0, len(self.sess.pool.idle))
+
+                self.sess.pool.release_connection(conn)
+                self.assertEqual(0, len(self.sess.pool.active))
+                self.assertEqual(1, len(self.sess.pool.idle))
+
+            # Wait more than 'irods_connection_refresh_time' seconds,
+            # which is set to 3. Connection object should have a different
+            # object ID (as a new connection is created)
+            time.sleep(5)
+
+            # Call garbage collector, so the unreferenced conn object is garbage collected
+            gc.collect()
+
+            with self.sess.pool.get_connection() as conn:
+                conn_obj_id_2 = id(conn)
+                curr_time = datetime.datetime.now()
+                create_time_2 = conn.create_time
+                last_used_time_2 = conn.last_used_time
+                self.assertTrue(curr_time >= create_time_2)
+                self.assertTrue(curr_time >= last_used_time_2)
+                self.assertNotEqual(conn_obj_id_1, conn_obj_id_2)
+                self.assertTrue(create_time_2 > create_time_1)
+                self.assertEqual(1, len(self.sess.pool.active))
+                self.assertEqual(0, len(self.sess.pool.idle))
+
+                self.sess.pool.release_connection(conn, True)
+                self.assertEqual(0, len(self.sess.pool.active))
+                self.assertEqual(0, len(self.sess.pool.idle))
+
+            # Assert that connection destructor called
+            with open(my_log_file.name, 'r') as fh:
+                lines = fh.read().splitlines()
+                self.assertTrue(DESTRUCTOR_MSG in lines)
+        finally:
+            # Remove irods.connection's file_handler that was added just for this test
+            logging.getLogger('irods.connection').removeHandler(file_handler)
 
     def test_get_connection_refresh_time_no_env_file_input_param(self):
         connection_refresh_time = self.sess.get_connection_refresh_time(first_name="Magic", last_name="Johnson")
