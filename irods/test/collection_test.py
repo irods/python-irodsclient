@@ -364,7 +364,7 @@ class TestCollection(unittest.TestCase):
 
         # Test requirement for collection names to be absolute
         with self.assertRaises(iRODSCollection.AbsolutePathRequired):
-            normalize('../public')
+            normalize('../public', enforce_absolute = True)
 
         # Test '.' and double slashes
         public_home = normalize(home,'..//public/.//')

@@ -92,18 +92,20 @@ class iRODSCollection(object):
             yield (self, self.subcollections, self.data_objects)
 
     @staticmethod
-    def normalize_path(*paths_, **kw_):
+    def normalize_path(*paths, **kw_):
         """Normalize a path or list of paths.
 
         We use the iRODSPath class to eliminate extra slashes in,
         and (if more than one parameter is given) concatenate, paths.
-        If keywords include enforce_absolute, this function requires
-        the first character of path(s) passed in should be '/'.
+        If the keyword argument `enforce_absolute' is set True, this
+        function requires the first character of path(s) passed in
+        should be '/'.
         """
         import irods.path
-        if kw_.get('enforce_absolute',True) and _first_char(*paths_) != '/':
+        absolute = kw_.get('enforce_absolute',False)
+        if absolute and _first_char(*paths) != '/':
             raise iRODSCollection.AbsolutePathRequired
-        return irods.path.iRODSPath( *paths_ )
+        return irods.path.iRODSPath(*paths, absolute = absolute)
 
     def __repr__(self):
         return "<iRODSCollection {id} {name}>".format(id = self.id, name = self.name.encode('utf-8'))
