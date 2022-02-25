@@ -493,7 +493,7 @@ class Connection(object):
 
         # Default case, PAM login will send a new password
         if password is None:
-            password = self.account.password
+            password = self.account.password or ''
 
         # authenticate
         auth_req = iRODSMessage(msg_type='RODS_API_REQ', int_info=703)
