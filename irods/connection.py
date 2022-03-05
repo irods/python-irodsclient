@@ -388,7 +388,7 @@ class Connection(object):
             username=self.account.proxy_user + '#' + self.account.proxy_zone
         )
         gsi_request = iRODSMessage(
-            msg_type='RODS_API_REQ', int_info=704, msg=gsi_msg)
+            msg_type='RODS_API_REQ', int_info=api_number['AUTH_RESPONSE_AN'], msg=gsi_msg)
         self.send(gsi_request)
         self.recv()
         # auth_response = self.recv()
@@ -535,7 +535,7 @@ class Connection(object):
         pwd_msg = AuthResponse(
             response=encoded_pwd, username=self.account.proxy_user)
         pwd_request = iRODSMessage(
-            msg_type='RODS_API_REQ', int_info=704, msg=pwd_msg)
+            msg_type='RODS_API_REQ', int_info=api_number['AUTH_RESPONSE_AN'], msg=pwd_msg)
         self.send(pwd_request)
         self.recv()
 
