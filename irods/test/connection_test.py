@@ -41,12 +41,17 @@ class TestConnections(unittest.TestCase):
         # set port back
         self.sess.pool.account.port = saved_port
 
-    def test_send_failure(self):
+    def test_1_multiple_disconnect(self):
         with self.sess.pool.get_connection() as conn:
-            # try to close connection twice, 2nd one should fail
+            # disconnect() may now be called multiple times without error.
+            # (Note, here it is called implicitly upon exiting the with-block.)
             conn.disconnect()
-            with self.assertRaises(NetworkException):
-                conn.disconnect()
+
+    def test_2_multiple_disconnect(self):
+        conn = self.sess.pool.get_connection()
+        # disconnect() may now be called multiple times without error.
+        conn.disconnect()
+        conn.disconnect()
 
     def test_reply_failure(self):
         with self.sess.pool.get_connection() as conn:

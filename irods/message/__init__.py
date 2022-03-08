@@ -12,6 +12,7 @@ import defusedxml.ElementTree as ET_secure_xml
 from . import quasixml as ET_quasi_xml
 from collections import namedtuple
 import os
+import fcntl
 import ast
 import threading
 from irods.message.message import Message
@@ -150,19 +151,23 @@ except NameError:
     UNICODE = str
 
 
+
+# Necessary for older python (<3.7):
+_socket_is_blocking = (lambda self: 0 == fcntl.fcntl(self.fileno(), fcntl.F_GETFL) & os.O_NONBLOCK)
+
 def _recv_message_in_len(sock, size):
     size_left = size
     retbuf = None
 
     # Get socket properties for debug and exception messages.
     host, port = sock.getpeername()
-    is_blocking = sock.getblocking()
+    is_blocking = _socket_is_blocking(sock)
     timeout = sock.gettimeout()
 
-    logger.debug(f'host: {host}')
-    logger.debug(f'port: {port}')
-    logger.debug(f'is_blocking: {is_blocking}')
-    logger.debug(f'timeout: {timeout}')
+    logger.debug('host: %s',host)
+    logger.debug('port: %d',port)
+    logger.debug('is_blocking: %s',is_blocking)
+    logger.debug('timeout: %s',timeout)
 
     while size_left > 0:
         try:
