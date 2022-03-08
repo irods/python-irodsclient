@@ -10,6 +10,7 @@ import tempfile
 import time
 import json
 import unittest
+import socket
 import irods.test.helpers as helpers
 from irods.connection import DESTRUCTOR_MSG
 
@@ -244,6 +245,10 @@ class TestPool(unittest.TestCase):
     # Test to confirm the connection destructor log message is actually
     # logged to file, to confirm the destructor is called
     def test_connection_destructor_called(self):
+
+        if self.sess.host != socket.gethostname() and not LOCALHOST_REGEX.match (self.sess.host):
+            self.skipTest('local test only - client dot does not like the extra logging')
+
         # Set 'irods_connection_refresh_time' to '3' (in seconds) in
         # ~/.irods/irods_environment.json file. This means any connection
         # that was created more than 3 seconds ago will be dropped and
