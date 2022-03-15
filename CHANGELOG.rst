@@ -1,6 +1,23 @@
 Changelog
 =========
 
+v1.1.2 (2022-03-15)
+-------------------
+- [#3][#345] Allow tests to pass and accommodate older Python [Daniel Moore]
+- [#352] Fix the infinite loop issue when sock.recv() returns an empty buffer [Kaivan Kamali]
+- [#345] Fix connection destructor issue [Kaivan Kamali]
+- [#351] replace 704 api constant with AUTH_RESPONSE_AN [Daniel Moore]
+- [#350] password input to AUTH_RESPONSE_AN should be string [Daniel Moore]
+- [#315] skip cleanup() if session.pool is None [Daniel Moore]
+- [#290] only anonymous user can log in without password [Daniel Moore]
+- [#43][#328] reasonable indentation [Daniel Moore]
+- [#328] allow user to change own password [Daniel Moore]
+- [#343][#21] document testing and S3 setup [Daniel Moore]
+- [#343] allow parallel (multi-1247) data transfer to/from S3 [Daniel Moore]
+- [#332] capitalize -C,-R object type abbreviations [Daniel Moore]
+- [#349] normalize() argument not necessarily absolute [Daniel Moore]
+- [#323] remove trailing slashes in collection names [Daniel Moore]
+
 v1.1.1 (2022-01-31)
 -------------------
 - [#338] clarify Python RE Plugin limitations [Daniel Moore]
