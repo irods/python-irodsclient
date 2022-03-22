@@ -160,12 +160,9 @@ def _recv_message_in_len(sock, size):
     retbuf = None
 
     # Get socket properties for debug and exception messages.
-    host, port = sock.getpeername()
     is_blocking = _socket_is_blocking(sock)
     timeout = sock.gettimeout()
 
-    logger.debug('host: %s',host)
-    logger.debug('port: %d',port)
     logger.debug('is_blocking: %s',is_blocking)
     logger.debug('timeout: %s',timeout)
 
@@ -196,8 +193,7 @@ def _recv_message_in_len(sock, size):
     # than 'size', throw a socket.error exception
     if retbuf is None or len(retbuf) != size:
         retbuf_size = len(retbuf) if retbuf is not None else 0
-        msg = 'Read {} bytes from the socket (host {}, port {}) instead of expected {} bytes'.format(
-               retbuf_size, host, port, size)
+        msg = 'Read {} bytes from socket instead of expected {} bytes'.format(retbuf_size, size)
         raise socket.error(msg)
 
     return retbuf
