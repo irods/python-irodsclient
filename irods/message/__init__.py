@@ -12,7 +12,6 @@ import defusedxml.ElementTree as ET_secure_xml
 from . import quasixml as ET_quasi_xml
 from collections import namedtuple
 import os
-import fcntl
 import ast
 import threading
 from irods.message.message import Message
@@ -153,7 +152,15 @@ except NameError:
 
 
 # Necessary for older python (<3.7):
-_socket_is_blocking = (lambda self: 0 == fcntl.fcntl(self.fileno(), fcntl.F_GETFL) & os.O_NONBLOCK)
+
+def _socket_is_blocking(sk):
+    try:
+        return sk.getblocking()
+    except AttributeError:
+        # Python 3.7+ docs say sock.getblocking() is equivalent to checking if sock.gettimeout() == 0, but this is misleading.
+        # Manual testing shows this to be a more accurate equivalent:
+        timeout = sk.gettimeout()
+        return (timeout is None or timeout > 0)
 
 def _recv_message_in_len(sock, size):
     size_left = size
