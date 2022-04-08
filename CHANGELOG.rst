@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v1.1.3 (2022-04-07)
+-------------------
+- [#356] Removing call to partially unsupported getpeername() [Kaivan Kamali]
+
 v1.1.2 (2022-03-15)
 -------------------
 - [#3][#345] Allow tests to pass and accommodate older Python [Daniel Moore]
