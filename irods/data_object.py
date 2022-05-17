@@ -100,6 +100,9 @@ class iRODSDataObject(object):
         """
         return self.manager.chksum(self.path, **options)
 
+    def trim(self, **options):
+        self.manager.trim(self.path, **options)
+
     def unlink(self, force=False, **options):
         self.manager.unlink(self.path, force, **options)
 

@@ -903,9 +903,11 @@ class TestDataObjOps(unittest.TestCase):
             self.assertEqual(replica.number, i)
 
         # now trim odd-numbered replicas
+        # note (see irods/irods#4861): COPIES_KW might disappear in the future
+        options = {kw.COPIES_KW: 1}
         for i in [1, 3, 5]:
-            options = {kw.REPL_NUM_KW: str(i)}
-            obj.unlink(**options)
+            options[kw.REPL_NUM_KW] = str(i)
+            obj.trim(**options)
 
         # refresh object
         obj = session.data_objects.get(obj_path)
