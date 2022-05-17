@@ -330,6 +330,25 @@ class DataObjectManager(Manager):
         return io.BufferedRandom(raw)
 
 
+    def trim(self, path, **options):
+
+        message_body = FileOpenRequest(
+            objPath=path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=-1,
+            numThreads=self.sess.numThreads,
+            KeyValPair_PI=StringStringMap(options),
+        )
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['DATA_OBJ_TRIM_AN'])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+
+
     def unlink(self, path, force=False, **options):
         if force:
             options[kw.FORCE_FLAG_KW] = ''

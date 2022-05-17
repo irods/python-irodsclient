@@ -554,6 +554,10 @@ class SYS_INVALID_INPUT_PARAM(SystemException):
     code = -130000
 
 
+class SYS_REPLICA_DOES_NOT_EXIST(iRODSException):
+    code = -164000
+
+
 class UserInputException(iRODSException):
     pass
 
