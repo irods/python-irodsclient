@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import ast
 import json
 import errno
 import logging
@@ -158,6 +159,13 @@ class iRODSSession(object):
 
     @property
     def server_version(self):
+        try:
+            reported_vsn = os.environ.get("PYTHON_IRODSCLIENT_REPORTED_SERVER_VERSION","")
+            return tuple(ast.literal_eval(reported_vsn))
+        except SyntaxError:  # environment variable was malformed, empty, or unset
+            return self.__server_version()
+
+    def __server_version(self):
         try:
             conn = next(iter(self.pool.active))
             return conn.server_version
