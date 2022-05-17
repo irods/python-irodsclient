@@ -412,8 +412,9 @@ class TestDataObjOps(unittest.TestCase):
 
 
     def test_create_from_invalid_path__250(self):
-        possible_exceptions = { ex.CAT_UNKNOWN_COLLECTION:  (lambda serv_vsn : serv_vsn >= (4,2,9)),
-                                ex.SYS_INVALID_INPUT_PARAM: (lambda serv_vsn : serv_vsn <= (4,2,8))
+        possible_exceptions = { ex.SYS_INVALID_INPUT_PARAM: (lambda serv_vsn : serv_vsn <= (4,2,8)),
+                                ex.CAT_UNKNOWN_COLLECTION:  (lambda serv_vsn : (4,2,9) <= serv_vsn < (4,3,0)),
+                                ex.SYS_INVALID_FILE_PATH:   (lambda serv_vsn : (4,3,0) <= serv_vsn)
                               }
         raisedExc = None
         try:
