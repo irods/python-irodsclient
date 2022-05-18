@@ -652,32 +652,47 @@ class ObjCopyRequest(Message):
     srcDataObjInp_PI = SubmessageProperty(FileOpenRequest)
     destDataObjInp_PI = SubmessageProperty(FileOpenRequest)
 
+#in iRODS <= 4.2.11:
 # define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
 # str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9;"
 
+#in iRODS > 4.2.11:
+# define ModAVUMetadataInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
+# str *arg4; str *arg5; str *arg6; str *arg7;  str *arg8;  str *arg9; struct KeyValPair_PI"
 
-class MetadataRequest(Message):
-    _name = 'ModAVUMetadataInp_PI'
+def MetadataRequest(session):
 
-    def __init__(self, *args):
-        super(MetadataRequest, self).__init__()
-        for i in range(len(args)):
-            if args[i]:
-                setattr(self, 'arg%d' % i, args[i])
+    SERVER_REQUIRES_KEYVAL_PAIRS = (session.server_version >= (4,2,12))
 
-    arg0 = StringProperty()
-    arg1 = StringProperty()
-    arg2 = StringProperty()
-    arg3 = StringProperty()
-    arg4 = StringProperty()
-    arg5 = StringProperty()
-    arg6 = StringProperty()
-    arg7 = StringProperty()
-    arg8 = StringProperty()
-    arg9 = StringProperty()
+    class MetadataRequest_(Message):
+        _name = 'ModAVUMetadataInp_PI'
 
-# define modAccessControlInp_PI "int recursiveFlag; str *accessLevel; str
-# *userName; str *zone; str *path;"
+        def __init__(self, *args, **metadata_opts):
+            super(MetadataRequest_, self).__init__()
+            for i in range(len(args)):
+                if args[i]:
+                    setattr(self, 'arg%d' % i, args[i])
+            if SERVER_REQUIRES_KEYVAL_PAIRS:
+                self.KeyValPair_PI = StringStringMap(metadata_opts)
+
+        arg0 = StringProperty()
+        arg1 = StringProperty()
+        arg2 = StringProperty()
+        arg3 = StringProperty()
+        arg4 = StringProperty()
+        arg5 = StringProperty()
+        arg6 = StringProperty()
+        arg7 = StringProperty()
+        arg8 = StringProperty()
+        arg9 = StringProperty()
+
+        if SERVER_REQUIRES_KEYVAL_PAIRS:
+            KeyValPair_PI = SubmessageProperty(StringStringMap)
+
+    return MetadataRequest_
+
+    # define modAccessControlInp_PI "int recursiveFlag; str *accessLevel; str
+    # *userName; str *zone; str *path;"
 
 
 class ModAclRequest(Message):
@@ -772,7 +787,7 @@ class GetTempPasswordOut(Message):
 #in iRODS <= 4.2.10:
 #define ticketAdminInp_PI "str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6;"
 
-#in iRODS <= 4.2.11:
+#in iRODS >= 4.2.11:
 #define ticketAdminInp_PI "str *arg1; str *arg2; str *arg3; str *arg4; str *arg5; str *arg6; struct KeyValPair_PI;"
 
 def TicketAdminRequest(session):
@@ -1087,3 +1102,17 @@ def empty_gen_query_out(cols):
         SqlResult_PI=sql_results
     )
     return gqo
+
+
+import weakref
+
+cache_ = {
+  MetadataRequest: weakref.WeakKeyDictionary()
+}
+
+def session_cache (func,session,*args):
+    retval = cache_[func].get(session)
+    if retval is None:
+        cache_[func][session] = retval = func(*([session]+list(args)))
+    return retval
+
