@@ -1,0 +1,9 @@
+#!/bin/bash
+# usage $0 [""|"y"|"/"*] [container_irods_packages_path]
+if [[ $1 = /* ]]; then
+  apt install -y "$2"/irods*rule*python*.deb
+elif [ "$1" != "" ]; then
+  apt install -y irods-rule.\*python
+else
+  : # nop
+fi

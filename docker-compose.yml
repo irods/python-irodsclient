@@ -14,6 +14,8 @@ services:
     build:
       context: docker_build
       dockerfile: Dockerfile.provider
+      args:
+        server_py: "${server_python_version}"
     volumes:
       - "${irods_pkg_dir}:/irods_packages:ro"
       - ./irods_shared:/irods_shared:rw
@@ -35,6 +37,6 @@ services:
       dockerfile: Dockerfile.prc_test.${client_os_generic}
       args:
         os_image: "$client_os_image"
-        py_N: "$python_version"
+        py_N: "$client_python_version"
     depends_on:
       - irods-provider
