@@ -6,7 +6,7 @@ def run (CI):
     final_config = CI.store_config(
         {
             "yaml_substitutions": {       # -> written to ".env"
-                "python_version" : "3",
+                "client_python_version" : "3",
                 "client_os_generic": "ubuntu",
                 "client_os_image": "ubuntu:18.04",
                 "python_rule_engine_installed": "y"
