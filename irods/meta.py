@@ -103,6 +103,14 @@ class iRODSMetaCollection(object):
         self._manager.apply_atomic_operations(self._model_cls, self._path, *avu_ops)
         self._reset_metadata()
 
+    def set(self, *args):
+        """
+        Set as iRODSMeta to a key
+        """
+        meta = self._get_meta(*args)
+        self._manager.set(self._model_cls, self._path, meta)
+        self._reset_metadata()
+
     def add(self, *args):
         """
         Add as iRODSMeta to a key
