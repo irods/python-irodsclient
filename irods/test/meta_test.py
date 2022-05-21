@@ -8,6 +8,8 @@ from irods.meta import (iRODSMeta, AVUOperation, BadAVUOperationValue, BadAVUOpe
 from irods.manager.metadata_manager import InvalidAtomicAVURequest
 from irods.models import (DataObject, Collection, Resource)
 import irods.test.helpers as helpers
+import irods.keywords as kw
+from irods.session import iRODSSession
 from six.moves import range
 from six import PY3
 
@@ -216,6 +218,41 @@ class TestMeta(unittest.TestCase):
         # check that metadata is gone
         meta = self.sess.metadata.get(DataObject, self.obj_path)
         assert len(meta) == 0
+
+
+    def test_metadata_manipulations_with_admin_kw__364__365(self):
+        try:
+            d = user = None
+            adm = self.sess
+            # Create a rodsuser, and a session for that roduser.
+            user = adm.users.create ( 'bobby','rodsuser' )
+            user.modify('password','bpass')
+            with iRODSSession (port=adm.port,zone=adm.zone,host=adm.host, user=user.name,password='bpass') as ses:
+                # Create a data object owned by the rodsuser.  Set AVUs in various ways and guarantee each attempt
+                # has the desired effect.
+                d = ses.data_objects.create('/{adm.zone}/home/{user.name}/testfile'.format(**locals()))
+
+                d.metadata.set('a','aa','1')
+                self.assertIn(('a','aa','1'), d.metadata.items())
+
+                d.metadata.set('a','aa')
+                self.assertEqual([('a','aa')], [tuple(_) for _ in d.metadata.items()])
+
+                d.metadata['a'] = iRODSMeta('a','bb')
+                self.assertEqual([('a','bb')], [tuple(_) for _ in d.metadata.items()])
+
+                # Now the admin does two AVU-set operations.  A successful test of these operations' success
+                # includes that both ('x','y') has been added and ('a','b','c') has overwritten ('a','bb').
+
+                da = adm.data_objects.get(d.path)
+                da.metadata.set('a','b','c',**{kw.ADMIN_KW:''})
+                da.metadata(admin = True)['x'] = iRODSMeta('x','y')
+                d = ses.data_objects.get(d.path) # assure metadata are not cached
+                self.assertEqual(set([('x','y'), ('a','b','c')]),
+                                 set(tuple(_) for _ in d.metadata.items()))
+        finally:
+            if d: d.unlink(force=True)
+            if user: user.remove()
 
 
     def test_add_coll_meta(self):
