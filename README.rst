@@ -411,6 +411,27 @@ of the (type of) catalog object they once annotated:
 >>> len(list( session.query(ResourceMeta) ))
 0
 
+When altering a fetched iRODSMeta, we must copy it first to avoid errors, due to the fact the reference
+is cached by the iRODS object reference.  A shallow copy is sufficient:
+
+>>> meta = album.metadata.items()[0]
+>>> meta.units
+'quid'
+>>> import copy; meta = copy.copy(meta); meta.units = 'pounds sterling'
+>>> album.metadata[ meta.name ] = meta
+
+Fortunately, as of PRC >= 1.1.4, we can simply do this instead:
+
+>>> album.metadata.set( meta )
+
+In versions of iRODS 4.2.12 and later, we can also do:
+
+>>> album.metadata.set( meta, **{kw.ADMIN_KW: ''} )
+
+or even:
+
+>>> album.metadata(admin = True)[meta.name] = meta
+
 
 Atomic operations on metadata
 -----------------------------

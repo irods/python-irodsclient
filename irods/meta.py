@@ -8,6 +8,14 @@ class iRODSMeta(object):
         self.value = value
         self.units = units
 
+    def __eq__(self, other):
+        return tuple(self) == tuple(other)
+
+    def __iter__(self):
+        yield self.name
+        yield self.value
+        if self.units: yield self.units
+
     def __repr__(self):
         return "<iRODSMeta {avu_id} {name} {value} {units}>".format(**vars(self))
 
