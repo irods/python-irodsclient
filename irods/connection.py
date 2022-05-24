@@ -290,18 +290,22 @@ class Connection(object):
         # is already closed). This makes it safe to call disconnect multiple
         # times on the same connection. The first call cleans up the resources
         # and next calls are no-ops
-        if self.socket and getattr(self, "_disconnected", False) == False and self.socket.fileno() != -1:
-            disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
-            self.send(disconnect_msg)
-            try:
-                # SSL shutdown handshake
-                self.socket = self.socket.unwrap()
-            except AttributeError:
-                pass
-            self.socket.shutdown(socket.SHUT_RDWR)
-            self.socket.close()
-            self.socket = None
-            self._disconnected = True
+        try:
+            if self.socket and getattr(self, "_disconnected", False) == False and self.socket.fileno() != -1:
+                disconnect_msg = iRODSMessage(msg_type='RODS_DISCONNECT')
+                self.send(disconnect_msg)
+                try:
+                    # SSL shutdown handshake
+                    self.socket = self.socket.unwrap()
+                except AttributeError:
+                    pass
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
+        finally:
+            self._disconnected = True  # Issue 368 - because of undefined destruction order during interpreter shutdown,
+            self.socket = None         # as well as the fact that unhandled exceptions are ignored in __del__, we'd at least
+                                       # like to ensure as much cleanup as possible, thus preventing the above socket shutdown
+                                       # procedure from running too many times and creating confusing messages
 
     def recvall(self, n):
         # Helper function to recv n bytes or return None if EOF is hit
