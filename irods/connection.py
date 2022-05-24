@@ -10,6 +10,10 @@ import datetime
 import irods.password_obfuscation as obf
 from irods import MAX_NAME_LEN
 from ast import literal_eval as safe_eval
+import re
+
+
+PAM_PW_ESC_PATTERN = re.compile(r'([@=&;])')
 
 
 from irods.message import (
@@ -425,8 +429,10 @@ class Connection(object):
 
         time_to_live_in_seconds = 60
 
+        pam_password = PAM_PW_ESC_PATTERN.sub(lambda m: '\\'+m.group(1), self.account.password)
+
         ctx_user = '%s=%s' % (AUTH_USER_KEY, self.account.client_user)
-        ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, self.account.password)
+        ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, pam_password)
         ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, str(time_to_live_in_seconds))
 
         ctx = ";".join([ctx_user, ctx_pwd, ctx_ttl])
@@ -441,7 +447,7 @@ class Connection(object):
 
             message_body = PamAuthRequest(
                 pamUser=self.account.client_user,
-                pamPassword=self.account.password,
+                pamPassword=pam_password,
                 timeToLive=time_to_live_in_seconds)
         else:
 
@@ -545,6 +551,7 @@ class Connection(object):
         elif b'\x00' in encoded_pwd:
             encoded_pwd_array = bytearray(encoded_pwd)
             encoded_pwd = bytes(encoded_pwd_array.replace(b'\x00', b'\x01'))
+
 
         pwd_msg = AuthResponse(
             response=encoded_pwd, username=self.account.proxy_user)
