@@ -25,6 +25,16 @@ from re import compile as regex
 import gc
 import six
 
+#
+# Allow override to specify the PAM password in effect for the test rodsuser.
+#
+TEST_PAM_PW_OVERRIDE = os.environ.get('PYTHON_IRODSCLIENT_TEST_PAM_PW_OVERRIDE','')
+TEST_PAM_PW = TEST_PAM_PW_OVERRIDE or 'test123'
+
+TEST_IRODS_PW = 'apass'
+TEST_RODS_USER = 'alissa'
+
+
 try:
     from re import _pattern_type as regex_type
 except ImportError:
@@ -117,21 +127,17 @@ class TestLogins(unittest.TestCase):
       3. Must add & override configuration entries in /var/lib/irods/irods_environment
          Per https://slides.com/irods/ugm2018-ssl-and-pam-configuration#/3/7
 
-      4. Create rodsuser alissa and corresponding unix user with the appropriate
-         passwords as below.
     '''
-
-    test_rods_user = 'alissa'
 
     user_auth_envs = {
         '.irods.pam': {
-            'USER':     test_rods_user,
-            'PASSWORD': 'test123', # UNIX pw
+            'USER':     TEST_RODS_USER,
+            'PASSWORD': TEST_PAM_PW,
             'AUTH':     'pam'
         },
         '.irods.native': {
-            'USER':     test_rods_user,
-            'PASSWORD': 'apass',   # iRODS pw
+            'USER':     TEST_RODS_USER,
+            'PASSWORD': TEST_IRODS_PW,
             'AUTH':     'native'
         }
     }
@@ -151,13 +157,12 @@ class TestLogins(unittest.TestCase):
             else:
                 os.environ[var]=oldvalue
 
-    @classmethod
-    def create_env_dirs(cls):
+    def create_env_dirs(self):
         dirs = {}
         retval = []
         # -- create environment configurations and secrets
         with pam_password_in_plaintext():
-            for dirname,lookup in cls.user_auth_envs.items():
+            for dirname,lookup in self.user_auth_envs.items():
                 if lookup['AUTH'] == 'pam':
                     ses = iRODSSession( host=gethostname(),
                                         user=lookup['USER'],
@@ -174,7 +179,7 @@ class TestLogins(unittest.TestCase):
                #elif lookup['AUTH'] == 'XXXXXX': # TODO: insert other authentication schemes here
                 elif lookup['AUTH'] in ('native', '',None):
                     scrambled_pw = pw_encode( lookup['PASSWORD'] )
-                cl_env = client_env_from_server_env(cls.test_rods_user)
+                cl_env = client_env_from_server_env(TEST_RODS_USER)
                 if lookup.get('AUTH',None) is not None:     # - specify auth scheme only if given
                     cl_env['irods_authentication_scheme'] = lookup['AUTH']
                 dirbase = os.path.join(os.environ['HOME'],dirname)
@@ -195,43 +200,22 @@ class TestLogins(unittest.TestCase):
         return retval
 
 
-    @staticmethod
-    def get_server_ssl_negotiation( session ):
-
-        rule_body = textwrap.dedent('''
-                                    test { *out=""; acPreConnect(*out);
-                                               writeLine("stdout", "*out");
-                                         }
-                                    ''')
-        myrule = Rule(session, body=rule_body, params={}, output='ruleExecOut')
-        out_array = myrule.execute()
-        buf = out_array.MsParam_PI[0].inOutStruct.stdoutBuf.buf.decode('utf-8')
-        eol_offset = buf.find('\n')
-        return  buf[:eol_offset]  if  eol_offset >= 0  else None
-
     @classmethod
     def setUpClass(cls):
         cls.admin = helpers.make_session()
-        if cls.test_rods_user in (row[User.name] for row in cls.admin.query(User.name)):
-            cls.server_ssl_setting = cls.get_server_ssl_negotiation( cls.admin )
-            cls.envdirs = cls.create_env_dirs()
-            if not cls.envdirs:
-                raise RuntimeError('Could not create one or more client environments')
 
     @classmethod
     def tearDownClass(cls):
-        for envdir in getattr(cls, 'envdirs', []):
-            shutil.rmtree(envdir, ignore_errors=True)
         cls.admin.cleanup()
 
     def setUp(self):
-        if not getattr(self, 'envdirs', []):
-            self.skipTest('The test_rods_user "{}" does not exist'.format(self.test_rods_user))
         if os.environ['HOME'] != '/var/lib/irods':
             self.skipTest('Must be run as irods')
         super(TestLogins,self).setUp()
 
     def tearDown(self):
+        for envdir in getattr(self, 'envdirs', []):
+            shutil.rmtree(envdir, ignore_errors=True)
         super(TestLogins,self).tearDown()
 
     def validate_session(self, session, verbose=False, **options):
@@ -241,7 +225,7 @@ class TestLogins(unittest.TestCase):
         self.assertTrue(session.collections.get(home_coll).path == home_coll)
         if verbose: print(home_coll)
         # - check user is as expected
-        self.assertEqual( session.username, self.test_rods_user )
+        self.assertEqual( session.username, TEST_RODS_USER )
         # - check socket type (normal vs SSL) against whether ssl requested
         use_ssl = options.pop('ssl',None)
         if use_ssl is not None:
@@ -249,89 +233,98 @@ class TestLogins(unittest.TestCase):
             self.assertEqual( bool( use_ssl ), my_connect.socket.__class__ is ssl.SSLSocket )
 
 
-#   def test_demo(self): self.demo()
+    @contextlib.contextmanager
+    def _setup_rodsuser_and_optional_pw(self, name, make_irods_pw = False):
+        try:
+            self.admin.users.create(name, 'rodsuser')
+            if make_irods_pw:
+                self.admin.users.modify(name,'password',TEST_IRODS_PW)
+            yield
+        finally:
+            self.admin.users.remove( name )
 
-#   def demo(self): # for future reference - skipping based on CS_NEG_DONT_CARE setting
-#       if self.server_ssl_setting == 'CS_NEG_DONT_CARE':
-#           self.skipTest('skipping  b/c setting is DONT_CARE')
-#       self.assertTrue (False)
+    def tst0(self, ssl_opt, auth_opt, env_opt, name=TEST_RODS_USER, make_irods_pw = False):
 
-
-    def tst0(self, ssl_opt, auth_opt, env_opt ):
-        auth_opt_explicit = 'native' if auth_opt=='' else  auth_opt
-        verbosity=False
-        #verbosity='' # -- debug - sanity check by printing out options applied
-        out = {'':''}
-        if env_opt:
-            with self.setenv('IRODS_ENVIRONMENT_FILE', json_env_fullpath(auth_opt_explicit)) as env_file,\
-                 self.setenv('IRODS_AUTHENTICATION_FILE', secrets_fullpath(auth_opt_explicit)):
-                cli_env_extras = {} if not(ssl_opt) else dict( CLIENT_OPTIONS_FOR_SSL )
+        with self._setup_rodsuser_and_optional_pw(name = name, make_irods_pw = make_irods_pw):
+            self.envdirs = self.create_env_dirs()
+            if not self.envdirs:
+                raise RuntimeError('Could not create one or more client environments')
+            auth_opt_explicit = 'native' if auth_opt=='' else  auth_opt
+            verbosity=False
+            #verbosity='' # -- debug - sanity check by printing out options applied
+            out = {'':''}
+            if env_opt:
+                with self.setenv('IRODS_ENVIRONMENT_FILE', json_env_fullpath(auth_opt_explicit)) as env_file,\
+                     self.setenv('IRODS_AUTHENTICATION_FILE', secrets_fullpath(auth_opt_explicit)):
+                    cli_env_extras = {} if not(ssl_opt) else dict( CLIENT_OPTIONS_FOR_SSL )
+                    if auth_opt:
+                        cli_env_extras.update( irods_authentication_scheme = auth_opt )
+                        remove=[]
+                    else:
+                        remove=[regex('authentication_')]
+                    with helpers.file_backed_up(env_file):
+                        json_file_update( env_file, keys_to_delete=remove, **cli_env_extras )
+                        session = iRODSSession(irods_env_file=env_file)
+                        with open(env_file) as f:
+                            out =  json.load(f)
+                        self.validate_session( session, verbose = verbosity, ssl = ssl_opt )
+                        session.cleanup()
+                out['ARGS']='no'
+            else:
+                session_options = {}
                 if auth_opt:
-                    cli_env_extras.update( irods_authentication_scheme = auth_opt )
-                    remove=[]
-                else:
-                    remove=[regex('authentication_')]
-                with helpers.file_backed_up(env_file):
-                    json_file_update( env_file, keys_to_delete=remove, **cli_env_extras )
-                    session = iRODSSession(irods_env_file=env_file)
-                    with open(env_file) as f:
-                        out =  json.load(f)
-                    self.validate_session( session, verbose = verbosity, ssl = ssl_opt )
-                    session.cleanup()
-            out['ARGS']='no'
-        else:
-            session_options = {}
-            if auth_opt:
-                session_options.update (authentication_scheme = auth_opt)
-            if ssl_opt:
-                SSL_cert = CLIENT_OPTIONS_FOR_SSL["irods_ssl_ca_certificate_file"]
-                session_options.update(
-                    ssl_context = ssl.create_default_context ( purpose = ssl.Purpose.SERVER_AUTH,
-                                                               capath = None,
-                                                               cadata = None,
-                                                               cafile = SSL_cert),
-                    **CLIENT_OPTIONS_FOR_SSL )
-            lookup = self.user_auth_envs ['.irods.'+('native' if not(auth_opt) else auth_opt)]
-            session = iRODSSession ( host=gethostname(),
-                                     user=lookup['USER'],
-                                     zone='tempZone',
-                                     password=lookup['PASSWORD'],
-                                     port= 1247,
-                                     **session_options )
-            out = session_options
-            self.validate_session( session, verbose = verbosity, ssl = ssl_opt )
-            session.cleanup()
-            out['ARGS']='yes'
+                    session_options.update (authentication_scheme = auth_opt)
+                if ssl_opt:
+                    SSL_cert = CLIENT_OPTIONS_FOR_SSL["irods_ssl_ca_certificate_file"]
+                    session_options.update(
+                        ssl_context = ssl.create_default_context ( purpose = ssl.Purpose.SERVER_AUTH,
+                                                                   capath = None,
+                                                                   cadata = None,
+                                                                   cafile = SSL_cert),
+                        **CLIENT_OPTIONS_FOR_SSL )
+                lookup = self.user_auth_envs ['.irods.'+('native' if not(auth_opt) else auth_opt)]
+                session = iRODSSession ( host=gethostname(),
+                                         user=lookup['USER'],
+                                         zone='tempZone',
+                                         password=lookup['PASSWORD'],
+                                         port= 1247,
+                                         **session_options )
+                out = session_options
+                self.validate_session( session, verbose = verbosity, ssl = ssl_opt )
+                session.cleanup()
+                out['ARGS']='yes'
 
-        if verbosity == '':
-            print ('--- ssl:',ssl_opt,'/ auth:',repr(auth_opt),'/ env:',env_opt)
-            print ('--- > ',json.dumps({k:v for k,v in out.items() if k != 'ssl_context'},indent=4))
-            print ('---')
+            if verbosity == '':
+                print ('--- ssl:',ssl_opt,'/ auth:',repr(auth_opt),'/ env:',env_opt)
+                print ('--- > ',json.dumps({k:v for k,v in out.items() if k != 'ssl_context'},indent=4))
+                print ('---')
+
+
 
     # == test defaulting to 'native'
 
     def test_01(self):
-        self.tst0 ( ssl_opt = True , auth_opt = '' , env_opt = False )
+        self.tst0 ( ssl_opt = True , auth_opt = '' , env_opt = False , make_irods_pw = True)
     def test_02(self):
-        self.tst0 ( ssl_opt = False, auth_opt = '' , env_opt = False )
+        self.tst0 ( ssl_opt = False, auth_opt = '' , env_opt = False , make_irods_pw = True)
     def test_03(self):
-        self.tst0 ( ssl_opt = True , auth_opt = '' , env_opt = True )
+        self.tst0 ( ssl_opt = True , auth_opt = '' , env_opt = True , make_irods_pw = True )
     def test_04(self):
-        self.tst0 ( ssl_opt = False, auth_opt = '' , env_opt = True  )
+        self.tst0 ( ssl_opt = False, auth_opt = '' , env_opt = True , make_irods_pw = True  )
 
     # == test explicit scheme 'native'
 
     def test_1(self):
-        self.tst0 ( ssl_opt = True , auth_opt = 'native' , env_opt = False )
+        self.tst0 ( ssl_opt = True , auth_opt = 'native' , env_opt = False, make_irods_pw = True)
 
     def test_2(self):
-        self.tst0 ( ssl_opt = False, auth_opt = 'native' , env_opt = False )
+        self.tst0 ( ssl_opt = False, auth_opt = 'native' , env_opt = False, make_irods_pw = True)
 
     def test_3(self):
-        self.tst0 ( ssl_opt = True , auth_opt = 'native' , env_opt = True )
+        self.tst0 ( ssl_opt = True , auth_opt = 'native' , env_opt = True, make_irods_pw = True)
 
     def test_4(self):
-        self.tst0 ( ssl_opt = False, auth_opt = 'native' , env_opt = True  )
+        self.tst0 ( ssl_opt = False, auth_opt = 'native' , env_opt = True, make_irods_pw = True)
 
     # == test explicit scheme 'pam'
 
