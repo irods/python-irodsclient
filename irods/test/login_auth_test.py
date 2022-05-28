@@ -243,7 +243,7 @@ class TestLogins(unittest.TestCase):
         finally:
             self.admin.users.remove( name )
 
-    def tst0(self, ssl_opt, auth_opt, env_opt, name=TEST_RODS_USER, make_irods_pw = False):
+    def tst0(self, ssl_opt, auth_opt, env_opt, name = TEST_RODS_USER, make_irods_pw = False):
 
         with self._setup_rodsuser_and_optional_pw(name = name, make_irods_pw = make_irods_pw):
             self.envdirs = self.create_env_dirs()
@@ -345,6 +345,34 @@ class TestLogins(unittest.TestCase):
 
     def test_8(self):
         self.tst0 ( ssl_opt = False, auth_opt = 'pam'    , env_opt = True  )
+
+    @unittest.skipUnless(TEST_PAM_PW_OVERRIDE, "Skipping unless pam password is overridden (e.g. to test special characters)")
+    def test_escaped_pam_password_chars__362(self):
+        with self._setup_rodsuser_and_optional_pw(name = TEST_RODS_USER):
+            context = ssl._create_unverified_context(
+                purpose=ssl.Purpose.SERVER_AUTH, capath=None, cadata=None, cafile=None,
+            )
+            ssl_settings = {
+                'client_server_negotiation': 'request_server_negotiation',
+                'client_server_policy': 'CS_NEG_REQUIRE',
+                'encryption_algorithm': 'AES-256-CBC',
+                'encryption_key_size': 32,
+                'encryption_num_hash_rounds': 16,
+                'encryption_salt_size': 8,
+                'ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
+                'ssl_context': context
+            }
+            irods_session = iRODSSession(
+                host = self.admin.host,
+                port = self.admin.port,
+                zone = self.admin.zone,
+                user = TEST_RODS_USER,
+                password = TEST_PAM_PW_OVERRIDE,
+                authentication_scheme = 'pam',
+                **ssl_settings
+            )
+            home_coll =  '/{0.zone}/home/{0.username}'.format(irods_session)
+            self.assertEqual(irods_session.collections.get(home_coll).path, home_coll)
 
 class TestAnonymousUser(unittest.TestCase):
 
