@@ -20,6 +20,10 @@ class TestAccess(unittest.TestCase):
         # Create test collection
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
+        VERSION_DEPENDENT_STRINGS = { 'MODIFY':'modify_object', 'READ':'read_object' } if self.sess.server_version >= (4,3) \
+                               else { 'MODIFY':'modify object', 'READ':'read object' }
+        self.mapping = dict( [(i,i) for i in ( 'own', VERSION_DEPENDENT_STRINGS['MODIFY'], VERSION_DEPENDENT_STRINGS['READ'])] +
+                             [('write',VERSION_DEPENDENT_STRINGS['MODIFY']), ('read', VERSION_DEPENDENT_STRINGS['READ'])] )
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -180,7 +184,7 @@ class TestAccess(unittest.TestCase):
         acl = self.sess.permissions.get(obj)[0]  # owner's write access
 
         # check values
-        self.assertEqual(acl.access_name, 'modify object')
+        self.assertEqual(acl.access_name, self.mapping['write'])
         self.assertEqual(acl.user_zone, user.zone)
         self.assertEqual(acl.user_name, user.name)
 
@@ -206,7 +210,7 @@ class TestAccess(unittest.TestCase):
         acl = self.sess.permissions.get(coll)[0]  # owner's write access
 
         # check values
-        self.assertEqual(acl.access_name, 'modify object')
+        self.assertEqual(acl.access_name, self.mapping['write'])
         self.assertEqual(acl.user_zone, user.zone)
         self.assertEqual(acl.user_name, user.name)
 
@@ -214,13 +218,8 @@ class TestAccess(unittest.TestCase):
         acl1 = iRODSAccess('own', coll.path, user.name, user.zone)
         self.sess.permissions.set(acl1)
 
-    mapping = dict( [ (i,i) for i in ('modify object', 'read object', 'own') ] +
-                    [ ('write','modify object') , ('read', 'read object') ]
-                  )
-
-    @classmethod
-    def perms_lists_symm_diff ( cls, a_iter, b_iter ):
-        fields = lambda perm: (cls.mapping[perm.access_name], perm.user_name, perm.user_zone)
+    def perms_lists_symm_diff ( self, a_iter, b_iter ):
+        fields = lambda perm: (self.mapping[perm.access_name], perm.user_name, perm.user_zone)
         A = set (map(fields,a_iter))
         B = set (map(fields,b_iter))
         return (A-B) | (B-A)
