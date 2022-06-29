@@ -1,6 +1,20 @@
 Changelog
 =========
 
+v1.1.4 (2022-06-29)
+-------------------
+- [#372] eliminate SyntaxWarning ("is" operator being used with a literal) [Daniel Moore]
+- [#358] eliminate fcntl import [Daniel Moore]
+- [#368] ensure connection is finalized properly [Daniel Moore]
+- [#362] escape special characters in PAM passwords [Daniel Moore]
+- [#364] allow ADMIN_KW in all metadata operations [Daniel Moore]
+- [#365] allow set() method via iRODSMetaCollection [Daniel Moore]
+- [#3] update tests for 4.3.0 [Daniel Moore]
+- [irods/irods#844] fix access_test [Daniel Moore]
+- [#3][irods/irods#6124] adapt for ADMIN_KW in post-4.2.11 ModAVUMetadata api [Daniel Moore]
+- [#3][irods/irods#5927] test_repave_replica now passes in iRODS >= 4.2.12 [Daniel Moore]
+- [#3][irods/irods#6340] test_replica_number passes on 4.3.0 [Daniel Moore]
+
 v1.1.3 (2022-04-07)
 -------------------
 - [#356] Removing call to partially unsupported getpeername() [Kaivan Kamali]
