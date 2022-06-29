@@ -116,7 +116,7 @@ def XML_entities_active():
 
 # ET() [no-args form] will just fetch the current thread's XML parser settings
 
-def ET(xml_type = 0, server_version = None):
+def ET(xml_type = (), server_version = None):
     """
     Return the module used to parse XML from iRODS protocol messages text.
 
@@ -126,13 +126,15 @@ def ET(xml_type = 0, server_version = None):
       * QUASI_XML is custom parser designed to be more compatible with the use of
         non-printable characters in object names.
       * STANDARD_XML uses the standard module, xml.etree.ElementTree.
+      * an empty tuple is the default argument for `xml_type', imparting the same 
+        semantics as for the argumentless form ET(), ie., short-circuit any parser change.
 
     `server_version', if given, should be a list or tuple specifying the version of the connected iRODS server.
 
     """
-    if xml_type is not 0:
-        _thrlocal.xml_type = default_XML_parser() if xml_type in (None, XML_Parser_Type(0)) \
-                        else XML_Parser_Type(xml_type)
+    if xml_type != ():
+        _thrlocal.xml_type = (default_XML_parser() if xml_type in (None, XML_Parser_Type(0)) 
+                              else XML_Parser_Type(xml_type))
     if isinstance(server_version, _TUPLE_LIKE_TYPES):
         _thrlocal.irods_server_version = tuple(server_version)  #  A default server version for Quasi-XML parsing is set (from the environment) and
     return _XML_parsers[current_XML_parser()]                   #  applies to all threads in which ET() has not been called to update the value.
