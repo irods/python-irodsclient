@@ -49,6 +49,9 @@ class iRODSResource(object):
     def context_fields(self):
         return dict(pair.split("=") for pair in self.context.split(";"))
 
+    @property
+    def status(self):
+        return self.status
 
     @property
     def children(self):

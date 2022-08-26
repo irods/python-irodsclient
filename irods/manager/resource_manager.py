@@ -109,24 +109,6 @@ class ResourceManager(Manager):
         logger.debug(response.int_info)
         return self.get(name)
 
-    def get_attribute(self, name, attribute):
-        with self.sess.pool.get_connection() as conn:
-            message_body = GeneralAdminRequest(
-                "get",
-                "resource",
-                name,
-                attribute
-            )
-
-            request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                                   int_info=api_number['GENERAL_ADMIN_AN'])
-
-            conn.send(request)
-            response = conn.recv()
-            self.sess.cleanup()
-        logger.debug(response.int_info)
-        return self.get(response)
-
     def add_child(self, parent, child, context=""):
         with self.sess.pool.get_connection() as conn:
             # check server version
