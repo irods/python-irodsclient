@@ -6,8 +6,6 @@ import re
 import logging
 import os
 
-_multiple_slash = re.compile('/+')
-
 class iRODSPath(str):
     """A subclass of the Python string that normalizes iRODS logical paths."""
 
@@ -51,22 +49,43 @@ class iRODSPath(str):
         absolute_ = kw.pop('absolute',True)
         if kw:
             logging.warning("These iRODSPath options have no effect: %r",kw.items())
-        normalized = cls.resolve_irods_path(*elem_list,**{"absolute":absolute_})
+        normalized = _normalize_iRODS_logical_path(elem_list, absolute_)
         obj = str.__new__(cls,normalized)
         return obj
 
 
-    @staticmethod
-    def resolve_irods_path(*path_elems, **kw):
+def _normalize_iRODS_logical_path(paths, make_absolute):
+    build = []
 
-        abs_ = kw['absolute']
+    if paths and paths[0][:1] == '/':
+        make_absolute = True
 
-        # Since we mean this operation to be purely a concatenation, we must strip
-        # '/' from all but first path component or os.path, or os.path.join
-        # will disregard all path elements preceding an absolute path specification.
+    p = '/'.join(paths).split('/')
 
-        while path_elems and not path_elems[0]:
-            path_elems = path_elems[1:]          # allow no leading empties preempting leading slash
-        elems = list(path_elems[:1]) + [elem.lstrip("/") for elem in path_elems[1:]]
-        retv = os.path.normpath(os.path.join(('/' if abs_ else ''), *elems))
-        return retv if not retv.startswith('//') else retv[1:] # Grrr...: https://bugs.python.org/issue26329
+    while p and not p[0]:
+        p.pop(0)
+
+    prefixed_updirs = 0
+
+    # Break out and resolve updir('..') and trivial path elements like '.', ''
+
+    for elem in p:
+        if elem == '..':
+            if not build:
+                prefixed_updirs += (0 if make_absolute else 1)
+            else:
+                if build[-1]:
+                    build.pop()
+            continue
+        elif elem in ('','.'):
+            continue
+        build.append(elem)
+
+    # Restore any initial updirs
+    build[:0] = ['..'] * prefixed_updirs
+
+    # Rejoin components, respecting 'make_absolute' flag
+    path_= ('/' if make_absolute else '') + '/'.join(build)
+
+    # Empty path equivalent to "current directory"
+    return '.' if not path_ else path_
