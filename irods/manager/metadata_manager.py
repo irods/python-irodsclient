@@ -69,13 +69,16 @@ class MetadataManager(Manager):
             'R': [Resource.name == path],
             'u': [User.name == path]
         }[resource_type]
-        results = self.sess.query(model.id, model.name, model.value, model.units)\
+        results = self.sess.query(model.id, model.name, model.value, model.units, model.create_time, model.modify_time)\
             .filter(*conditions).all()
         return [iRODSMeta(
             row[model.name],
             row[model.value],
             row[model.units],
-            avu_id=row[model.id]
+            avu_id=row[model.id],
+            create_time=row[model.create_time],
+            modify_time=row[model.modify_time],
+
         ) for row in results]
 
     def add(self, model_cls, path, meta, **opts):
@@ -183,4 +186,3 @@ class MetadataManager(Manager):
             response = conn.recv()
         response_msg = response.get_json_encoded_struct()
         logger.debug("in atomic_metadata, server responded with: %r",response_msg)
-

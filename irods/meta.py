@@ -2,11 +2,13 @@
 
 class iRODSMeta(object):
 
-    def __init__(self, name, value, units=None, avu_id=None):
+    def __init__(self, name, value, units=None, avu_id=None, create_time=None, modify_time=None):
         self.avu_id = avu_id
         self.name = name
         self.value = value
         self.units = units
+        self.create_time = create_time
+        self.modify_time = modify_time
 
     def __eq__(self, other):
         return tuple(self) == tuple(other)
