@@ -58,7 +58,7 @@ class Ticket(object):
         return ''.join(random.SystemRandom().choice(source_characters) for _ in range(length))
 
     def _api_request(self,cmd_string,*args, **opts):
-        message_body = TicketAdminRequest(self.session)(cmd_string, self.ticket, *args, **opts)
+        message_body = TicketAdminRequest(cmd_string, self.ticket, *args, **opts)
         message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
 
         with self.session.pool.get_connection() as conn:

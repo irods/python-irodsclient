@@ -226,6 +226,10 @@ class TestMeta(unittest.TestCase):
         try:
             d = user = None
             adm = self.sess
+
+            if adm.server_version <= (4,2,11):
+                self.skipTest('ADMIN_KW not valid for Metadata API in iRODS 4.2.11 and previous')
+
             # Create a rodsuser, and a session for that roduser.
             user = adm.users.create ( 'bobby','rodsuser' )
             user.modify('password','bpass')
