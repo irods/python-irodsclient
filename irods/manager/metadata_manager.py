@@ -5,7 +5,7 @@ import copy
 from os.path import dirname, basename
 
 from irods.manager import Manager
-from irods.message import (MetadataRequest, iRODSMessage, JSON_Message, session_cache)
+from irods.message import (MetadataRequest, iRODSMessage, JSON_Message)
 from irods.api_number import api_number
 from irods.models import (DataObject, Collection, Resource,
                           User, DataObjectMeta, CollectionMeta, ResourceMeta, UserMeta)
@@ -100,7 +100,7 @@ class MetadataManager(Manager):
             raise ValueError('Empty value in ' + repr(meta))
 
         resource_type = self._model_class_to_resource_type(model_cls)
-        message_body = session_cache(MetadataRequest,self.sess)(
+        message_body = MetadataRequest(
             "add",
             "-" + resource_type,
             path,
@@ -118,7 +118,7 @@ class MetadataManager(Manager):
 
     def remove(self, model_cls, path, meta, **opts):
         resource_type = self._model_class_to_resource_type(model_cls)
-        message_body = session_cache(MetadataRequest,self.sess)(
+        message_body = MetadataRequest(
             "rm",
             "-" + resource_type,
             path,
@@ -137,7 +137,7 @@ class MetadataManager(Manager):
     def copy(self, src_model_cls, dest_model_cls, src, dest, **opts):
         src_resource_type = self._model_class_to_resource_type(src_model_cls)
         dest_resource_type = self._model_class_to_resource_type(dest_model_cls)
-        message_body = session_cache(MetadataRequest,self.sess)(
+        message_body = MetadataRequest(
             "cp",
             "-" + src_resource_type,
             "-" + dest_resource_type,
@@ -155,7 +155,7 @@ class MetadataManager(Manager):
 
     def set(self, model_cls, path, meta, **opts):
         resource_type = self._model_class_to_resource_type(model_cls)
-        message_body = session_cache(MetadataRequest,self.sess)(
+        message_body = MetadataRequest(
             "set",
             "-" + resource_type,
             path,

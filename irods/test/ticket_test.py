@@ -82,6 +82,9 @@ class TestRodsUserTicketOps(unittest.TestCase):
 
     def test_admin_keyword_for_tickets (self):
 
+        if helpers.make_session().server_version < (4,2,11):
+            self.skipTest('ADMIN_KW not valid for Tickets API before iRODS 4.2.11')
+
         N_TICKETS = 3
 
         # Create some tickets as alice.
