@@ -21,6 +21,10 @@ class InvalidAtomicAVURequest(Exception): pass
 
 class MetadataManager(Manager):
 
+    @property
+    def use_timestamps(self):
+        return getattr(self,'_use_ts',False)
+
     __kw = {}  # default (empty) keywords
 
     def _updated_keywords(self,opts):
@@ -28,11 +32,13 @@ class MetadataManager(Manager):
         kw_.update(opts)
         return kw_
 
-    def __call__(self, admin = False, **irods_kw_opt):
-        x = copy.copy(self)
-        irods_kw_opt.update([() if not admin else (kw.ADMIN_KW,"")])
-        x.__kw = irods_kw_opt
-        return x
+    def __call__(self, admin = False, timestamps = False, **irods_kw_opt):
+        if admin:
+            irods_kw_opt.update([(kw.ADMIN_KW,"")])
+        new_self = copy.copy(self)
+        new_self._use_ts = timestamps
+        new_self.__kw = irods_kw_opt
+        return new_self
 
     @staticmethod
     def _model_class_to_resource_type(model_cls):
@@ -69,17 +75,24 @@ class MetadataManager(Manager):
             'R': [Resource.name == path],
             'u': [User.name == path]
         }[resource_type]
-        results = self.sess.query(model.id, model.name, model.value, model.units, model.create_time, model.modify_time)\
-            .filter(*conditions).all()
-        return [iRODSMeta(
-            row[model.name],
-            row[model.value],
-            row[model.units],
-            avu_id=row[model.id],
-            create_time=row[model.create_time],
-            modify_time=row[model.modify_time],
 
-        ) for row in results]
+        columns = (model.id, model.name, model.value, model.units)
+        if self.use_timestamps:
+            columns += (model.create_time, model.modify_time)
+        results = self.sess.query(*columns).filter(*conditions).all()
+
+        def meta_opts(row):
+            opts = {'avu_id': row[model.id]}
+            if self.use_timestamps:
+                opts.update(create_time = row[model.create_time], modify_time=row[model.modify_time])
+            return opts
+
+        return [iRODSMeta(
+                    row[model.name],
+                    row[model.value],
+                    row[model.units],
+                    **meta_opts(row))
+               for row in results]
 
     def add(self, model_cls, path, meta, **opts):
         # Avoid sending request with empty argument(s)

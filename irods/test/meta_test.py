@@ -3,6 +3,8 @@
 from __future__ import absolute_import
 import os
 import sys
+import time
+import datetime
 import unittest
 from irods.meta import (iRODSMeta, AVUOperation, BadAVUOperationValue, BadAVUOperationKeyword)
 from irods.manager.metadata_manager import InvalidAtomicAVURequest
@@ -392,6 +394,49 @@ class TestMeta(unittest.TestCase):
         # remove test collection
         test_obj.unlink(force=True)
 
+
+    @staticmethod
+    def check_timestamps(metadata_accessor, key):
+        avu = metadata_accessor[key]
+        create = getattr(avu,'create_time',None)
+        modify = getattr(avu,'modify_time',None)
+        return (create,modify)
+
+
+    def test_timestamp_access_386(self):
+        with helpers.make_session() as session:
+            def units():
+                return str(time.time())
+            d = None
+            try:
+                d = session.data_objects.create('/tempZone/home/rods/issue_386')
+
+                # Test metadata access without timestamps
+
+                meta = d.metadata
+                avu = iRODSMeta('no_ts','val',units())
+                meta.set(avu)
+                self.assertEqual((None, None),		# Assert no timestamps are stored.
+                                 self.check_timestamps(meta, key = avu.name))
+
+                # -- Test metadata access with timestamps
+
+                meta_ts = meta(timestamps = True)
+                avu_use_ts = iRODSMeta('use_ts','val',units())
+                meta_ts.set(avu_use_ts)
+                time.sleep(1.5)
+                now = datetime.datetime.utcnow()
+                time.sleep(1.5)
+                avu_use_ts.units = units()
+                meta_ts.set(avu_use_ts)			# Set an AVU with modified units.
+
+                (create, modify) = self.check_timestamps(meta_ts, key = avu_use_ts.name)
+
+                self.assertLess(create, now)		#  Ensure timestamps are in proper order.
+                self.assertLess(now, modify)
+            finally:
+                if d: d.unlink(force = True)
+                helpers.remove_unused_metadata(session)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

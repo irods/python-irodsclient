@@ -432,6 +432,12 @@ or even:
 
 >>> album.metadata(admin = True)[meta.name] = meta
 
+In v1.1.5, the "timestamps" keyword is provided to enable the loading of create and modify timestamps
+for every AVU returned from the server:
+
+>>> avus = album.metadata(timestamps = True).items()
+>>> avus[0].create_time
+datetime.datetime(2022, 9, 19, 15, 26, 7)
 
 Atomic operations on metadata
 -----------------------------
