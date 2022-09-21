@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v1.1.5 (2022-09-21)
+-------------------
+- [#383] correct logical path normalization
+- [#369] remove dynamic generation of message classes
+- [#386][#389] only load timestamps when requested
+- [#386] initial change to add create and modify times for metadata
+
 v1.1.4 (2022-06-29)
 -------------------
 - [#372] eliminate SyntaxWarning ("is" operator being used with a literal) [Daniel Moore]
