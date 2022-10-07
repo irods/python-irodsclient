@@ -309,6 +309,7 @@ As with most other iRODS APIs, it is straightforward to specify keywords by addi
 Additionally, if a freshly created irods.message.RErrorStack instance is given, information can be returned and read by
 the client:
 
+>>> from irods.message import RErrorStack
 >>> r_err_stk = RErrorStack()
 >>> warn = None
 >>> try:  # Here, data_obj has one replica, not yet checksummed.
