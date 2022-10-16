@@ -3,8 +3,12 @@
 
 
 from __future__ import absolute_import
-import six
+from __future__ import print_function
+import errno
 import numbers
+import os
+import six
+import sys
 
 
 class PycommandsException(Exception):
@@ -61,14 +65,72 @@ class MultipleResultsFound(QueryException):
 
 class iRODSExceptionMeta(type):
     codes = {}
-
+    positive_code_error_message = "For {name}, a positive code of {attrs[code]} was declared."
     def __init__(self, name, bases, attrs):
         if 'code' in attrs:
+            if attrs['code'] > 0:
+                print(self.positive_code_error_message.format(**locals()), file = sys.stderr)
+                exit(1)
             iRODSExceptionMeta.codes[attrs['code']] = self
 
 
+class Errno:
+    """Encapsulates an integer error code from the operating system
+       and provides a text representation.
+    """
+    def __init__(self,arg0,*_):
+        """Initializes an object with an integer error code arg0.
+           Further arguments are optional and ignored.
+        """
+        self.int_code = arg0
+
+    def __repr__(self):
+        e = self.int_code
+        try:
+            return self.__class__.__name__ + repr(tuple([e, errno.errorcode[e], os.strerror(e)]))
+        except:
+            # The errno code is unrecognized, so fall through to default representation.
+            pass
+        return self.__class__.__name__ + repr(tuple([e,]))
+
+    def __int__(self):
+        return self.int_code
+
+
 class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
-    pass
+    """An exception that originates from a server error.
+       Exception classes that are derived from this base and represent a concrete error, should
+       store a unique error code (X*1000) in their 'code' attribute, where X < 0.
+    """
+
+    def __init__(self,*arg):
+        explicit_errno = None
+        argl = list(arg)
+
+        # For consistency with the text representation, allow initialization with an Errno object
+        # at the end of the argument list.
+        # Example: err = UNIX_FILE_OPEN_ERR('message', Errno(13))
+        #          err_copy = eval(repr(err))
+        if hasattr(self.__class__,'code'):
+            if argl and isinstance (argl[-1],Errno):
+                explicit_errno = argl.pop()
+
+        super(iRODSException,self).__init__(*argl)
+
+        # To properly represent the Errno instance, the "code" attribute should be (-errno) plus the thousands
+        # attribute stored in the class's code attribute.  Because Python honors the instance "code" attribute
+        # over the class "code" attribute, the following does _not_ modify the class:
+        if explicit_errno:
+            self.code -= int(explicit_errno)
+
+    def __repr__(self):
+        args = tuple(self.args)
+        code = getattr(self,'code',None)
+        if code is not None:
+            os_err = abs(code) % 1000
+            if os_err: args += (Errno(os_err),)
+        return self.__class__.__name__ + repr(args)
+
 
 
 def nominal_code( the_code, THRESHOLD = 1000 ):

@@ -193,7 +193,7 @@ def make_flat_test_dir(dir_path, file_count=10, file_size=1024):
             f.write(os.urandom(file_size))
 
 @contextlib.contextmanager
-def create_simple_resc (self, rescName = None):
+def create_simple_resc (self, rescName = None, vault_path = ''):
     if not rescName: 
         rescName =  'simple_resc_' + unique_name (my_function_name() + '_simple_resc', datetime.datetime.now())
     created = False
@@ -201,7 +201,7 @@ def create_simple_resc (self, rescName = None):
         self.sess.resources.create(rescName,
                                    'unixfilesystem',
                                    host = self.sess.host,
-                                   path = '/tmp/' + rescName)
+                                   path = vault_path or '/tmp/' + rescName)
         created = True
         yield rescName
     finally:
