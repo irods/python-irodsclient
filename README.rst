@@ -511,7 +511,7 @@ As of PRC v1.1.0, we can mitigate both problems by switching in the QUASI_XML pa
 ::
 
     from irods.message import (XML_Parser_Type, ET)
-    ET( XML_Parser.QUASI_XML, session.server_version )
+    ET( XML_Parser_Type.QUASI_XML, session.server_version )
 
 Two dedicated environment variables may also be used to customize the Python client's XML parsing behavior via the
 setting of global defaults during start-up.
