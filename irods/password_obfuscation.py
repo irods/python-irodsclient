@@ -41,6 +41,23 @@ default_password_key = 'a9_3fker'
 default_scramble_prefix = '.E_'
 v2_prefix = 'A.ObfV2'
 
+
+def str_to_int(input_string):
+    """Convert `input_string` into an integer.
+
+    Parameters
+    ----------
+    input_string : str
+        Value to convert.
+
+    Returns
+    -------
+    int
+        Converted value.
+    """
+    return sum((ord(char) for char in input_string))
+
+
 #Decode a password from a .irodsA file
 def decode(s, uid=None):
     #This value lets us know which seq value to use
@@ -56,7 +73,11 @@ def decode(s, uid=None):
 
     #The uid is used as a salt.
     if uid is None:
-        uid = os.getuid()
+        try:
+            uid = os.getuid()
+        except AttributeError:
+            # Spoof UID for Non-POSIX
+            uid = str_to_int(os.getlogin())
 
     #The first byte is a dot, the next five are literally irrelevant
     #garbage, and we already used the seventh one. The string to decode
@@ -101,7 +122,11 @@ def encode(s, uid=None, mtime=None):
 
     #The uid is used as a salt.
     if uid is None:
-        uid = os.getuid()
+        try:
+            uid = os.getuid()
+        except AttributeError:
+            # Spoof UID for Non-POSIX
+            uid = str_to_int(os.getlogin())
 
     #This value lets us know which seq value to use
     #Referred to as "rval" in the C code
