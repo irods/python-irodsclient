@@ -76,24 +76,7 @@ installation::
 Establishing a (secure) connection
 ----------------------------------
 
-Using environment files (including any SSL settings) in ``~/.irods/``:
-
->>> import os
->>> import ssl
->>> from irods.session import iRODSSession
->>> try:
-...     env_file = os.environ['IRODS_ENVIRONMENT_FILE']
-... except KeyError:
-...     env_file = os.path.expanduser('~/.irods/irods_environment.json')
-...
->>> ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=None, capath=None, cadata=None)
->>> ssl_settings = {'ssl_context': ssl_context}
->>> with iRODSSession(irods_env_file=env_file, **ssl_settings) as session:
-...     # workload
-...
->>>
-
-Passing iRODS credentials as keyword arguments:
+One way of starting a session is to pass iRODS credentials as keyword arguments:
 
 >>> from irods.session import iRODSSession
 >>> with iRODSSession(host='localhost', port=1247, user='bob', password='1234', zone='tempZone') as session:
@@ -112,23 +95,55 @@ If you're an administrator acting on behalf of another user:
 
 If no ``client_zone`` is provided, the ``zone`` parameter is used in its place.
 
+Using environment files (including any SSL settings) in ``~/.irods/``:
+
+>>> import os
+>>> import ssl
+>>> from irods.session import iRODSSession
+>>> try:
+...     env_file = os.environ['IRODS_ENVIRONMENT_FILE']
+... except KeyError:
+...     env_file = os.path.expanduser('~/.irods/irods_environment.json')
+...
+>>> ssl_settings = {} # Or, optionally: {'ssl_context': <user_customized_SSLContext>}
+>>> with iRODSSession(irods_env_file=env_file, **ssl_settings) as session:
+...     # workload
+...
+>>>
+
+In the above example, an SSL connection can be made even if no 'ssl_context' argument is specified,
+in which case the Python client internally generates its own SSLContext object to best
+match the iRODS SSL configuration parameters (such as "irods_ssl_ca_certificate_file",
+etc.) used to initialize the iRODSSession.  Those parameters can be given either 
+in the environment file, or in the iRODSSession constructor call as shown by the next example.
+
 A pure Python SSL session (without a local `env_file`) requires a few more things defined:
 
 >>> import ssl
->>> from irods.session import iRODSSession 
->>> ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile='CERTNAME.crt', capath=None, cadata=None)
+>>> from irods.session import iRODSSession
 >>> ssl_settings = {'client_server_negotiation': 'request_server_negotiation',
 ...                'client_server_policy': 'CS_NEG_REQUIRE',
 ...                'encryption_algorithm': 'AES-256-CBC',
 ...                'encryption_key_size': 32,
 ...                'encryption_num_hash_rounds': 16,
-...                'encryption_salt_size': 8,                        
-...                'ssl_context': ssl_context}
->>>
->>> with iRODSSession(host='HOSTNAME_DEFINED_IN_CAFILE_ABOVE', port=1247, user='bob', password='1234', zone='tempZone', **ssl_settings) as session:
-...	# workload
->>>
+...                'encryption_salt_size': 8,
+...                'ssl_context': ssl_context
+...                'ssl_verify_server': 'cert',
+...                'ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt'
+... }
 
+If necessary, a user may provide a custom SSLContext object; although, as of release v1.1.6, this will rarely be required:
+
+>>> ssl_settings ['ssl_context'] = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, # ... other options
+... )
+
+At this point, we are ready to instantiate and use the session:
+
+>>> with iRODSSession(host='irods-provider', port=1247, user='bob', password='1234', zone='tempZone', **ssl_settings) as session:
+...	# workload
+
+Note that the :code:`irods_` prefix is unnecessary when providing the :code:`encryption_*` and :code:`ssl_*` options directly to the
+constructor as keyword arguments, even though it is required when they are placed in the environment file.
 
 Maintaining a connection
 ------------------------

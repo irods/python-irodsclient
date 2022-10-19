@@ -24,6 +24,7 @@ from irods.exception import (get_exception_by_code, NetworkException, nominal_co
 from irods.message import (PamAuthRequest, PamAuthRequestOut)
 
 
+
 ALLOW_PAM_LONG_TOKENS = True      # True to fix [#279]
 # Message to be logged when the connection
 # destructor is called. Used in a unit test
@@ -160,6 +161,19 @@ class Connection(object):
             return False
         return False
 
+    @staticmethod
+    def make_ssl_context(irods_account):
+        check_hostname = getattr(irods_account,'ssl_verify_server','hostname')
+        CAfile = getattr(irods_account,'ssl_ca_certificate_file',None)
+        CApath = getattr(irods_account,'ssl_ca_certificate_path',None)
+        verify = ssl.CERT_NONE if (None is CAfile is CApath) else ssl.CERT_REQUIRED
+        # See https://stackoverflow.com/questions/30461969/disable-default-certificate-verification-in-python-2-7-9/49040695#49040695
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CAfile, capath=CApath)
+        # Note: check_hostname must be assigned prior to verify_mode property or Python library complains!
+        ctx.check_hostname = (check_hostname.startswith('host') and verify != ssl.CERT_NONE)
+        ctx.verify_mode = verify
+        return ctx
+
     def ssl_startup(self):
         # Get encryption settings from client environment
         host = self.account.host
@@ -168,21 +182,14 @@ class Connection(object):
         hash_rounds = self.account.encryption_num_hash_rounds
         salt_size = self.account.encryption_salt_size
 
-        # Get or create SSL context
         try:
             context = self.account.ssl_context
         except AttributeError:
-            CA_file = getattr(self.account, 'ssl_ca_certificate_file', None)
-            verify_server_mode = getattr(self.account,'ssl_verify_server', 'hostname')
-            if verify_server_mode == 'none':
-                CA_file = None
-            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_file)
-            if CA_file is None:
-                context.check_hostname = False
-                context.verify_mode = 0  # VERIFY_NONE
+            self.account.ssl_context = context = self.make_ssl_context(self.account)
 
         # Wrap socket with context
-        wrapped_socket = context.wrap_socket(self.socket, server_hostname=host)
+        wrapped_socket = context.wrap_socket(self.socket,
+                                             server_hostname=(host if context.check_hostname else None))
 
         # Initial SSL handshake
         wrapped_socket.do_handshake()
