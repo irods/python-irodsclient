@@ -187,17 +187,27 @@ class UserGroupManager(UserManager):
             raise UserGroupDoesNotExist()
         return iRODSUserGroup(self, result)
 
-    def create(self, name, user_type='rodsgroup', user_zone="", auth_str=""):
-        message_body = GeneralAdminRequest(
-            "add",
-            "user",
-            name,
-            user_type,
-            "",
-            ""
-        )
+    def create(self, name, user_type='rodsgroup', user_zone="", auth_str="", group_admin=False):
+        if group_admin:
+            message_body = UserAdminRequest(
+                "mkgroup",
+                name,
+                user_type,
+                user_zone
+            )
+            api_to_use = api_number['USER_ADMIN_AN']
+        else:
+            message_body = GeneralAdminRequest(
+                "add",
+                "user",
+                name,
+                user_type,
+                "",
+                ""
+            )
+            api_to_use = api_number['GENERAL_ADMIN_AN']
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
+                               int_info=api_to_use)
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()

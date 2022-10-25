@@ -4,7 +4,7 @@ import os
 import sys
 import unittest
 from irods.models import User
-from irods.exception import UserDoesNotExist, ResourceDoesNotExist
+from irods.exception import UserDoesNotExist, ResourceDoesNotExist, SYS_NO_API_PRIV
 from irods.session import iRODSSession
 from irods.resource import iRODSResource
 import irods.test.helpers as helpers
@@ -71,6 +71,43 @@ class TestAdmin(unittest.TestCase):
         # user should be gone
         with self.assertRaises(UserDoesNotExist):
             self.sess.users.get(self.new_user_name, self.sess.zone)
+
+
+    def test_groupadmin_creates_user_group_and_unable_to_delete_group__374(self):
+        # Have user with groupadmin
+        user = self.sess.users.create(self.new_user_name, 'groupadmin')
+        self.assertEqual(user.name, self.new_user_name)
+
+        # Have a password for login
+        user_password = 'bpass'
+        user.modify('password', user_password)
+
+        user_group_name = 'coolgroup'
+
+        # Create session as user
+        with iRODSSession(port=self.sess.port, zone=self.sess.zone, host=self.sess.host,
+                          user=self.new_user_name, password=user_password) as bobby:
+            # Create group
+            group = bobby.user_groups.create(user_group_name, group_admin=True)
+            self.assertEqual(group.name, user_group_name)
+
+            # groupadmin cannot remove groups!
+            with self.assertRaises(SYS_NO_API_PRIV):
+                group.remove()
+
+        # Only an admin can remove user_groups!
+        self.sess.user_groups.get(user_group_name).remove()
+        user.remove()
+
+
+    def test_admin_creates_and_deletes_user_group__374(self):
+        user_group_name = 'evencoolergroup'
+
+        # Create and remove group
+        group = self.sess.user_groups.create(user_group_name)
+        self.assertEqual(group.name, user_group_name)
+
+        group.remove()
 
 
     def test_modify_user_type(self):
