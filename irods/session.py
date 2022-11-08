@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import atexit
 import os
 import ast
 import json
@@ -17,6 +18,27 @@ from irods.manager.zone_manager import ZoneManager
 from irods.exception import NetworkException
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
+import threading
+import weakref
+
+_sessions = None
+_sessions_lock = threading.Lock()
+
+def _cleanup_remaining_sessions():
+    for ses in _sessions.copy():
+        ses.cleanup()  # internally modifies _sessions
+
+def _weakly_reference(ses):
+    global _sessions
+    try:
+        if _sessions is None:
+            with _sessions_lock:
+                do_register = (_sessions is None)
+                if do_register:
+                    _sessions = weakref.WeakKeyDictionary()
+                    atexit.register(_cleanup_remaining_sessions)
+    finally:
+        _sessions[ses] = None
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +54,7 @@ class iRODSSession(object):
     def auth_file (self):
         return self._auth_file
 
-    def __init__(self, configure=True, **kwargs):
+    def __init__(self, configure = True, auto_cleanup = True, **kwargs):
         self.pool = None
         self.numThreads = 0
         self._env_file = ''
@@ -50,6 +72,9 @@ class iRODSSession(object):
         self.user_groups = UserGroupManager(self)
         self.resources = ResourceManager(self)
         self.zones = ZoneManager(self)
+
+        if auto_cleanup:
+            _weakly_reference(self)
 
     def __enter__(self):
         return self

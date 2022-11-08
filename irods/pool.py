@@ -76,10 +76,12 @@ class Pool(object):
                 logger.debug("No connection found in idle set. Created a new connection with id: {}".format(id(conn)))
 
             self.active.add(conn)
+
             logger.debug("Adding connection with id {} to active set".format(id(conn)))
 
         logger.debug('num active: {}'.format(len(self.active)))
         logger.debug('num idle: {}'.format(len(self.idle)))
+
         return conn
 
     def release_connection(self, conn, destroy=False):
