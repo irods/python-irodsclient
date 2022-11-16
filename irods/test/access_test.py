@@ -62,7 +62,7 @@ class TestAccess(unittest.TestCase):
 
         # check repr()
         self.assertEqual(
-            repr(acl), "<iRODSAccess own {path} {name} {zone}>".format(path=path, **vars(user)))
+            repr(acl), "<iRODSAccess own {path} {name}({type}) {zone}>".format(path=path, **vars(user)))
 
         # remove object
         self.sess.data_objects.unlink(path)
