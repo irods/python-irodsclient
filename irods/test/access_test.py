@@ -49,11 +49,11 @@ class TestAccess(unittest.TestCase):
 
         # test exception
         with self.assertRaises(TypeError):
-            self.sess.permissions.get(filename)
+            self.sess.acls.get(filename)
 
         # get object's ACLs
         # only one for now, the owner's own access
-        acl = self.sess.permissions.get(obj)[0]
+        acl = self.sess.acls.get(obj)[0]
 
         # check values
         self.assertEqual(acl.access_name, 'own')
@@ -71,12 +71,12 @@ class TestAccess(unittest.TestCase):
     def test_set_inherit_acl(self):
 
         acl1 = iRODSAccess('inherit', self.coll_path)
-        self.sess.permissions.set(acl1)
+        self.sess.acls.set(acl1)
         c = self.sess.collections.get(self.coll_path)
         self.assertTrue(c.inheritance)
 
         acl2 = iRODSAccess('noinherit', self.coll_path)
-        self.sess.permissions.set(acl2)
+        self.sess.acls.set(acl2)
         c = self.sess.collections.get(self.coll_path)
         self.assertFalse(c.inheritance)
 
@@ -94,8 +94,8 @@ class TestAccess(unittest.TestCase):
             acl_inherit = iRODSAccess('inherit', deepcoll.path)
             acl_read = iRODSAccess('read', deepcoll.path, 'bob')
 
-            self.sess.permissions.set(acl_read)
-            self.sess.permissions.set(acl_inherit)
+            self.sess.acls.set(acl_read)
+            self.sess.acls.set(acl_inherit)
 
             # create one new object and one new collection *after* ACL's are applied
             new_object_path = test_coll_path + "/my_data_obj"
@@ -145,7 +145,7 @@ class TestAccess(unittest.TestCase):
                 test_coll_path = self.coll_path + "/test"
                 deepcoll = helpers.make_deep_collection(self.sess, test_coll_path, depth=DEPTH, objects_per_level=2)
                 acl1 = iRODSAccess('inherit', deepcoll.path)
-                self.sess.permissions.set( acl1, recursive = recursionTruth )
+                self.sess.acls.set( acl1, recursive = recursionTruth )
                 test_subcolls = set( iRODSCollection(self.sess.collections,_)
                                 for _ in self.sess.query(Collection).filter(Like(Collection.name, deepcoll.path + "/%")) )
 
@@ -178,10 +178,10 @@ class TestAccess(unittest.TestCase):
 
         # set permission to write
         acl1 = iRODSAccess('write', path, user.name, user.zone)
-        self.sess.permissions.set(acl1)
+        self.sess.acls.set(acl1)
 
         # get object's ACLs
-        acl = self.sess.permissions.get(obj)[0]  # owner's write access
+        acl = self.sess.acls.get(obj)[0]  # owner's write access
 
         # check values
         self.assertEqual(acl.access_name, self.mapping['write'])
@@ -190,7 +190,7 @@ class TestAccess(unittest.TestCase):
 
         # reset permission to own
         acl1 = iRODSAccess('own', path, user.name, user.zone)
-        self.sess.permissions.set(acl1)
+        self.sess.acls.set(acl1)
 
         # remove object
         self.sess.data_objects.unlink(path)
@@ -204,10 +204,10 @@ class TestAccess(unittest.TestCase):
 
         # set permission to write
         acl1 = iRODSAccess('write', coll.path, user.name, user.zone)
-        self.sess.permissions.set(acl1)
+        self.sess.acls.set(acl1)
 
         # get collection's ACLs
-        acl = self.sess.permissions.get(coll)[0]  # owner's write access
+        acl = self.sess.acls.get(coll)[0]  # owner's write access
 
         # check values
         self.assertEqual(acl.access_name, self.mapping['write'])
@@ -216,7 +216,7 @@ class TestAccess(unittest.TestCase):
 
         # reset permission to own
         acl1 = iRODSAccess('own', coll.path, user.name, user.zone)
-        self.sess.permissions.set(acl1)
+        self.sess.acls.set(acl1)
 
     def perms_lists_symm_diff ( self, a_iter, b_iter ):
         fields = lambda perm: (self.mapping[perm.access_name], perm.user_name, perm.user_zone)
@@ -239,14 +239,14 @@ class TestAccess(unittest.TestCase):
             perms1data = [ iRODSAccess ('write',self.coll_path, eg.name, self.sess.zone),
                            iRODSAccess ('read', self.coll_path, fu.name, self.sess.zone)
                          ]
-            for perm in perms1data: self.sess.permissions.set ( perm )
+            for perm in perms1data: self.sess.acls.set ( perm )
             p1 = self.sess.permissions.get ( self.coll, report_raw_acls = True)
             self.assertEqual(self.perms_lists_symm_diff( perms1data, p1 ), my_ownership)
             #--data object--
             perms2data = [ iRODSAccess ('write',data.path, fg.name, self.sess.zone),
                            iRODSAccess ('read', data.path, eu.name, self.sess.zone)
                          ]
-            for perm in perms2data: self.sess.permissions.set ( perm )
+            for perm in perms2data: self.sess.acls.set ( perm )
             p2 = self.sess.permissions.get ( data, report_raw_acls = True)
             self.assertEqual(self.perms_lists_symm_diff( perms2data, p2 ), my_ownership)
         finally:

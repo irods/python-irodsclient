@@ -384,7 +384,7 @@ class TestAnonymousUser(unittest.TestCase):
 
         admin.collections.create(self.home)
         acl = iRODSAccess('own', self.home, user.name)
-        admin.permissions.set(acl)
+        admin.acls.set(acl)
 
         self.env_file = os.path.expanduser('~/.irods.anon/irods_environment.json')
         self.env_dir = ( os.path.dirname(self.env_file))
