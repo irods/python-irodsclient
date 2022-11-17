@@ -42,7 +42,7 @@ class TestRemoteZone(unittest.TestCase):
                 except CollectionDoesNotExist:
                     continue
                 perm = iRODSAccess( 'own', p.path, session.username, session.zone)
-                session.permissions.set( perm, admin=True)
+                session.acls.set( perm, admin=True)
                 p.remove(force=True)
 
 

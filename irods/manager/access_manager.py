@@ -14,6 +14,7 @@ from irods.user import iRODSUser
 
 import six
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,10 @@ def users_by_ids(session,ids=()):
 class AccessManager(Manager):
 
     def get(self, target, report_raw_acls = False, **kw):
+
+        if not kw.pop('suppress_deprecation_warning',False):
+            warnings.warn('Use of session_obj.permissions is deprecated in v1.1.6',
+                          DeprecationWarning, stacklevel = 2)
 
         if report_raw_acls:
             return self.__get_raw(target, **kw)  # prefer a behavior consistent  with 'ils -A`
@@ -80,9 +85,8 @@ class AccessManager(Manager):
         ### sample usage: ###
         #
         #  user_id_list = []  # simply to store the user id's from the discovered ACL's
-        #  session.permissions.get( data_or_coll_target, report_raw_acls = True,
-        #                                                acl_users = user_id_list,
-        #                                                acl_users_transform = lambda u: u.id)
+        #  session.acls.get( data_or_coll_target, acl_users = user_id_list,
+        #                                         acl_users_transform = lambda u: u.id)
         #
         # -> returns list of iRODSAccess objects mapping one-to-one with ACL's stored in the catalog
 
@@ -120,7 +124,12 @@ class AccessManager(Manager):
         return acls
 
 
-    def set(self, acl, recursive=False, admin=False):
+    def set(self, acl, recursive=False, admin=False, **kw):
+
+        if not kw.pop('suppress_deprecation_warning',False):
+            warnings.warn('Use of session_obj.permissions is deprecated in v1.1.6',
+                          DeprecationWarning, stacklevel = 2)
+
         prefix = 'admin:' if admin else ''
 
         userName_=acl.user_name

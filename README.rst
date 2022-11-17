@@ -1124,14 +1124,26 @@ If we then want to downgrade those permissions to read-only, we can do the follo
 
 >>> from irods.access import iRODSAccess
 >>> for c in q:
-...     session.permissions.set( iRODSAccess('read', c[Collection.name], 'alice', # 'otherZone' # zone optional
+...     session.acls.set( iRODSAccess('read', c[Collection.name], 'alice', # 'otherZone' # zone optional
 ...     ))
+
+A call to :code:`session.acls.get(c)` -- with :code:`c` being the result of :code:`sessions.collections.get(c[Collection.name])` --
+would then verify the desired change had taken place (as well as list all ACLs stored in the catalog for that collection).
 
 We can also query on access type using its numeric value, which will seem more natural to some:
 
 >>> OWN = 1200; MODIFY = 1120 ; READ = 1050
 >>> from irods.models import DataAccess, DataObject, User
 >>> data_objects_writable = list(session.query(DataObject,DataAccess,User)).filter(User.name=='alice',  DataAccess.type >= MODIFY)
+
+One last note on permissions:  The older access manager, :code:`<session>.permissions`, produced inconsistent results when the :code:`get()`
+method was invoked with the parameter :code:`report_raw_acls` set (or defaulting) to :code:`False`.  Specifically, collections would exhibit the
+"non-raw-ACL" behavior of reporting individual member users' permissions as a by-product of group ACLs, whereas data objects would not.
+
+In release v1.1.6, we move to correct this inconsistency by introducing the synonym :code:`<session>.acls` that acts almost identically 
+like :code:`<session>.permissions`, except that the :code:`<session>.acls.get(...)` method does not accept the :code:`report_raw_acls` parameter.  When we need to detect users' permissions independent of their access to an object via group membership, this can be achieved with another query.
+
+:code:`<session>.permissions` is therefore deprecated and, in v2.0.0, will be removed in favor of :code:`<session>.acls`.
 
 
 Managing users
