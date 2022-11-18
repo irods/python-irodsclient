@@ -255,6 +255,62 @@ class TestAccess(unittest.TestCase):
                        for row in self.sess.query(User).filter(In(User.id, ids_for_delete)) ]:
                 u.remove()
 
+    def test_ses_acls_data_and_collection_395_396(self):
+        ses = self.sess
+        try:
+            # Create rodsusers alice and bob, and make bob a member of the 'team' group.
+
+            self.alice = ses.users.create('alice','rodsuser')
+            self.bob = ses.users.create('bob','rodsuser')
+            self.team = ses.user_groups.create('team')
+            self.team.addmember('bob')
+            ses.users.modify('bob', 'password', 'bpass')
+
+            # Create a collection and a data object.
+
+            home = helpers.home_collection(ses)
+            self.coll_395 = ses.collections.create(home + "/coll-395")
+            self.data = ses.data_objects.create(self.coll_395.path +"/data")
+            with self.data.open('w') as f: f.write(b'contents-395')
+
+            # Make assertions for both filesystem object types (collection and data):
+
+            for obj in self.coll_395, self.data:
+
+                # Add ACLs
+                for access in iRODSAccess('read',obj.path,'team'),  iRODSAccess('write',obj.path,'alice'):
+                    ses.acls.set(access)
+
+                ACLs = ses.acls.get(obj)
+
+                # Assert that we can detect alice's write permissions.
+                self.assertEqual(1, len([ac for ac in ACLs if (ac.access_name,ac.user_name)
+                                                         == (self.mapping['write'],'alice')]))
+
+                # Test that the 'team' ACL is listed as a rodsgroup ...
+
+                team_acl = [ac for ac in ACLs if ac.user_name == 'team']
+                self.assertEqual(1, len(team_acl))
+                self.assertEqual(team_acl[0].user_type,
+                                 'rodsgroup')
+
+                # ... and also that 'bob' (a 'team' member) is not listed explicitly.
+                self.assertEqual(0, len([ac for ac in ACLs if ac.user_name == 'bob']))
+
+            # verify that bob can access the data object as a member of team.
+            with iRODSSession( host=ses.host,
+                               user='bob',
+                               port=ses.port,
+                               zone=ses.zone,
+                               password = 'bpass') as bob:
+                self.assertTrue( bob.data_objects.open(self.data.path,'r').read(), b'contents-395' )
+
+        finally:
+            self.coll_395.remove(recurse = True,force = True)
+            self.bob.remove()
+            self.alice.remove()
+            self.team.remove()
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
