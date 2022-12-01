@@ -1649,6 +1649,10 @@ class DATAACCESSINX_EMPTY_IN_STRUCT_ERR(RuleEngineException):
     code = -1016000
 
 
+class RE_RUNTIME_ERROR(RuleEngineException):
+    code = -1205000
+
+
 class RE_TYPE_ERROR(RuleEngineException):
     code = -1230000
 
