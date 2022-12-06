@@ -50,6 +50,7 @@ class TestDataObjOps(unittest.TestCase):
 
     from irods.test.helpers import (create_simple_resc)
 
+
     def setUp(self):
         # Create test collection
         self.sess = helpers.make_session()
@@ -1516,6 +1517,81 @@ class TestDataObjOps(unittest.TestCase):
             if vault:
                 self.sess.resources.remove( resc_name )
         self.assertIs( default_XML_parser(), current_XML_parser() )
+
+
+    def test_data_open_on_leaf_is_disallowed__243(self):
+        from irods.exception import DIRECT_CHILD_ACCESS
+        root = unique_name(my_function_name(),datetime.now(),'root')
+        home = helpers.home_collection(self.sess)
+        with self.create_resc_hierarchy(root) as (_ , Leaf):
+            with self.assertRaises(DIRECT_CHILD_ACCESS):
+                self.sess.data_objects.open('{home}/disallowed_243'.format(**locals()), 'w', **{kw.RESC_NAME_KW:Leaf})
+
+    def test_data_open_on_named_resource__243(self):
+        s = self.sess
+        data = s.data_objects
+        home = helpers.home_collection(s)
+        data_name = unique_name(my_function_name(),datetime.now(),'data')
+        resc_name = unique_name(my_function_name(),datetime.now(),'resc')
+        with self.create_simple_resc(resc_name) as resc:
+            data_path = '{home}/{data_name}'.format(**locals())
+            try:
+                with data.open(data_path,'w',**{kw.RESC_NAME_KW:resc}) as f:
+                    f.write(b'abc')
+                d = data.get(data_path)
+                self.assertEqual(len(d.replicas),1)
+                self.assertEqual(d.replicas[0].resource_name, resc)
+            finally:
+                if data.exists(data_path):
+                    data.unlink(data_path, force = True)
+
+
+    class _temporary_resource_adopter:
+        """When used as part of a context block, temporarily adopts the named
+           child resources under the named parent resource.
+        """
+        def __init__(self, sess, parent, child_list=()):
+            self.parent = parent
+            self.child_list = child_list
+            self.sess = sess
+        def __enter__(self):
+            for child in self.child_list:
+                self.sess.resources.add_child(self.parent, child)
+        def __exit__(self, *_):
+            p_obj = self.sess.resources.get(self.parent)
+            for child in set(self.child_list) & set(r.name for r in p_obj.children):
+                self.sess.resources.remove_child(self.parent, child)
+
+
+    def test_access_through_resc_hierarchy__243(self):
+        s = self.sess
+        data_path = '{coll}/{data}'.format(coll = helpers.home_collection(s),
+                                           data = unique_name(my_function_name(),datetime.now()))
+        try:
+            s.resources.create('parent','deferred')
+            with self.create_simple_resc('resc0_243') as r0, \
+                 self.create_simple_resc('resc1_243') as r1, \
+                 self._temporary_resource_adopter(s, parent = 'parent', child_list = (r0, r1)):
+
+                hiers = ['parent;{0}'.format(r) for r in (r0,r1)]
+
+                # Write two different replicas. Although the writing of the second will cause the first to become
+                # stale, each replica can be independently read by specifying the resource hierarchy.
+                for hier in hiers:
+                    opts = {kw.RESC_HIER_STR_KW: hier}
+                    with s.data_objects.open(data_path, 'a', **opts) as obj_io:
+                        obj_io.seek(0)
+                        obj_io.write(hier.encode('utf-8'))   # Write different content to each replica
+
+                # Assert that we are able to read both replicas' content faithfully using the hierarchy string.
+                for hier in hiers:
+                    opts = {kw.RESC_HIER_STR_KW: hier}
+                    with s.data_objects.open(data_path, 'r', **opts) as obj_io:
+                        self.assertEqual(obj_io.read(),hier.encode('utf-8'))   # Does unique replica have unique content?
+
+                s.data_objects.unlink(data_path, force = True)
+        finally:
+            s.resources.remove('parent')
 
     def test_register_with_xml_special_chars(self):
         test_dir = helpers.irods_shared_tmp_dir()

@@ -290,9 +290,17 @@ class DataObjectManager(Manager):
         handle = self.open(*arg,_raw_fd_holder=holder,**kw_options)
         return (handle, holder[-1])
 
+    _RESC_flags_for_open = frozenset((
+                               kw.RESC_NAME_KW,
+                               kw.DEST_RESC_NAME_KW,  # may be deprecated in the future
+                               kw.RESC_HIER_STR_KW
+                           ))
+
     def open(self, path, mode, create = True, finalize_on_close = True, **options):
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
-        if kw.DEST_RESC_NAME_KW not in options:
+        # If no keywords are used that would influence the server as to the choice of a storage resource,
+        # then use the default resource in the client configuration.
+        if self._RESC_flags_for_open.isdisjoint( options.keys() ):
             # Use client-side default resource if available
             try:
                 options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
