@@ -38,6 +38,54 @@ class iRODSResource(object):
 
         self._meta = None
 
+
+    ## Cached properties to expose parent id or name regardless whether the DB model is iRODS 4.1- or 4.2+
+
+    @property
+    def parent_id(self):
+        if self.parent == None:
+            return None
+        if not getattr(self,'_parent_id',''):
+            sess = self.manager.sess
+            if sess.server_version >= (4, 2, 0):
+                self._parent_id = self.parent
+            else:
+                self._parent_id = sess.query(Resource).filter(Resource.name == self.parent).one()[Resource.id]
+        return self._parent_id
+
+
+    @property
+    def parent_name(self):
+        if self.parent == None:
+            return None
+        if not getattr(self,'_parent_name',''):
+            sess = self.manager.sess
+            if sess.server_version < (4, 2, 0):
+                self._parent_name = self.parent
+            else:
+                self._parent_name = sess.query(Resource).filter(Resource.id == self.parent).one()[Resource.name]
+        return self._parent_name
+
+    ## Cached property to expose resource hierarchy string
+
+    @property
+    def resc_hierarchy(self):
+        if not getattr(self,'_resc_hierarchy',''):
+            self._resc_hierarchy = ';'.join(r.name for r in reversed(self.get_parent_chain()))
+        return self._resc_hierarchy
+
+    ## Retrieve chain of parent objects to top level parent
+
+    def get_parent_chain(self):
+        chain = [self]
+        sess = self.manager.sess
+        r = self.parent_id
+        while r is not None:
+            parent = sess.query(Resource).filter(Resource.id == r).one()
+            chain.append(iRODSResource(self.manager, parent))
+            r = chain[-1].parent_id
+        return chain
+
     @property
     def metadata(self):
         if not self._meta:
