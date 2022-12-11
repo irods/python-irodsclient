@@ -7,6 +7,9 @@ import six
 class iRODSResource(object):
 
     def __init__(self, manager, result=None):
+        self._hierarchy_string = ''
+        self._parent_name = ''
+        self._parent_id = ''
         '''
         self.id = result[Resource.id]
         self.name = result[Resource.name]
@@ -37,6 +40,54 @@ class iRODSResource(object):
                         pass
 
         self._meta = None
+
+
+    ## Cached properties to expose parent id or name regardless whether the DB model is iRODS 4.1- or 4.2+
+
+    @property
+    def parent_id(self):
+        if self.parent is None:
+            return None
+        if self._parent_id == '':
+            sess = self.manager.sess
+            if sess.server_version >= (4, 2, 0):
+                self._parent_id = self.parent
+            else:
+                self._parent_id = sess.query(Resource).filter(Resource.name == self.parent).one()[Resource.id]
+        return int(self._parent_id)
+
+
+    @property
+    def parent_name(self):
+        if self.parent is None:
+            return None
+        if self._parent_name == '':
+            sess = self.manager.sess
+            if sess.server_version < (4, 2, 0):
+                self._parent_name = self.parent
+            else:
+                self._parent_name = sess.query(Resource).filter(Resource.id == self.parent).one()[Resource.name]
+        return self._parent_name
+
+    ## Cached property to expose resource hierarchy string
+
+    @property
+    def hierarchy_string(self):
+        if self._hierarchy_string == '':
+            self._hierarchy_string = ';'.join(r.name for r in self.hierarchy_as_list_of_resource_objects())
+        return self._hierarchy_string
+
+    ## Retrieve chain of parent objects to top level parent
+
+    def hierarchy_as_list_of_resource_objects(self):
+        trace_to_root = [self]
+        sess = self.manager.sess
+        r = self.parent_id
+        while r is not None:
+            parent = sess.query(Resource).filter(Resource.id == r).one()
+            trace_to_root.append(iRODSResource(self.manager, parent))
+            r = trace_to_root[-1].parent_id
+        return list(reversed(trace_to_root))
 
     @property
     def metadata(self):
