@@ -13,7 +13,6 @@ import threading
 import random
 import datetime
 import json
-from pwd import getpwnam
 from irods.session import iRODSSession
 from irods.message import iRODSMessage
 from irods.password_obfuscation import encode
@@ -96,14 +95,7 @@ def make_session(**kwargs):
             env_file = os.environ['IRODS_ENVIRONMENT_FILE']
         except KeyError:
             env_file = os.path.expanduser('~/.irods/irods_environment.json')
-
-    try:
-        os.environ['IRODS_CI_TEST_RUN']
-        uid = getpwnam('irods').pw_uid
-    except KeyError:
-        uid = None
-
-    return iRODSSession( irods_authentication_uid = uid, irods_env_file = env_file, **kwargs )
+    return iRODSSession( irods_env_file = env_file, **kwargs )
 
 
 def home_collection(session):
