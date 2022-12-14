@@ -30,6 +30,9 @@ class TestConnections(unittest.TestCase):
         conn.release(destroy=True)
 
     def test_failed_connection(self):
+        # Make sure no connections are cached in self.sess.pool.idle to be grabbed by get_connection().
+        # (Necessary after #418 fix; make_session() can probe server_version, which then leaves an idle conn.)
+        self.sess.cleanup()
         # mess with the account's port
         saved_port = self.sess.port
         self.sess.pool.account.port = 6666

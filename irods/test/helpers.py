@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 import os
 import io
 import tempfile
@@ -13,10 +14,24 @@ import threading
 import random
 import datetime
 import json
+import sys
 from irods.session import iRODSSession
-from irods.message import iRODSMessage
+from irods.message import (iRODSMessage, IRODS_VERSION)
 from irods.password_obfuscation import encode
 from six.moves import range
+
+
+class StopTestsException(Exception):
+
+    def __init__(self,*args,**kwargs):
+        super(StopTestsException,self).__init__(*args,**kwargs)
+        if 'unittest' in sys.modules.keys():
+            print("Aborting tests [ Got : %r ]" % self, file = sys.stderr)
+            os.abort()
+
+
+class iRODS_Server_Too_Recent(StopTestsException):
+    pass
 
 
 def my_function_name():
@@ -87,7 +102,9 @@ def make_environment_and_auth_files( dir_, **params ):
     return (config, auth)
 
 
-def make_session(**kwargs):
+# Create a connection for test, based on ~/.irods environment by default.
+
+def make_session(test_server_version = True, **kwargs):
     try:
         env_file = kwargs.pop('irods_env_file')
     except KeyError:
@@ -95,7 +112,17 @@ def make_session(**kwargs):
             env_file = os.environ['IRODS_ENVIRONMENT_FILE']
         except KeyError:
             env_file = os.path.expanduser('~/.irods/irods_environment.json')
-    return iRODSSession( irods_env_file = env_file, **kwargs )
+    session = iRODSSession( irods_env_file = env_file, **kwargs )
+
+    if test_server_version:
+        connected_version = session.server_version[:3]
+        advertised_version = IRODS_VERSION[:3]
+        if connected_version > advertised_version:
+            msg = ("Connected server is {connected_version}, "
+                   "but this python-irodsclient advertises compatibility up to {advertised_version}.").format(**locals())
+            raise iRODS_Server_Too_Recent(msg)
+
+    return session
 
 
 def home_collection(session):
