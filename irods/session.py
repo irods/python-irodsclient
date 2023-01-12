@@ -59,6 +59,15 @@ class iRODSSession(object):
     # ACLs exactly in the manner of "ils -A".
 
     @property
+    def available_permissions(self):
+        from irods.access import (iRODSAccess,_iRODSAccess_pre_4_3_0)
+        try:
+            self.__access
+        except AttributeError:
+            self.__access = _iRODSAccess_pre_4_3_0 if self.server_version < (4,3) else iRODSAccess
+        return self.__access
+
+    @property
     def acls(self):
         class ACLs(self.permissions.__class__):
             def set(self, acl, recursive=False, admin=False, **kw):
