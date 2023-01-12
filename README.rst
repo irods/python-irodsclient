@@ -1108,6 +1108,32 @@ users (those whose User.type is 'rodsadmin' or 'rodsuser'). The empty group ('em
 members, so it doesn't show up in our final list.
 
 
+iRODS Permissions (ACLs)
+------------------------
+
+The :code:`iRODSAccess` class offers a convenient dictionary interface mapping iRODS permission
+strings to the corresponding integer codes:
+
+>>> from irods.access import iRODSAccess
+>>> iRODSAccess.keys()
+['null', 'read_metadata', 'read_object', 'create_metadata', 'modify_metadata', 'delete_metadata', 'create_object', 'modify_object', 'delete_object', 'own']
+>>> WRITE = iRODSAccess.to_int('modify_object')
+
+Armed with that, we can then query on all data objects with ACL's that allow our user to write them:
+
+>>> from irods.models import (DataObject, User, DataAccess)
+>>> data_objects_writable = list(session.query(DataObject, User, DataAccess).filter(User.name == session.username,  DataAccess.type >= WRITE))
+
+Finally, we can also access the list of permissions available through a given session object via the :code:`available_permissions` property.
+Note that -- in keeping with changes in iRODS server 4.3 -- the permissions list will be longer, as appropriate, for session objects connected to
+the more recent servers; and also that the embedded spaces in some 4.2 permission strings will be replaced by underscores in 4.3 and later.
+
+>>> session.server_version
+(4, 2, 11)
+>>> session.available_permissions.items()
+[('null', 1000), ('read object', 1050), ('modify object', 1120), ('own', 1200)]
+
+
 Getting and setting permissions
 -------------------------------
 
@@ -1129,12 +1155,6 @@ If we then want to downgrade those permissions to read-only, we can do the follo
 
 A call to :code:`session.acls.get(c)` -- with :code:`c` being the result of :code:`sessions.collections.get(c[Collection.name])` --
 would then verify the desired change had taken place (as well as list all ACLs stored in the catalog for that collection).
-
-We can also query on access type using its numeric value, which will seem more natural to some:
-
->>> OWN = 1200; MODIFY = 1120 ; READ = 1050
->>> from irods.models import DataAccess, DataObject, User
->>> data_objects_writable = list(session.query(DataObject,DataAccess,User)).filter(User.name=='alice',  DataAccess.type >= MODIFY)
 
 One last note on permissions:  The older access manager, :code:`<session>.permissions`, produced inconsistent results when the :code:`get()`
 method was invoked with the parameter :code:`report_raw_acls` set (or defaulting) to :code:`False`.  Specifically, collections would exhibit the

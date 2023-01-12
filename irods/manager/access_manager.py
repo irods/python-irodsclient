@@ -135,7 +135,7 @@ class AccessManager(Manager):
         userName_=acl.user_name
         zone_=acl.user_zone
         if acl.access_name.endswith('inherit'): zone_ = userName_ = ''
-
+        acl = acl.copy(decanonicalize = True)
         message_body = ModAclRequest(
             recursiveFlag=int(recursive),
             accessLevel='{prefix}{access_name}'.format(prefix=prefix, **vars(acl)),

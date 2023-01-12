@@ -80,6 +80,27 @@ class TestAccess(unittest.TestCase):
         c = self.sess.collections.get(self.coll_path)
         self.assertFalse(c.inheritance)
 
+    def test_available_permissions__420_422(self):
+        # Cycle through access levels (strings available via session.available_permissions) and test, with
+        # a string compare, that the "set" access level matches the "get" access level.
+        user = data = None
+        try:
+            user = self.sess.users.create('bob','rodsuser')
+            data = self.sess.data_objects.create('{}/obj_422'.format(helpers.home_collection(self.sess)))
+            permission_strings = self.sess.available_permissions.keys()
+            for perm in permission_strings:
+                access = iRODSAccess(perm, data.path, 'bob')
+                self.sess.acls.set( access )
+                a = [acl for acl in self.sess.acls.get( data ) if acl.user_name == 'bob']
+                if perm == 'null':
+                    self.assertEqual(len(a),0)
+                else:
+                    self.assertEqual(len(a),1)
+                    self.assertEqual(access.access_name,a[0].access_name)
+        finally:
+            if user: user.remove()
+            if data: data.unlink(force=True)
+
     def test_set_inherit_and_test_sub_objects (self):
         DEPTH = 3
         OBJ_PER_LVL = 1
