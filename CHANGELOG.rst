@@ -1,12 +1,31 @@
 Changelog
 =========
 
+v1.1.6 (2023-01-18)
+-------------------
+- [#420][#422] present appropriate iRODSAccess.codes, in sorted order [Daniel Moore]
+- [#420] store integer codes & strings for access levels [Daniel Moore]
+- [#418] raise error in test for IRODS_VERSION mismatch [Daniel Moore]
+- [#379] define RE_RUNTIME_ERROR exception [Daniel Moore]
+- [#400] more advanced iRODSException representation [Daniel Moore]
+- [#392] add iRODSResource properties: parent_name, parent_id, hierarchy_string [Daniel Moore]
+- [#243] enable RESC_HIER_STR_KW and RESC_NAME_KW in data open() [Daniel Moore]
+- [#395][#396] test of acls manager [Daniel Moore]
+- [#396] Introduce "acls" manager and deprecate "permissions" [Daniel Moore]
+- [#395] include user_type in permissions [Daniel Moore]
+- [#410] ensure a call to iRODSSession.cleanup() at interpreter exit [Daniel Moore]
+- [#406] correctly generate ssl context [Daniel Moore]
+- [#404] Fix password_obfuscation in Windows [J.P. Mc Farland]
+- [#374] Use alternate endpoint for groupadmin requests [Martin Jaime Flores Jr]
+- [#5] minor README fix: XML_Parser_Type code sample [Sietse Snel]
+- [#5] adds module loading to RErrorStack example [John Constable]
+
 v1.1.5 (2022-09-21)
 -------------------
-- [#383] correct logical path normalization
-- [#369] remove dynamic generation of message classes
-- [#386][#389] only load timestamps when requested
-- [#386] initial change to add create and modify times for metadata
+- [#383] correct logical path normalization [Daniel Moore]
+- [#369] remove dynamic generation of message classes [Daniel Moore]
+- [#386][#389] only load timestamps when requested [Daniel Moore]
+- [#386] initial change to add create and modify times for metadata [Paul Borgermans]
 
 v1.1.4 (2022-06-29)
 -------------------
