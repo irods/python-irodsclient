@@ -12,7 +12,7 @@ from irods.manager.collection_manager import CollectionManager
 from irods.manager.data_object_manager import DataObjectManager
 from irods.manager.metadata_manager import MetadataManager
 from irods.manager.access_manager import AccessManager
-from irods.manager.user_manager import UserManager, UserGroupManager
+from irods.manager.user_manager import UserManager, GroupManager
 from irods.manager.resource_manager import ResourceManager
 from irods.manager.zone_manager import ZoneManager
 from irods.exception import NetworkException
@@ -68,6 +68,51 @@ class iRODSSession(object):
         return self.__access
 
     @property
+    def groups(self):
+        class _GroupManager(self.user_groups.__class__):
+
+            def create(self, name,
+                             group_admin = None): # NB new default (see user_groups manager and i/f, with False as default)
+
+                user_type = 'rodsgroup'   # These are no longer parameters in the new interface, as they have no reason to vary.
+                user_zone = ""            # Groups (1) are always of type 'rodsgroup', (2) always belong to the local zone, and
+                auth_str = ""             #        (3) do not authenticate.
+
+                return super(_GroupManager, self).create(name,
+                                                         user_type,
+                                                         user_zone,
+                                                         auth_str,
+                                                         group_admin,
+                                                         suppress_deprecation_warning = True)
+
+            def addmember(self, group_name,
+                                user_name,
+                                user_zone = "",
+                                group_admin = None):
+
+                return super(_GroupManager, self).addmember(group_name,
+                                                            user_name,
+                                                            user_zone,
+                                                            group_admin,
+                                                            suppress_deprecation_warning = True)
+
+            def removemember(self, group_name,
+                                   user_name,
+                                   user_zone = "",
+                                   group_admin = None):
+
+                return super(_GroupManager, self).removemember(group_name,
+                                                               user_name,
+                                                               user_zone,
+                                                               group_admin,
+                                                               suppress_deprecation_warning = True)
+
+        _groups = getattr(self,'_groups',None)
+        if not _groups:
+            _groups = self._groups = _GroupManager(self.user_groups.sess)
+        return self._groups
+
+    @property
     def acls(self):
         class ACLs(self.permissions.__class__):
             def set(self, acl, recursive=False, admin=False, **kw):
@@ -95,7 +140,7 @@ class iRODSSession(object):
         self.metadata = MetadataManager(self)
         self.permissions = AccessManager(self)
         self.users = UserManager(self)
-        self.user_groups = UserGroupManager(self)
+        self.user_groups = GroupManager(self)
         self.resources = ResourceManager(self)
         self.zones = ZoneManager(self)
 

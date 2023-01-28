@@ -66,9 +66,12 @@ class CollectionUser(Model):
     zone = Column(String, 'COL_COLL_USER_ZONE', 1301)
 
 
-class UserGroup(Model):
+class Group(Model):
     id = Column(Integer, 'USER_GROUP_ID', 900)
     name = Column(String, 'USER_GROUP_NAME', 901)
+ 
+# The UserGroup model-class is now renamed Group, but we'll keep the deprecated name around for now.
+UserGroup = Group
 
 
 class Resource(Model):

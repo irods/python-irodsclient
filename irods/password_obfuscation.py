@@ -288,6 +288,15 @@ def scramble_v2(s, first_key, second_key):
 
     return scramble(to_scramble, key=hashed_key, scramble_prefix='', block_chaining=True)
 
+def obfuscate_new_password_with_key(new_password, obfuscation_key):
+    lcopy = MAX_PASSWORD_LENGTH - 10 - len(new_password)
+    new_password = new_password[:MAX_PASSWORD_LENGTH]
+    if lcopy > 15:
+        # https://github.com/irods/irods/blob/4.2.1/plugins/database/src/db_plugin.cpp#L1094-L1095
+        padding = '1gCBizHWbwIYyWLoysGzTe6SyzqFKMniZX05faZHWAwQKXf6Fs'
+        new_password += padding[:lcopy]
+    return scramble(new_password, obfuscation_key, scramble_prefix='')
+
 # port of https://github.com/irods/irods_client_icommands/blob/4.2.1/src/iadmin.cpp#L878-L930
 def obfuscate_new_password(new, old, signature):
     pwd_len = len(new)

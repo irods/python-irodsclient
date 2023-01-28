@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 import logging
 import os
+import warnings
 
-from irods.models import User, UserGroup
+from irods.models import User, Group
 from irods.manager import Manager
 from irods.message import UserAdminRequest, GeneralAdminRequest, iRODSMessage, GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut
-from irods.exception import UserDoesNotExist, UserGroupDoesNotExist, NoResultFound, CAT_SQL_ERR
+from irods.exception import UserDoesNotExist, GroupDoesNotExist, NoResultFound, CAT_SQL_ERR
 from irods.api_number import api_number
-from irods.user import iRODSUser, iRODSUserGroup
+from irods.user import iRODSUser, iRODSGroup
 import irods.password_obfuscation as obf
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,24 @@ class UserManager(Manager):
         except NoResultFound:
             raise UserDoesNotExist()
         return iRODSUser(self, result)
+
+    def create_with_password(self, user_name, password, user_zone = ''):
+        """This method can be used by a groupadmin to initialize the password field while creating the new user.
+           (This is necessary since group administrators may not change the password of an existing user.)
+        """
+
+        message_body = UserAdminRequest(
+                "mkuser", user_name, "" if not password else \
+                                     obf.obfuscate_new_password_with_key(password, self.sess.pool.account.password)
+                )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['USER_ADMIN_AN'])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
+        return self.get(user_name, user_zone)
+
 
     def create(self, user_name, user_type, user_zone="", auth_str=""):
         message_body = GeneralAdminRequest(
@@ -176,28 +195,53 @@ class UserManager(Manager):
         logger.debug(response.int_info)
 
 
-class UserGroupManager(UserManager):
+class GroupManager(UserManager):
 
     def get(self, name, user_zone=""):
-        query = self.sess.query(UserGroup).filter(UserGroup.name == name)
+        query = self.sess.query(Group).filter(Group.name == name)
 
         try:
             result = query.one()
         except NoResultFound:
-            raise UserGroupDoesNotExist()
-        return iRODSUserGroup(self, result)
+            raise GroupDoesNotExist()
+        return iRODSGroup(self, result)
 
-    def create(self, name, user_type='rodsgroup', user_zone="", auth_str="", group_admin=False):
-        if group_admin:
-            message_body = UserAdminRequest(
+    def _api_info(self, group_admin_flag):
+        """
+        If group_admin_flag is:         then use UserAdminRequest API:
+        ---------------------------     ------------------------------
+        True                            always
+        False (user_groups default)     never
+        None  (groups default)          when user type is groupadmin
+        """
+
+        sess = self.sess
+        if group_admin_flag or (group_admin_flag is not False and sess.users.get(sess.username).type == 'groupadmin'):
+            return (UserAdminRequest, 'USER_ADMIN_AN')
+        return (GeneralAdminRequest, 'GENERAL_ADMIN_AN')
+
+    def create(self, name,
+               user_type = 'rodsgroup',
+               user_zone = "",
+               auth_str = "",
+               group_admin = False, **options):
+
+        if not options.pop('suppress_deprecation_warning', False):
+            warnings.warn('Use of session.user_groups is deprecated in v1.1.7 - prefer session.groups',
+                          DeprecationWarning, stacklevel = 2)
+
+        (MessageClass, api_key) = self._api_info(group_admin)
+        api_to_use = api_number[api_key]
+
+        if MessageClass is UserAdminRequest:
+            message_body = MessageClass(
                 "mkgroup",
                 name,
                 user_type,
                 user_zone
             )
-            api_to_use = api_number['USER_ADMIN_AN']
         else:
-            message_body = GeneralAdminRequest(
+            message_body = MessageClass(
                 "add",
                 "user",
                 name,
@@ -205,7 +249,6 @@ class UserGroupManager(UserManager):
                 "",
                 ""
             )
-            api_to_use = api_number['GENERAL_ADMIN_AN']
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
                                int_info=api_to_use)
         with self.sess.pool.get_connection() as conn:
@@ -216,11 +259,21 @@ class UserGroupManager(UserManager):
 
     def getmembers(self, name):
         results = self.sess.query(User).filter(
-            User.type != 'rodsgroup', UserGroup.name == name)
+            User.type != 'rodsgroup', Group.name == name)
         return [iRODSUser(self, row) for row in results]
 
-    def addmember(self, group_name, user_name, user_zone=""):
-        message_body = GeneralAdminRequest(
+    def addmember(self, group_name,
+                        user_name,
+                        user_zone = "",
+                        group_admin = False, **options):
+
+        if not options.pop('suppress_deprecation_warning', False):
+            warnings.warn('Use of session.user_groups is deprecated in v1.1.7 - prefer session.groups',
+                          DeprecationWarning, stacklevel = 2)
+
+        (MessageClass, api_key) = self._api_info(group_admin)
+
+        message_body = MessageClass(
             "modify",
             "group",
             group_name,
@@ -229,14 +282,25 @@ class UserGroupManager(UserManager):
             user_zone
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
+                               int_info=api_number[api_key])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
 
-    def removemember(self, group_name, user_name, user_zone=""):
-        message_body = GeneralAdminRequest(
+    def removemember(self,
+                     group_name,
+                     user_name,
+                     user_zone = "",
+                     group_admin = False, **options):
+
+        if not options.pop('suppress_deprecation_warning', False):
+            warnings.warn('Use of session.user_groups is deprecated in v1.1.7 - prefer session.groups',
+                          DeprecationWarning, stacklevel = 2)
+
+        (MessageClass, api_key) = self._api_info(group_admin)
+
+        message_body = MessageClass(
             "modify",
             "group",
             group_name,
@@ -245,8 +309,12 @@ class UserGroupManager(UserManager):
             user_zone
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
+                               int_info=api_number[api_key])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
+
+
+# NOTE: Everything of the form *UserGroup* is deprecated.
+UserGroupManager = GroupManager

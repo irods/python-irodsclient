@@ -249,10 +249,10 @@ class TestAccess(unittest.TestCase):
         data = helpers.make_object(self.sess,"/".join((self.coll_path,"test_obj")))
         eg = eu = fg = fu = None
         try:
-            eg = self.sess.user_groups.create ('egrp')
+            eg = self.sess.groups.create ('egrp')
             eu = self.sess.users.create ('edith','rodsuser')
             eg.addmember(eu.name,eu.zone)
-            fg = self.sess.user_groups.create ('fgrp')
+            fg = self.sess.groups.create ('fgrp')
             fu = self.sess.users.create ('frank','rodsuser')
             fg.addmember(fu.name,fu.zone)
             my_ownership = set([('own', self.sess.username, self.sess.zone)])
@@ -283,7 +283,7 @@ class TestAccess(unittest.TestCase):
 
             self.alice = ses.users.create('alice','rodsuser')
             self.bob = ses.users.create('bob','rodsuser')
-            self.team = ses.user_groups.create('team')
+            self.team = ses.groups.create('team')
             self.team.addmember('bob')
             ses.users.modify('bob', 'password', 'bpass')
 
