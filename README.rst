@@ -1064,9 +1064,9 @@ Listing Users and Groups ; calculating Group Membership
 iRODS tracks groups and users using two tables, R_USER_MAIN and R_USER_GROUP.
 Under this database schema, all "user groups" are also users:
 
->>> from irods.models import User, UserGroup
+>>> from irods.models import User, Group
 >>> from pprint import pprint
->>> pprint(list( [ (x[User.id], x[User.name]) for x in session.query(User) ] ))
+>>> pprint(list((x[User.id], x[User.name]) for x in session.query(User)))
 [(10048, 'alice'),
  (10001, 'rodsadmin'),
  (13187, 'bobby'),
@@ -1083,20 +1083,20 @@ user ID that iRODS internally recognizes as a "Group":
 >>> [x[User.name] for x in groups]
 ['collab', 'public', 'rodsadmin', 'empty']
 
-Since we can instantiate iRODSUserGroup and iRODSUser objects directly from the rows of
+Since we can instantiate iRODSGroup and iRODSUser objects directly from the rows of
 a general query on the corresponding tables,  it is also straightforward to trace out
 the groups' memberships:
 
->>> from irods.user import iRODSUser, iRODSUserGroup
->>> grp_usr_mapping = [ (iRODSUserGroup ( session.user_groups, result), iRODSUser (session.users, result)) \
-...                     for result in session.query(UserGroup,User) ]
+>>> from irods.user import iRODSUser, iRODSGroup
+>>> grp_usr_mapping = [ (iRODSGroup(session.groups, result), iRODSUser(session.users, result)) \
+...                     for result in session.query(Group,User) ]
 >>> pprint( [ (x,y) for x,y in grp_usr_mapping if x.id != y.id ] )
-[(<iRODSUserGroup 10045 collab>, <iRODSUser 10048 alice rodsuser tempZone>),
- (<iRODSUserGroup 10001 rodsadmin>, <iRODSUser 10003 rods rodsadmin tempZone>),
- (<iRODSUserGroup 10002 public>, <iRODSUser 10003 rods rodsadmin tempZone>),
- (<iRODSUserGroup 10002 public>, <iRODSUser 10048 alice rodsuser tempZone>),
- (<iRODSUserGroup 10045 collab>, <iRODSUser 13187 bobby rodsuser tempZone>),
- (<iRODSUserGroup 10002 public>, <iRODSUser 13187 bobby rodsuser tempZone>)]
+[(<iRODSGroup 10045 collab>, <iRODSUser 10048 alice rodsuser tempZone>),
+ (<iRODSGroup 10001 rodsadmin>, <iRODSUser 10003 rods rodsadmin tempZone>),
+ (<iRODSGroup 10002 public>, <iRODSUser 10003 rods rodsadmin tempZone>),
+ (<iRODSGroup 10002 public>, <iRODSUser 10048 alice rodsuser tempZone>),
+ (<iRODSGroup 10045 collab>, <iRODSUser 13187 bobby rodsuser tempZone>),
+ (<iRODSGroup 10002 public>, <iRODSUser 13187 bobby rodsuser tempZone>)]
 
 (Note that in general queries, fields cannot be compared to each other, only to literal constants; thus
 the '!=' comparison in the Python list comprehension.)
@@ -1106,6 +1106,24 @@ From the above, we can see that the group 'collab' (with user ID 10045) contains
 contains user 'rods'(10003) but no other users; and group 'public'(10002) by default contains all canonical
 users (those whose User.type is 'rodsadmin' or 'rodsuser'). The empty group ('empty') has no users as
 members, so it doesn't show up in our final list.
+
+
+Group Administrator Capabilities
+--------------------------------
+With v1.1.7, PRC acquires the full range of abilities possessed by the igroupadmin command.
+
+Firstly, a groupadmin may invoke methods to create groups, and may add users to, or remove them from, any
+group to which they themselves belong:
+
+>>> session.groups.create('lab')
+>>> session.groups.addmember('lab',session.username)  # allow self to administer group
+>>> session.groups.addmember('lab','otheruser')
+>>> session.groups.removemember('lab','otheruser')
+
+In addition, a groupadmin may also create accounts for new users and enable their logins by initializing
+a native password for them:
+
+>>> session.users.create_with_password('alice', 'change_me')
 
 
 iRODS Permissions (ACLs)

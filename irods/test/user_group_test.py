@@ -1,20 +1,22 @@
 #! /usr/bin/env python
 from __future__ import absolute_import
+import datetime
 import os
 import sys
 import unittest
 import tempfile
 import shutil
-from irods.exception import UserGroupDoesNotExist, UserDoesNotExist
+from irods import MAX_PASSWORD_LENGTH
+from irods.exception import GroupDoesNotExist, UserDoesNotExist
 from irods.meta import iRODSMetaCollection, iRODSMeta
-from irods.models import User, UserGroup, UserMeta
+from irods.models import User, Group, UserMeta
 from irods.session import iRODSSession
 import irods.exception as ex
 import irods.test.helpers as helpers
 from six.moves import range
 
 
-class TestUserGroup(unittest.TestCase):
+class TestGroup(unittest.TestCase):
 
     def setUp(self):
         self.sess = helpers.make_session()
@@ -117,23 +119,23 @@ class TestUserGroup(unittest.TestCase):
         group_name = "test_group"
 
         # group should not be already present
-        with self.assertRaises(UserGroupDoesNotExist):
-            self.sess.user_groups.get(group_name)
+        with self.assertRaises(GroupDoesNotExist):
+            self.sess.groups.get(group_name)
 
         # create group
-        group = self.sess.user_groups.create(group_name)
+        group = self.sess.groups.create(group_name)
 
         # assertions
         self.assertEqual(group.name, group_name)
         self.assertEqual(
-            repr(group), "<iRODSUserGroup {0} {1}>".format(group.id, group_name))
+            repr(group), "<iRODSGroup {0} {1}>".format(group.id, group_name))
 
         # delete group
         group.remove()
 
         # group should be gone
-        with self.assertRaises(UserGroupDoesNotExist):
-            self.sess.user_groups.get(group_name)
+        with self.assertRaises(GroupDoesNotExist):
+            self.sess.groups.get(group_name)
 
     def test_add_users_to_group(self):
         group_name = "test_group"
@@ -141,11 +143,11 @@ class TestUserGroup(unittest.TestCase):
         base_user_name = "test_user"
 
         # group should not be already present
-        with self.assertRaises(UserGroupDoesNotExist):
-            self.sess.user_groups.get(group_name)
+        with self.assertRaises(GroupDoesNotExist):
+            self.sess.groups.get(group_name)
 
         # create test group
-        group = self.sess.user_groups.create(group_name)
+        group = self.sess.groups.create(group_name)
 
         # create test users names
         test_user_names = []
@@ -163,7 +165,7 @@ class TestUserGroup(unittest.TestCase):
         # compare lists
         self.assertSetEqual(set(member_names), set(test_user_names))
 
-        # exercise iRODSUserGroup.hasmember()
+        # exercise iRODSGroup.hasmember()
         for test_user_name in test_user_names:
             self.assertTrue(group.hasmember(test_user_name))
 
@@ -177,8 +179,8 @@ class TestUserGroup(unittest.TestCase):
         group.remove()
 
         # group should be gone
-        with self.assertRaises(UserGroupDoesNotExist):
-            self.sess.user_groups.get(group_name)
+        with self.assertRaises(GroupDoesNotExist):
+            self.sess.groups.get(group_name)
 
     def test_user_dn(self):
         # https://github.com/irods/irods/issues/3620
@@ -215,21 +217,21 @@ class TestUserGroup(unittest.TestCase):
         group_name = "test_group"
 
         # group should not be already present
-        with self.assertRaises(UserGroupDoesNotExist):
-            self.sess.user_groups.get(group_name)
+        with self.assertRaises(GroupDoesNotExist):
+            self.sess.groups.get(group_name)
 
         group = None
 
         try:
             # create group
-            group = self.sess.user_groups.create(group_name)
+            group = self.sess.groups.create(group_name)
 
             # add metadata to group
             triple = ['key', 'value', 'unit']
             group.metadata[triple[0]] = iRODSMeta(*triple)
 
-            result =  self.sess.query(UserMeta, UserGroup).filter(UserGroup.name == group_name,
-                                                                  UserMeta.name == 'key').one()
+            result =  self.sess.query(UserMeta, Group).filter(Group.name == group_name,
+                                                              UserMeta.name == 'key').one()
 
             self.assertTrue([result[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)] == triple)
 
@@ -335,6 +337,87 @@ class TestUserGroup(unittest.TestCase):
             if user:
                 user.remove()
                 helpers.remove_unused_metadata(self.sess)
+
+    def create_groupadmin_user_and_session(self, groupadmin_user_name):
+
+        # Generate a random password.
+        ga_password = helpers.unique_name(helpers.my_function_name(),
+                                          datetime.datetime.now())[:MAX_PASSWORD_LENGTH]
+
+        # Create a groupadmin user with that password, and a session object for logging in as that user.
+        groupadmin = self.sess.users.create(groupadmin_user_name, 'groupadmin')
+        self.sess.users.modify(groupadmin_user_name, 'password', ga_password)
+        session = iRODSSession(user = groupadmin_user_name,
+                               password = ga_password,
+                               host = self.sess.host,
+                               port = self.sess.port,
+                               zone = self.sess.zone)
+
+        # Return two objects: the user and the session.
+        return (groupadmin, session)
+
+    def test_group_admin_can_create_and_administer_groups__issue_426(self):
+        admin = self.sess
+        alice = groupadmin = lab = None
+        GROUP_ADMIN = 'groupadmin_426'
+        try:
+            # Create a rodsuser and a groupadmin.
+            alice = admin.users.create('alice','rodsuser')
+            alice.modify('password', 'apass')
+            groupadmin, groupadmin_session = self.create_groupadmin_user_and_session(GROUP_ADMIN)
+
+            # As the groupadmin:
+            #    * Add two users to the group (one being the groupadmin) and assert membership.
+            #    * Remove those users from the group, and assert they are no longer members.
+            with groupadmin_session:
+                lab = groupadmin_session.groups.create('lab')
+                groupadmin_session.groups.addmember('lab',GROUP_ADMIN)
+                groupadmin_session.groups.addmember('lab','alice')
+
+                # Check that our members got added.
+                # (For set objects in Python, s1 <= s2 comparison means "is s1 a subset of s2?")
+                self.assertLessEqual(set(('alice',GROUP_ADMIN)), set(member.name for member in lab.members))
+
+                groupadmin_session.groups.removemember('lab','alice')
+                groupadmin_session.groups.removemember('lab',GROUP_ADMIN)
+
+                # Check that our members got removed.
+                self.assertFalse(set(('alice',GROUP_ADMIN)) & set(member.name for member in lab.members))
+        finally:
+            if groupadmin:
+                groupadmin.remove()
+            # NB: groups and users, even if created by a groupadmin, must be removed by a rodsadmin.
+            if alice:
+                alice.remove()
+            if lab:
+                admin.groups.remove(lab.name)
+
+    def test_group_admin_can_create_users__issue_428(self):
+        admin = self.sess
+        if admin.server_version < (4, 2, 12) or admin.server_version == (4,3,0):
+            self.skipTest('Password initialization is broken before iRODS 4.2.12, and in 4.3.0')
+        rodsuser = groupadmin = None
+        rodsuser_name = 'bob'
+        rodsuser_password = 'random_password'
+        try:
+            # Create a groupadmin.
+            groupadmin, groupadmin_session = self.create_groupadmin_user_and_session('groupadmin_428')
+
+            # Use the groupadmin to create a new user initialized with a known password; then, test the
+            # new user/password combination by logging in and grabbing the home collection object.
+            with groupadmin_session:
+                rodsuser = groupadmin_session.users.create_with_password(rodsuser_name, rodsuser_password)
+                with iRODSSession(user = rodsuser_name,
+                                  password = rodsuser_password,
+                                  host = admin.host, port = admin.port, zone = admin.zone) as rodsuser_session:
+                    rodsuser_session.collections.get(helpers.home_collection(rodsuser_session))
+        finally:
+            if groupadmin:
+                groupadmin.remove()
+            # NB: Although created by a groupadmin, the rodsuser must be removed by a rodsadmin.
+            if rodsuser:
+                admin.users.remove(rodsuser.name)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

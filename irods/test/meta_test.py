@@ -45,7 +45,7 @@ class TestMeta(unittest.TestCase):
 
     def test_atomic_metadata_operations_244(self):
         user = self.sess.users.get("rods")
-        group = self.sess.user_groups.get("public")
+        group = self.sess.groups.get("public")
         m = ( "attr_244","value","units")
 
         with self.assertRaises(BadAVUOperationValue):
@@ -108,7 +108,7 @@ class TestMeta(unittest.TestCase):
     def test_atomic_metadata_operations_255(self):
         my_resc = self.sess.resources.create('dummyResc','passthru')
         avus = [iRODSMeta('a','b','c'), iRODSMeta('d','e','f')]
-        objects = [ self.sess.users.get("rods"), self.sess.user_groups.get("public"), my_resc,
+        objects = [ self.sess.users.get("rods"), self.sess.groups.get("public"), my_resc,
                     self.sess.collections.get(self.coll_path), self.sess.data_objects.get(self.obj_path)  ]
         try:
             for obj in objects:

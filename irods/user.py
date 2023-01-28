@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from irods.models import User, UserGroup, UserAuth
+from irods.models import User, Group, UserAuth
 from irods.meta import iRODSMetaCollection
 from irods.exception import NoResultFound
 
@@ -62,17 +62,17 @@ class iRODSUser(object):
         return self.manager.temp_password_for_user(self.name)
 
 
-class iRODSUserGroup(object):
+class iRODSGroup(object):
 
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:
-            self.id = result[UserGroup.id]
-            self.name = result[UserGroup.name]
+            self.id = result[Group.id]
+            self.name = result[Group.name]
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSUserGroup {id} {name}>".format(**vars(self))
+        return "<iRODSGroup {id} {name}>".format(**vars(self))
 
     def remove(self):
         self.manager.remove(self.name)
@@ -97,3 +97,6 @@ class iRODSUserGroup(object):
     def hasmember(self, user_name):
         member_names = [user.name for user in self.members]
         return user_name in member_names
+
+# The iRODSUserGroup is now renamed iRODSGroup, but we'll keep the deprecated name around for now.
+iRODSUserGroup = iRODSGroup
