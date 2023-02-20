@@ -1,15 +1,18 @@
 #! /usr/bin/env python
 from __future__ import absolute_import
+
 import os
 import sys
 import unittest
+
 from irods.access import iRODSAccess
+from irods.collection import iRODSCollection
+from irods.column import In, Like
+from irods.exception import UserDoesNotExist
+from irods.models import User,Collection,DataObject
 from irods.user import iRODSUser
 from irods.session import iRODSSession
-from irods.models import User,Collection,DataObject
-from irods.collection import iRODSCollection
 import irods.test.helpers as helpers
-from irods.column import In, Like
 
 
 class TestAccess(unittest.TestCase):
@@ -332,6 +335,41 @@ class TestAccess(unittest.TestCase):
             self.alice.remove()
             self.team.remove()
 
+    def test_removed_user_does_not_affect_raw_ACL_queries__issue_431(self):
+        user_name = "testuser"
+        session = self.sess
+        try:
+            # Create user and collection.
+            user = session.users.create(user_name, 'rodsuser')
+            coll_path = "/{0.zone}/home/test".format(session)
+            coll = session.collections.create(coll_path)
+
+            # Give user access to collection.
+            access = iRODSAccess('read', coll.path, user.name)
+            session.acls.set(access)
+
+            # We can get permissions from collection, and the test user's entry is there.
+            perms = session.acls.get(coll)
+            self.assertTrue(any(p for p in perms if p.user_name == user_name))
+
+            # Now we remove the user and try again.
+            user.remove()
+
+            # The following line threw a KeyError prior to the issue #431 fix,
+            # as already-deleted users' IDs were being returned in the raw ACL queries.
+            # It appears iRODS as of 4.2.11 and 4.3.0 does not purge R_OBJT_ACCESS of old
+            # user IDs.  (See:  https://github.com/irods/irods/issues/6921)
+            perms = session.acls.get(coll)
+
+            # As an extra test, make sure the removed user is gone from the list.
+            self.assertFalse(any(p for p in perms if p.user_name == user_name))
+        finally:
+            try:
+                u = session.users.get(user_name)
+            except UserDoesNotExist:
+                pass
+            else:
+                u.remove()
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
