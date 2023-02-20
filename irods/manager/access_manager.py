@@ -104,7 +104,12 @@ class AccessManager(Manager):
         else:
             raise TypeError
 
-        rows  = [ r for r in query_func(target.path) ]
+        # TODO: remove the filtering through extant_ids on resolution of irods/irods#6921.
+        #   (depending on the nature of the fix we may make it conditional, based on the server --
+        #   if for example in upcoming iRODS 4.2.12 and >=4.3.1 outdated userIDs in R_OBJT_ACCESS
+        #   are guaranteed to be systematically and atomically purged.
+        extant_ids = set(u[User.id] for u in self.sess.query(User))
+        rows  = [r for r in query_func(target.path) if r[access_column.user_id] in extant_ids]
         userids = set( r[access_column.user_id] for r in rows )
 
         user_lookup = { j.id:j for j in users_by_ids(self.sess, userids) }
