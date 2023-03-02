@@ -142,7 +142,7 @@ def ET(xml_type = (), server_version = None):
 
 logger = logging.getLogger(__name__)
 
-IRODS_VERSION = (4, 3, 0, 'd')
+IRODS_VERSION = (4, 3, 1, 'd')
 
 try:
     # Python 2
