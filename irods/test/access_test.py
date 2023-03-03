@@ -211,7 +211,7 @@ class TestAccess(unittest.TestCase):
 
         # reset permission to own
         acl1 = iRODSAccess('own', path, user.name, user.zone)
-        self.sess.acls.set(acl1)
+        self.sess.acls.set(acl1, admin = True)
 
         # remove object
         self.sess.data_objects.unlink(path)
@@ -237,7 +237,7 @@ class TestAccess(unittest.TestCase):
 
         # reset permission to own
         acl1 = iRODSAccess('own', coll.path, user.name, user.zone)
-        self.sess.acls.set(acl1)
+        self.sess.acls.set(acl1, admin = True)
 
     def perms_lists_symm_diff ( self, a_iter, b_iter ):
         fields = lambda perm: (self.mapping[perm.access_name], perm.user_name, perm.user_zone)
