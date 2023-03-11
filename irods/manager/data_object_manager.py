@@ -346,6 +346,11 @@ class DataObjectManager(Manager):
 
     def trim(self, path, **options):
 
+        try:
+            oprType = options[kw.OPR_TYPE_KW]
+        except KeyError:
+            oprType = 0
+
         message_body = FileOpenRequest(
             objPath=path,
             createMode=0,
@@ -353,6 +358,7 @@ class DataObjectManager(Manager):
             offset=0,
             dataSize=-1,
             numThreads=self.sess.numThreads,
+            oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
@@ -392,9 +398,13 @@ class DataObjectManager(Manager):
 
     def unregister(self, path, **options):
         # https://github.com/irods/irods/blob/4.2.1/lib/api/include/dataObjInpOut.h#L190
-        options[kw.OPR_TYPE_KW] = 26
+        options[kw.OPR_TYPE_KW] = 26 # UNREG_OPR: prevents deletion from disk.
 
-        self.unlink(path, **options)
+        # If a replica is targeted, use trim API.
+        if {kw.RESC_NAME_KW, kw.REPL_NUM_KW} & set(options.keys()):
+            self.trim(path, **options)
+        else:
+            self.unlink(path, **options)
 
 
     def exists(self, path):
