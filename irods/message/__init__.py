@@ -19,6 +19,9 @@ from irods.message.property import (BinaryProperty, StringProperty,
                                     IntegerProperty, LongProperty, ArrayProperty,
                                     SubmessageProperty)
 
+class Bad_AVU_Field(Exception):
+    pass
+
 _TUPLE_LIKE_TYPES = (tuple, list)
 
 def _qxml_server_version( var ):
@@ -670,9 +673,29 @@ class MetadataRequest(Message):
 
     def __init__(self, *args, **metadata_opts):
         super(MetadataRequest, self).__init__()
-        for i in range(len(args)):
-            if args[i]:
-                setattr(self, 'arg%d' % i, args[i])
+
+        NoneType = type(None)
+        def field_name(i) : return ("attribute", "value", "unit")[i-3]
+
+        # We now enforce these requirements of the scalars (ie. AVU fields) submitted to the metadata call:
+        #   * All fields must each be of type str, except that the units field can be the None object.
+        #   * Attribute and Value must be of type str (a Python string) as well as nonzero length.
+        for i,arg in enumerate(args):
+            error = None
+
+            # Raise usage error if any of the AVU fields (args 3 to 5 inclusive) do not meet the above constraints.
+            if i in (3,4,5):
+                if type(arg) not in ({str, UNICODE} if i<5 else {str, UNICODE, NoneType}):
+                    error = Bad_AVU_Field("AVU %s (%r) has incorrect type. AVU fields must be strings, except for units, which could be None." % (field_name(i),arg))
+                elif i<5 and not(arg):
+                    error = Bad_AVU_Field("AVU %s (%r) is zero-length." % (field_name(i), arg))
+            if error is not None:
+                raise error
+
+            # If there is no error, set the attribute in the request message.
+            if arg not in {None, b'', ''}:
+                setattr(self, 'arg%d' % i, arg)
+
         self.KeyValPair_PI = StringStringMap(metadata_opts)
 
     arg0 = StringProperty()
