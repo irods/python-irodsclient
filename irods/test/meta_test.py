@@ -14,6 +14,8 @@ import irods.keywords as kw
 from irods.session import iRODSSession
 from six.moves import range
 from six import PY3
+from irods.message import Bad_AVU_Field
+
 
 
 class TestMeta(unittest.TestCase):
@@ -441,6 +443,14 @@ class TestMeta(unittest.TestCase):
             finally:
                 if d: d.unlink(force = True)
                 helpers.remove_unused_metadata(session)
+
+    def test_nonstring_as_AVU_value_raises_an_error__issue_434(self):
+        with self.assertRaisesRegexp(Bad_AVU_Field,'incorrect type'):
+            self.coll.metadata.set("an_attribute",0)
+
+    def test_empty_string_as_AVU_value_raises_an_error__issue_434(self):
+        with self.assertRaisesRegexp(Bad_AVU_Field,'zero-length'):
+            self.coll.metadata.set("an_attribute","")
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
