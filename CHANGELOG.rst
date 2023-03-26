@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v1.1.7 (2023-03-28)
+-------------------
+- [#435] unregister can target a single replica [Daniel Moore]
+- [#434] metadata calls now require AVU fields to be nonzero-length strings [Daniel Moore]
+- [#431][irods/irods#6921] filter user_id results from R_OBJT_ACCESS through IDs still in R_USER_MAIN [Daniel Moore]
+- [#3] acls.set needs admin=True for some tests [Daniel Moore]
+- [#3] compatibility bump to iRODS 4.3.1 [Daniel Moore]
+- [#426][#428][#429] groupadmin capabilities update [Daniel Moore]
+
 v1.1.6 (2023-01-18)
 -------------------
 - [#420][#422] present appropriate iRODSAccess.codes, in sorted order [Daniel Moore]
