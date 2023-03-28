@@ -20,6 +20,7 @@ from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
 import threading
 import weakref
+from . import DEFAULT_CONNECTION_TIMEOUT
 
 _sessions = None
 _sessions_lock = threading.Lock()
@@ -131,6 +132,7 @@ class iRODSSession(object):
         self._env_file = ''
         self._auth_file = ''
         self.do_configure = (kwargs if configure else {})
+        self._cached_connection_timeout = kwargs.pop('connection_timeout', DEFAULT_CONNECTION_TIMEOUT)
         self.__configured = None
         if configure:
             self.__configured = self.configure(**kwargs)
@@ -232,6 +234,8 @@ class iRODSSession(object):
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
         logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
         self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time)
+        conn_timeout = getattr(self,'_cached_connection_timeout',None)
+        self.pool.connection_timeout = conn_timeout
         return account
 
     def query(self, *args):
@@ -294,7 +298,9 @@ class iRODSSession(object):
 
     @connection_timeout.setter
     def connection_timeout(self, seconds):
-        self.pool.connection_timeout = seconds
+        self._cached_connection_timeout = seconds
+        if seconds is not None:
+            self.pool.connection_timeout = seconds
 
     @staticmethod
     def get_irods_password_file():
