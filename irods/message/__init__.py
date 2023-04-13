@@ -24,6 +24,7 @@ class Bad_AVU_Field(Exception):
 
 _TUPLE_LIKE_TYPES = (tuple, list)
 
+
 def _qxml_server_version( var ):
     val = os.environ.get( var, '()' )
     vsn = (val and ast.literal_eval( val ))
@@ -154,6 +155,7 @@ except NameError:
     # Python 3
     UNICODE = str
 
+_METADATA_FIELD_TYPES = {str,UNICODE,bytes}
 
 
 # Necessary for older python (<3.7):
@@ -685,7 +687,8 @@ class MetadataRequest(Message):
 
             # Raise usage error if any of the AVU fields (args 3 to 5 inclusive) do not meet the above constraints.
             if i in (3,4,5):
-                if type(arg) not in ({str, UNICODE} if i<5 else {str, UNICODE, NoneType}):
+                if type(arg) not in (_METADATA_FIELD_TYPES if i<5
+                                     else {NoneType,}|_METADATA_FIELD_TYPES):
                     error = Bad_AVU_Field("AVU %s (%r) has incorrect type. AVU fields must be strings, except for units, which could be None." % (field_name(i),arg))
                 elif i<5 and not(arg):
                     error = Bad_AVU_Field("AVU %s (%r) is zero-length." % (field_name(i), arg))

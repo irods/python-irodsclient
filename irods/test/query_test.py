@@ -540,6 +540,12 @@ class TestQuery(unittest.TestCase):
         if results:
             Rule(self.sess).remove_by_id( results[0][RuleExec.id] )
 
+    def test_utf8_equality_in_query__issue_442(self):
+        name = u'prefix-\u1000-suffix'
+        self.sess.data_objects.create(u'{}/{}'.format(self.coll_path, name))
+        query = self.sess.query(DataObject).filter( DataObject.name == name.encode('utf8'),
+                                                    DataObject.collection_id == self.coll.id)
+        self.assertEqual(1, len(list(query)))
 
     def test_not_like_operator__issue_443(self):
         name_search_pattern = '%_issue_443.non_matching'

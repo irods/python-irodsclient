@@ -8,15 +8,34 @@ import datetime
 import unittest
 from irods.meta import (iRODSMeta, AVUOperation, BadAVUOperationValue, BadAVUOperationKeyword)
 from irods.manager.metadata_manager import InvalidAtomicAVURequest
-from irods.models import (DataObject, Collection, Resource)
+from irods.models import (DataObject, Collection, Resource, CollectionMeta)
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.session import iRODSSession
 from six.moves import range
-from six import PY3
+from six import PY2, PY3
 from irods.message import Bad_AVU_Field
+from irods.column import Like, NotLike
 
 
+def normalize_to_bytes(string, unicode_encoding='utf8'):
+    # Python2 and 3 enumerate bytestrings differently.
+    ord_ = (lambda _:_) if any(x for x in string[:1] if type(x) is int) else ord
+    if not string or ord_(max(x for x in string)) > 255:
+        return string.encode(unicode_encoding)
+    # str->bytes type conversion using element-wise copy, aka a trivial encode.
+    array = bytearray(ord_(x) for x in string)
+    return bytes(array)
+
+def resolves_to_identical_bytestrings(avu1, avu2, key = normalize_to_bytes):
+    avu1 = tuple(avu1)
+    avu2 = tuple(avu2)
+    if len(avu1) != len(avu2):
+        return False
+    for field1,field2 in zip(avu1,avu2):
+        if key(field1) != key(field2):
+            return False
+    return True
 
 class TestMeta(unittest.TestCase):
     '''Suite of tests on metadata operations
@@ -24,6 +43,63 @@ class TestMeta(unittest.TestCase):
     # test metadata
     attr0, value0, unit0 = 'attr0', 'value0', 'unit0'
     attr1, value1, unit1 = 'attr1', 'value1', 'unit1'
+
+    def test_stringtypes_in_general_query__issue_442(self):
+        metadata = []
+        value = u'a\u1000b'
+        value_encoded = value.encode('utf8')
+        contains_value = {type(value_encoded):b'%%'+value_encoded+b'%%',
+                          type(value):'%%'+value+'%%'}
+        for v in (value, value_encoded):
+
+            # Establish invariant of exactly 2 AVUs attached to object.
+            self.coll.metadata.remove_all()
+            self.coll.metadata['a']=iRODSMeta('a',value)
+            self.coll.metadata['b']=iRODSMeta('b','<arbitrary>')
+            q = self.sess.query(CollectionMeta).filter(Collection.name == self.coll_path)
+            self.assertEqual(len(list(q)),2)
+
+            # Test query with operators Like and NotLike
+            q = self.sess.query(CollectionMeta).filter(Collection.name == self.coll_path,
+                                                       NotLike(CollectionMeta.value,contains_value[type(v)]))
+            self.assertEqual(len(list(q)),1)
+            q = self.sess.query(CollectionMeta).filter(Collection.name == self.coll_path,
+                                                       Like(CollectionMeta.value,contains_value[type(v)]))
+            self.assertEqual(len(list(q)),1)
+
+            # Test query with operators == and !=
+            q = self.sess.query(CollectionMeta).filter(Collection.name == self.coll_path, CollectionMeta.value == v)
+            self.assertEqual(len(list(q)),1)
+            q = self.sess.query(CollectionMeta).filter(Collection.name == self.coll_path, CollectionMeta.value != v)
+            self.assertEqual(len(list(q)),1)
+            metadata.append(self.coll.metadata['a'])
+
+        # Test that application of unicode and bytestring metadata were equivalent
+        self.assertEqual(metadata[0], metadata[1])
+
+    @unittest.skipIf(PY3, 'Unicode strings are normal on Python3')
+    def test_unicode_AVUs_in_Python2__issue_442(self):
+        data_object = self.sess.data_objects.get(self.obj_path)
+        meta_set = iRODSMeta(u'\u1000', u'value', u'units')
+        meta_add = iRODSMeta(*tuple(meta_set))
+        meta_add.name += u"-add"
+        data_object.metadata.set(meta_set)
+        data_object.metadata.add(meta_add)
+        for index, meta in [(m.name, m) for m in (meta_add, meta_set)]:
+            fetched = data_object.metadata[index]
+            self.assertTrue(resolves_to_identical_bytestrings(fetched, meta), 'fetched unexpected meta for %r' % index)
+
+    @unittest.skipIf(PY2, 'Byte strings are normal on Python2')
+    def test_bytestring_AVUs_in_Python3__issue_442(self):
+        data_object = self.sess.data_objects.get(self.obj_path)
+        meta_set = iRODSMeta(u'\u1000'.encode('utf8'),b'value',b'units')
+        meta_add = iRODSMeta(*tuple(meta_set))
+        meta_add.name += b"-add"
+        data_object.metadata.set(meta_set)
+        data_object.metadata.add(meta_add)
+        for index, meta in [(m.name, m) for m in (meta_add, meta_set)]:
+            fetched = data_object.metadata[index]
+            self.assertTrue(resolves_to_identical_bytestrings(fetched, meta), 'fetched unexpected meta for %r' % index)
 
     def setUp(self):
         self.sess = helpers.make_session()
