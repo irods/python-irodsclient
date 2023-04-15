@@ -19,7 +19,7 @@ from irods.models import (User, UserMeta,
 from tempfile import NamedTemporaryFile
 from irods.exception import MultipleResultsFound, CAT_UNKNOWN_SPECIFIC_QUERY, CAT_INVALID_ARGUMENT
 from irods.query import SpecificQuery
-from irods.column import Like, Between, In
+from irods.column import Like, NotLike, Between, In
 from irods.meta import iRODSMeta
 from irods.rule import Rule
 from irods import MAX_SQL_ROWS
@@ -540,6 +540,12 @@ class TestQuery(unittest.TestCase):
         if results:
             Rule(self.sess).remove_by_id( results[0][RuleExec.id] )
 
+
+    def test_not_like_operator__issue_443(self):
+        name_search_pattern = '%_issue_443.non_matching'
+        query = self.sess.query(DataObject).filter( NotLike(DataObject.name, name_search_pattern),
+                                                    DataObject.collection_id == self.coll.id)
+        self.assertEqual(1, len(list(query)))
 
 class TestSpecificQuery(unittest.TestCase):
 
