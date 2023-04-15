@@ -60,6 +60,12 @@ class Like(Criterion):
         super(Like, self).__init__('like', query_key, value)
 
 
+class NotLike(Criterion):
+
+    def __init__(self, query_key, value):
+        super(NotLike, self).__init__('not like', query_key, value)
+
+
 class Between(Criterion):
 
     def __init__(self, query_key, value):
