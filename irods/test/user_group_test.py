@@ -13,8 +13,8 @@ from irods.models import User, Group, UserMeta
 from irods.session import iRODSSession
 import irods.exception as ex
 import irods.test.helpers as helpers
+from irods.user import Bad_password_change_parameter
 from six.moves import range
-
 
 class TestGroup(unittest.TestCase):
 
@@ -88,7 +88,64 @@ class TestGroup(unittest.TestCase):
             shutil.rmtree(ENV_DIR)
             ses.users.remove('alice')
 
-    def test_modify_password_with_incorrect_old_value__328(self):
+    def test_modifying_password_at_various_lengths__issue_328(self):
+        ses = self.sess
+        try:
+            pw_lengths = [3,                         # minimum password length
+                          MAX_PASSWORD_LENGTH - 8,   # maximum password length
+                          26]                        # one greater than threshold (See irods/irods#7084)
+
+            # Test different combinations of new and old password lengths
+            tuples_of_old_and_new_password = [('a'*x,'b'*y) for x in pw_lengths for y in pw_lengths]
+            ses.users.create('alice', 'rodsuser')
+
+            for old_pw, new_pw in tuples_of_old_and_new_password:
+                ses.users.modify('alice', 'password',old_pw)
+                # Successful change of own password
+                with iRODSSession(user = 'alice', password = old_pw, host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+                    user_sess.users.modify_password(old_pw, new_pw)
+                # Test new password is usable
+                with iRODSSession(user = 'alice', password = new_pw, host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+                    self.do_something(user_sess)
+        finally:
+            ses.users.remove('alice')
+
+    def test_password_corruption_can_be_prevented__issue_448(self):
+        ses = self.sess
+        try:
+            # Threshold value of new password length, at which the server cannot
+            #   properly detect the old-password value is incorrect).
+            #   this is because its descrambled value does not contain space
+            #   for the trailing sixteen character pattern needed by the server to detect a
+            #   valid result for descramble. Of course, it goes ahead and modifies
+            #   the database anyway....so we must screen for this in the client interface.
+            #   (See irods/irods#7084)
+
+            threshold = 25
+
+            max_pw_len = MAX_PASSWORD_LENGTH - 8
+            tuples_of_old_and_new_password = [ ('a'*24,'b'*threshold),
+                                               ('a'*24,'b'*(max_pw_len)),
+                                               ('a'*24,'b'*(max_pw_len + 1)) ]
+            ses.users.create('alice', 'rodsuser')
+            for old_pw, new_pw in tuples_of_old_and_new_password:
+                ses.users.modify('alice', 'password', old_pw)
+
+                # Test that we catch the attempt to change the old password when providing incorrect old password
+                with self.assertRaises(Bad_password_change_parameter):
+                    with iRODSSession(user = 'alice', password = old_pw, host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+                        user_sess.users.modify_password(old_pw+".", new_pw)
+
+                # Test that we can still change to a valid new password and that the new login is useable.
+                new_pw = new_pw[:max_pw_len] #-> forcing to valid length
+                with iRODSSession(user = 'alice', password = old_pw, host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+                    user_sess.users.modify_password(old_pw, new_pw)
+                with iRODSSession(user = 'alice', password = new_pw, host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+                    self.do_something(user_sess)
+        finally:
+            ses.users.remove('alice')
+
+    def test_modify_password_with_incorrect_old_value__issue_328(self):
         ses = self.sess
         if ses.users.get( ses.username ).type != 'rodsadmin':
             self.skipTest( 'Only a rodsadmin may run this test.')
@@ -107,7 +164,7 @@ class TestGroup(unittest.TestCase):
             for factory in session_factories:
                 with factory() as alice_ses:
                     alice = alice_ses.users.get(alice_ses.username)
-                    with self.assertRaises( ex.CAT_PASSWORD_ENCODING_ERROR ):
+                    with self.assertRaises(Bad_password_change_parameter):
                         alice.modify_password(OLDPASS + ".", NEWPASS)
             with iRODSSession(**d) as alice_ses:
                 self.do_something(alice_ses)
@@ -417,6 +474,56 @@ class TestGroup(unittest.TestCase):
             # NB: Although created by a groupadmin, the rodsuser must be removed by a rodsadmin.
             if rodsuser:
                 admin.users.remove(rodsuser.name)
+
+    def test_demonstrating_database_password_corruption_in_modify_password__issue_448(self):
+        ses = helpers.make_session()
+        if ses.users.get( ses.username ).type != 'rodsadmin':
+            self.skipTest( 'Only a rodsadmin may run this test.')
+
+        user_alice = None
+        extra="."
+        NEWPASS='1234567890123456789012345'
+        OLDPASS='123456789012345678901234'
+
+        try:
+            user_alice = ses.users.create('alice', 'rodsuser')
+            ses.users.modify('alice', 'password', OLDPASS)
+
+            def alice_login(pw):
+                with iRODSSession(user='alice', password=pw, host=ses.host, port=ses.port, zone=ses.zone) as alice:
+                    home = helpers.home_collection( alice )
+                    alice.collections.get(home)
+
+            alice_login(OLDPASS)
+
+            # Alice makes an unsuccessful attempt at changing her own password.
+            with iRODSSession(user='alice', password=OLDPASS, host=ses.host, port=ses.port, zone=ses.zone) as alice:
+                me = alice.users.get(alice.username)
+                try:
+                    me.modify_password(OLDPASS+extra, NEWPASS)
+                except Bad_password_change_parameter:
+                    pass
+
+            # Whether the server raises an error or not, one would expect that either password in the catalog should
+            # at this point have the desired new value, or it should have been left as it was.
+            # Unfortunately the iRODS server does not guarantee this during the unfiltered use of USER_ADMIN_AN.
+            # (See https://github.com/irods/python-irodsclient/issues/448 .)
+            # Thus, here we make two trials to ensure the condition of integrity.  If neither the old nor the new
+            # password works, 'successes' will stay 0 and the assertion below will fail.  This would indicate the
+            # corruption of the database-stored password that is the subject of this test.
+            successes = 0
+            for password in (OLDPASS, NEWPASS):
+                try:
+                    alice_login(password)
+                except ex.CAT_INVALID_AUTHENTICATION:
+                    pass
+                else:
+                    successes += 1
+            self.assertGreater(successes, 0)
+
+        finally:
+            if user_alice:
+                user_alice.remove()
 
 
 if __name__ == '__main__':

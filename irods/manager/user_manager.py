@@ -8,11 +8,11 @@ from irods.manager import Manager
 from irods.message import UserAdminRequest, GeneralAdminRequest, iRODSMessage, GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut
 from irods.exception import UserDoesNotExist, GroupDoesNotExist, NoResultFound, CAT_SQL_ERR
 from irods.api_number import api_number
-from irods.user import iRODSUser, iRODSGroup
+from irods.user import iRODSUser, iRODSGroup, Bad_password_change_parameter
 import irods.password_obfuscation as obf
+from .. import MAX_PASSWORD_LENGTH
 
 logger = logging.getLogger(__name__)
-
 
 class UserManager(Manager):
 
@@ -133,6 +133,10 @@ class UserManager(Manager):
                                   the absolute path of an IRODS_AUTHENTICATION_FILE to be altered.
         """
         with self.sess.pool.get_connection() as conn:
+
+            if old_value != self.sess.pool.account.password or not isinstance(new_value, str) \
+                                                            or not(3 <= len(new_value) <= MAX_PASSWORD_LENGTH - 8):
+                raise Bad_password_change_parameter
 
             hash_new_value = obf.obfuscate_new_password(new_value, old_value, conn.client_signature)
 

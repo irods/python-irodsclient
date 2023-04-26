@@ -5,6 +5,8 @@ from irods.exception import NoResultFound
 
 _Not_Defined = ()
 
+class Bad_password_change_parameter(Exception): pass
+
 class iRODSUser(object):
 
     def __init__(self, manager, result=None):
