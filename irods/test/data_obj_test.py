@@ -1691,6 +1691,21 @@ class TestDataObjOps(unittest.TestCase):
             if dir1: self.sess.resources.get(uniq1).remove()
             if dir2: self.sess.resources.get(uniq2).remove()
 
+    def test_set_and_access_data_comments__issue_450(self):
+        comment = unique_name(my_function_name(), datetime.now()) + " issue 450"
+        ses = self.sess
+        with self.create_simple_resc() as newResc:
+            try:
+                d = ses.data_objects.create('/{0.zone}/home/{0.username}/data_object_for_issue_450_test'.format(ses))
+                d.replicate(**{kw.DEST_RESC_NAME_KW:newResc})
+                ses.data_objects.modDataObjMeta({'objPath':d.path, 'rescHier':ses.resources.get(newResc).hierarchy_string},
+                                                {'dataComments':comment})
+                d = ses.data_objects.get(d.path)
+                repl = [r for r in d.replicas if r.resource_name == newResc][0]
+                self.assertEqual(repl.comments, comment)
+            finally:
+                d.unlink(force = True)
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))
