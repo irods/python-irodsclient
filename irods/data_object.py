@@ -69,7 +69,8 @@ class iRODSDataObject(object):
                 r[DataObject.path],
                 r[DataObject.resc_hier],
                 checksum=r[DataObject.checksum],
-                size=r[DataObject.size]
+                size=r[DataObject.size],
+                comments=r[DataObject.comments]
             ) for r in replicas]
         self._meta = None
 
