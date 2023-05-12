@@ -26,11 +26,17 @@ from . import DEFAULT_CONNECTION_TIMEOUT
 _sessions = None
 _sessions_lock = threading.Lock()
 
+# Cleanup routine to be called at exit, in case any iRODSSession
+# objects (and their stored connections) remain for cleanup.
+
 def _cleanup_remaining_sessions():
     for ses in _sessions.copy():
         ses.cleanup()  # internally modifies _sessions
 
-def _weakly_reference(ses):
+# Tie a session object to a parent thread, or (as a default) to
+# the lifetime of the Python interpreter.
+
+def _weakly_reference(ses, parent_thread = None):
     global _sessions
     try:
         if _sessions is None:
@@ -40,7 +46,29 @@ def _weakly_reference(ses):
                     _sessions = weakref.WeakKeyDictionary()
                     atexit.register(_cleanup_remaining_sessions)
     finally:
-        _sessions[ses] = None
+        if parent_thread:
+            if isinstance(parent_thread,SessionThread):
+                parent_thread._attach_iRODSSession(ses)
+                with _sessions_lock:
+                    _sessions.pop(ses,None)
+            else:
+                parent_thread = None
+        if parent_thread is None:
+            with _sessions_lock:
+                _sessions[ses] = None
+
+# Convenient parent class for threads which will have exclusive rights
+# over a number of iRODSSession objects.
+
+class SessionThread(threading.Thread):
+    _sessions = {}
+    def _attach_iRODSSession(self,ses):
+        if not self._sessions:
+            self._sessions = weakref.WeakKeyDictionary()
+        self._sessions[ses] = None
+    def __del__(self):
+        for ses in self._sessions.copy():
+            ses.cleanup()
 
 logger = logging.getLogger(__name__)
 
