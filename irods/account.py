@@ -5,6 +5,10 @@ class iRODSAccount(object):
                  password=None, client_user=None,
                  server_dn=None, client_zone=None, **kwargs):
 
+        # possible overrides
+        for k,v in kwargs.pop('overrides',{}).items():
+            if k =='irods_host': irods_host = v
+
         self.authentication_scheme = irods_authentication_scheme.lower()
         self.host = irods_host
         self.port = int(irods_port)

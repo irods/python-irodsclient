@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import atexit
+import copy
 import os
 import ast
 import json
@@ -145,7 +146,7 @@ class iRODSSession(object):
         self.user_groups = GroupManager(self)
         self.resources = ResourceManager(self)
         self.zones = ZoneManager(self)
-
+        self._auto_cleanup = auto_cleanup   # TODO: allow setting parent thread in _weakly_reference call
         if auto_cleanup:
             _weakly_reference(self)
 
@@ -162,14 +163,31 @@ class iRODSSession(object):
         if self.pool is not None:
             self.cleanup()
 
-    def cleanup(self):
-        for conn in self.pool.active | self.pool.idle:
-            try:
-                conn.disconnect()
-            except NetworkException:
-                pass
-            conn.release(True)
+    def clone(self, **kwargs):
+        other = copy.copy(self)
+        other.pool = None
+        for k,v in vars(other).items():
+            setter = getattr(v,'_set_manager_session',None)
+            if setter:
+                setter(other)
+        other.cleanup(new_host = kwargs.pop('host',''))
+        if other._auto_cleanup:
+            _weakly_reference(other)  # TODO set parent thread
+        return other
+
+    def cleanup(self, new_host = ''):
+        if self.pool:
+            for conn in self.pool.active | self.pool.idle:
+                try:
+                    conn.disconnect()
+                except NetworkException:
+                    pass
+                conn.release(True)
         if self.do_configure: 
+            if new_host:
+                d = self.do_configure.setdefault('overrides',{})
+                d['irods_host'] = new_host
+                self.__configured = None
             self.__configured = self.configure(**self.do_configure)
 
     def _configure_account(self, **kwargs):
