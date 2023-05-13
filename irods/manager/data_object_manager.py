@@ -298,7 +298,7 @@ class DataObjectManager(Manager):
                            ))
 
 
-    def open(self, path, mode, create = True, finalize_on_close = True, return_host=None, **options):
+    def open(self, path, mode, create = True, finalize_on_close = True, return_params = None, allow_redirect = True, **options):
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
         # then use the default resource in the client configuration.
@@ -319,6 +319,11 @@ class DataObjectManager(Manager):
         }[mode]
         # TODO: Use seek_to_end
 
+        writing = mode[:1] in ('w','a')
+        if return_params is None:
+            return_params = {}
+        return_params.update({("PUT" if writing else "GET"):1})  # DWM necessary, not experimental, put in prev commit
+
         try:
             oprType = options[kw.OPR_TYPE_KW]
         except KeyError:
@@ -337,9 +342,13 @@ class DataObjectManager(Manager):
 
         conn = self.sess.pool.get_connection()
         in_val = True
-        if isinstance(return_host,dict):
+        redirected_host = ''
+        if not allow_redirect:
+            return_params = None
+
+        if isinstance(return_params, dict) and conn.server_version >= (4,2,9):
             choices = ('PUT','GET')
-            key_val = [(k,v) for k,v in return_host.items() if k in choices]
+            key_val = [(k,v) for k,v in return_params.items() if k in choices]
             if len(key_val) != 1:
                 raise ValueError("If provided, return_host argument must have 1 key in {}".format(choices))
             (key, in_val) = key_val[0]
@@ -348,9 +357,19 @@ class DataObjectManager(Manager):
             conn.send(message)
             response = conn.recv()
             msg = response.get_main_message( STR_PI )
-            return_host[key] = msg.myStr
+            return_params[key] = redirected_host = msg.myStr
 
-        if not in_val: return
+        target_zone = list(filter(None, path.split('/')))
+        if target_zone:
+            target_zone = target_zone[0]
+
+        directed_sess = self.sess
+        if redirected_host:
+            # Redirect only if the local zone is being targeted.
+            if target_zone == self.sess.zone:
+                directed_sess = self.sess.clone(host = redirected_host)
+                return_params['session'] = directed_sess
+                conn = directed_sess.pool.get_connection()
 
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_OPEN_AN'])
@@ -358,6 +377,8 @@ class DataObjectManager(Manager):
         desc = conn.recv().int_info
 
         raw = iRODSDataObjectFileRaw(conn, desc, finalize_on_close = finalize_on_close, **options)
+        raw.session = directed_sess
+
         (_raw_fd_holder).append(raw)
         return io.BufferedRandom(raw)
 

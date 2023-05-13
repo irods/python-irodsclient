@@ -204,3 +204,4 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
 
     def seekable(self):
         return True
+

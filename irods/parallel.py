@@ -380,7 +380,7 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
     for byte_range in ranges:
         if Io is None:
             Io = session.data_objects.open( Data_object.path, Operation.data_object_mode(initial_open = False),
-                                            create = False, finalize_on_close = False,
+                                            create = False, finalize_on_close = False, allow_redirect = False,
                                             **{ kw.NUM_THREADS_KW: str(num_threads),
                                                 kw.DATA_SIZE_KW: str(total_size),
                                                 kw.RESC_HIER_STR_KW: hier_str,
@@ -446,21 +446,25 @@ def io_main( session, Data, opr_, fname, R='', **kwopt):
         open_options[kw.NUM_THREADS_KW] = str(num_threads)
         open_options[kw.DATA_SIZE_KW] = str(total_bytes)
 
+    dic = {}
     if (not Io):
         (Io, rawfile) = session.data_objects.open_with_FileRaw( (d_path or Data.path),
                                                                 Operation.data_object_mode(initial_open = True),
-                                                                finalize_on_close = True, **open_options )
+                                                                finalize_on_close = True, return_params = dic, **open_options )
     else:
         if type(Io) is deferred_call:
             Io[kw.NUM_THREADS_KW] = str(num_threads)
             Io[kw.DATA_SIZE_KW] =  str(total_bytes)
+            Io['return_params']= dic
             Io = Io()
         rawfile = Io.raw
+
+    session = dic.get('session',session)
 
     # At this point, the data object's existence in the catalog is guaranteed,
     # whether the Operation is a GET or PUT.
 
-    if not isinstance(Data,iRODSDataObject):
+    if not isinstance(Data,iRODSDataObject) or 'session' in dic:
         Data = session.data_objects.get(d_path)
 
     # Determine total number of bytes for transfer.
