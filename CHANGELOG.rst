@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v1.1.8 (2023-05-18)
+-------------------
+- [#450] test for setting/getting comments [Daniel Moore]
+- [#377] fix iRODSSession connection timeout [Daniel Moore]
+- [#450] Get property comments from replica object [Gwenael Leysour de Rohello]
+- [#448] protect against bad parameters in modify_password [Daniel Moore]
+- [#442] allow non-default string types in AVU fields [Daniel Moore]
+- [#443] add NotLike (GenQuery 'NOT LIKE') operator [Daniel Moore]
+
 v1.1.7 (2023-03-28)
 -------------------
 - [#435] unregister can target a single replica [Daniel Moore]
