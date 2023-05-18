@@ -329,16 +329,21 @@ class DataObjectManager(Manager):
         except KeyError:
             oprType = 0
 
-        message_body = FileOpenRequest(
-            objPath=path,
-            createMode=0,
-            openFlags=flags,
-            offset=0,
-            dataSize=-1,
-            numThreads=self.sess.numThreads,
-            oprType=oprType,
-            KeyValPair_PI=StringStringMap(options),
-        )
+        def make_FileOpenRequest():
+            return  FileOpenRequest(
+                objPath=path,
+                createMode=0,
+                openFlags=flags,
+                offset=0,
+                dataSize=-1,
+                numThreads=self.sess.numThreads,
+                oprType=oprType,
+                KeyValPair_PI=StringStringMap(options),
+            )
+
+        # preserve RESC HIER but do not pass through GET_HOST_FOR_* call
+        requested_hierarchy = options.pop(kw.RESC_HIER_STR_KW, None)
+        message_body = make_FileOpenRequest()
 
         conn = self.sess.pool.get_connection()
         in_val = True
@@ -370,6 +375,11 @@ class DataObjectManager(Manager):
                 directed_sess = self.sess.clone(host = redirected_host)
                 return_params['session'] = directed_sess
                 conn = directed_sess.pool.get_connection()
+
+        # restore RESC HIER for DATA_OBJ_OPEN call
+        if requested_hierarchy is not None:
+            options[kw.RESC_HIER_STR_KW] = requested_hierarchy
+            message_body = make_FileOpenRequest()
 
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
                                int_info=api_number['DATA_OBJ_OPEN_AN'])
