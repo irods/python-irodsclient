@@ -83,6 +83,7 @@ class TestConnections(unittest.TestCase):
             # Set a very short socket timeout and remove all pre-existing socket connections.
             # This forces a new connection to be made for any ensuing connections to the iRODS server.
 
+            sess = obj.manager.sess
             sess.connection_timeout = timeout = 0.01
             sess.cleanup()
 
