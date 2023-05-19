@@ -3,6 +3,7 @@ import datetime
 import logging
 import threading
 import os
+import weakref
 
 from irods import DEFAULT_CONNECTION_TIMEOUT
 from irods.connection import Connection
@@ -20,15 +21,20 @@ def attribute_from_return_value(attrname):
 
 DEFAULT_APPLICATION_NAME = 'python-irodsclient'
 
+# A good default value for a weakref.ref object, one that simulates an expired reference
+DEAD_REFERENCE = lambda: None
+
 class Pool(object):
 
-    def __init__(self, account, application_name='', connection_refresh_time=-1):
+    def __init__(self, account, application_name = '', connection_refresh_time = -1, session = None):
         '''
-        Pool( account , application_name='' )
+        Pool(account, application_name = '' )
         Create an iRODS connection pool; 'account' is an irods.account.iRODSAccount instance and
         'application_name' specifies the application name as it should appear in an 'ips' listing.
         '''
 
+        self.session_ref = DEAD_REFERENCE if session is None \
+                         else weakref.ref(session)
         self._thread_local = threading.local()
         self.account = account
         self._lock = threading.RLock()
@@ -54,6 +60,17 @@ class Pool(object):
 
     @attribute_from_return_value("_conn")
     def get_connection(self):
+
+        def apply_remaining_tickets(conn):
+            # low-level ticket apply to client-conn
+            sess = self.session_ref()
+            if sess:
+                already_applied = sess.tickets_active.setdefault(conn,set())
+                to_apply = sess.ticket__ - already_applied
+                for t in to_apply:
+                    Ticket(sess, t).supply(connection = conn)
+                    sess.tickets_active[conn] |= t
+
         with self._lock:
             try:
                 conn = self.idle.pop()
@@ -76,6 +93,7 @@ class Pool(object):
                 logger.debug("No connection found in idle set. Created a new connection with id: {}".format(id(conn)))
 
             self.active.add(conn)
+            apply_remaining_tickets(conn)
 
             logger.debug("Adding connection with id {} to active set".format(id(conn)))
 
@@ -100,3 +118,5 @@ class Pool(object):
                 self.idle.remove(conn)
         logger.debug('num active: {}'.format(len(self.active)))
         logger.debug('num idle: {}'.format(len(self.idle)))
+
+from irods.ticket import Ticket

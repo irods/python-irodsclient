@@ -57,11 +57,12 @@ class Ticket(object):
             source_characters += string.punctuation
         return ''.join(random.SystemRandom().choice(source_characters) for _ in range(length))
 
-    def _api_request(self,cmd_string,*args, **opts):
+    def _api_request(self, cmd_string, *args, **opts):
+        conn_ = opts.pop('connection', None)
         message_body = TicketAdminRequest(cmd_string, self.ticket, *args, **opts)
         message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
 
-        with self.session.pool.get_connection() as conn:
+        with conn_ or self.session.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
         return self
@@ -77,8 +78,9 @@ class Ticket(object):
         return self._api_request("mod",*arglist,**opt)
 
     def supply(self,**opt):
+        if 'connection' not in opt: #low-level call
+            self.session.ticket__ |= {self._ticket}
         object_ = self._api_request("session",**opt)
-        self.session.ticket__ = self._ticket
         return object_
 
     def delete(self,**opt):

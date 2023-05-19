@@ -6,6 +6,7 @@ import ast
 import json
 import errno
 import logging
+from irods.ticket import Ticket
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount
@@ -163,6 +164,8 @@ class iRODSSession(object):
         self.do_configure = (kwargs if configure else {})
         self._cached_connection_timeout = kwargs.pop('connection_timeout', DEFAULT_CONNECTION_TIMEOUT)
         self.__configured = None
+        self.ticket__ = set()
+        self.tickets_active = weakref.WeakKeyDictionary()
         if configure:
             self.__configured = self.configure(**kwargs)
 
@@ -199,8 +202,10 @@ class iRODSSession(object):
             if setter:
                 setter(other)
         other.cleanup(new_host = kwargs.pop('host',''))
+        other.ticket__ = set(other.ticket__)
+        other.tickets_active = copy.copy(self.tickets_active)
         if other._auto_cleanup:
-            _weakly_reference(other)  # TODO set parent thread
+            _weakly_reference(other)
         return other
 
     def cleanup(self, new_host = ''):
@@ -279,7 +284,10 @@ class iRODSSession(object):
             account = self._configure_account(**kwargs)
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
         logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
-        self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time)
+        self.pool = Pool(account,
+                         application_name = kwargs.pop('application_name',''),
+                         connection_refresh_time = connection_refresh_time,
+                         session = self)
         conn_timeout = getattr(self,'_cached_connection_timeout',None)
         self.pool.connection_timeout = conn_timeout
         return account
