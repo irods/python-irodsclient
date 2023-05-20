@@ -12,6 +12,7 @@ from irods.api_number import api_number
 from irods.collection import iRODSCollection
 from irods.data_object import (
     iRODSDataObject, iRODSDataObjectFileRaw, chunks, irods_dirname, irods_basename)
+import irods.client_configuration as client_config
 import irods.keywords as kw
 import irods.parallel as parallel
 from irods.parallel import deferred_call
@@ -19,6 +20,33 @@ import six
 import ast
 import json
 import logging
+
+
+
+def call___del__if_exists(super_):
+    """
+    Utility method to call __del__ if it exists anywhere in superclasses' MRO (method
+    resolution order).
+    """
+    next_finalizer_in_MRO = getattr(super_,'__del__',None)
+    if next_finalizer_in_MRO:
+        next_finalizer_in_MRO()
+
+class ManagedBufferedRandom(io.BufferedRandom):
+
+    def __init__(self,*a,**kwd):
+        # Help ensure proper teardown sequence by storing a reference to the session,
+        # if provided via keyword '_session'.
+        self._iRODS_session = kwd.pop('_session',None)
+        super(ManagedBufferedRandom,self).__init__(*a,**kwd)
+        import irods.session
+        with irods.session._fds_lock:
+            irods.session._fds[self] = None
+
+    def __del__(self):
+        if not self.closed:
+            self.close()
+        call___del__if_exists(super(ManagedBufferedRandom,self))
 
 MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE = 32 * ( 1024 ** 2)
 
@@ -298,9 +326,14 @@ class DataObjectManager(Manager):
                                kw.RESC_HIER_STR_KW
                            ))
 
-
-    def open(self, path, mode, create = True, finalize_on_close = True, returned_values = None, allow_redirect = True, **options):
-
+    def open(self, path, mode,
+                   create = True,             # (Dis-)allow object creation.
+                   finalize_on_close = True,  # For PRC internal use.
+                   auto_close = client_config.getter('data_objects','auto_close'), # The default value will be a lambda returning the
+                                                                                   # global setting. Use True or False as an override.
+                   returned_values = None,    # Used to update session reference, for forging more conns to same host, in irods.parallel.io_main
+                   allow_redirect = True,     # This may be set to False to disallow the client redirect-to-resource.
+                   **options):
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
         # then use the default resource in the client configuration.
@@ -395,8 +428,16 @@ class DataObjectManager(Manager):
         raw.session = directed_sess
 
         (_raw_fd_holder).append(raw)
-        return io.BufferedRandom(raw)
 
+        if callable(auto_close):
+            # Use case: auto_close has defaulted to the irods.configuration getter.
+            # access entry in irods.configuration
+            auto_close = auto_close()
+
+        if auto_close:
+            return ManagedBufferedRandom(raw, _session = self.sess)
+
+        return io.BufferedRandom(raw)
 
     def trim(self, path, **options):
 

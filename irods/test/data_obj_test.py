@@ -15,6 +15,7 @@ import socket
 import stat
 import string
 import sys
+import subprocess
 import time
 import unittest
 import xml.etree.ElementTree
@@ -38,6 +39,7 @@ import irods.exception as ex
 from irods.column import Criterion
 from irods.data_object import chunks, irods_dirname
 import irods.test.helpers as helpers
+import irods.test.modules as test_modules
 import irods.keywords as kw
 from irods.manager import data_object_manager
 from irods.message import RErrorStack
@@ -1887,6 +1889,28 @@ class TestDataObjOps(unittest.TestCase):
                 self.assertEqual(repl.comments, comment)
             finally:
                 d.unlink(force = True)
+
+    def _auto_close_test(self, data_object_path, content):
+        d = None
+        try:
+            d = self.sess.data_objects.get(data_object_path)
+            self.assertEqual(int(d.replicas[0].status), 1)
+            self.assertEqual(d.open('r').read().decode(), content)
+        finally:
+            if d: d.unlink(force = True)
+
+    def test_data_objects_auto_close_on_process_exit__issue_456(self):
+        program = os.path.join(test_modules.__path__[0], 'test_auto_close_of_data_objects__issue_456.py')
+        # Use the currently running Python interpreter binary to run the script in the child process.
+        p = subprocess.Popen([sys.executable,program], stdout=subprocess.PIPE)
+        data_object_path, expected_content = p.communicate()[0].decode().split()
+        self._auto_close_test(data_object_path, expected_content)
+
+    def test_data_objects_auto_close_on_function_exit__issue_456(self):
+        import irods.test.modules.test_auto_close_of_data_objects__issue_456 as test_module
+        data_object_path, expected_content = test_module.test(return_locals = ('name','expected_content'))
+        self._auto_close_test(data_object_path, expected_content)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
