@@ -1,11 +1,13 @@
 from __future__ import absolute_import
+import ast
 import atexit
 import copy
-import os
-import ast
-import json
 import errno
+import json
 import logging
+import os
+import threading
+import weakref
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount
@@ -19,25 +21,32 @@ from irods.manager.zone_manager import ZoneManager
 from irods.exception import NetworkException
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
-import threading
-import weakref
 from . import DEFAULT_CONNECTION_TIMEOUT
 
+_fds = None
+_fds_lock = threading.Lock()
 _sessions = None
 _sessions_lock = threading.Lock()
 
+
 def _cleanup_remaining_sessions():
+    for fd in list(_fds.keys()):
+        if not fd.closed:
+            fd.close()
+        # remove refs to session objects no longer needed
+        fd._iRODS_session = None
     for ses in _sessions.copy():
         ses.cleanup()  # internally modifies _sessions
 
 def _weakly_reference(ses):
-    global _sessions
+    global _sessions, _fds
     try:
         if _sessions is None:
             with _sessions_lock:
                 do_register = (_sessions is None)
                 if do_register:
                     _sessions = weakref.WeakKeyDictionary()
+                    _fds = weakref.WeakKeyDictionary()
                     atexit.register(_cleanup_remaining_sessions)
     finally:
         _sessions[ses] = None

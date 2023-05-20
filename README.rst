@@ -298,6 +298,22 @@ PRC provides `file-like objects <http://docs.python.org/2/library/stdtypes.html#
 foo
 bar
 
+As of v1.1.9, there is also an auto-close configuration setting for data objects, set to :code:`False` by default,
+which may be assigned the value :code:`True` for guaranteed auto-closing of open data object handles at the proper
+time.
+
+In a small but illustrative example, the following Python session does not require an explicit call to f.close():
+
+>>> import irods.client_configuration as config, irods.test.helpers as helpers
+>>> config.data_objects.auto_close = True
+>>> session = helpers.make_session()
+>>> f = session.data_objects.open('/{0.zone}/home/{0.username}/new_object.txt'.format(session),'w')
+>>> f.write(b'new content.')
+
+This may be useful for Python programs in which frequent flushing of write updates to data objects is undesirable --
+with descriptors on such objects possibly being held open for indeterminately long lifetimes -- yet the eventual
+application of those updates prior to the teardown of the Python interpreter is required.
+
 
 Computing and Retrieving Checksums
 ----------------------------------
