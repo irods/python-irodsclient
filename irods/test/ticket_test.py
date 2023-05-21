@@ -160,6 +160,61 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 if dobj: dobj.unlink(force=True)
 
 
+    '''
+    def test_it(self):
+        if self.alice is None or self.bob is None:
+            self.skipTest("A rodsuser (alice and/or bob) could not be created.")
+        t=None
+        data_objs=[]
+        tmpfiles=[]
+        try:
+            # Create ticket for read access to alice's home collection.
+            alice = self.login(self.alice)
+            home = self.irods_homedir(alice)
+
+            # Create 'R' and 'W' in alice's home collection.
+            data_objs = [helpers.make_object(alice,home.path+"/"+name,content='abcxyz') for name in ('R','W')]
+            tickets = {
+                'R': Ticket(alice).issue('read',  home.path + "/R").string,
+                'W': Ticket(alice).issue('write', home.path + "/W").string
+            }
+            # Test only write ticket allows upload.
+            with self.login(self.bob) as bob:
+                rw_names={}
+                for name in  ('R','W'):
+                    Ticket( bob, tickets[name] ).supply()
+                    with tempfile.NamedTemporaryFile (delete=False) as tmpf:
+                        tmpfiles += [tmpf]
+                        rw_names[name] = tmpf.name
+                        tmpf.write(b'hello')
+                    if name=='W':
+                        bob.data_objects.open(home.path+"/"+name, "w")
+                    else:
+                        try:
+                            bob.data_objects.put(tmpf.name,home.path+"/"+name)
+                        except ex.CAT_NO_ACCESS_PERMISSION:
+                            pass
+                        else:
+                            raise AssertionError("A read ticket allowed a data object write operation to happen without error.")
+
+            # Test upload was successful, by getting and confirming contents.
+
+            with self.login(self.bob) as bob:  # This check must be in a new session or we get CollectionDoesNotExist. - Possibly a new issue [ ]
+                for name in  ('R','W'):
+                    Ticket( bob, tickets[name] ).supply()
+                    bob.data_objects.get(home.path+"/"+name,rw_names[ name ],**{kw.FORCE_FLAG_KW:''})
+                    with open(rw_names[ name ],'r') as tmpread:
+                        self.assertEqual(tmpread.read(),
+                                         'abcxyz' if name == 'R' else 'hello')
+        finally:
+            if t: t.delete()
+            for d in data_objs:
+                d.unlink(force=True)
+            for file_ in tmpfiles: os.unlink( file_.name )
+            alice.cleanup()
+            '''
+
+
     def test_object_read_and_write_tickets(self):
         if self.alice is None or self.bob is None:
             self.skipTest("A rodsuser (alice and/or bob) could not be created.")
