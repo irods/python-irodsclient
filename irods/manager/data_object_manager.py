@@ -64,7 +64,7 @@ class DataObjectManager(Manager):
         # Example: $ export IRODS_VERSION_OVERRIDE="4,2,9" ;  python -m irods.parallel ...
         # ---
         # Delete the following line on resolution of https://github.com/irods/irods/issues/5932 :
-        if getattr(self.sess,'ticket__',None) is not None: return False
+        if self.sess.ticket__: return False
         server_version = ( ast.literal_eval(os.environ.get('IRODS_VERSION_OVERRIDE', '()' )) or server_version_hint or 
                            self.server_version )
         if num_threads == 1 or ( server_version < parallel.MINIMUM_SERVER_VERSION ):
@@ -126,7 +126,7 @@ class DataObjectManager(Manager):
             .filter(DataObject.collection_id == parent.id)\
             .add_keyword(kw.ZONE_KW, path.split('/')[1])
 
-        if hasattr(self.sess,'ticket__'):
+        if self.sess.ticket__:
             query = query.filter(Collection.id != 0) # a no-op, but necessary because CAT_SQL_ERR results if the ticket
                                                      # is for a DataObject and we don't explicitly join to Collection
 

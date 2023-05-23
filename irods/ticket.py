@@ -57,14 +57,18 @@ class Ticket(object):
             source_characters += string.punctuation
         return ''.join(random.SystemRandom().choice(source_characters) for _ in range(length))
 
-    def _api_request(self,cmd_string,*args, **opts):
-        message_body = TicketAdminRequest(cmd_string, self.ticket, *args, **opts)
-        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
-
+    def _api_request(self, cmd_string, *args, **opts):
         with self.session.pool.get_connection() as conn:
-            conn.send(message)
-            response = conn.recv()
+            self._lowlevel_api_request(conn, cmd_string, self.ticket, *args, **opts)
         return self
+
+    @staticmethod
+    def _lowlevel_api_request(conn_, cmd_string, ticket_string, *args, **opts):
+        message_body = TicketAdminRequest(cmd_string, ticket_string, *args, **opts)
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['TICKET_ADMIN_AN'])
+        conn_.send(message)
+        response = conn_.recv()
+        return response
 
     def issue(self,permission,target,**opt): return self._api_request("create",permission,target,**opt)
 
@@ -77,9 +81,8 @@ class Ticket(object):
         return self._api_request("mod",*arglist,**opt)
 
     def supply(self,**opt):
-        object_ = self._api_request("session",**opt)
         self.session.ticket__ = self._ticket
-        return object_
+        return self
 
     def delete(self,**opt):
         """

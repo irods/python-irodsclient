@@ -3,9 +3,11 @@ import datetime
 import logging
 import threading
 import os
+import weakref
 
 from irods import DEFAULT_CONNECTION_TIMEOUT
 from irods.connection import Connection
+from irods.ticket import Ticket
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +24,14 @@ DEFAULT_APPLICATION_NAME = 'python-irodsclient'
 
 class Pool(object):
 
-    def __init__(self, account, application_name='', connection_refresh_time=-1):
+    def __init__(self, account, application_name='', connection_refresh_time=-1, session = None):
         '''
         Pool( account , application_name='' )
         Create an iRODS connection pool; 'account' is an irods.account.iRODSAccount instance and
         'application_name' specifies the application name as it should appear in an 'ips' listing.
         '''
 
+        self.session_ref = weakref.ref(session) if session is not None else lambda:None
         self._thread_local = threading.local()
         self.account = account
         self._lock = threading.RLock()
@@ -77,6 +80,11 @@ class Pool(object):
 
             self.active.add(conn)
 
+            sess = self.session_ref()
+            if sess and sess.ticket__ and not sess.ticket_applied.get(conn,False):
+                Ticket._lowlevel_api_request(conn, "session", sess.ticket__)
+                sess.ticket_applied[conn] = True
+
             logger.debug("Adding connection with id {} to active set".format(id(conn)))
 
         logger.debug('num active: {}'.format(len(self.active)))
@@ -100,3 +108,4 @@ class Pool(object):
                 self.idle.remove(conn)
         logger.debug('num active: {}'.format(len(self.active)))
         logger.debug('num idle: {}'.format(len(self.idle)))
+
