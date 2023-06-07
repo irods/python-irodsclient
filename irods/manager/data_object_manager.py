@@ -628,9 +628,13 @@ class DataObjectManager(Manager):
             response = conn.recv()
 
 
-    def replicate(self, path, resource=None, **options):
+    def replicate(self, path, resource = None, **options):
         if resource:
             options[kw.DEST_RESC_NAME_KW] = resource
+        else:
+            def_resc = getattr(self.sess,'default_resource',None)
+            if def_resc:
+                options[kw.DEF_RESC_NAME_KW] = def_resc
 
         message_body = FileOpenRequest(
             objPath=path,
