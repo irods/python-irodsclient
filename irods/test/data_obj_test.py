@@ -128,6 +128,48 @@ class TestDataObjOps(unittest.TestCase):
             self.sess.resources.remove(Leaf)
             self.sess.resources.remove(Root)
 
+
+    def _helper_for_testing_that_replicate_obeys_default_resource_setting__issue_459(self, get_session_function):
+        with self.create_simple_resc() as newResc1:
+            with self.create_simple_resc() as newResc2:
+                number_of_replicas_on_resc = lambda d,resc: len([r for r in d.replicas if r.resource_name == resc])
+                session = get_session_function(default_resource = newResc2)
+                try:
+                    d = session.data_objects.create('/tempZone/home/rods/thingie2', resource = newResc1)
+                    self.assertEqual (number_of_replicas_on_resc (session.data_objects.get(d.path), newResc1), 1)
+                    self.assertEqual (number_of_replicas_on_resc (session.data_objects.get(d.path), newResc2), 0)
+                    d.replicate()
+                    self.assertEqual (number_of_replicas_on_resc (session.data_objects.get(d.path), newResc2), 1)
+                finally:
+                    if d: session.data_objects.unlink(d.path, force = True)
+
+    def test_with_session_cloned_in_core_that_replicate_obeys_default_resource_setting__issue_459(self):
+        self._helper_for_testing_that_replicate_obeys_default_resource_setting__issue_459(self._session_cloned_from_existing)
+
+    def test_with_session_spawned_from_client_environment_that_replicate_obeys_default_resource_setting__issue_459(self):
+        self._helper_for_testing_that_replicate_obeys_default_resource_setting__issue_459(self._session_from_client_environment)
+
+    def _session_cloned_from_existing(self, default_resource):
+        sess =  self.sess.clone()
+        if default_resource:
+            sess.default_resource = default_resource
+        return sess
+
+    def _session_from_client_environment(self, default_resource):
+        env_file = getattr(self.sess, 'env_file')
+        if env_file is None:
+            self.skipTest('no environment file to modify')
+        with helpers.file_backed_up(env_file):
+            with open(env_file,'r+') as fp:
+                j = json.load(fp)
+                if default_resource:
+                    j['irods_default_resource'] = default_resource
+                fp.seek(0)
+                json.dump(j,fp)
+                fp.truncate()
+            return helpers.make_session()
+
+
     def test_data_write_stales_other_repls__ref_irods_5548(self):
         test_data = 'irods_5548_testfile'
         test_coll = '/{0.zone}/home/{0.username}'.format(self.sess)

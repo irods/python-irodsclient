@@ -113,10 +113,8 @@ class iRODSDataObject(object):
     def truncate(self, size):
         self.manager.truncate(self.path, size)
 
-    def replicate(self, resource=None, **options):
-        if resource:
-            options[kw.DEST_RESC_NAME_KW] = resource
-        self.manager.replicate(self.path, **options)
+    def replicate(self, resource = None, **options):
+        self.manager.replicate(self.path, resource = resource, **options)
 
 
 class iRODSDataObjectFileRaw(io.RawIOBase):
