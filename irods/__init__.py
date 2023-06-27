@@ -55,6 +55,7 @@ GSI_OID = "1.3.6.1.4.1.3536.1.1"  # taken from http://j.mp/2hDeczm
 
 PAM_AUTH_PLUGIN = 'PAM'
 PAM_AUTH_SCHEME = PAM_AUTH_PLUGIN.lower()
+PAM_AUTH_SCHEMES = (PAM_AUTH_SCHEME, 'pam_password')
 
 DEFAULT_CONFIG_PATH = os.path.expanduser('~/.python_irodsclient')
 settings_path_environment_variable = 'PYTHON_IRODSCLIENT_CONFIGURATION_PATH'

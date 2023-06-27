@@ -20,7 +20,7 @@ from irods.manager.resource_manager import ResourceManager
 from irods.manager.zone_manager import ZoneManager
 from irods.exception import NetworkException
 from irods.password_obfuscation import decode
-from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
+from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import DEFAULT_CONNECTION_TIMEOUT
 
 _fds = None
@@ -240,12 +240,14 @@ class iRODSSession(object):
             # default
             auth_scheme = 'native'
 
-        if auth_scheme.lower() == PAM_AUTH_SCHEME:
+        if auth_scheme.lower() in PAM_AUTH_SCHEMES:
+            # inline password
             if 'password' in creds:
                 return iRODSAccount(**creds)
             else:
                 # password will be from irodsA file therefore use native login
-                creds['irods_authentication_scheme'] = NATIVE_AUTH_SCHEME
+                # but let PAM still be recorded as the original scheme
+                creds['irods_authentication_scheme'] = (NATIVE_AUTH_SCHEME, auth_scheme)
         elif auth_scheme != 'native':
             return iRODSAccount(**creds)
 
@@ -269,6 +271,8 @@ class iRODSSession(object):
         account = self.__configured
         if not account:
             account = self._configure_account(**kwargs)
+        # so that _login_pam can rewrite auth file with new password if requested:
+        account._auth_file = getattr(self,'_auth_file','')
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
         logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
         self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time, session = self)

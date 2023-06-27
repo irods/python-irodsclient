@@ -7,6 +7,7 @@ import six
 import os
 import ssl
 import datetime
+import irods.auth
 import irods.password_obfuscation as obf
 from irods import MAX_NAME_LEN
 from ast import literal_eval as safe_eval
@@ -20,6 +21,7 @@ from irods.message import (
     OpenedDataObjRequest, FileSeekResponse, StringStringMap, VersionResponse,
     PluginAuthMessage, ClientServerNegotiation, Error, GetTempPasswordOut)
 from irods.exception import (get_exception_by_code, NetworkException, nominal_code)
+import irods.exception as ex
 from irods.message import (PamAuthRequest, PamAuthRequestOut)
 
 
@@ -34,7 +36,7 @@ from irods import (
     AUTH_SCHEME_KEY, AUTH_USER_KEY, AUTH_PWD_KEY, AUTH_TTL_KEY,
     NATIVE_AUTH_SCHEME,
     GSI_AUTH_PLUGIN, GSI_AUTH_SCHEME, GSI_OID,
-    PAM_AUTH_SCHEME)
+    PAM_AUTH_SCHEME, PAM_AUTH_SCHEMES)
 from irods.client_server_negotiation import (
     perform_negotiation,
     validate_policy,
@@ -62,17 +64,34 @@ class Connection(object):
         self._server_version = self._connect()
         self._disconnected = False
 
-        scheme = self.account.authentication_scheme
+        scheme = self.account._original_authentication_scheme
+        auth_type = ''
 
-        if scheme == NATIVE_AUTH_SCHEME:
-            self._login_native()
-        elif scheme == GSI_AUTH_SCHEME:
-            self.client_ctx = None
-            self._login_gsi()
-        elif scheme == PAM_AUTH_SCHEME:
-            self._login_pam()
+        if self.server_version >= (4,3,0):
+            # use client side "plugin" module: irods.auth.<scheme>
+            irods.auth.load_plugins(subset=[scheme])
+            auth_module = getattr(irods.auth, scheme, None)
+            if auth_module:
+                auth_module.login(self)
+                auth_type = auth_module.__name__
         else:
-            raise ValueError("Unknown authentication scheme %s" % scheme)
+            # use legacy (iRODS pre-4.3 style) authentication
+            auth_type = scheme
+            try:
+                if scheme == NATIVE_AUTH_SCHEME:
+                    self._login_native()
+                elif scheme == GSI_AUTH_SCHEME:
+                    self.client_ctx = None
+                    self._login_gsi()
+                elif scheme == PAM_AUTH_SCHEME:
+                    self._login_pam()
+            except:
+                auth_type = None
+
+        if not auth_type:
+            msg = "Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}".format(**locals())
+            raise ValueError(msg)
+
         self.create_time = datetime.datetime.now()
         self.last_used_time = self.create_time
 
@@ -437,13 +456,33 @@ class Connection(object):
 
     def _login_pam(self):
 
-        time_to_live_in_seconds = 60
+        import irods.client_configuration as cfg
+        inline_password = (self.account.authentication_scheme == self.account._original_authentication_scheme)
+        # By default, let server determine the TTL.
+        time_to_live_in_hours = 0
+        # For certain characters in the pam password, if they need escaping with '\' then do so.
+        new_pam_password = PAM_PW_ESC_PATTERN.sub(lambda m: '\\'+m.group(1), self.account.password)
+        if not inline_password:
+            # Login using PAM password from .irodsA
+            try:
+                self._login_native()
+            except (ex.CAT_PASSWORD_EXPIRED, ex.CAT_INVALID_USER, ex.CAT_INVALID_AUTHENTICATION):
+                time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
+                if cfg.legacy_auth.pam.password_for_auto_renew:
+                    new_pam_password = cfg.legacy_auth.pam.password_for_auto_renew
+                    # Fall through and retry the native login later, after creating a new PAM password
+                else:
+                    message = ('Time To Live has expired for the PAM password, and no new password is given in ' +
+                               'legacy_auth.pam.password_for_auto_renew.  Please run iinit.')
+                    raise RuntimeError(message)
+            else:
+                # Login succeeded, so we're within the time-to-live and can return without error.
+                return
 
-        pam_password = PAM_PW_ESC_PATTERN.sub(lambda m: '\\'+m.group(1), self.account.password)
-
+        # Generate a new PAM password.
         ctx_user = '%s=%s' % (AUTH_USER_KEY, self.account.client_user)
-        ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, pam_password)
-        ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, str(time_to_live_in_seconds))
+        ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, new_pam_password)
+        ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, str(time_to_live_in_hours))
 
         ctx = ";".join([ctx_user, ctx_pwd, ctx_ttl])
 
@@ -454,16 +493,11 @@ class Connection(object):
         Pam_Long_Tokens = (ALLOW_PAM_LONG_TOKENS and (len(ctx) >= MAX_NAME_LEN))
 
         if Pam_Long_Tokens:
-
-            message_body = PamAuthRequest(
-                pamUser=self.account.client_user,
-                pamPassword=pam_password,
-                timeToLive=time_to_live_in_seconds)
+            message_body = PamAuthRequest( pamUser = self.account.client_user,
+                                           pamPassword = new_pam_password,
+                                           timeToLive = time_to_live_in_hours)
         else:
-
-            message_body = PluginAuthMessage(
-                auth_scheme_ = PAM_AUTH_SCHEME,
-                context_ = ctx)
+            message_body = PluginAuthMessage( auth_scheme_ = PAM_AUTH_SCHEME,  context_ = ctx)
 
         auth_req = iRODSMessage(
             msg_type='RODS_API_REQ',
@@ -473,7 +507,11 @@ class Connection(object):
 
         self.send(auth_req)
         # Getting the new password
-        output_message = self.recv()
+        try:
+            output_message = self.recv()
+        except irods.exception.PAM_AUTH_PASSWORD_INVALID_TTL as exc:
+            # TODO (#480): In Python3 will be able to do: 'raise RuntimeError(...) from exc' for more succinct error messages
+            raise RuntimeError('Client-configured TTL is outside server parameters (password min and max times)')
 
         Pam_Response_Class = (PamAuthRequestOut if Pam_Long_Tokens
                          else AuthPluginOut)
@@ -488,7 +526,13 @@ class Connection(object):
             if type(drop) is list:
                 drop[:] = [ auth_out.result_ ]
 
-        self._login_native(password=auth_out.result_)
+        self._login_native(password = auth_out.result_)
+
+        # Store new password in .irodsA if requested.
+        if self.account._auth_file and cfg.legacy_auth.pam.store_password_to_environment:
+            with open(self.account._auth_file,'w') as f:
+                f.write(obf.encode(auth_out.result_))
+                logger.debug('new PAM pw write succeeded')
 
         logger.info("PAM authorization validated")
 
