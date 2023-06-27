@@ -10,7 +10,12 @@ class iRODSAccount(object):
             if k =='irods_host':
                 irods_host = v
 
-        self.authentication_scheme = irods_authentication_scheme.lower()
+        tuplify = lambda _: _ if isinstance(_,(list,tuple)) else (_,)
+        schemes = [_.lower() for _ in tuplify(irods_authentication_scheme)]
+
+        self._original_authentication_scheme = schemes[-1]
+        self.authentication_scheme = schemes[0]
+
         self.host = irods_host
         self.port = int(irods_port)
         self.proxy_user = self.client_user = irods_user_name
