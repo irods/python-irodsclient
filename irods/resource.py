@@ -44,6 +44,9 @@ class iRODSResource(object):
 
     ## Cached properties to expose parent id or name regardless whether the DB model is iRODS 4.1- or 4.2+
 
+    def modify(self, attribute, value):
+        self.manager.modify(self.name, attribute, value)
+
     @property
     def parent_id(self):
         if self.parent is None:

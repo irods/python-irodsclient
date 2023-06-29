@@ -5,11 +5,13 @@ import six
 import sys
 import unittest
 
-from irods.test import helpers
+import irods.exception as ex
+import irods.keywords as kw
+import irods.test.helpers as helpers
 
 class TestResource(unittest.TestCase):
 
-    from helpers import create_simple_resc_hierarchy
+    from helpers import create_simple_resc_hierarchy, create_simple_resc
 
     def setUp(self):
         self.sess = helpers.make_session()
@@ -55,6 +57,36 @@ class TestResource(unittest.TestCase):
         finally:
             ses.resources.remove(root)
 
+    def test_put_with_violating_minimum_free_space__issue_462(self):
+        small_file = large_file = ''
+        data = []
+        with self.create_simple_resc() as newResc:
+            try:
+                resc = self.sess.resources.get(newResc)
+                resc.modify('free_space','10000')
+                resc.modify('context','minimum_free_space_for_create_in_bytes=20000')
+
+                small_file =  'small_file_462'
+                with open(small_file,'wb') as small:
+                    small.write(b'.'*1024)
+                home = helpers.home_collection(self.sess)
+                put_opts = {kw.DEST_RESC_NAME_KW:newResc}
+                with self.assertRaises(ex.USER_FILE_TOO_LARGE):
+                    data.append(self.sess.data_objects.put(small_file,'{home}/{small_file}'.format(**locals()),
+                                                           return_data_object = True, **put_opts))
+
+                large_file =  'large_file_462'
+                with open(large_file,'wb') as large:
+                    large.write(b'.'*1024**2*40)
+                with self.assertRaises(ex.USER_FILE_TOO_LARGE):
+                    data.append(self.sess.data_objects.put(large_file,'{home}/{large_file}'.format(**locals()),
+                                                           return_data_object = True, **put_opts))
+            finally:
+                for d in data:
+                    d.unlink(force = True)
+                for _ in [small_file,large_file]:
+                    if _:
+                        os.unlink(_)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
