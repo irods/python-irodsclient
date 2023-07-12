@@ -1,5 +1,7 @@
-from __future__ import print_function
-from __future__ import absolute_import
+#from __future__ import absolute_import
+import sys
+if sys.version_info < (3, 6):
+    raise RuntimeError('Python3.6 is required')
 
 import atexit
 import ast
@@ -11,14 +13,14 @@ import hashlib
 import json
 import logging
 import os
-import socket
-import struct
+import re
 import six
-import os
+import socket
 import ssl
+import struct
+
 import irods.password_obfuscation as obf
 from irods import MAX_NAME_LEN
-import re
 
 from irods.password_obfuscation import decode
 from irods.account import iRODSAccount
@@ -37,7 +39,7 @@ class Session(object):
         self.pool.get_connection()
         return self
 
-    def __exit__(self,*x): 
+    def __exit__(self,*_): 
         self.cleanup()
         return
 
