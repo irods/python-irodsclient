@@ -24,6 +24,8 @@ from irods import MAX_NAME_LEN
 
 from irods.password_obfuscation import decode
 from irods.account import iRODSAccount
+from irods.manager.data_object_manager import DataObjectManager
+from irods.manager.collection_manager import CollectionManager
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
 from irods.query import Query
 
@@ -77,6 +79,8 @@ class Session(object):
         self._auth_file = ''
         self.account = None
         self.conn = None
+        self.data_objects = DataObjectManager(self)
+        self.collections = CollectionManager(self)
         if configure:
             self.account = self.configure(**kwargs)
 
