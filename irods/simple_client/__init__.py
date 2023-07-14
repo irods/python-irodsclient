@@ -28,6 +28,7 @@ from irods.manager.data_object_manager import DataObjectManager
 from irods.manager.collection_manager import CollectionManager
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEME
 from irods.query import Query
+from irods.ticket import Ticket
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +46,12 @@ class Session(object):
         self.cleanup()
         return
 
-    def clone(self):
+    def clone(self, *,
+                    host = ''):
         other = copy.copy(self)
         other.account = copy.copy(self.account)
+        if host:
+            other.account.host = host
         other.conn = None
         return other
 
@@ -71,14 +75,20 @@ class Session(object):
             def get_connection():
                 if self.conn is None:
                     self.conn = Connection(self.account)
+                    if self.ticket__:
+                        Ticket(self, self.ticket__).supply()
                 return self.conn
-        return _()
+        return _()  # -> allows source level compatibility with much of existing PRC as of version 1.1.8
+                    #    (many low-level calls throughout PRC use session.pool.get_connection())
 
-    def __init__(self, configure = True, **kwargs):
+    def __init__(self, *, configure = True,
+                          ticket = '',
+                          **kwargs):
         self._env_file = ''
         self._auth_file = ''
         self.account = None
         self.conn = None
+        self.ticket__ = ticket
         self.data_objects = DataObjectManager(self)
         self.collections = CollectionManager(self)
         if configure:
