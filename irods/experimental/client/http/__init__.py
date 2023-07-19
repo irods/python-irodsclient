@@ -1,8 +1,14 @@
 import collections
+import enum
 import json
 import logging
 import requests
 import sys
+
+logger = logging.getLogger(__name__)
+
+class HTTP_operation_error(RuntimeError):
+    pass
 
 def _normalized_columns(columns):
     if not isinstance(columns,(list,tuple)):
@@ -15,13 +21,25 @@ def _normalized_columns(columns):
     cls = collections.namedtuple('row', col_names)
     return cls, ",".join(col_names)
 
-logger = logging.getLogger(__name__)
-
-class HTTP_operation_error(RuntimeError):
-    pass
+class DataObject:
+    class column:
+        class enum(enum.Enum):
+            DATA_ID = 401
+            DATA_COLL_ID = 402
+            DATA_NAME = 403
+            DATA_REPL_NUM = 404
+            # TODO: complete this list
+        names = [k for k in enum.__members__.keys()]
 
 class Collection:
+    class column:
+        class enum(enum.Enum):
+            COLL_ID = 500
+            COLL_NAME = 501
+            # TODO: complete this list
+        names = [k for k in enum.__members__.keys()]
 
+    # for heavyweight style of getter only!
     def __init__(self, mgr, id_):
         self.id = id_
         self.mgr = mgr
@@ -31,6 +49,14 @@ class Collection:
         return self.mgr.value_by_column_name( self.id, 'COLL_NAME' )
 
 # -----------------
+# Manager/heavyweight approach to a catalog object "getter":
+#
+# This is an approximation of the old PRC approach
+#                   for getting an instance of a collection by its nain
+#                   identifying data, the logical pathname.
+#
+# We most likely will not be doing things this way.
+# (See Session.data_object_replicas() method below.)
 
 class Manager:
     def __init__(self, session):
@@ -81,11 +107,24 @@ class Session:
             raise HTTP_operation_error("Failed in GET.")
         return r.content.decode()
 
+    # -----------------
+    # Thin/lightweight approach to catalog object "getter":
+    #
+    def data_object_replicas(self, logical_path):
+        coll,data = logical_path.rsplit('/',1)
+        # TODO: embedded quotes in object names will not work here.
+        return self.genquery1(DataObject.column.names + Collection.column.names,
+                "COLL_NAME = '{}' and DATA_NAME = '{}'".format(coll,data),
+                extra_query_options={'count':500})
+
     # Each endpoint can have its own method definition.
 
     def genquery1(self, columns, condition='', *, args=(), extra_query_options = ()):
-        ## maybe require Python3.8 so we can have format strings, for example -
+
+        # TODO/discuss:
+        # Should we require Python3.8 so we can have format strings, e.g.:
         # query_text = f"SELECT {columns} where {condition.format(*args)}"
+
         condition = condition.format(*args)
         cls, columns = _normalized_columns(columns)
         where = '' if condition == '' else ' WHERE '

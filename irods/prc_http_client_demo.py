@@ -1,6 +1,6 @@
 import pprint
 
-from irods.client.experimental.http import *
+from irods.experimental.client.http import *
 
 s = Session('rods','rods',host='prec3431')
 c = CollManager(s).get("/tempZone/home/rods")
@@ -9,18 +9,21 @@ print ("Got a collection {c.name}, id = {c.id}".format(**locals()))
 
 # TODO: a *_generator or *_pager method which iterates or pages through results
 
-# collections
-
+# Query collections by explicit column list.
 result = s.genquery1(['COLL_ID', 'COLL_NAME'], # columns
                      "COLL_NAME like '%'",     # condition
                      extra_query_options=dict(count='512'))
-
+print("Result of collection query:\n"
+      "---------------------------\n")
 pprint.pprint(result)
-print('len=',len(result))
+print('Length of result was:',len(result))
 
-# data objects, list full paths
-
-for row in s.genquery1('COLL_NAME,DATA_NAME',                         # note 1 - we can also parse the <columns> from a string
-                                                                      # note 2 - <conditions> argument is optional
+# For a query of all data objects (note lack of condition argument), list full paths.
+for row in s.genquery1('COLL_NAME,DATA_NAME',
                        extra_query_options=dict(count='512')):
-    print('path = {row.COLL_NAME}/{row.DATA_NAME}'.format(**locals()))
+    print('path = {COLL_NAME}/{DATA_NAME}'.format(**row._asdict()))
+
+# Fetch all columns for the data object requested.
+data_path = "/tempZone/home/alice/new_alice.dat"
+x = s.data_object_replicas(data_path)
+print("'{}' has {} replicas we can access".format(data_path, len(x)))
