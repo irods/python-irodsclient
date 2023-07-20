@@ -1,5 +1,6 @@
 import collections
 import enum
+import functools
 import itertools
 import json
 import logging
@@ -154,7 +155,7 @@ class Session:
 
     # Each endpoint can have its own method definition.
 
-    def genquery1(self, columns, condition='', *, args=(), extra_query_options = (('offset',0),)):
+    def genquery1(self, columns, condition='', *, args=(), extra_query_options = ()):
 
         # TODO/discuss:
         # Should we require Python3.8 so we can have format strings, e.g.:
@@ -166,14 +167,6 @@ class Session:
 
         extra_query_options_d = dict(extra_query_options)
 
-        # --- For the time being, genquery1 returns variable types depending on offset parameter.
-        #
-        # If *NO* offset is given (ie extra_query_options parameter is forced to {} or {'count':C},
-        # we return a result than can be either paged or row-iterated. (Again, see README)
-
-        # But if an offset is given, we just return what the API hands us, which seems to be
-        # one result (count=1) by default.
-
         def get_r(local_ = locals(), d = extra_query_options_d.copy()):
             if 'offset' not in d:
                 d['offset'] = 0
@@ -183,20 +176,16 @@ class Session:
                                query = "SELECT {columns}{where}{condition}".format(**local_),
                                **d)
 
-            d['offset'] += int(d.get('count','512'))
-
             J = json.loads(r)
             errcode = J['irods_response']['error_code']
             if errcode != 0:
                 logger.warn('irods error code of [%s] in genquery1',errcode)
-            return [cls(*i) for i in J['rows']]
-            return r
 
-        if 'offset' in extra_query_options_d:
-            return get_r()
-        else:
-            return _iterable(get_r)
-            #return (get_r)
+            rows = [cls(*i) for i in J['rows']]
+            d['offset'] += len(rows)
+            return rows
+
+        return _iterable(get_r)
 
     def __init__(self, username, password, *,
                  host = 'localhost',
