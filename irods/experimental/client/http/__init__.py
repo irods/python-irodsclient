@@ -1,11 +1,45 @@
 import collections
 import enum
+import itertools
 import json
 import logging
 import requests
 import sys
 
 logger = logging.getLogger(__name__)
+
+# -----
+
+# Abstractions that let us either page through a general query <count> items at a time,
+#  or treat it like a Pythonic generator aka stateful iterator.
+#  (See the README.md in this directory.)
+
+# TODO: The README is temporary. Make some better docs.
+
+class _pageable:
+    def __init__(self, callable_):
+        self.callable_ = callable_
+    def next_page(self):
+        page = list(self.callable_())
+        return page
+
+class _iterable(_pageable):
+    def __init__(self,*_):
+        super().__init__(*_)
+        self.__P = None
+        self.index = 0
+    def __iter__(self): return self
+    def __next__(self):
+        if self.__P is None or self.index >= len(self.__P):
+            self.__P = self.next_page()
+            self.index = 0
+        if 0 == len(self.__P):
+            raise StopIteration
+        element = self.__P[self.index]
+        self.index += 1
+        return element
+
+# -----
 
 class HTTP_operation_error(RuntimeError):
     pass
@@ -119,7 +153,7 @@ class Session:
 
     # Each endpoint can have its own method definition.
 
-    def genquery1(self, columns, condition='', *, args=(), extra_query_options = ()):
+    def genquery1(self, columns, condition='', *, args=(), extra_query_options = (('offset',0),)):
 
         # TODO/discuss:
         # Should we require Python3.8 so we can have format strings, e.g.:
@@ -128,15 +162,39 @@ class Session:
         condition = condition.format(*args)
         cls, columns = _normalized_columns(columns)
         where = '' if condition == '' else ' WHERE '
-        r = self.http_get( '/query',
-                           op = "execute_genquery",
-                           query = "SELECT {columns}{where}{condition}".format(**locals()),
-                           **dict(extra_query_options))
-        J = json.loads(r)
-        errcode = J['irods_response']['error_code']
-        if errcode != 0:
-            logger.warn('irods error code of [%s] in genquery1',errcode)
-        return [cls(*i) for i in J['rows']]
+
+        extra_query_options_d = dict(extra_query_options)
+
+        # --- For the time being, genquery1 returns variable types depending on offset parameter.
+        #
+        # If *NO* offset is given (ie extra_query_options parameter is forced to {} or {'count':C},
+        # we return a result than can be either paged or row-iterated. (Again, see README)
+
+        # But if an offset is given, we just return what the API hands us, which seems to be
+        # one result (count=1) by default.
+
+        def get_r(local_ = locals(), d = extra_query_options_d.copy()):
+            if 'offset' not in d:
+                d['offset'] = 0
+            r = self.http_get( '/query',
+                               op = "execute_genquery",
+                               query = "SELECT {columns}{where}{condition}".format(**local_),
+                               **d)
+
+            d['offset'] += d.get('count',512)
+
+            J = json.loads(r)
+            errcode = J['irods_response']['error_code']
+            if errcode != 0:
+                logger.warn('irods error code of [%s] in genquery1',errcode)
+            return [cls(*i) for i in J['rows']]
+            return r
+
+        if 'offset' in extra_query_options_d:
+            return get_r()
+        else:
+            return _iterable(get_r)
+            #return (get_r)
 
     def __init__(self, username, password, *,
                  host = 'localhost',
