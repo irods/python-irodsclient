@@ -144,12 +144,13 @@ class Session:
     # -----------------
     # Thin/lightweight approach to catalog object "getter":
     #
-    def data_object_replicas(self, logical_path):
+    def data_object(self, logical_path, *, 
+                    query_options=(('offset',0),('count',1))):
         coll,data = logical_path.rsplit('/',1)
         # TODO: embedded quotes in object names will not work here.
         return self.genquery1(DataObject.column.names + Collection.column.names,
                 "COLL_NAME = '{}' and DATA_NAME = '{}'".format(coll,data),
-                extra_query_options={'count':500})
+                extra_query_options=dict(query_options))
 
     # Each endpoint can have its own method definition.
 
@@ -176,12 +177,13 @@ class Session:
         def get_r(local_ = locals(), d = extra_query_options_d.copy()):
             if 'offset' not in d:
                 d['offset'] = 0
+            d['offset'] = int(d['offset'])
             r = self.http_get( '/query',
                                op = "execute_genquery",
                                query = "SELECT {columns}{where}{condition}".format(**local_),
                                **d)
 
-            d['offset'] += d.get('count',512)
+            d['offset'] += int(d.get('count','512'))
 
             J = json.loads(r)
             errcode = J['irods_response']['error_code']
