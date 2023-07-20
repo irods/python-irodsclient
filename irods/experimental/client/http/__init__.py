@@ -162,26 +162,28 @@ class Session:
         # query_text = f"SELECT {columns} where {condition.format(*args)}"
 
         condition = condition.format(*args)
-        cls, columns = _normalized_columns(columns)
+        row_class, columns = _normalized_columns(columns)
         where = '' if condition == '' else ' WHERE '
 
-        extra_query_options_d = dict(extra_query_options)
+        # d's default argument (being mutable) gets memoized in the context of the
+        # current closure, which persists beyond in the genquery1 call frame in which it
+        # originated and persists and across multiple calls to get_r.
+        # This can be leveraged to increment the query offset at the end of each get_r call
+        # by the length of the rows array retrieved.
 
-        def get_r(local_ = locals(), d = extra_query_options_d.copy()):
+        def get_r(local_ = locals(), d = dict(extra_query_options)):
             if 'offset' not in d:
                 d['offset'] = 0
             d['offset'] = int(d['offset'])
-            r = self.http_get( '/query',
-                               op = "execute_genquery",
-                               query = "SELECT {columns}{where}{condition}".format(**local_),
-                               **d)
-
-            J = json.loads(r)
-            errcode = J['irods_response']['error_code']
+            result = self.http_get('/query',
+                                   op = "execute_genquery",
+                                   query = "SELECT {columns}{where}{condition}".format(**local_),
+                                   **d)
+            json_result = json.loads(result)
+            errcode = json_result['irods_response']['error_code']
             if errcode != 0:
                 logger.warn('irods error code of [%s] in genquery1',errcode)
-
-            rows = [cls(*i) for i in J['rows']]
+            rows = [row_class(*i) for i in json_result['rows']]
             d['offset'] += len(rows)
             return rows
 
