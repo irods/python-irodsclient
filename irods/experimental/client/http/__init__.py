@@ -6,8 +6,11 @@ import json
 import logging
 import requests
 import sys
+from .iterator_functions import *
 
 logger = logging.getLogger(__name__)
+MAX_INT32 = 2**31-1
+DEFAULT_PAGE_SIZE = 512
 
 # -----
 
@@ -110,20 +113,20 @@ class Manager:
         sess = self.sess = session
 
     def value_by_column_name(self, id_, column_name:str):
-        first_row = self.sess.genquery1(columns = [column_name],
-                                        condition = "COLL_ID = '{}'", args = [id_])[0]
+        first_row = one(self.sess.genquery1(columns = [column_name],
+                                            condition = "COLL_ID = '{}'", args = [id_]))
         return getattr(first_row, column_name)
 
 class CollManager(Manager):
 
     def name_from_id(self, id_):
-        return self.sess.genquery1(columns = ['COLL_NAME'],
-                                   condition = "COLL_ID = '{}'", args = [id_])[0].COLL_NAME
+        return one(self.sess.genquery1(columns = ['COLL_NAME'],
+                                   condition = "COLL_ID = '{}'", args = [id_])).COLL_NAME
 
     def get(self, collname):
-        jr = self.sess.genquery1( columns = 'COLL_ID',
-                                  condition = "COLL_NAME = '{}'", args = [collname] )
-        return Collection(self, int(jr[0].COLL_ID))
+        r = self.sess.genquery1( columns = 'COLL_ID',
+                                 condition = "COLL_NAME = '{}'", args = [collname] )
+        return Collection(self, int(one(r).COLL_ID))
 
 # -----------------
 
@@ -158,7 +161,7 @@ class Session:
     # Thin/lightweight approach to catalog object "getter":
     #
     def data_object(self, logical_path, *, 
-                    query_options=(('offset',0),('count',1))):
+                    query_options=(('offset',0),('count',DEFAULT_PAGE_SIZE))):
         coll,data = logical_path.rsplit('/',1)
         # TODO: embedded quotes in object names will not work here.
         return self.genquery1(DataObject.column.names + Collection.column.names,
@@ -211,4 +214,3 @@ class Session:
             raise HTTP_operation_error("Failed to connect: url = '%s', status code = %s",
                                        url, r.status_code)
         self.bearer_token = r.text
-

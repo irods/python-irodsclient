@@ -6,6 +6,8 @@ import typing
 class too_many_results(Exception): pass
 class too_few_results(Exception): pass
 
+__all__ = ['first_n','one','too_many_results','too_few_results']
+
 def first_n(iterable: typing.Iterable, n: int):
     return list(itertools.islice(iterable,n))
 
