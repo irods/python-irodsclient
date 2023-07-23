@@ -17,20 +17,32 @@ logger = logging.getLogger(__name__)
 
 # TODO: The README is temporary. Make some better docs.
 
-class _pageable:
+class _pageable: 
     def __init__(self, callable_):
+        """callable_ is a function-like object called without parameters.
+           It pages once through the set of query results and should be
+           stateful in terms of maintaining current offset within the query.
+        """
         self.callable_ = callable_
     def next_page(self):
         page = list(self.callable_())
         return page
 
 class _iterable(_pageable):
+    """Adapts a pageable interface to return one query row at a time.  An
+       empty [] returned from next_page signals the end of query results.
+    """
+    @functools.wraps(_pageable.__init__)
     def __init__(self,*_):
         super().__init__(*_)
         self.__P = None
         self.index = 0
+    # Allow iter() on instances.
     def __iter__(self): return self
     def __next__(self):
+        """Called implicitly by any iteration over the _iterable instance.
+           Returns one query row.
+        """
         if self.__P is None or self.index >= len(self.__P):
             self.__P = self.next_page()
             self.index = 0
