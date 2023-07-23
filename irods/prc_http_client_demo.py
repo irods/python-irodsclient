@@ -8,8 +8,6 @@ c = CollManager(s).get("/tempZone/home/rods")
 
 print ("Got a collection {c.name}, id = {c.id}".format(**locals()))
 
-# TODO: a *_generator or *_pager method which iterates or pages through results
-
 # Query collections by explicit column list.
 result = s.genquery1(['COLL_ID', 'COLL_NAME'], # columns
                      "COLL_NAME like '%'",     # condition
