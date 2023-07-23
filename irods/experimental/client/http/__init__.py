@@ -171,7 +171,20 @@ class Session:
     # Each endpoint can have its own method definition.
 
     def genquery1(self, columns, condition='', *, args=(), extra_query_options = ()):
+        """Return a generator-style iterator over all row results.
+           Example:
+               for row in session.genquery1( 'COLL_NAME' ):
+                   print(row.COLL_NAME)
 
+           By default, one HTTP call to the server returns a single "row", which is not`
+           terribly efficient.  We can override the "count" option with an arbitrary
+           positive integer:
+
+               session.genquery1(columns, extra_query_options=dict(count=512)).
+
+           and since this function is agnostic to pagesize and simply returns a row-wise
+           iterator, its row-wise iterative behavior will not change.
+        """
         condition = condition.format(*args)
         row_class, columns = _normalized_columns(columns)
         where = '' if condition == '' else ' WHERE '
