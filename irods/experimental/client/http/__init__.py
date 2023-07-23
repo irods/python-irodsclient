@@ -169,10 +169,6 @@ class Session:
 
     def genquery1(self, columns, condition='', *, args=(), extra_query_options = ()):
 
-        # TODO/discuss:
-        # Should we require Python3.8 so we can have format strings, e.g.:
-        # query_text = f"SELECT {columns} where {condition.format(*args)}"
-
         condition = condition.format(*args)
         row_class, columns = _normalized_columns(columns)
         where = '' if condition == '' else ' WHERE '
