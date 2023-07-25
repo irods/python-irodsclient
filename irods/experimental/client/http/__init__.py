@@ -178,12 +178,13 @@ class Session:
 
            By default, one HTTP call to the server returns a single "row", which is not`
            terribly efficient.  We can override the "count" option with an arbitrary
-           positive integer:
+           positive integer, effectively increasing the paging size for the query:
 
                session.genquery1(columns, extra_query_options=dict(count=512)).
 
-           and since this function is agnostic to pagesize and simply returns a row-wise
-           iterator, its row-wise iterative behavior will not change.
+           Since this function's result (a row-wise iterator) is page-size agnostic, its
+           usage is not altered, whereas the efficiency for large queries will greatly
+           improve due to the 512-fold decrease in the number of API calls.
         """
         condition = condition.format(*args)
         row_class, columns = _normalized_columns(columns)
