@@ -746,6 +746,16 @@ In this case since we are expecting only one row we can directly call ``query.ex
 | rods         | 14        | 62262     |
 +--------------+-----------+-----------+
 
+For a case-insensitive query, add a `case_sensitive=False` parameter to the query:
+
+>>> with iRODSSession(irods_env_file=env_file) as session:
+...     query = session.query(DataObject.name, case_sensitive=False).filter(Like(DataObject.name, "%oBjEcT"))
+...     print(query.all())
++---------------------+
+| DATA_NAME           |
++---------------------+
+| caseSENSITIVEobject |
++---------------------+
 
 Specific Queries
 ----------------

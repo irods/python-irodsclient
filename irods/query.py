@@ -33,6 +33,7 @@ class Query(object):
         self.sess = sess
         self.columns = OrderedDict()
         self.criteria = []
+        self.case_sensitive = kwargs.pop('case_sensitive', True)
         self._limit = -1
         self._offset = 0
         self._continue_index = 0
@@ -52,6 +53,7 @@ class Query(object):
         new_q = Query(self.sess)
         new_q.columns = self.columns
         new_q.criteria = self.criteria
+        new_q.case_sensitive = self.case_sensitive
         new_q._limit = self._limit
         new_q._offset = self._offset
         new_q._continue_index = self._continue_index
@@ -65,7 +67,28 @@ class Query(object):
 
     def filter(self, *criteria):
         new_q = self._clone()
-        new_q.criteria += list(criteria)
+
+        if self.case_sensitive:
+            new_q.criteria += list(criteria)
+        else:
+            # In case-insensitive mode, all criterion values are converted
+            # to uppercase here, and the UPPER_CASE_WHERE option is enabled
+            # when creating a new GenQueryRequest in the _message function.
+            # Converting both keys and values to uppercase results in
+            # case-insensitive queries.
+            for criterion in criteria:
+                if type(criterion.value) == str:
+                    criterion.value = str.upper(
+                        criterion.value)
+                elif type(criterion.value) == list:
+                    criterion.value = [str.upper(c) if type(c) == str
+                                           else c for c in criterion.value]
+                elif type(criterion.value) == tuple:
+                    criterion.value = tuple(
+                        [str.upper(c) if type(c) == str else c for c in
+                         list(criterion.value)])
+                new_q.criteria.append(criterion)
+
         return new_q
 
     def order_by(self, column, order='asc'):
@@ -132,7 +155,7 @@ class Query(object):
     # lists
     def _conds_message(self):
         dct = _OrderedMultiMapping([
-            (criterion.query_key.icat_id, criterion.op + ' ' + criterion.value)
+            (criterion.query_key.icat_id, criterion.op + ' ' + criterion.irods_value)
             for criterion in self.criteria
             if isinstance(criterion.query_key, Column)
         ])
@@ -141,7 +164,7 @@ class Query(object):
     def _kw_message(self):
         dct = dict([
             (criterion.query_key.icat_key,
-             criterion.op + ' ' + criterion.value)
+             criterion.op + ' ' + criterion.irods_value)
             for criterion in self.criteria
             if isinstance(criterion.query_key, Keyword)
         ])
@@ -155,7 +178,7 @@ class Query(object):
             'maxRows': max_rows,
             'continueInx': self._continue_index,
             'partialStartIndex': self._offset,
-            'options': 0,
+            'options': 0 if self.case_sensitive else query_number['UPPER_CASE_WHERE'],
             'KeyValPair_PI': self._kw_message(),
             'InxIvalPair_PI': self._select_message(),
             'InxValPair_PI': self._conds_message()

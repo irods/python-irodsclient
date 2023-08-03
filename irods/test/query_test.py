@@ -68,11 +68,18 @@ class TestQuery(unittest.TestCase):
         # test data
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.obj_name = 'test1'
+        self.case_sensitive_obj_name1 = 'caseSENSITIVEobject'
+        self.case_sensitive_obj_name2 = 'CASEsensitiveOBJECT'
         self.obj_path = '{coll_path}/{obj_name}'.format(**vars(self))
+        self.case_sensitive_obj_path1 = '{coll_path}/{case_sensitive_obj_name1}'.format(
+            **vars(self))
+        self.case_sensitive_obj_path2 = '{coll_path}/{case_sensitive_obj_name2}'.format(
+            **vars(self))
 
         # Create test collection and (empty) test object
         self.coll = self.sess.collections.create(self.coll_path)
-        self.obj = self.sess.data_objects.create(self.obj_path)
+        for obj in [self.obj_path, self.case_sensitive_obj_path1, self.case_sensitive_obj_path2]:
+            self.sess.data_objects.create(obj)
 
     def tearDown(self):
         '''Remove test data and close connections
@@ -98,6 +105,244 @@ class TestQuery(unittest.TestCase):
         result = query.all()
         assert result.has_value(self.obj_name)
 
+    def test_files_query_case_sensitive(self):
+        # This tests that GenQueries are case-sensitive by default.
+
+        # Exact filter tests
+
+        result1 = self.sess.query(DataObject.name).filter(
+            DataObject.name == self.case_sensitive_obj_name1).all()
+        self.assertTrue(result1.has_value(self.case_sensitive_obj_name1))
+        self.assertEqual(len(result1), 1)
+
+        result2 = self.sess.query(DataObject.name).filter(
+            DataObject.name == str.lower(self.case_sensitive_obj_name1)).all()
+        self.assertEqual(len(result2), 0)
+
+        result3 = self.sess.query(DataObject.name).filter(
+            DataObject.name == str.upper(self.case_sensitive_obj_name1)).all()
+        self.assertEqual(len(result3), 0)
+
+        # Wildcard filter (Like/NotLike) tests
+
+        search_expression = "%{}%".format(self.case_sensitive_obj_name1[1:-1])
+
+        result4 = self.sess.query(DataObject.name).filter(
+            Like(DataObject.name, search_expression)).all()
+        self.assertTrue(result4.has_value(self.case_sensitive_obj_name1))
+        self.assertEqual(len(result4), 1)
+
+        result5 = self.sess.query(DataObject.name).filter(
+            Like(DataObject.name, str.lower(search_expression))).all()
+        self.assertEqual(len(result5), 0)
+
+        result6 = self.sess.query(DataObject.name).filter(
+            Like(DataObject.name, str.upper(search_expression))).all()
+        self.assertEqual(len(result6), 0)
+
+        result7 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            NotLike(DataObject.name, search_expression)).all()
+        self.assertTrue(result7.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result7), 2)
+
+        result8 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            NotLike(DataObject.name, str.lower(search_expression))).all()
+        self.assertTrue(result8.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result8.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result8), 3)
+
+        result9 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            NotLike(DataObject.name, str.upper(search_expression))).all()
+        self.assertTrue(result9.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result9.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result9), 3)
+
+        # IN tests
+
+        result10 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            In(DataObject.name, [self.case_sensitive_obj_name1])).all()
+        self.assertTrue(result10.has_value(self.case_sensitive_obj_name1))
+        self.assertEqual(len(result10), 1)
+
+        result11 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            In(DataObject.name, [str.lower(self.case_sensitive_obj_name1)])).all()
+        self.assertEqual(len(result11), 0)
+
+        result12 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            In(DataObject.name, [str.upper(self.case_sensitive_obj_name1)])).all()
+        self.assertEqual(len(result12), 0)
+
+        # BETWEEN tests
+
+        result13 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            Between(DataObject.name, [self.case_sensitive_obj_name1,
+                                      self.case_sensitive_obj_name1 + "_"])).all()
+        self.assertTrue(result13.has_value(self.case_sensitive_obj_name1))
+        self.assertEqual(len(result13), 1)
+
+        result14 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            Between(DataObject.name, [str.lower(self.case_sensitive_obj_name1),
+                                      str.lower(self.case_sensitive_obj_name1) + "_"])).all()
+        self.assertEqual(len(result14), 0)
+
+        result15 = self.sess.query(DataObject.name).filter(
+            Collection.name == self.coll_path).filter(
+            Between(DataObject.name, [str.upper(self.case_sensitive_obj_name1),
+                                      str.upper(self.case_sensitive_obj_name1) + "_"])).all()
+        self.assertEqual(len(result15), 0)
+
+    def test_files_query_case_insensitive(self):
+        # This tests that GenQueries are case-insensitive when the case_sensitive
+        # option is set to false.
+
+        # Single exact filter tests
+
+        result1 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            DataObject.name == self.case_sensitive_obj_name1).all()
+        self.assertTrue(result1.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result1.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result1), 2)
+
+        result2 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            DataObject.name == str.lower(self.case_sensitive_obj_name1)).all()
+        self.assertTrue(result2.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result2.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result2), 2)
+
+        result3 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            DataObject.name == str.upper(self.case_sensitive_obj_name1)).all()
+        self.assertTrue(result3.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result3.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result3), 2)
+
+        # Single wildcard filter (Like, NotLike) tests
+
+        search_expression = "%{}%".format(self.case_sensitive_obj_name1[1:-1])
+
+        result4 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, search_expression)).all()
+        self.assertTrue(result4.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result4.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result4), 2)
+
+        result5 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, str.lower(search_expression))).all()
+        self.assertTrue(result5.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result5.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result5), 2)
+
+        result6 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, str.upper(search_expression))).all()
+        self.assertTrue(result6.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result6.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result6), 2)
+
+        result7 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            NotLike(DataObject.name, search_expression)).all()
+        self.assertFalse(result7.has_value(self.case_sensitive_obj_name1))
+        self.assertFalse(result7.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result7), 1)
+
+        result8 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            NotLike(DataObject.name, str.lower(search_expression))).all()
+        self.assertFalse(result8.has_value(self.case_sensitive_obj_name1))
+        self.assertFalse(result8.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result8), 1)
+
+        result9 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            NotLike(DataObject.name, str.upper(search_expression))).all()
+        self.assertFalse(result9.has_value(self.case_sensitive_obj_name1))
+        self.assertFalse(result9.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result9), 1)
+
+        # IN tests
+
+        result10 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            In(DataObject.name, [self.case_sensitive_obj_name1])).all()
+        self.assertTrue(result10.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result10.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result10), 2)
+
+        result11 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            In(DataObject.name, [str.lower(self.case_sensitive_obj_name1)])).all()
+        self.assertTrue(result11.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result11.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result11), 2)
+
+        result12 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            In(DataObject.name, [str.upper(self.case_sensitive_obj_name1)])).all()
+        self.assertTrue(result12.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result12.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result12), 2)
+
+        # BETWEEN tests
+
+        result13 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            Between(DataObject.name, [self.case_sensitive_obj_name1,
+                                      self.case_sensitive_obj_name1 + "_"])).all()
+        self.assertTrue(result13.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result13.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result13), 2)
+
+        result14 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            Between(DataObject.name, [str.lower(self.case_sensitive_obj_name1),
+                                      str.lower(self.case_sensitive_obj_name1) + "_"])).all()
+        self.assertTrue(result14.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result14.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result14), 2)
+
+        result15 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Collection.name == self.coll_path).filter(
+            Between(DataObject.name, [str.upper(self.case_sensitive_obj_name1),
+                                      str.upper(self.case_sensitive_obj_name1) + "_"])).all()
+        self.assertTrue(result15.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result15.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result15), 2)
+
+        # Multiple filter tests - when a case-insensitive query has multiple filters,
+        # they should all be case-insensitive.
+
+        result16 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, search_expression)).filter(
+            Collection.name == self.coll_path).all()
+        self.assertTrue(result16.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result16.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result16), 2)
+
+        result17 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, str.lower(search_expression))).filter(
+            Collection.name == str.lower(self.coll_path)).all()
+        self.assertTrue(result17.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result17.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result17), 2)
+
+        result18 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, str.upper(search_expression))).filter(
+            Collection.name == str.upper(self.coll_path)).all()
+        self.assertTrue(result18.has_value(self.case_sensitive_obj_name1))
+        self.assertTrue(result18.has_value(self.case_sensitive_obj_name2))
+        self.assertEqual(len(result18), 2)
+
+        # All previous queries in this function expect a match. This query should not match.
+        result19 = self.sess.query(DataObject.name, case_sensitive=False).filter(
+            Like(DataObject.name, "THIS_SHOULD_NOT_MATCH")).all()
+        self.assertEqual(len(result19), 0)
 
     def test_users_query(self):
         '''Lists all users and look for known usernames
@@ -551,7 +796,7 @@ class TestQuery(unittest.TestCase):
         name_search_pattern = '%_issue_443.non_matching'
         query = self.sess.query(DataObject).filter( NotLike(DataObject.name, name_search_pattern),
                                                     DataObject.collection_id == self.coll.id)
-        self.assertEqual(1, len(list(query)))
+        self.assertEqual(3, len(list(query)))
 
 class TestSpecificQuery(unittest.TestCase):
 
