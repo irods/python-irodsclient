@@ -238,8 +238,8 @@ class iRODSSession(object):
         self.pool.connection_timeout = conn_timeout
         return account
 
-    def query(self, *args):
-        return Query(self, *args)
+    def query(self, *args, **kwargs):
+        return Query(self, *args, **kwargs)
 
     @property
     def username(self):
