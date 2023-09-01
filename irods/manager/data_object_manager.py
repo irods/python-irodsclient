@@ -63,9 +63,6 @@ class DataObjectManager(Manager):
 
         # Allow an environment variable to override the detection of the server version.
         # Example: $ export IRODS_VERSION_OVERRIDE="4,2,9" ;  python -m irods.parallel ...
-        # ---
-        # Delete the following line on resolution of https://github.com/irods/irods/issues/5932 :
-        if self.sess.ticket__: return False
         server_version = ( ast.literal_eval(os.environ.get('IRODS_VERSION_OVERRIDE', '()' )) or server_version_hint or 
                            self.server_version )
         if num_threads == 1 or ( server_version < parallel.MINIMUM_SERVER_VERSION ):
