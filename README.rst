@@ -314,6 +314,37 @@ This may be useful for Python programs in which frequent flushing of write updat
 with descriptors on such objects possibly being held open for indeterminately long lifetimes -- yet the eventual
 application of those updates prior to the teardown of the Python interpreter is required.
 
+The current value of the setting is global in scope (ie applies to all sessions, whenever created) and is always
+consulted for the creation of any data object handle to govern that handle's cleanup behavior.
+
+Python iRODS Client Settings File
+---------------------------------
+
+As of v1.1.9, Python iRODS client configuration can be saved in, and loaded from, a settings file.
+
+If the settings file exists, each of its lines contains (a) a dotted name identifying a particular configuration setting
+to be assigned within the PRC, potentially changing its runtime behavior; and (b) the specific value, in Python "repr"-style
+format, that should be assigned into it.
+
+An example follows:
+
+  data_objects.auto_close   True
+
+New dotted names may be created following the example of the one valid example created thus far,
+code:`data_objects.auto_close`, initialized in :code:`irods/client_configuration/__init__.py`. Each such name should correspond
+to a globally set value which the PRC routinely checks when performing the affected library function.
+
+The use of a settings file can be indicated, and the path to that file determined, by setting the environment variable:
+:code:`PYTHON_IRODSCLIENT_CONFIGURATION_PATH`.  If this variable is present but empty, this denotes use of a default settings
+file path of :code:~/.python-irodsclient`;  if the variable's value is of nonzero length, the value should be an absolute path
+to the settings file whose use is desired.  Also, if the variable is set, auto-load of settings will be performed, meaning
+that the act of importing :code:`irods` or any of its submodules will cause the automatic loading the settings from the
+settings file, assuming it exists.  (Failure to find the file at the indicated path will be logged as a warning.)
+
+Settings can also be saved and loaded manually using the save() and load() functions in the :code:`irods.client_configuration`
+module.  Each of these functions accepts an optional :code:`file` parameter which, if set to a non-empty string, will override
+the settings file path currently "in force" (i.e., the CONFIG_DEFAULT_PATH, as optionally overridden by the environment variable
+PYTHON_IRODSCLIENT_CONFIGURATION_PATH).
 
 Computing and Retrieving Checksums
 ----------------------------------
