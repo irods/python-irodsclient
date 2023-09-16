@@ -1,6 +1,11 @@
 from .version import __version__
 
 import logging
+import os
+
+# This has no effect if basicConfig() was previously called.
+logging.basicConfig()
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 gHandler = None
@@ -50,3 +55,18 @@ GSI_OID = "1.3.6.1.4.1.3536.1.1"  # taken from http://j.mp/2hDeczm
 
 PAM_AUTH_PLUGIN = 'PAM'
 PAM_AUTH_SCHEME = PAM_AUTH_PLUGIN.lower()
+
+DEFAULT_CONFIG_PATH = os.path.expanduser('~/.python_irodsclient')
+settings_path_environment_variable = 'PYTHON_IRODSCLIENT_CONFIGURATION_PATH'
+
+def get_settings_path():
+    env_var = os.environ.get(settings_path_environment_variable)
+    return DEFAULT_CONFIG_PATH if not env_var else env_var
+
+from . import client_configuration
+
+client_configuration.preserve_defaults()
+
+# If the settings path variable is not set in the environment, a value of None is passed,
+# and thus no settings file is auto-loaded.
+client_configuration.autoload(_file_to_load = os.environ.get(settings_path_environment_variable))

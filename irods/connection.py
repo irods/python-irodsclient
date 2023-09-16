@@ -12,7 +12,6 @@ from irods import MAX_NAME_LEN
 from ast import literal_eval as safe_eval
 import re
 
-
 PAM_PW_ESC_PATTERN = re.compile(r'([@=&;])')
 
 
