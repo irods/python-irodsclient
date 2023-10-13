@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v1.1.9 (2023-10-13)
+-------------------
+- [#471][#472] allow save, load, and autoload of configuration [Daniel Moore]
+- [#456] auto-close data objects that go out of scope [Daniel Moore]
+- [#455] remove ticket check [Daniel Moore]
+- [#452] implement client redirection to resource server [Daniel Moore]
+- [#455] introduce low level ticket api changes [Daniel Moore]
+- [#234] Implement case-insensitive queries [Sietse Snel]
+
 v1.1.8 (2023-05-18)
 -------------------
 - [#450] test for setting/getting comments [Daniel Moore]
