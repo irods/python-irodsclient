@@ -5,6 +5,7 @@ import io
 import logging
 import os
 import re
+import six
 import sys
 import types
 
@@ -28,6 +29,25 @@ def getter(category, setting):
     for a usage example.
     """
     return lambda:getattr(globals()[category], setting)
+
+class iRODSConfigAliasMetaclass(type):
+    def __new__(meta, name, bases, attrs):
+        cls = type.__new__(meta, name, bases, attrs)
+        cls.writeable_properties = tuple(k for k,v in attrs.items() if
+                isinstance(v,property) and v.fset is not None)
+        return cls
+
+class ConnectionsProperties(six.with_metaclass(iRODSConfigAliasMetaclass,iRODSConfiguration)):
+    @property
+    def xml_parser_default(self):
+        from irods.message import get_default_XML_by_name
+        return get_default_XML_by_name()
+    @xml_parser_default.setter
+    def xml_parser_default(self,str_value):
+        from irods.message import set_default_XML_by_name
+        return set_default_XML_by_name(str_value)
+
+connections = ConnectionsProperties()
 
 # #############################################################################
 #
@@ -68,7 +88,8 @@ def _var_items(root):
         return [(i,v) for i,v in vars(root).items()
                 if isinstance(v,iRODSConfiguration)]
     if isinstance(root,iRODSConfiguration):
-        return [(i, getattr(root,i)) for i in root.__slots__]
+        return [(i, getattr(root,i)) for i in
+                root.__slots__ + getattr(root,'writeable_properties',())]
     return []
 
 def save(root = None, string='', file = ''):

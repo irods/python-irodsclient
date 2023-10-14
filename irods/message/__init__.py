@@ -40,6 +40,7 @@ if sys.version_info >= (3,):
         QUASI_XML = 2
         SECURE_XML = 3
 else:
+    #TODO remove when Python2 support goes away.
     class MyIntEnum(int):
         """An integer enum class suited to the purpose. A shim until we get rid of Python2."""
         def __init__(self,i):
@@ -51,13 +52,22 @@ else:
         def _value(self): return self.i
         @builtins.property
         def value(self): return self._value()
+        def __repr__(self): return '<{}: {}>'.format(self.__class__.__name__, self._value())
 
     class XML_Parser_Type(MyIntEnum):
         """An enum specifying which XML parser is active."""
-        pass
+        def __repr__(self):
+            int_value = self._value()
+            string_value = PARSER_TYPE_STRINGS.get(int_value,"<invalid>")
+            return '<{}: {} ({})>'.format(self.__class__.__name__, int_value, string_value)
+
     XML_Parser_Type.STANDARD_XML = XML_Parser_Type (1)
     XML_Parser_Type.QUASI_XML = XML_Parser_Type (2)
     XML_Parser_Type.SECURE_XML = XML_Parser_Type (3)
+    XML_Parser_Type.__members__ = {k:v for k,v in XML_Parser_Type.__dict__.items()
+                                   if isinstance(v,XML_Parser_Type)}
+
+    PARSER_TYPE_STRINGS = {v:k for k,v in XML_Parser_Type.__members__.items() if v.value != 0}
 
 # We maintain values on a per-thread basis of:
 #   - the server version with which we're communicating
@@ -82,8 +92,8 @@ if _Quasi_Xml_Server_Version is None:  # unspecified in environment yields empty
 
 _XML_strings = { k:v for k,v in vars(XML_Parser_Type).items() if k.endswith('_XML')}
 
+_default_XML = os.environ.get('PYTHON_IRODSCLIENT_DEFAULT_XML',globals().get('_default_XML'))
 
-_default_XML = os.environ.get('PYTHON_IRODSCLIENT_DEFAULT_XML','')
 if not _default_XML:
     _default_XML = XML_Parser_Type.STANDARD_XML
 else:
@@ -107,6 +117,14 @@ _XML_parsers = {
     XML_Parser_Type.SECURE_XML : ET_secure_xml
 }
 
+_reversed_XML_strings_lookup = {v:k for k,v in _XML_strings.items()}
+
+def get_default_XML_by_name():
+    return _reversed_XML_strings_lookup.get(_default_XML)
+
+def set_default_XML_by_name(name):
+        global _default_XML
+        _default_XML = _XML_strings[name]
 
 def XML_entities_active():
     Server = getattr(_thrlocal,'irods_server_version',_Quasi_Xml_Server_Version)
