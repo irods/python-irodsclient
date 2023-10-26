@@ -199,6 +199,14 @@ class Keywords(Model):
     chksum = Keyword(String, 'chksum')
 
 
+class Quota(Model):
+    user_id = Column(Integer, 'COL_QUOTA_USER_ID', 2000)
+    resc_id = Column(Integer, 'COL_QUOTA_RESC_ID', 2001)
+    limit = Column(Integer, 'COL_QUOTA_LIMIT', 2002)
+    over = Column(Integer, 'COL_QUOTA_OVER', 2003)
+    modify_time = Column(DateTime,'COL_QUOTA_MODIFY_TIME', 2004)
+
+
 class TicketQuery:
     """Various model classes for querying attributes of iRODS tickets.
 

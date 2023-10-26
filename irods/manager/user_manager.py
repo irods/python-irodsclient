@@ -5,7 +5,8 @@ import warnings
 
 from irods.models import User, Group
 from irods.manager import Manager
-from irods.message import UserAdminRequest, GeneralAdminRequest, iRODSMessage, GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut
+from irods.message import (UserAdminRequest, GeneralAdminRequest, _do_GeneralAdminRequest, iRODSMessage,
+        GetTempPasswordForOtherRequest, GetTempPasswordForOtherOut)
 from irods.exception import UserDoesNotExist, GroupDoesNotExist, NoResultFound, CAT_SQL_ERR
 from irods.api_number import api_number
 from irods.user import iRODSUser, iRODSGroup, Bad_password_change_parameter
@@ -15,6 +16,30 @@ from .. import MAX_PASSWORD_LENGTH
 logger = logging.getLogger(__name__)
 
 class UserManager(Manager):
+
+    def _get_session(self): return self.sess
+
+    def calculate_usage(self):
+        return _do_GeneralAdminRequest(self._get_session, "calculate-usage")
+
+    # TODO: remove this in branch 2.x (#482)
+    def set_quota(self, user_name, amount, resource = 'total'):
+        return _do_GeneralAdminRequest(self._get_session,
+            "set-quota",
+            "user",
+            user_name,
+            resource,
+            str(amount)
+        )
+
+    def remove_quota(self, user_name, resource = 'total'):
+        return _do_GeneralAdminRequest(self._get_session,
+            "set-quota",
+            "user",
+            user_name,
+            resource,
+            "0"
+        )
 
     def get(self, user_name, user_zone=""):
         query = self.sess.query(User).filter(User.name == user_name)
@@ -314,6 +339,24 @@ class GroupManager(UserManager):
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
                                int_info=api_number[api_key])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
+
+    def remove_quota(self, group_name, resource = 'total'):
+        self.set_quota(group_name, amount = 0, resource = resource)
+
+    def set_quota(self, group_name, amount, resource = 'total'):
+        message_body = GeneralAdminRequest(
+            "set-quota",
+            "group",
+            group_name,
+            resource,
+            str(amount)
+        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                               int_info=api_number['GENERAL_ADMIN_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()

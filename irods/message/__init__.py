@@ -10,6 +10,7 @@ import irods.exception as ex
 import xml.etree.ElementTree as ET_xml
 import defusedxml.ElementTree as ET_secure_xml
 from . import quasixml as ET_quasi_xml
+from ..api_number import api_number
 from collections import namedtuple
 import os
 import ast
@@ -783,6 +784,18 @@ class _admin_request_base(Message):
 
 class GeneralAdminRequest(_admin_request_base):
     _name = 'generalAdminInp_PI'
+
+def _do_GeneralAdminRequest(_session_or_accessor, *args):
+    sess = _session_or_accessor
+    if callable(sess):
+        sess = sess()
+    message_body = GeneralAdminRequest(*args)
+    request = iRODSMessage("RODS_API_REQ", msg=message_body,
+                           int_info=api_number['GENERAL_ADMIN_AN'])
+    with sess.pool.get_connection() as conn:
+        conn.send(request)
+        response = conn.recv()
+    logger.debug(response.int_info)
 
 
 # define userAdminInp_PI "str *arg0; str *arg1; str *arg2; str *arg3;
