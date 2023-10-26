@@ -6,17 +6,43 @@ import sys
 import unittest
 import tempfile
 import shutil
+from subprocess import check_output, CalledProcessError
 from irods import MAX_PASSWORD_LENGTH
 from irods.exception import GroupDoesNotExist, UserDoesNotExist
 from irods.meta import iRODSMetaCollection, iRODSMeta
-from irods.models import User, Group, UserMeta
+from irods.models import User, Group, UserMeta, Quota
 from irods.session import iRODSSession
 import irods.exception as ex
 import irods.test.helpers as helpers
-from irods.user import Bad_password_change_parameter
+from irods.user import iRODSUser, Bad_password_change_parameter
 from six.moves import range
 
-class TestGroup(unittest.TestCase):
+def user_quotas_implemented():
+    return getattr(iRODSUser, "set_quota", None) is not None
+
+def icommands_available():
+    try:
+        which_output = check_output(['which', 'ihelp'])
+        return b'ihelp' in which_output
+    except CalledProcessError:
+        pass # 'which' returned nonzero status
+    return False
+
+def set_user_quota(session, user_name, bytes_total):
+    success = False
+    if user_quotas_implemented():
+        try:
+            session.users.set_quota(user_name, bytes_total)
+            success = True
+        except:
+            pass
+    if not success and icommands_available():
+        return_code = os.system("iadmin suq {} total {}".format(user_name, bytes_total))
+        if return_code == 0:
+            success = True
+    return success
+
+class TestUserAndGroup(unittest.TestCase):
 
     def setUp(self):
         self.sess = helpers.make_session()
@@ -524,6 +550,60 @@ class TestGroup(unittest.TestCase):
         finally:
             if user_alice:
                 user_alice.remove()
+
+    def test_set_and_query_group_quota(self):
+        #import pdb
+        #pdb.set_trace()
+        bob = quota_group = None
+        ses = self.sess
+        test_object = None
+        my_quota = 10000
+        my_object_size = 1400
+        try:
+            bob = self.sess.users.create('bob', 'rodsuser')
+            ses.users.modify('bob', 'password', 'bpass')
+            quota_group = self.sess.groups.create('quota_group_for_bob')
+            quota_group.addmember(bob.name)
+            quota_group.set_quota(my_quota)
+            with iRODSSession(user = 'bob', password = 'bpass', host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+                test_object = user_sess.data_objects.create('/tempZone/home/public/bob_file_testing_group_quota')
+                with test_object.open('w') as f:
+                    f.write(b'_' * my_object_size)
+            ses.groups.calculate_usage()
+            for i in ses.query(Quota).filter(Quota.user_id == quota_group.id):
+                self.assertEqual(int(i[Quota.over]), -my_quota + my_object_size)
+        finally:
+            if test_object:
+                test_object.unlink(force = True)
+            if quota_group:
+                quota_group.remove()
+            if bob:
+                ses.users.remove(bob.name)
+
+    @unittest.skipIf(not user_quotas_implemented()
+                     and not icommands_available(), "Can't set up user quota for removal in test")
+    def test_set_and_query_user_quota(self):
+        bob = None
+        if self.sess.server_version >= (4, 3):
+            self.skipTest('iRODS servers 4.3.0 and higher have dropped user quotas in favor of group quotas.')
+        ses = self.sess
+        test_object = None
+        try:
+            bob = self.sess.users.create('bob', 'rodsuser')
+            ses.users.modify('bob', 'password', 'bpass')
+            set_user_quota(ses, 'bob', 10000)
+            with iRODSSession(user = 'bob', password = 'bpass', host = ses.host, port = ses.port, zone = ses.zone) as user_sess:
+               test_object = user_sess.data_objects.create('/tempZone/home/public/bobfile')
+               with test_object.open('w') as f:
+                   f.write(b'_'*1000)
+            ses.users.calculate_usage()
+            for i in ses.query(Quota).filter(Quota.user_id == bob.id):
+                self.assertEqual(int(i[Quota.over]), -9000)
+        finally:
+            if test_object:
+                test_object.unlink(force = True)
+            if bob:
+                ses.users.remove(bob.name)
 
 
 if __name__ == '__main__':

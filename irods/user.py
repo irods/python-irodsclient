@@ -9,6 +9,13 @@ class Bad_password_change_parameter(Exception): pass
 
 class iRODSUser(object):
 
+    def remove_quota(self, resource = 'total'):
+        self.manager.remove_quota(self.name, resource = resource)
+
+    # TODO: remove this in branch 2.x (#482)
+    def set_quota(self, amount, resource = 'total'):
+        self.manager.set_quota(self.name, amount, resource = resource)
+
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:
@@ -65,6 +72,12 @@ class iRODSUser(object):
 
 
 class iRODSGroup(object):
+
+    def remove_quota(self, resource = 'total'):
+        self.set_quota(amount = 0, resource = resource)
+
+    def set_quota(self, amount, resource = 'total'):
+        self.manager.set_quota(self.name, amount, resource = resource)
 
     def __init__(self, manager, result=None):
         self.manager = manager
