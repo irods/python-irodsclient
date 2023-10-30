@@ -1,4 +1,4 @@
-from .version import __version__
+from .version import __version__, version_as_tuple, version_as_string
 
 import logging
 import os
