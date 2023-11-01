@@ -1,5 +1,6 @@
 from __future__ import print_function
 import ast
+import collections
 import copy
 import io
 import logging
@@ -83,14 +84,40 @@ class DataObjects(iRODSConfiguration):
 
 data_objects = DataObjects()
 
-def _var_items(root):
+# Exposes the significant settable attributes of an iRODSConfiguration object:
+def _config_names(root):
+    slots = getattr(root,'__slots__',())
+    properties = getattr(root,'writeable_properties',())
+    return tuple(slots) + tuple(properties)
+
+# Exposes one level of the configuration hierarchy from the given ("root") node:
+def _var_items(root, leaf_flag = False):
+    if leaf_flag:
+        flag = lambda _:(_,)
+    else:
+        flag = lambda _:()
     if isinstance(root,types.ModuleType):
-        return [(i,v) for i,v in vars(root).items()
-                if isinstance(v,iRODSConfiguration)]
+        return [((i,v) + flag(False)) for i,v in vars(root).items() if isinstance(v,iRODSConfiguration)]
     if isinstance(root,iRODSConfiguration):
-        return [(i, getattr(root,i)) for i in
-                root.__slots__ + getattr(root,'writeable_properties',())]
+        return [(i, getattr(root,i)) + flag(True) for i in _config_names(root)]
     return []
+
+# Recurses through an entire configuration hierarchy:
+def _var_items_as_generator(root = sys.modules[__name__], dotted=''):
+    _v = _var_items(root, leaf_flag = True)
+    for name, sub_node, is_config in _v:
+        dn = (dotted + ('.' if dotted else '') + name)
+        yield dn, sub_node, is_config
+#       # TODO: (#480) When Python2 support is removed, we can instead use the simpler construction:
+#       yield from _var_items_as_generator(root = sub_node, dotted = dn)
+        for _dotted, _root, _is_config in _var_items_as_generator(root = sub_node, dotted = dn):
+            yield _dotted, _root, _is_config
+
+VarItemTuple = collections.namedtuple('VarItemTuple',['dotted','root','is_config'])
+
+def _var_item_tuples_as_generator(root = sys.modules[__name__]):
+    for _ in _var_items_as_generator(root):
+        yield VarItemTuple(*_)
 
 def save(root = None, string='', file = ''):
     """Save the current configuration.
@@ -166,7 +193,9 @@ class _ConfigLoadError:
 class NoConfigError(Exception, _ConfigLoadError): pass
 class BadConfigError(Exception, _ConfigLoadError): pass
 
-def load(root = None, file = '', failure_modes = (), logging_level = logging.WARNING):
+def load(root = None, file = '', failure_modes = (),
+         logging_level = logging.WARNING, use_environment_variables = False):
+
     """Load the current configuration.
 
     An example of a valid line in a configuration file is this:
@@ -225,6 +254,12 @@ def load(root = None, file = '', failure_modes = (), logging_level = logging.WAR
                         raise BadConfigError(message)
                 continue
             _load_config_line(root, match.group('key'), match.group('value'))
+
+        if use_environment_variables:
+            for key, variable in _calculate_overriding_environment_variables().items():
+                value = os.environ.get(variable)
+                if value is not None:
+                    _load_config_line(root, key, value)
     finally:
         if _file:
             _file.close()
@@ -236,9 +271,17 @@ def preserve_defaults():
 
 def autoload(_file_to_load):
     if _file_to_load is not None:
-        load(file = _file_to_load)
+        load(file = _file_to_load, use_environment_variables = True)
 
 def new_default_config():
     module = types.ModuleType('_')
     module.__dict__.update(default_config_dict)
     return module
+
+def overriding_environment_variables():
+    uppercase_and_dot_split = lambda _:_.upper().split('.')
+    return { _tuple.dotted: '__'.join(['PYTHON_IRODSCLIENT_CONFIG']+uppercase_and_dot_split(_tuple.dotted))
+                            for _tuple in _var_item_tuples_as_generator() if _tuple.is_config }
+
+def _calculate_overriding_environment_variables(memo = overriding_environment_variables()):
+    return memo
