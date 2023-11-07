@@ -336,7 +336,7 @@ to a globally set value which the PRC routinely checks when performing the affec
 
 The use of a settings file can be indicated, and the path to that file determined, by setting the environment variable:
 :code:`PYTHON_IRODSCLIENT_CONFIGURATION_PATH`.  If this variable is present but empty, this denotes use of a default settings
-file path of :code:~/.python-irodsclient`;  if the variable's value is of nonzero length, the value should be an absolute path
+file path of :code:`~/.python-irodsclient`;  if the variable's value is of non-zero length, the value should be an absolute path
 to the settings file whose use is desired.  Also, if the variable is set, auto-load of settings will be performed, meaning
 that the act of importing :code:`irods` or any of its submodules will cause the automatic loading the settings from the
 settings file, assuming it exists.  (Failure to find the file at the indicated path will be logged as a warning.)
@@ -345,6 +345,51 @@ Settings can also be saved and loaded manually using the save() and load() funct
 module.  Each of these functions accepts an optional :code:`file` parameter which, if set to a non-empty string, will override
 the settings file path currently "in force" (i.e., the CONFIG_DEFAULT_PATH, as optionally overridden by the environment variable
 PYTHON_IRODSCLIENT_CONFIGURATION_PATH).
+
+Configuration settings may also be individually overridden by defining certain environment variables.  Here are relevant
+descriptions for each one currently available, including the names of the environment variables serving as overrides:
+
+* Setting: Auto-close option for all data objects.
+
+  - Dotted Name: :code:`data_objects.auto_close`
+
+  - Type: :code:`bool`
+
+  - Default Value: :code:`False`
+
+  - Environment Variable Override: :code:`PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__AUTO_CLOSE`
+
+
+* Setting: Default choice of XML parser for all new threads.
+
+  - Dotted Name: :code:`connections.xml_parser_default`
+
+  - Type: :code:`str`
+
+  - Default Value: :code:`"STANDARD_XML"`
+
+  - Possible Values: Any of :code:`["STANDARD_XML", "QUASI_XML", "SECURE_XML"]`
+
+  - Environment Variable Override: :code:`PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT`
+
+For example, if :code:`~/python_irodsclient` contains the line
+::
+
+  connections.xml_parser_default        "QUASI_XML"
+
+then the session below illustrates the effect of defining the appropriate environment variable.  Note the value stored in the variable must be a valid input
+for :code:`ast.literal_eval()`; that is, a primitive Pythonic value - and quoted, for instance, if a string.
+
+.. code-block:: bash
+
+   $ PYTHON_IRODSCLIENT_CONFIGURATION_PATH="" \
+     PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT="'SECURE_XML'" \
+     python -c "import irods.message, irods.client_configuration as c; print (irods.message.default_XML_parser())"
+   XML_Parser_Type.SECURE_XML
+   $ PYTHON_IRODSCLIENT_CONFIGURATION_PATH="" \
+     python -c "import irods.message, irods.client_configuration as c; print (irods.message.default_XML_parser())"
+   XML_Parser_Type.QUASI_XML
+
 
 Computing and Retrieving Checksums
 ----------------------------------
