@@ -1241,6 +1241,36 @@ like :code:`<session>.permissions`, except that the :code:`<session>.acls.get(..
 :code:`<session>.permissions` is therefore deprecated and, in v2.0.0, will be removed in favor of :code:`<session>.acls`.
 
 
+Quotas (v1.1.9+)
+----------------
+
+Quotas may be set for a group:
+
+    session.groups.set_quota('my_group', 50000, resource = 'my_limited_resource')
+
+or per user, prior to iRODS 4.3.0:
+
+    session.users.set_quota('alice', 100000)
+
+(The default for the resource parameter is "total", denoting a general quota usage not bound to a particular resource.)
+
+The Quota model is also available for queries.  So, to determine the space remaining for a certain group on a given resource:
+
+    from irods.models import Quota
+    session.groups.calculate_usage()
+    group, resource = ['my_group', 'my_limited_resource']
+    space_left_in_bytes = list(session.query(Quota.over).filter(Quota.user_id == session.groups.get(group).id,
+                                                                Quota.resc_id == session.resources.get(resource).id))[0][Quota.over] * -1
+
+And, to remove all quotas for a given group, one might (as a rodsadmin) do the following:
+
+    from irods.models import Resource, Quota
+    resc_map = dict([(x[Resource.id],x[Resource.name]) for x in sess.query(Resource)] + [(0,'total')])
+    group = sess.groups.get('my_group')
+    for quota in sess.query(Quota).filter(Quota.user_id == group.id):
+        sess.groups.remove_quota(group.name, resource = resc_map[quota.resc_id])
+
+
 Managing users
 --------------
 
