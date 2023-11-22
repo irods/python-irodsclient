@@ -206,9 +206,7 @@ class _ConfigLoadError:
 class NoConfigError(Exception, _ConfigLoadError): pass
 class BadConfigError(Exception, _ConfigLoadError): pass
 
-def load(root = None, file = '', failure_modes = (),
-         logging_level = logging.WARNING, use_environment_variables = False):
-
+def load(root = None, file = '', failure_modes = (), verify_only = False, logging_level = logging.WARNING, use_environment_variables = False):
     """Load the current configuration.
 
     An example of a valid line in a configuration file is this:
@@ -254,6 +252,8 @@ def load(root = None, file = '', failure_modes = (),
 
         if root is None:
             root = sys.modules[__name__]
+
+        if verify_only: return
 
         for line_number, line in enumerate(_file.readlines()):
             line = line.strip()
