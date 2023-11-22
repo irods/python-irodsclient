@@ -61,7 +61,7 @@ class iRODSUserLogins(object):
 
 def configuration_file_exists():
     try:
-        config.load(failure_modes = (config.NoConfigError,), logging_level = logging.DEBUG)
+        config.load(failure_modes = (config.NoConfigError,), verify_only = True, logging_level = logging.DEBUG)
     except config.NoConfigError:
         return False
     return True
