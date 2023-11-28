@@ -450,11 +450,13 @@ class DataObjectManager(Manager):
             # Use case: auto_close has defaulted to the irods.configuration getter.
             # access entry in irods.configuration
             auto_close = auto_close()
-
         if auto_close:
-            return ManagedBufferedRandom(raw, _session = self.sess)
-
-        return io.BufferedRandom(raw)
+            ret_value = ManagedBufferedRandom(raw, _session = self.sess)
+        else:
+            ret_value = io.BufferedRandom(raw)
+        if 'a' in mode:
+            ret_value.seek(0,io.SEEK_END)
+        return ret_value
 
     def trim(self, path, **options):
 
