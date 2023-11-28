@@ -11,6 +11,7 @@ import logging
 import os
 import random
 import re
+import six
 import socket
 import stat
 import string
@@ -1958,6 +1959,41 @@ class TestDataObjOps(unittest.TestCase):
                     config.data_objects.auto_close = RANDOM_VALUE
                     config.load(**load_logging_options)
                     self.assertTrue(config.data_objects.auto_close, RANDOM_VALUE - i - 1)
+
+    def test_append_mode_will_append_to_data_object__issue_495(self):
+        append_string = b'to_be_written'.lower()
+        reverse_bytes = lambda s: ''.join(reversed(s)) if six.PY2 else bytes(reversed(s))
+        session, data = (self.sess, self.sess.data_objects)
+        testfile = '{}/issue_495'.format(helpers.home_collection(session))
+        # Make sure data object doesn't exist.
+        self.assertFalse(data.exists(testfile))
+        try:
+            # Append to a previously nonexistent data object.
+            with data.open(testfile,'a') as f:
+                f.write(append_string.upper())
+            # Test that the data object, once opened, has the right offset. Then perform a second append.
+            with data.open(testfile,'a+') as f:
+                self.assertTrue(f.tell(), len(append_string))
+                f.write(append_string)
+            # Verify original content written at offset 0.
+            with data.open(testfile,'r') as f:
+                self.assertEqual(f.read(), append_string.upper()+append_string)
+            # Do an open for read/write (in particular, not appending); then perform a write.
+            # (This overwrites the original content at offset 0.)
+            with data.open(testfile,'r+') as f:
+                f.write(reverse_bytes(append_string))
+            # Final test of data object content:
+            # Test that (1) the non-appending write has modified the first half of the content, and 
+            #           (2) the second append has placed the written content in the right location.
+            with data.open(testfile,'r') as f:
+                f.seek(0,io.SEEK_END)
+                self.assertEqual(f.tell(), 2*len(append_string))
+                f.seek(0)
+                self.assertEqual(f.read(), reverse_bytes(append_string) + append_string)
+        finally:
+            if data.exists(testfile):
+                data.unlink(testfile,force=True)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
