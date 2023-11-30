@@ -161,18 +161,31 @@ def save(root = None, string='', file = ''):
 
 def _load_config_line(root, setting, value):
     arr = [_.strip() for _ in setting.split('.')]
+    loadexc = None
     # Compute the object referred to by the dotted name.
-    attr = ''
-    for i in filter(None,arr):
+    try:
+        attr = ''
+        for i in filter(None,arr):
+            if attr:
+                root = getattr(root,attr)
+            attr = i
+        # Assign into the current setting of the dotted name (effectively <root>.<attr>)
+        # using the loaded value.
         if attr:
-            root = getattr(root,attr)
-        attr = i
-    # Assign into the current setting of the dotted name (effectively <root>.<attr>)
-    # using the loaded value.
-    if attr:
-        return setattr(root, attr, ast.literal_eval(value))
+            return setattr(root, attr, ast.literal_eval(value))
+    except Exception as e:
+        loadexc = e
+
+    # If we get this far, there's a problem loading the configuration setting.  Raise an exception or log it.
     error_message = 'Bad setting: root = {root!r}, setting = {setting!r}, value = {value!r}'.format(**locals())
-    raise RuntimeError (error_message)
+    if loadexc:
+        error_message += " [{loadexc!r}]".format(**locals())
+    if allow_config_load_errors:
+        raise RuntimeError(error_message)
+    else:
+        logging.getLogger(__name__).log(logging.ERROR, '%s', error_message)
+
+allow_config_load_errors = ast.literal_eval(os.environ.get('PYTHON_IRODSCLIENT_CONFIGURATION_LOAD_ERRORS_FATAL','False'))
 
 # The following regular expression is used to match a configuration file line of the form:
 # ---------------------------------------------------------------
