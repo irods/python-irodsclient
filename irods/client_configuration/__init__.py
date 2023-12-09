@@ -1,6 +1,7 @@
 from __future__ import print_function
 import ast
 import collections
+import contextlib
 import copy
 import io
 import logging
@@ -172,7 +173,48 @@ def save(root = None, string='', file = ''):
         if _file and auto_close_settings:
             _file.close()
 
-def _load_config_line(root, setting, value):
+@contextlib.contextmanager
+def loadlines(entries, common_root = sys.modules[__name__]):
+    """Temporarily change the values for one or more settings in the PRC's configuration.  Useful for test code.
+
+       Parameters:
+           entries: list of dict objects of the form dict(setting="dotted.path.to.setting", value=<temp_value>).
+           common_root: root point in configuration tree (best left to its default value).
+
+       Sample usage:
+       with loadlines(entries=[dict(setting='legacy_auth.pam.password_for_auto_renew',value='my-pam-password'),
+                               dict(setting='legacy_auth.pam.store_password_to_environment',value=True)]):
+           # ... test code for which the altered setting(s) should be in force
+    """
+    root_item = [('root',common_root)]
+    entries_ = copy.deepcopy(entries)
+    identity = lambda _:_
+    try:
+        # Load config values.
+        entries_ = []
+        for e in entries:
+            e_ = dict(root_item + list(e.items()))
+            L = []
+            _load_config_line(eval_func = identity, return_old = L, **e_)
+            e_['value'] = L[0]
+            entries_.append(e_)
+        yield
+    finally:
+        # Restore old values.
+        for e_ in entries_:
+            _load_config_line(eval_func = identity, **e_)
+
+
+def _load_config_line(root, setting, value, return_old = None, eval_func = ast.literal_eval):
+    """Low-level utility function for loading a line of settings, with the option to return the old (displaced) value.
+
+       The 'root' refers to the starting point in the configuration tree.  Its meaning is the same as in loadlines().
+       The 'setting' is a string containing the dotted name for the configuration setting.
+       The 'value' is the new value to be loaded.  This will be evaluated via 'eval_func' (see below).
+       The 'return_old' is either None or a list which returns the displaced value back to the caller.
+       The 'eval_func' is a function for making the supplied 'value' parameter into a Pythonic value to be assigned to the given 'setting'.
+    """
+
     arr = [_.strip() for _ in setting.split('.')]
     loadexc = None
     # Compute the object referred to by the dotted name.
@@ -185,7 +227,10 @@ def _load_config_line(root, setting, value):
         # Assign into the current setting of the dotted name (effectively <root>.<attr>)
         # using the loaded value.
         if attr:
-            return setattr(root, attr, ast.literal_eval(value))
+            if isinstance(return_old,list):
+                # Return, in the provided list, the old value of the setting.
+                return_old.append(getattr(root,attr))
+            return setattr(root, attr, eval_func(value))
     except Exception as e:
         loadexc = e
 
