@@ -360,6 +360,39 @@ descriptions for each one currently available, including the names of the enviro
   - Environment Variable Override: :code:`PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__AUTO_CLOSE`
 
 
+* Setting: Number of hours to request for the new password entry's TTL (Time To Live) when auto-renewing PAM-authenticated sessions.
+
+  - Dotted Name: :code:`legacy_auth.pam.time_to_live_in_hours`
+
+  - Type: :code:`int`
+
+  - Default Value: :code:`0` (Meaning: conform to server's default TTL value.)
+
+  - Environment Variable Override: :code:`PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__TIME_TO_LIVE_IN_HOURS`
+
+
+* Setting: Plaintext PAM password value, to be used when auto-renewing PAM-authenticated sessions because TTL has expired.
+
+  - Dotted Name: :code:`legacy_auth.pam.password_for_auto_renew`
+
+  - Type: :code:`str`
+
+  - Default Value: :code:`""` (Meaning: no password is set, and thus no automatic attempts will be made at auto-renewing PAM authentication.)
+
+  - Environment Variable Override: :code:`PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__PASSWORD_FOR_AUTO_RENEW`.  (But note that use of the environment variable could pose a threat to password security.)
+
+
+* Setting: Whether to write the (native encoded) new hashed password to the iRODS password file.  This step is only performed while auto-renewing PAM authenticated sessions.
+
+  - Dotted Name: :code:`legacy_auth.pam.store_password_to_environment`
+
+  - Type: :code:`bool`
+
+  - Default Value: :code:`False`
+
+  - Environment Variable Override: :code:`PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__STORE_PASSWORD_TO_ENVIRONMENT`
+
+
 * Setting: Default choice of XML parser for all new threads.
 
   - Dotted Name: :code:`connections.xml_parser_default`
