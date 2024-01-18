@@ -11,7 +11,7 @@ with open(os.path.join(here, 'irods/version.py')) as file:
 
 
 # Get description
-with codecs.open('README.rst', 'r', 'utf-8') as file:
+with codecs.open('README.md', 'r', 'utf-8') as file:
     long_description = file.read()
 
 
@@ -21,7 +21,7 @@ setup(name='python-irodsclient',
       author_email='support@irods.org',
       description='A python API for iRODS',
       long_description=long_description,
-      long_description_content_type='text/x-rst',
+      long_description_content_type='text/markdown',
       license='BSD',
       url='https://github.com/irods/python-irodsclient',
       keywords='irods',
