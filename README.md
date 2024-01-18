@@ -1343,43 +1343,31 @@ relations:
 Tracking and manipulating replicas of Data Objects
 --------------------------------------------------
 
-Putting together the techniques we've seen so far, it's not hard to
-write functions that achieve useful, common goals. Suppose that for all
-data objects containing replicas on a given named resource (the
-"source") we want those replicas "moved" to a second, or
-"destination" resource. We can achieve it with a function such as the
-one below. It achieves the move via a replication of the data objects
-found to the destination resource , followed by a trimming of each
-replica from the source. We assume for our current purposed that all
-replicas are "good", ie have a status of "1" :
+Putting together the techniques we've seen so far, it's not hard to write client code to accomplish
+useful, common tasks.  Suppose, for instance, that a data object contains replicas on a given resource
+or resource hierarchy (the "source"), and we want those replicas "moved" to a second resource
+(the "destination").  This can be done by combining the replicate and trim operations, as in the following
+code excerpt.
+
+We'll assume, for our current purposes, that all pre-existing replicas are good (ie. they have a
+`status` attribute of `'1'`); and that the nodes in question are named `src` and `dest`,
+with `src` being the root node of a resource hierarchy and `dest` just a simple storage node.
+
+Then we can accomplish the replica "move" thus:
 
 ```python
-from irods.resource import iRODSResource
-from irods.collection import iRODSCollection
-from irods.data_object import iRODSDataObject
-from irods.models import Resource,Collection,DataObject
-def repl_and_trim (srcRescName, dstRescName = '', verbose = False):
-    objects_trimmed = 0
-    q = session.query(Resource).filter(Resource.name == srcRescName)
-    srcResc = iRODSResource( session.resources, q.one())
-    # loop over data objects found on srcResc
-    for q_row in session.query(Collection,DataObject) \
-                        .filter(DataObject.resc_id == srcResc.id):
-        collection =  iRODSCollection (session.collections, result = q_row)
-        data_object = iRODSDataObject (session.data_objects, parent = collection, results = (q_row,))
-        objects_trimmed += 1
-        if verbose :
-            import pprint
-            print( '--------', data_object.name, '--------')
-            pprint.pprint( [vars(r) for r in data_object.replicas if
-                            r.resource_name == srcRescName] )
-        if dstRescName:
-            objects_trimmed += 1
-            data_object.replicate(dstRescName)
-            for replica_number in [r.number for r in data_object.replicas]:
-                options = { kw.DATA_REPL_KW: replica_number }
-                data_object.unlink( **options )
-    return objects_trimmed
+  path = '/path/to/data/object'
+  data = session.data_objects.get('/path/to/data/object')
+
+  # Replicate the data object to the destination.
+
+  data.replicate(**{kw.DEST_RESC_NAME_KW: 'dest'})
+
+  # Find and trim replicas on the source resource hierarchy.
+
+  replica_numbers = [r.number for r in d.replicas if r.resc_hier.startswith('src;')]
+  for number in replica_numbers:
+      session.data_objects.trim(path, **{kw.DATA_REPL_NUM:number, kw.COPIES_KW:1})
 ```
 
 Listing Users and Groups ; calculating Group Membership
