@@ -1,6 +1,6 @@
 import os
 
-__version__ = '1.1.9'
+__version__ = '2.0.0'
 
 def version_as_string():
     return os.environ.get('PYTHON_IRODSCLIENT_VERSION', __version__.strip())
