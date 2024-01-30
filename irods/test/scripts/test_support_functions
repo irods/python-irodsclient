@@ -1,0 +1,194 @@
+SCRIPTDIR=${BASH_SOURCE[0]}
+up_from_script_dir() {
+  local x incr=""
+  for ((x=0;x<${1:-0};x++)); do incr+="/.."; done
+  realpath "$(dirname "$SCRIPTDIR")""$incr"
+}
+
+# Sample usages:
+#   By user irods: set_up_ssl "" "-q"
+#   By sudo enabled user: set_up_ssl "sudo" "-q"
+set_up_ssl() {
+  local SUDO=${1:-""}
+  local OPTS=${2:-""}
+  $SUDO su - irods  -c "python3 $(up_from_script_dir 1)/setupssl.py $OPTS"
+}
+
+# Clears out environment and resets to rodsadmin 'rods'.
+# Meant mostly to allow initial steps by a rodsadminfor setting up tests.
+
+iinit_as_rods() {
+  rm -fr ~/.irods
+  iinit <<<$(hostname)$'\n1247\nrods\ntempZone\nrods'
+}
+
+dot_to_space() {
+  sed 's/\./ /g'<<<"$1"
+}
+
+CLEANUP=$':\n'
+
+GT() { (return 1); echo $?; }
+LT() { (return -1); echo $?; }
+EQ() { (return 0); echo $?; }
+
+compare_int_tuple() {
+    local x=($1) y=($2)
+    local lx=${#x[@]} ly=${#y[@]}
+    local i maxlen=$((lx > ly ? lx : ly))
+    for ((i=0;i<maxlen;i++)) {
+        if [ $i -ge $lx ]; then return `LT`; fi
+        if [ $i -ge $ly ]; then return `GT`; fi
+        if [ ${x[$i]} -lt ${y[$i]} ]; then return `LT`; fi
+        if [ ${x[$i]} -gt ${y[$i]} ]; then return `GT`; fi
+    }
+    return `EQ`
+}
+
+irods_version()
+{
+  local X=''
+  [[ `ihelp -h|tail -1` =~ [0-9]+(\.[0-9]+)+ ]] && X=${BASH_REMATCH[0]}
+  echo "$X"
+}
+
+pam_auth_string()
+{
+    compare_int_tuple "$(dot_to_space `irods_version`)" "$(dot_to_space 4.3)"
+    if [ $? = `GT` ]; then
+        echo "pam_password"
+    else
+        echo "pam"
+    fi
+}
+
+get_auth_param () { iadmin get_grid_configuration authentication $1; }
+
+with_change_auth_params_for_test()
+{
+  local restore_cmd=""
+
+  # Use saved environment (must be rodsadmin).
+  if [ -e ~/.irods.$$ ]; then
+      export IRODS_ENVIRONMENT_FILE=~/.irods.$$/irods_environment.json
+      export IRODS_AUTHENTICATION_FILE=~/.irods.$$/.irodsA
+  fi
+
+  while [ $# -ge 2 ]; do
+    local reset_value=$(iadmin get_grid_configuration authentication $1)
+    restore_cmd+=$'\n'"iadmin set_grid_configuration authentication $1 $reset_value"
+    [ -n "$2" ] && iadmin set_grid_configuration authentication $1 $2
+    shift 2
+  done
+
+  unset IRODS_ENVIRONMENT_FILE IRODS_AUTHENTICATION_FILE
+
+  if [[ $SET_CLEANUP = [yY]* ]]; then
+    CLEANUP+="$restore_cmd"
+  fi
+}
+
+_begin_pam_environment_and_password() {
+    # If the environment variable SKIP_IINIT_FOR_PASSWORD is set to a non-null length string, then
+    # the step of generating the .irodsA containing the PAM authentication secret will be skipped.
+
+    local username=${2:-alice}
+    local ENV='{
+    "irods_host": "localhost",
+    "irods_zone_name": "tempZone",
+    "irods_port": 1247,
+    "irods_user_name": "'"$username"'",
+    "irods_authentication_scheme": "'$(pam_auth_string)'",
+    "irods_client_server_negotiation": "request_server_negotiation",
+    "irods_client_server_policy": "CS_NEG_REQUIRE",
+    "irods_ssl_ca_certificate_file": "/etc/irods/ssl/irods.crt",
+    "irods_ssl_verify_server": "cert",
+    "irods_encryption_key_size": 16,
+    "irods_encryption_salt_size": 8,
+    "irods_encryption_num_hash_rounds": 16,
+    "irods_encryption_algorithm": "AES-256-CBC"
+    }'
+    rm -fr ~/.irods.$$
+    mv ~/.irods ~/.irods.$$
+    mkdir ~/.irods
+    echo "$ENV" > ~/.irods/irods_environment.json
+
+    # TODO: check: it seems /dev/tty won't work if docker exec is not invoked with -t
+    if [ -n "$1" ]; then
+        iinit <<<"$1" 2>/tmp/iinit_as_alice.log
+    fi
+}
+
+_end_pam_environment_and_password() {
+    rm -fr ~/.irods
+    mv ~/.irods.$$ ~/.irods
+}
+
+setup_pam_login_for_user() {
+    local user=${2:-alice}
+    sudo useradd $user --create-home
+    local PASSWD=${1:-test123}
+    sudo chpasswd <<<"$user:$PASSWD"
+    iadmin mkuser $user rodsuser
+    _begin_pam_environment_and_password "$PASSWD" $user
+}
+
+setup_pam_login_for_alice() {
+    setup_pam_login_for_user "$1" alice
+}
+
+finalize_pam_login_for_user() {
+    local USER=${1}
+    _end_pam_environment_and_password
+    iadmin rmuser "$USER"
+    sudo userdel "$USER" --remove
+}
+
+finalize_pam_login_for_alice() {
+    finalize_pam_login_for_user alice
+}
+
+test_specific_cleanup() {
+  eval "$CLEANUP"
+}
+
+# PostgreSQL only
+age_out_pam_password() {
+  local id=$(iquest %s "select USER_ID where USER_NAME = '$1'")
+  local offset=$(sudo su - postgres -c "psql -t ICAT -c 'select pass_expiry_ts from r_user_password where user_id = $id'")
+  local mtime=$(sudo su - postgres -c "psql -t ICAT -c 'select modify_ts from r_user_password where user_id = $id'")
+  mtime=$(sed 's/^\s*0//' <<<"$mtime")
+  ((offset+=1))
+  local new_time=$((mtime - offset))
+  sudo su - postgres -c "psql ICAT -c 'update r_user_password set create_ts=$new_time, modify_ts=$new_time where user_id=$id'"
+}
+
+call_irodsctl() {
+    local arg=${1:-restart}
+    sudo su - irods -c "./irodsctl $arg"
+}
+
+add_irods_to_system_pam_configuration() {
+    local tempfile=/tmp/irods-pam-config.$$
+    cat <<-EOF >$tempfile
+	auth        required      pam_env.so
+	auth        sufficient    pam_unix.so
+	auth        requisite     pam_succeed_if.so uid >= 500 quiet
+	auth        required      pam_deny.so
+	EOF
+    sudo chown root.root $tempfile
+    sudo mv $tempfile /etc/pam.d/irods
+}
+
+setup_preconnect_preference() {
+    sudo su irods -c "sed -i.orig 's/\(^\s*acPreConnect.*CS_NEG\)\([A-Z_]*\)/\1_$1/' /etc/irods/core.re"
+}
+
+# requires image to descend from bats-python3
+activate_virtual_env_with_prc_installed()
+{
+    # install python client using copy of /prc so that bdist doesn't build in the readonly mount
+    sudo su - -c "source /py3/bin/activate && cp -rp /prc /prc-copy && \
+                  pip install '/prc-copy[tests]' && sudo rm -fr /prc-copy"
+    source /py3/bin/activate
+}
