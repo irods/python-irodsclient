@@ -48,7 +48,7 @@ print ('env_auth_scheme=%s' % ses.pool.account._original_authentication_scheme)
     HOME_COLLECTION=$(ipwd)
     sleep 9
     OUTPUT=$($PYTHON -c "$SCRIPT" 2>&1 >/dev/null || true)
-    grep 'RuntimeError: Time To Live' <<<"$OUTPUT"
+    grep 'CAT_PASSWORD_EXPIRED' <<<"$OUTPUT"
 
     # Test that the $SCRIPT, when run with proper settings, can successfully reset the password.
 
