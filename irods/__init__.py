@@ -3,6 +3,22 @@ from .version import __version__, version_as_tuple, version_as_string
 import logging
 import os
 
+def env_filename_from_keyword_args(kwargs):
+    try:
+        env_file = kwargs.pop('irods_env_file')
+    except KeyError:
+        try:
+            env_file = os.environ['IRODS_ENVIRONMENT_FILE']
+        except KeyError:
+            env_file = os.path.expanduser('~/.irods/irods_environment.json')
+    return env_file
+
+def derived_auth_filename(env_filename):
+    if not env_filename:
+        return ''
+    default_irods_authentication_file = os.path.join(os.path.dirname(env_filename),'.irodsA')
+    return os.environ.get('IRODS_AUTHENTICATION_FILE', default_irods_authentication_file)
+
 # This has no effect if basicConfig() was previously called.
 logging.basicConfig()
 

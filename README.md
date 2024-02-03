@@ -162,6 +162,47 @@ the `encryption_*` and `ssl_*` options
 directly to the constructor as keyword arguments, even though it is
 required when they are placed in the environment file.
 
+Creating PAM or Native Credentials File (.irodsA)
+-------------------------------------------------
+
+Two free functions exist for creating encoded authentication files:
+```
+irods.client_init.write_native_credentials_to_secrets_file
+irods.client_init.write_pam_credentials_to_secrets_file
+```
+
+Each takes a cleartext password and writes an appropriately processed version of it
+into an .irodsA (secrets) file in the login environment.
+
+Note, in the `pam_password` case, this involves sending the cleartext password
+to the server (SSL should thus be enabled!) and then writing the scrambled token that
+returns from the transaction.
+
+If an .irodsA file exists already, it will be overwritten.
+
+Examples:
+For the `native` authentication scheme, we can use the currently set iRODS password to create .irodsA file from Python thus:
+
+```python
+import irods.client_init as iinit
+iinit.write_native_credentials_to_secrets_file(irods_password)
+```
+
+For the `pam_password` authentication scheme, we must first ensure an `irods_environment.json` file exists in the 
+client environment (necessary for establishing SSL/TLS connection parameters as well as obtaining a PAM token from the server after connecting)
+and then make the call to write .irodsA using the Bash commands:
+
+```bash
+$ cat > ~/.irods/irods_environment.json << EOF
+{
+  "irods_user_name":"rods",
+  "irods_host":"server-hostname",
+  ...  [all other connection settings, including SSL parameters, needed for communication with iRODS] ...
+}
+EOF
+$ python -c "import irods.client_init as iinit; iinit.write_pam_credentials_to_secrets_file(pam_cleartext_password)"
+```
+
 PAM logins
 ----------
 
@@ -170,6 +211,16 @@ iCommands.
 
 Caveat for iRODS 4.3+: when upgrading from 4.2, the "irods_authentication_scheme" setting must be changed from "pam" to "pam_password" in
 `~/.irods/irods_environment.json` for all file-based client environments.
+
+To use the PRC PAM login credentials update function for the client login environment, we can set these two configuration variables:
+
+```
+legacy_auth.pam.password_for_auto_renew "my_pam_password"
+legacy_auth.pam.store_password_to_environment True
+```
+
+Optionally, the `legacy_auth.pam.time_to_live_in_hours` may also be set to determine the time-to-live for the new password.
+Leaving it at the default value defers this decision to the server.
 
 Maintaining a connection
 ------------------------
