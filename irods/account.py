@@ -1,15 +1,25 @@
+from irods import derived_auth_filename
+
 class iRODSAccount(object):
+
+    @property
+    def derived_auth_file(self):
+        return derived_auth_filename(self.env_file)
 
     def __init__(self, irods_host, irods_port, irods_user_name, irods_zone_name,
                  irods_authentication_scheme='native',
                  password=None, client_user=None,
-                 server_dn=None, client_zone=None, **kwargs):
+                 server_dn=None, client_zone=None,
+                 env_file = '',
+                 **kwargs):
+
 
         # Allowed overrides when cloning sessions. (Currently hostname only.)
         for k,v in kwargs.pop('_overrides',{}).items():
             if k =='irods_host':
                 irods_host = v
 
+        self.env_file = env_file
         tuplify = lambda _: _ if isinstance(_,(list,tuple)) else (_,)
         schemes = [_.lower() for _ in tuplify(irods_authentication_scheme)]
 
