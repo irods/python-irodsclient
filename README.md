@@ -1543,7 +1543,7 @@ the `get()` method was invoked with the parameter
 permissions as a by-product of group ACLs, whereas data objects would
 not.
 
-In release v1.1.6, we move to correct this inconsistency by introducing
+In release v1.1.6, we moved to correct this inconsistency by introducing
 the synonym `<session>.acls` that acts almost identically
 like `<session>.permissions`, except that the
 `<session>.acls.get(...)` method does not accept the
@@ -1551,8 +1551,8 @@ like `<session>.permissions`, except that the
 permissions independent of their access to an object via group
 membership, this can be achieved with another query.
 
-`<session>.permissions` is therefore deprecated and, in
-v2.0.0, will be removed in favor of `<session>.acls`.
+`<session>.permissions` was therefore removed in v2.0.0
+in favor of `<session>.acls`.
 
 Quotas (v2.0.0)
 ---------------
