@@ -1554,8 +1554,8 @@ membership, this can be achieved with another query.
 `<session>.permissions` is therefore deprecated and, in
 v2.0.0, will be removed in favor of `<session>.acls`.
 
-Quotas (v1.1.9+)
-----------------
+Quotas (v2.0.0)
+---------------
 
 Quotas may be set for a group:
 
