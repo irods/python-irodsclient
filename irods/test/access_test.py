@@ -264,14 +264,14 @@ class TestAccess(unittest.TestCase):
                            iRODSAccess ('read', self.coll_path, fu.name, self.sess.zone)
                          ]
             for perm in perms1data: self.sess.acls.set ( perm )
-            p1 = self.sess.permissions.get ( self.coll, report_raw_acls = True)
+            p1 = self.sess.acls.get(self.coll)
             self.assertEqual(self.perms_lists_symm_diff( perms1data, p1 ), my_ownership)
             #--data object--
             perms2data = [ iRODSAccess ('write',data.path, fg.name, self.sess.zone),
                            iRODSAccess ('read', data.path, eu.name, self.sess.zone)
                          ]
             for perm in perms2data: self.sess.acls.set ( perm )
-            p2 = self.sess.permissions.get ( data, report_raw_acls = True)
+            p2 = self.sess.acls.get(data)
             self.assertEqual(self.perms_lists_symm_diff( perms2data, p2 ), my_ownership)
         finally:
             ids_for_delete = [ u.id for u in (fu,fg,eu,eg) if u is not None ]
