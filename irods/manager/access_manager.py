@@ -32,11 +32,7 @@ def users_by_ids(session,ids=()):
 
 class AccessManager(Manager):
 
-    def get(self, target, report_raw_acls = False, **kw):
-
-        if not kw.pop('suppress_deprecation_warning',False):
-            warnings.warn('Use of session_obj.permissions is deprecated in v1.1.6',
-                          DeprecationWarning, stacklevel = 2)
+    def get(self, target, report_raw_acls = True, **kw):
 
         if report_raw_acls:
             return self.__get_raw(target, **kw)  # prefer a behavior consistent  with 'ils -A`
@@ -130,10 +126,6 @@ class AccessManager(Manager):
 
 
     def set(self, acl, recursive=False, admin=False, **kw):
-
-        if not kw.pop('suppress_deprecation_warning',False):
-            warnings.warn('Use of session_obj.permissions is deprecated in v1.1.6',
-                          DeprecationWarning, stacklevel = 2)
 
         prefix = 'admin:' if admin else ''
 

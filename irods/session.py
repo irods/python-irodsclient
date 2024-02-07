@@ -65,10 +65,6 @@ class iRODSSession(object):
     def auth_file (self):
         return self._auth_file
 
-    # session.acls will act identically to session.permissions, except its `get'
-    # method has a default parameter of report_raw_acls = True, so it enumerates
-    # ACLs exactly in the manner of "ils -A".
-
     @property
     def available_permissions(self):
         from irods.access import (iRODSAccess,_iRODSAccess_pre_4_3_0)
@@ -123,18 +119,6 @@ class iRODSSession(object):
             _groups = self._groups = _GroupManager(self.user_groups.sess)
         return self._groups
 
-    @property
-    def acls(self):
-        class ACLs(self.permissions.__class__):
-            def set(self, acl, recursive=False, admin=False, **kw):
-                kw['suppress_deprecation_warning'] = True
-                return super(ACLs, self).set(acl, recursive=recursive, admin=admin, **kw)
-            def get(self, target, **kw):
-                kw['suppress_deprecation_warning'] = True
-                return super(ACLs,self).get(target, report_raw_acls = True, **kw)
-        _acls = getattr(self,'_acls',None)
-        if not _acls: _acls = self._acls = ACLs(self.permissions.sess)
-        return _acls
 
     def __init__(self, configure = True, auto_cleanup = True, **kwargs):
         self.pool = None
@@ -150,7 +134,7 @@ class iRODSSession(object):
         self.collections = CollectionManager(self)
         self.data_objects = DataObjectManager(self)
         self.metadata = MetadataManager(self)
-        self.permissions = AccessManager(self)
+        self.acls = AccessManager(self)
         self.users = UserManager(self)
         self.user_groups = GroupManager(self)
         self.resources = ResourceManager(self)
