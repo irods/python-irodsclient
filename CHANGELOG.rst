@@ -1,6 +1,31 @@
 Changelog
 =========
 
+v2.0.0 (2024-02-12)
+-------------------
+- [#3] version bump for 2.0.0 [Terrell Russell]
+- [#3] update project description [Terrell Russell]
+- [#495] append modes seek to end on data_object.open(...) [Daniel Moore]
+- [#510] update README to reflect removal of session.permissions [Terrell Russell]
+- [#510] change permissions to acls [Daniel Moore]
+- [#504] modify replicate/trim code snippet and description [Daniel Moore]
+- [#459] respect the default_resource setting for replication [Daniel Moore]
+- [#484,#509] Update version mentioned in README for Quota [Terrell Russell]
+- [#503] swap readme from .rst to markdown [Terrell Russell]
+- [#484] change to proper RST marker "::" in quotas section [Daniel Moore]
+- [#485][#430][#494] document new legacy_auth.pam.* settings [Daniel Moore]
+- [#501] context manager to temporarily alter settings [Daniel Moore]
+- [#430][#494][#498] client auth "plugins" / pam_password compatibility / TTL fix [Daniel Moore]
+- [#485] allow detection of config without actually loading it. [Daniel Moore]
+- [#462][#399] Default the dataSize to 0 and prefer DATA_SIZE_KW over seek [Daniel Moore]
+- [#497] suppress fatal errors when loading configuration [Daniel Moore]
+- [#485][#489] document available settings and override environment variables [Daniel Moore]
+- [#489] allow environment variable overrides of individual settings during autoload [Daniel Moore]
+- [#485] writeable_properties including xml parser [Daniel Moore]
+- [#484] Add quotas to README [Daniel Moore]
+- [#474][#479] Allow querying, setting, and removing quotas [Daniel Moore]
+- [#483] make PRC version available as tuple [Daniel Moore]
+
 v1.1.9 (2023-10-13)
 -------------------
 - [#471][#472] allow save, load, and autoload of configuration [Daniel Moore]
