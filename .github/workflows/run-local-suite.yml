@@ -1,0 +1,31 @@
+# Run the client test suite in a Docker container, targeting a locally running instance of the iRODS server.
+# (Documentation and implementation for the test harness may be found in `irods/test/harness`.)
+
+name: run-local-suite
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    timeout-minutes: 20
+
+    name: Python ${{ matrix.python }}, iRODS ${{ matrix.irods_server }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ./irods/test/harness
+    strategy:
+      matrix:
+        python: ['3.9','3.13']
+        irods_server: ['4.3.4','5.0.2']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build images
+        run: ./create_docker_images.sh "${{ matrix.irods_server }}" "${{ matrix.python }}"
+
+      - name: run tests
+        run: |
+          ./docker_container_driver.sh -V ../scripts/run_suite_locally.sh

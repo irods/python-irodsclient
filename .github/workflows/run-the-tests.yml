@@ -1,0 +1,41 @@
+# Create a networked set of containers (via a Docker compose project) on which to run the client test suite.
+# (For further information, see the README in `docker-testing`.)
+
+name: run-the-tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    timeout-minutes: 20
+
+    name: Python ${{ matrix.python }}, iRODS ${{ matrix.irods_server }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ./docker-testing
+    strategy:
+      matrix:
+        python: ['3.9','3.13']
+        irods_server: ['4.3.4','5.0.2']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start containers
+        run: ./start_containers.sh "${{ matrix.irods_server }}" "${{ matrix.python }}"
+
+      - name: run test
+        run: |
+          while :; do
+            client_container=$(docker ps --format "{{.Names}}"|grep python.client)
+            [ -n "$client_container" ] && break
+            sleep 1
+          done
+          echo "client_container = [$client_container]"
+          docker exec "${client_container}" /repo_root/docker-testing/run_tests.sh
+
+      - name: Stop containers
+        if: always()
+        run: ./stop_containers.sh "${{ matrix.irods_server }}" "${{ matrix.python }}"

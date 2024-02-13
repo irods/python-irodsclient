@@ -534,7 +534,7 @@ class TestMiscellaneous(unittest.TestCase):
                 s.users.get("bob")
             os.unlink(bob_auth)
             # -- Check that we raise an appropriate exception pointing to the missing auth file path --
-            with self.assertRaisesRegexp(NonAnonymousLoginWithoutPassword, bob_auth):
+            with self.assertRaisesRegex(NonAnonymousLoginWithoutPassword, bob_auth):
                 with helpers.make_session(**login_options) as s:
                     s.users.get("bob")
         finally:

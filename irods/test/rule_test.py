@@ -20,7 +20,7 @@ import io
 
 RE_Plugins_installed_run_condition_args = (
     os.environ.get("PYTHON_RULE_ENGINE_INSTALLED", "*").lower()[:1] == "y",
-    "Test depends on server having Python-REP installed beyond the default options",
+    "Test depends on server having Python-REP installed (set PYTHON_RULE_ENGINE_INSTALLED=yes in environment)."
 )
 
 
@@ -420,7 +420,7 @@ class TestRule(unittest.TestCase):
         )
         output = r.execute()
         lines = self.lines_from_stdout_buf(output)
-        self.assertRegexpMatches(lines[0], r".*\[Hello world!\]")
+        self.assertRegex(lines[0], r".*\[Hello world!\]")
 
     def test_rulefile_in_file_like_object_2__336(self):
 
@@ -442,8 +442,8 @@ class TestRule(unittest.TestCase):
         r = Rule(self.sess, rule_file=io.BytesIO(rule_file_contents.encode("utf-8")))
         output = r.execute()
         lines = self.lines_from_stdout_buf(output)
-        self.assertRegexpMatches(lines[0], r"\[STRING\]\[\]")
-        self.assertRegexpMatches(lines[1], r"\[STRING\]\[\]")
+        self.assertRegex(lines[0], r"\[STRING\]\[\]")
+        self.assertRegex(lines[1], r"\[STRING\]\[\]")
 
         r = Rule(
             self.sess,
@@ -452,8 +452,8 @@ class TestRule(unittest.TestCase):
         )
         output = r.execute()
         lines = self.lines_from_stdout_buf(output)
-        self.assertRegexpMatches(lines[0], r"\[INTEGER\]\[5\]")
-        self.assertRegexpMatches(lines[1], r"\[STRING\]\[A String\]")
+        self.assertRegex(lines[0], r"\[INTEGER\]\[5\]")
+        self.assertRegex(lines[1], r"\[STRING\]\[A String\]")
 
 
 if __name__ == "__main__":

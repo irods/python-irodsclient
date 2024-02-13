@@ -683,16 +683,16 @@ class TestMeta(unittest.TestCase):
 
     def test_nonstring_as_AVU_value_raises_an_error__issue_434(self):
         args = ("an_attribute", 0)
-        with self.assertRaisesRegexp(Bad_AVU_Field, "incorrect type"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "incorrect type"):
             self.coll.metadata.set(*args)
-        with self.assertRaisesRegexp(Bad_AVU_Field, "incorrect type"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "incorrect type"):
             self.coll.metadata.add(*args)
 
     def test_empty_string_as_AVU_value_raises_an_error__issue_434(self):
         args = ("an_attribute", "")
-        with self.assertRaisesRegexp(Bad_AVU_Field, "zero-length"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "zero-length"):
             self.coll.metadata.set(*args)
-        with self.assertRaisesRegexp(Bad_AVU_Field, "zero-length"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "zero-length"):
             self.coll.metadata.add(*args)
 
     @unittest.skipUnless(
@@ -724,10 +724,11 @@ class TestMeta(unittest.TestCase):
         prepend_col_prefix_if_needed = lambda s: (
             "COL_" + s if not s.startswith("COL_") else s
         )
+        current_server_version = self.sess.server_version
         prc_column_defs = sorted(
             [
                 (prepend_col_prefix_if_needed(i[1].icat_key), i[1].icat_id)
-                for i in ModelBase.column_items
+                for i in ModelBase.column_items if current_server_version >= i[1].min_version
             ]
         )
 

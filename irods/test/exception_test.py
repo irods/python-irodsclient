@@ -41,8 +41,8 @@ class TestException(unittest.TestCase):
             excep_repr = repr(exc)
             errno_object = irods.exception.Errno(errno.EACCES)
             errno_repr = repr(errno_object)
-            self.assertRegexpMatches(errno_repr, r"\bErrno\b")
-            self.assertRegexpMatches(
+            self.assertRegex(errno_repr, r"\bErrno\b")
+            self.assertRegex(
                 errno_repr, """['"]{msg}['"]""".format(msg=os.strerror(errno.EACCES))
             )
             self.assertIn(errno_repr, excep_repr)
