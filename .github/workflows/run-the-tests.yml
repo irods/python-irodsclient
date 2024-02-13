@@ -1,0 +1,37 @@
+name: run-the-tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    timeout-minutes: 20
+
+    name: ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ./docker-testing
+    strategy:
+      matrix:
+        python: ['3.9','3.13']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start containers
+        run: ./start_containers.sh "${{ matrix.python }}"
+
+      - name: run test
+        run: |
+          while :; do
+            client_container=$(docker ps --format "{{.Names}}"|grep python.client)
+            [ -n "$client_container" ] && break
+            sleep 1
+          done
+          echo "client_container = [$client_container]"
+          docker exec "${client_container}" /repo_root/docker-testing/run_tests.sh
+
+      - name: Stop containers
+        if: always()
+        run: docker compose -f harness-docker-compose.yml down
