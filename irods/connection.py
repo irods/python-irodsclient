@@ -65,9 +65,13 @@ class Connection(object):
         self._disconnected = False
 
         scheme = self.account._original_authentication_scheme
-        auth_type = ''
+
+        # These variables are just useful diagnostics.  The login_XYZ() methods should fail by
+        # raising exceptions if they encounter authentication errors.
+        auth_module = auth_type = ''
 
         if self.server_version >= (4,3,0):
+            auth_module = None
             # use client side "plugin" module: irods.auth.<scheme>
             irods.auth.load_plugins(subset=[scheme])
             auth_module = getattr(irods.auth, scheme, None)
@@ -77,19 +81,18 @@ class Connection(object):
         else:
             # use legacy (iRODS pre-4.3 style) authentication
             auth_type = scheme
-            try:
-                if scheme == NATIVE_AUTH_SCHEME:
-                    self._login_native()
-                elif scheme == GSI_AUTH_SCHEME:
-                    self.client_ctx = None
-                    self._login_gsi()
-                elif scheme == PAM_AUTH_SCHEME:
-                    self._login_pam()
-            except:
+            if scheme == NATIVE_AUTH_SCHEME:
+                self._login_native()
+            elif scheme == GSI_AUTH_SCHEME:
+                self.client_ctx = None
+                self._login_gsi()
+            elif scheme == PAM_AUTH_SCHEME:
+                self._login_pam()
+            else:
                 auth_type = None
 
         if not auth_type:
-            msg = "Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}".format(**locals())
+            msg = "Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}, auth_module = {auth_module!r}, ".format(**locals())
             raise ValueError(msg)
 
         self.create_time = datetime.datetime.now()
@@ -466,15 +469,13 @@ class Connection(object):
             # Login using PAM password from .irodsA
             try:
                 self._login_native()
-            except (ex.CAT_PASSWORD_EXPIRED, ex.CAT_INVALID_USER, ex.CAT_INVALID_AUTHENTICATION):
+            except (ex.CAT_PASSWORD_EXPIRED, ex.CAT_INVALID_USER, ex.CAT_INVALID_AUTHENTICATION) as exc:
                 time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
                 if cfg.legacy_auth.pam.password_for_auto_renew:
                     new_pam_password = cfg.legacy_auth.pam.password_for_auto_renew
                     # Fall through and retry the native login later, after creating a new PAM password
                 else:
-                    message = ('Time To Live has expired for the PAM password, and no new password is given in ' +
-                               'legacy_auth.pam.password_for_auto_renew.  Please run iinit.')
-                    raise RuntimeError(message)
+                    raise exc
             else:
                 # Login succeeded, so we're within the time-to-live and can return without error.
                 return
