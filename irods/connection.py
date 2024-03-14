@@ -181,14 +181,14 @@ class Connection(object):
 
     @staticmethod
     def make_ssl_context(irods_account):
-        check_hostname = getattr(irods_account,'ssl_verify_server','hostname')
+        verify_server = getattr(irods_account,'ssl_verify_server','hostname')
         CAfile = getattr(irods_account,'ssl_ca_certificate_file',None)
         CApath = getattr(irods_account,'ssl_ca_certificate_path',None)
-        verify = ssl.CERT_NONE if (None is CAfile is CApath) else ssl.CERT_REQUIRED
+        verify = ssl.CERT_NONE if ((None is CAfile is CApath) or verify_server == 'none') else ssl.CERT_REQUIRED
         # See https://stackoverflow.com/questions/30461969/disable-default-certificate-verification-in-python-2-7-9/49040695#49040695
         ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CAfile, capath=CApath)
         # Note: check_hostname must be assigned prior to verify_mode property or Python library complains!
-        ctx.check_hostname = (check_hostname.startswith('host') and verify != ssl.CERT_NONE)
+        ctx.check_hostname = (verify_server == 'hostname' and verify != ssl.CERT_NONE)
         ctx.verify_mode = verify
         return ctx
 

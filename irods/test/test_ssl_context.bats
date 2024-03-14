@@ -143,7 +143,7 @@ teardown() {
 # THE TESTS THEMSELVES
 
 @test "basic_test" {
-    json_config -i $IRODS_LOCAL_ENV 'verify_server="host"'
+    json_config -i $IRODS_LOCAL_ENV 'verify_server="hostname"'
     python3 $REPO_SCRIPTS/ssl_test_client.py
 }
 
