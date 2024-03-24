@@ -195,10 +195,9 @@ class iRODSSession(object):
             self.__configured = self.configure(**self.do_configure)
 
     def _configure_account(self, **kwargs):
-
+        env_file = None
         try:
             env_file = kwargs['irods_env_file']
-
         except KeyError:
             # For backward compatibility
             for key in ['host', 'port', 'authentication_scheme']:
@@ -216,6 +215,9 @@ class iRODSSession(object):
 
         # Update with new keywords arguments only
         creds.update((key, value) for key, value in kwargs.items() if key not in creds)
+
+        if env_file:
+            creds['env_file'] = env_file
 
         # Get auth scheme
         try:
@@ -244,10 +246,11 @@ class iRODSSession(object):
         missing_file_path = []
         error_args = []
         pw = creds['password'] = self.get_irods_password(session_ = self, file_path_if_not_found = missing_file_path, **creds)
-        if not pw and creds.get('irods_user_name') != 'anonymous':
-            if missing_file_path:
-                error_args += ["Authentication file not found at {!r}".format(missing_file_path[0])]
-            raise NonAnonymousLoginWithoutPassword(*error_args)
+        if auth_scheme.lower() not in PAM_AUTH_SCHEMES:
+            if not pw and creds.get('irods_user_name') != 'anonymous':
+                if missing_file_path:
+                    error_args += ["Authentication file not found at {!r}".format(missing_file_path[0])]
+                raise NonAnonymousLoginWithoutPassword(*error_args)
 
         return iRODSAccount(**creds)
 

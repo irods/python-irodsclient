@@ -25,8 +25,6 @@ import irods.exception as ex
 from irods.message import (PamAuthRequest, PamAuthRequestOut)
 
 
-
-ALLOW_PAM_LONG_TOKENS = True      # True to fix [#279]
 # Message to be logged when the connection
 # destructor is called. Used in a unit test
 DESTRUCTOR_MSG = "connection __del__() called"
@@ -65,31 +63,37 @@ class Connection(object):
         self._disconnected = False
 
         scheme = self.account._original_authentication_scheme
-        auth_type = ''
+
+        # These variables are just useful diagnostics.  The login_XYZ() methods should fail by
+        # raising exceptions if they encounter authentication errors.
+        auth_module = auth_type = ''
 
         if self.server_version >= (4,3,0):
+            auth_module = None
             # use client side "plugin" module: irods.auth.<scheme>
             irods.auth.load_plugins(subset=[scheme])
             auth_module = getattr(irods.auth, scheme, None)
+
+            # TODO (#518 unrelated): gsi module that also sets _client_ctx?
+
             if auth_module:
                 auth_module.login(self)
                 auth_type = auth_module.__name__
         else:
             # use legacy (iRODS pre-4.3 style) authentication
             auth_type = scheme
-            try:
-                if scheme == NATIVE_AUTH_SCHEME:
-                    self._login_native()
-                elif scheme == GSI_AUTH_SCHEME:
-                    self.client_ctx = None
-                    self._login_gsi()
-                elif scheme == PAM_AUTH_SCHEME:
-                    self._login_pam()
-            except:
+            if scheme == NATIVE_AUTH_SCHEME:
+                self._login_native()
+            elif scheme == GSI_AUTH_SCHEME:
+                self.client_ctx = None
+                self._login_gsi()
+            elif scheme == PAM_AUTH_SCHEME:
+                self._login_pam()
+            else:
                 auth_type = None
 
         if not auth_type:
-            msg = "Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}".format(**locals())
+            msg = "Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}, auth_module = {auth_module!r}, ".format(**locals())
             raise ValueError(msg)
 
         self.create_time = datetime.datetime.now()
@@ -181,14 +185,14 @@ class Connection(object):
 
     @staticmethod
     def make_ssl_context(irods_account):
-        check_hostname = getattr(irods_account,'ssl_verify_server','hostname')
+        verify_server = getattr(irods_account,'ssl_verify_server','hostname')
         CAfile = getattr(irods_account,'ssl_ca_certificate_file',None)
         CApath = getattr(irods_account,'ssl_ca_certificate_path',None)
-        verify = ssl.CERT_NONE if (None is CAfile is CApath) else ssl.CERT_REQUIRED
+        verify = ssl.CERT_NONE if ((None is CAfile is CApath) or verify_server == 'none') else ssl.CERT_REQUIRED
         # See https://stackoverflow.com/questions/30461969/disable-default-certificate-verification-in-python-2-7-9/49040695#49040695
         ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CAfile, capath=CApath)
         # Note: check_hostname must be assigned prior to verify_mode property or Python library complains!
-        ctx.check_hostname = (check_hostname.startswith('host') and verify != ssl.CERT_NONE)
+        ctx.check_hostname = (verify_server.startswith('host') and verify != ssl.CERT_NONE)
         ctx.verify_mode = verify
         return ctx
 
@@ -455,7 +459,6 @@ class Connection(object):
         logger.info("GSI authorization validated")
 
     def _login_pam(self):
-
         import irods.client_configuration as cfg
         inline_password = (self.account.authentication_scheme == self.account._original_authentication_scheme)
         # By default, let server determine the TTL.
@@ -466,15 +469,13 @@ class Connection(object):
             # Login using PAM password from .irodsA
             try:
                 self._login_native()
-            except (ex.CAT_PASSWORD_EXPIRED, ex.CAT_INVALID_USER, ex.CAT_INVALID_AUTHENTICATION):
+            except (ex.CAT_PASSWORD_EXPIRED, ex.CAT_INVALID_USER, ex.CAT_INVALID_AUTHENTICATION) as exc:
                 time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
                 if cfg.legacy_auth.pam.password_for_auto_renew:
                     new_pam_password = cfg.legacy_auth.pam.password_for_auto_renew
                     # Fall through and retry the native login later, after creating a new PAM password
                 else:
-                    message = ('Time To Live has expired for the PAM password, and no new password is given in ' +
-                               'legacy_auth.pam.password_for_auto_renew.  Please run iinit.')
-                    raise RuntimeError(message)
+                    raise exc
             else:
                 # Login succeeded, so we're within the time-to-live and can return without error.
                 return
@@ -490,9 +491,10 @@ class Connection(object):
             if getattr(self,'DISALLOWING_PAM_PLAINTEXT',True):
                 raise PlainTextPAMPasswordError
 
-        Pam_Long_Tokens = (ALLOW_PAM_LONG_TOKENS and (len(ctx) >= MAX_NAME_LEN))
+        use_dedicated_pam_api = len(ctx) >= MAX_NAME_LEN or \
+                                {';','='}.intersection(set(new_pam_password))
 
-        if Pam_Long_Tokens:
+        if use_dedicated_pam_api:
             message_body = PamAuthRequest( pamUser = self.account.client_user,
                                            pamPassword = new_pam_password,
                                            timeToLive = time_to_live_in_hours)
@@ -502,7 +504,7 @@ class Connection(object):
         auth_req = iRODSMessage(
             msg_type='RODS_API_REQ',
             msg=message_body,
-            int_info=(725 if Pam_Long_Tokens else 1201)
+            int_info=api_number['PAM_AUTH_REQUEST_AN' if use_dedicated_pam_api else 'AUTH_PLUG_REQ_AN']
         )
 
         self.send(auth_req)
@@ -513,8 +515,7 @@ class Connection(object):
             # TODO (#480): In Python3 will be able to do: 'raise RuntimeError(...) from exc' for more succinct error messages
             raise RuntimeError('Client-configured TTL is outside server parameters (password min and max times)')
 
-        Pam_Response_Class = (PamAuthRequestOut if Pam_Long_Tokens
-                         else AuthPluginOut)
+        Pam_Response_Class = (PamAuthRequestOut if use_dedicated_pam_api else AuthPluginOut)
 
         auth_out = output_message.get_main_message( Pam_Response_Class )
 
@@ -529,8 +530,9 @@ class Connection(object):
         self._login_native(password = auth_out.result_)
 
         # Store new password in .irodsA if requested.
-        if self.account._auth_file and cfg.legacy_auth.pam.store_password_to_environment:
-            with open(self.account._auth_file,'w') as f:
+        auth_file = (self.account._auth_file or self.account.derived_auth_file)
+        if auth_file and cfg.legacy_auth.pam.store_password_to_environment:
+            with open(auth_file,'w') as f:
                 f.write(obf.encode(auth_out.result_))
                 logger.debug('new PAM pw write succeeded')
 

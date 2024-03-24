@@ -24,6 +24,7 @@ import socket
 from re import compile as regex
 import gc
 import six
+from irods.test.setupssl import create_ssl_dir
 
 #
 # Allow override to specify the PAM password in effect for the test rodsuser.
@@ -57,7 +58,7 @@ def env_dir_fullpath(authtype):  return os.path.join( os.environ['HOME'] , '.iro
 def json_env_fullpath(authtype):  return os.path.join( env_dir_fullpath(authtype), 'irods_environment.json')
 def secrets_fullpath(authtype):   return os.path.join( env_dir_fullpath(authtype), '.irodsA')
 
-SERVER_ENV_PATH = os.path.expanduser('~irods/.irods/irods_environment.json')
+RODSADMIN_ENV_PATH = os.path.expanduser('~/.irods/irods_environment.json')
 
 SERVER_ENV_SSL_SETTINGS = {
     "irods_ssl_certificate_chain_file": "/etc/irods/ssl/irods.crt",
@@ -66,9 +67,6 @@ SERVER_ENV_SSL_SETTINGS = {
     "irods_ssl_ca_certificate_file": "/etc/irods/ssl/irods.crt",
     "irods_ssl_verify_server": "cert"
 }
-
-def update_service_account_for_SSL():
-    json_file_update( SERVER_ENV_PATH, **SERVER_ENV_SSL_SETTINGS )
 
 CLIENT_OPTIONS_FOR_SSL = {
     "irods_client_server_policy": "CS_NEG_REQUIRE",
@@ -82,9 +80,9 @@ CLIENT_OPTIONS_FOR_SSL = {
 }
 
 
-def client_env_from_server_env(user_name, auth_scheme=""):
+def client_env_keys_from_admin_env(user_name, auth_scheme=""):
     cli_env = {}
-    with open(SERVER_ENV_PATH) as f:
+    with open(RODSADMIN_ENV_PATH) as f:
         srv_env = json.load(f)
         for k in [ "irods_host", "irods_zone_name", "irods_port"  ]:
             cli_env [k] = srv_env[k]
@@ -163,7 +161,7 @@ class TestLogins(unittest.TestCase):
         # -- create environment configurations and secrets
         with pam_password_in_plaintext():
             for dirname,lookup in self.user_auth_envs.items():
-                if lookup['AUTH'] == 'pam':
+                if lookup['AUTH'] in ('pam','pam_password'):
                     ses = iRODSSession( host=gethostname(),
                                         user=lookup['USER'],
                                         zone='tempZone',
@@ -179,7 +177,7 @@ class TestLogins(unittest.TestCase):
                #elif lookup['AUTH'] == 'XXXXXX': # TODO: insert other authentication schemes here
                 elif lookup['AUTH'] in ('native', '',None):
                     scrambled_pw = pw_encode( lookup['PASSWORD'] )
-                cl_env = client_env_from_server_env(TEST_RODS_USER)
+                cl_env = client_env_keys_from_admin_env(TEST_RODS_USER)
                 if lookup.get('AUTH',None) is not None:     # - specify auth scheme only if given
                     cl_env['irods_authentication_scheme'] = lookup['AUTH']
                 dirbase = os.path.join(os.environ['HOME'],dirname)
@@ -199,18 +197,19 @@ class TestLogins(unittest.TestCase):
         retval = dirs.keys()
         return retval
 
+    PAM_SCHEME_STRING = 'pam'
 
     @classmethod
     def setUpClass(cls):
         cls.admin = helpers.make_session()
+        if cls.admin.server_version > (4,3):
+            cls.PAM_SCHEME_STRING = cls.user_auth_envs['.irods.pam']['AUTH'] = 'pam_password'
 
     @classmethod
     def tearDownClass(cls):
         cls.admin.cleanup()
 
     def setUp(self):
-        if os.environ['HOME'] != '/var/lib/irods':
-            self.skipTest('Must be run as irods')
         super(TestLogins,self).setUp()
 
     def tearDown(self):
@@ -244,12 +243,14 @@ class TestLogins(unittest.TestCase):
             self.admin.users.remove( name )
 
     def tst0(self, ssl_opt, auth_opt, env_opt, name = TEST_RODS_USER, make_irods_pw = False):
-
+        _auth_opt = auth_opt
+        if auth_opt.startswith('pam'):
+            auth_opt = self.PAM_SCHEME_STRING
         with self._setup_rodsuser_and_optional_pw(name = name, make_irods_pw = make_irods_pw):
             self.envdirs = self.create_env_dirs()
             if not self.envdirs:
                 raise RuntimeError('Could not create one or more client environments')
-            auth_opt_explicit = 'native' if auth_opt=='' else  auth_opt
+            auth_opt_explicit = 'native' if _auth_opt=='' else  _auth_opt
             verbosity=False
             #verbosity='' # -- debug - sanity check by printing out options applied
             out = {'':''}
@@ -282,7 +283,7 @@ class TestLogins(unittest.TestCase):
                                                                    cadata = None,
                                                                    cafile = SSL_cert),
                         **CLIENT_OPTIONS_FOR_SSL )
-                lookup = self.user_auth_envs ['.irods.'+('native' if not(auth_opt) else auth_opt)]
+                lookup = self.user_auth_envs ['.irods.'+('native' if not(_auth_opt) else _auth_opt)]
                 session = iRODSSession ( host=gethostname(),
                                          user=lookup['USER'],
                                          zone='tempZone',
@@ -327,7 +328,7 @@ class TestLogins(unittest.TestCase):
         self.tst0 ( ssl_opt = False, auth_opt = 'native' , env_opt = True, make_irods_pw = True)
 
     # == test explicit scheme 'pam'
-
+    
     def test_5(self):
         self.tst0 ( ssl_opt = True,  auth_opt = 'pam'    , env_opt = False )
 
@@ -511,19 +512,17 @@ class TestWithSSL(unittest.TestCase):
         with helpers.file_backed_up(env_file):
             with open(env_file) as env_file_handle:
                 env = json.load( env_file_handle )
-            env.update({ "irods_client_server_negotiation": "request_server_negotiation",
-                         "irods_client_server_policy": "CS_NEG_REQUIRE",
-                         "irods_ssl_ca_certificate_file": "/path/to/some/file.crt",  # does not need to exist
-                         "irods_ssl_verify_server": "none",
-                         "irods_encryption_key_size": 32,
-                         "irods_encryption_salt_size": 8,
-                         "irods_encryption_num_hash_rounds": 16,
-                         "irods_encryption_algorithm": "AES-256-CBC" })
+            my_ssl_directory = os.path.expanduser("~/some")
+            # Elect for efficiency in DH param generation, eg. when setting up for testing.
+            create_ssl_dir(ssl_dir = my_ssl_directory, use_strong_primes_for_dh_generation = False)
+            keys_to_update = {key:value.replace("/etc/irods/ssl",my_ssl_directory)
+                              for key,value in env.items() if type(value) is str and value.startswith("/etc/irods/ssl")}
+            keys_to_update["irods_ssl_verify_server"] = "none"
+            env.update( keys_to_update )
             with open(env_file,'w') as f:
                 json.dump(env,f)
             with helpers.make_session() as session:
                 session.collections.get('/{session.zone}/home/{session.username}'.format(**locals()))
-
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
