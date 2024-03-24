@@ -25,8 +25,6 @@ import irods.exception as ex
 from irods.message import (PamAuthRequest, PamAuthRequestOut)
 
 
-
-ALLOW_PAM_LONG_TOKENS = True      # True to fix [#279]
 # Message to be logged when the connection
 # destructor is called. Used in a unit test
 DESTRUCTOR_MSG = "connection __del__() called"
@@ -490,9 +488,12 @@ class Connection(object):
             if getattr(self,'DISALLOWING_PAM_PLAINTEXT',True):
                 raise PlainTextPAMPasswordError
 
-        Pam_Long_Tokens = (ALLOW_PAM_LONG_TOKENS and (len(ctx) >= MAX_NAME_LEN))
+        # In general authentication API, a ';' and '=' in the password would be misinterpreted due to those
+        # characters' special meaning in the context string parameter.
+        use_dedicated_pam_api = len(ctx) >= MAX_NAME_LEN or \
+                                {';','='}.intersection(set(new_pam_password))
 
-        if Pam_Long_Tokens:
+        if use_dedicated_pam_api:
             message_body = PamAuthRequest( pamUser = self.account.client_user,
                                            pamPassword = new_pam_password,
                                            timeToLive = time_to_live_in_hours)
@@ -502,7 +503,7 @@ class Connection(object):
         auth_req = iRODSMessage(
             msg_type='RODS_API_REQ',
             msg=message_body,
-            int_info=(725 if Pam_Long_Tokens else 1201)
+            int_info=api_number['PAM_AUTH_REQUEST_AN' if use_dedicated_pam_api else 'AUTH_PLUG_REQ_AN']
         )
 
         self.send(auth_req)
@@ -513,8 +514,7 @@ class Connection(object):
             # TODO (#480): In Python3 will be able to do: 'raise RuntimeError(...) from exc' for more succinct error messages
             raise RuntimeError('Client-configured TTL is outside server parameters (password min and max times)')
 
-        Pam_Response_Class = (PamAuthRequestOut if Pam_Long_Tokens
-                         else AuthPluginOut)
+        Pam_Response_Class = (PamAuthRequestOut if use_dedicated_pam_api else AuthPluginOut)
 
         auth_out = output_message.get_main_message( Pam_Response_Class )
 
