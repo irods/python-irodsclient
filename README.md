@@ -161,6 +161,15 @@ the `encryption_*` and `ssl_*` options
 directly to the constructor as keyword arguments, even though it is
 required when they are placed in the environment file.
 
+PAM logins
+----------
+
+Starting with v2.0.0, the python iRODS client is able to authenticate under PAM using the same file-based client environment as the
+iCommands.
+
+Caveat for iRODS 4.3+: when upgrading from 4.2, the "irods_authentication_scheme" setting must be changed from "pam" to "pam_password" in
+`~/.irods/irods_environment.json` for all file-based client environments.
+
 Maintaining a connection
 ------------------------
 
