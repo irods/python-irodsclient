@@ -25,20 +25,28 @@ def create_server_cert(process_output = sys.stdout, irods_key_path = 'irods.key'
     p.wait()
     return p.returncode
 
-def create_ssl_dir(irods_key_path = 'irods.key'):
+
+def create_ssl_dir(irods_key_path = 'irods.key', ssl_dir = '', use_strong_primes_for_dh_generation = True):
+    ssl_dir = ssl_dir or IRODS_SSL_DIR
     save_cwd = os.getcwd()
     silent_run =  { 'shell': True, 'stderr' : PIPE, 'stdout' : PIPE }
     try:
-        if not (os.path.exists(IRODS_SSL_DIR)):
-            os.mkdir(IRODS_SSL_DIR)
-        os.chdir(IRODS_SSL_DIR)
+        if not (os.path.exists(ssl_dir)):
+            os.mkdir(ssl_dir)
+        os.chdir(ssl_dir)
         if not keep_old:
             Popen("openssl genrsa -out '{irods_key_path}' 2048 && chmod 600 '{irods_key_path}'".format(**locals()),
                   **silent_run).communicate()
         with open("/dev/null","wb") as dev_null:
             if 0 == create_server_cert(process_output = dev_null, irods_key_path = irods_key_path):
                 if not keep_old:
-                    Popen('openssl dhparam -2 -out dhparams.pem',**silent_run).communicate()
+                    # https://www.openssl.org/docs/man1.0.2/man1/dhparam.html#:~:text=DH%20parameter%20generation%20with%20the,that%20may%20be%20possible%20otherwise.
+                    if use_strong_primes_for_dh_generation:
+                        dhparam_generation_command = 'openssl dhparam -2 -out dhparams.pem'
+                    else:
+                        dhparam_generation_command = 'openssl dhparam -dsaparam -out dhparams.pem 4096'
+                    print('cmd=',dhparam_generation_command )
+                    Popen(dhparam_generation_command,**silent_run).communicate()
         return os.listdir(".")
     finally:
         os.chdir(save_cwd)
@@ -57,14 +65,30 @@ def test(options, args=()):
     if affirm[:1].lower() == 'y':
         if not keep_old:
             shutil.rmtree(IRODS_SSL_DIR,ignore_errors=True)
-        print("Generating new '{}'. This may take a while.".format(IRODS_SSL_DIR), file=sys.stderr)
-        ssl_dir_files = create_ssl_dir()
-        print('ssl_dir_files=', ssl_dir_files)
+        dh_strong_primes = '-q' not in options
+        wait_warning = (' This may take a while.' if dh_strong_primes else '')
+        print("Generating new '{}'.{}".format(IRODS_SSL_DIR, wait_warning), file = sys.stderr)
+        ssl_dir_files = create_ssl_dir(use_strong_primes_for_dh_generation = dh_strong_primes)
+        print('ssl_dir_files=', ssl_dir_files, file = sys.stderr)
     
 if __name__ == '__main__':
     import getopt
-    opt, arg_list = getopt.getopt(sys.argv[1:],'x:fh:k')
+    try:
+        opt, arg_list = getopt.getopt(sys.argv[1:],'x:fh:kq')
+    except getopt.GetoptError:
+        print("""Usage: {sys.argv[0]} [-f] [-h <hostname>] [-k] [-q] [-x <extension>] 
+        -f  Force replacement of the existing SSL directory (/etc/irods/ssl) with a new one, containing newly generated files.
+        -h  In the generated certificate, use the given hostname rather than the value returned from socket.gethostname()
+        -k  (Keep old secrets files.) Do not generate new key file or dhparams.pem file.
+        -q  For testing; do a quick generation of a dhparams.pem file rather than waiting on system entropy to make it more secure.
+        -x  Optional extra extension for appending to end of the filename for the generated certificate.
+
+        Any invalid option prints this help.
+        """.format(**locals()), file = sys.stderr)
+        exit(1)
+
     opt_lookup = dict(opt)
+
     ext = opt_lookup.get('-x','')
     if ext:
         ext = '.' + ext.lstrip('.')
