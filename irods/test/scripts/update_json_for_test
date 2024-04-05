@@ -1,0 +1,55 @@
+#!/bin/bash
+declare -A ssl_keys=(
+    [irods_client_server_negotiation]='"request_server_negotiation"'
+    [irods_client_server_policy]='"CS_NEG_REQUIRE"'
+    [irods_ssl_ca_certificate_file]='"/etc/irods/ssl/irods.crt"'
+    [irods_ssl_certificate_chain_file]='"/etc/irods/ssl/irods.crt"'
+    [irods_ssl_certificate_key_file]='"/etc/irods/ssl/irods.key"'
+    [irods_ssl_dh_params_file]='"/etc/irods/ssl/dhparams.pem"'
+    [irods_ssl_verify_server]='"cert"'
+)
+
+declare -A pam_keys=(
+    [irods_authentication_scheme]="\"$(pam_auth_string)\""
+)
+declare -A encrypt_keys=(
+    [irods_encryption_key_size]=16
+    [irods_encryption_salt_size]=8
+    [irods_encryption_num_hash_rounds]=16
+    [irods_encryption_algorithm]='"AES-256-CBC"'
+)
+
+declare -A RESTORE_FILES=()
+
+update_json_file() {
+    local file=$1 content=$2
+    local bn=$(basename "$file")
+    local orig=/tmp/$bn.orig.$$
+    local newfile=/tmp/$bn.new.$$
+    echo "$content" >"$newfile"
+    sudo chmod --reference "$file" "$newfile"
+    sudo chown --reference "$file" "$newfile"
+    { sudo mv "$file" "$orig" && sudo mv "$newfile" "$file"; } || return 1
+    RESTORE_FILES["$file"]="$orig"
+}
+
+restore_json_files() {
+    local kk
+    for kk in ${!RESTORE_FILES[@]};do
+        sudo mv -f "${RESTORE_FILES["$kk"]}" "$kk"
+    done
+}
+
+newcontent () {
+  local file=$1
+  shift
+  local j=$(sudo cat "$file")
+  while [ $# -gt 0 ]; do
+    eval '
+    for kk in ${!'$1'[@]}; do
+        j=$(jq ".$kk=${'$1'[$kk]}" <<<"$j")
+    done'
+    shift
+  done
+  echo "$j"
+}
