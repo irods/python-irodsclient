@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from __future__ import absolute_import
+from datetime import datetime
 import os
 import sys
 import socket
@@ -15,13 +16,31 @@ from six.moves import range
 from irods.test.helpers import my_function_name, unique_name
 from irods.collection import iRODSCollection
 
+RODSUSER = 'nonadmin'
 
 class TestCollection(unittest.TestCase):
 
+    class WrongUserType(RuntimeError): pass
+
+    @classmethod
+    def setUpClass(cls):
+        adm = helpers.make_session()
+        if adm.users.get(adm.username).type != 'rodsadmin':
+            raise cls.WrongUserType('Must be an iRODS admin to run tests in class {0.__name__}'.format(cls))
+        cls.logins = helpers.iRODSUserLogins(adm)
+        cls.logins.create_user(RODSUSER, 'abc123')
+
+
+    @classmethod
+    def tearDownClass(cls):
+        # TODO(#553): Skipping this will result in an interpreter seg fault for Py3.6 but not 3.11; why?
+        del cls.logins
+
+
     def setUp(self):
         self.sess = helpers.make_session()
-        self.test_coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
 
+        self.test_coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.test_coll = self.sess.collections.create(self.test_coll_path)
 
 
@@ -379,6 +398,96 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(home1, '/zone/home/user')
         home2 = normalize('/zone','holmes','..','home','public','..','user')
         self.assertEqual(home2, '/zone/home/user')
+
+    def test_update_mtime_of_collection_using_touch_operation_as_non_admin__525(self):
+        user_session = self.logins.session_for_user(RODSUSER)
+
+        # Capture mtime of the home collection.
+        home_collection_path = helpers.home_collection(user_session)
+        collection = user_session.collections.get(home_collection_path)
+        old_mtime = collection.modify_time
+
+        # Set the mtime to an earlier time.
+        new_mtime = 1400000000
+        user_session.collections.touch(home_collection_path, seconds_since_epoch=new_mtime)
+
+        # Compare mtimes for correctness.
+        collection = user_session.collections.get(home_collection_path)
+        self.assertEqual(datetime.utcfromtimestamp(new_mtime), collection.modify_time)
+        self.assertGreater(old_mtime, collection.modify_time)
+
+    def test_touch_operation_does_not_create_new_collections__525(self):
+        user_session = self.logins.session_for_user(RODSUSER)
+
+        # The collection should not exist.
+        collection_path = f'{helpers.home_collection(user_session)}/test_touch_operation_does_not_create_new_collections__525'
+        with self.assertRaises(CollectionDoesNotExist):
+            user_session.collections.get(collection_path)
+
+        # Show the touch operation throws an exception if the target collection
+        # does not exist.
+        with self.assertRaises(CollectionDoesNotExist):
+            user_session.collections.touch(collection_path)
+
+        # Show the touch operation did not create a new collection.
+        with self.assertRaises(CollectionDoesNotExist):
+            user_session.collections.get(collection_path)
+
+    def test_touch_operation_does_not_work_when_given_a_data_object__525(self):
+        try:
+            user_session = self.logins.session_for_user(RODSUSER)
+
+            # Create a data object.
+            data_object_path = f'{helpers.home_collection(user_session)}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt'
+            self.assertFalse(user_session.data_objects.exists(data_object_path))
+            user_session.data_objects.touch(data_object_path)
+            self.assertTrue(user_session.data_objects.exists(data_object_path))
+
+            # Show the touch operation for collections throws an exception when
+            # given a path pointing to a data object.
+            with self.assertRaises(CollectionDoesNotExist):
+                user_session.collections.touch(data_object_path)
+
+        finally:
+            user_session.data_objects.unlink(data_object_path, force=True)
+
+    def test_touch_operation_ignores_unsupported_options__525(self):
+        user_session = self.logins.session_for_user(RODSUSER)
+        path = f'{helpers.home_collection(user_session)}/test_touch_operation_ignores_unsupported_options__525'
+
+        try:
+            # Capture mtime of the home collection.
+            collection = user_session.collections.create(path)
+            old_mtime = collection.modify_time
+
+            # Capture the current time.
+            time.sleep(2) # Guarantees the mtime is different.
+            new_mtime = int(time.time())
+
+            # The touch API for the iRODS server will attempt to create a new data object
+            # if the "no_create" option is set to false. The PRC's collection interface will
+            # ignore that option if passed.
+            #
+            # The following arguments don't make sense for collections and will also be ignored.
+            #
+            #   - replica_number
+            #   - leaf_resource_name
+            #
+            # They are included to prove the PRC handles them appropriately (i.e. unsupported
+            # parameters are removed from the request).
+            user_session.collections.touch(path,
+                                           no_create=False,
+                                           replica_number=525,
+                                           seconds_since_epoch=new_mtime,
+                                           leaf_resource_name='ufs525')
+
+            # Compare mtimes for correctness.
+            collection = user_session.collections.get(path)
+            self.assertEqual(datetime.utcfromtimestamp(int(new_mtime)), collection.modify_time)
+
+        finally:
+            if collection:
+                user_session.collections.remove(path, recurse=True, force=True)
 
 
 if __name__ == "__main__":
