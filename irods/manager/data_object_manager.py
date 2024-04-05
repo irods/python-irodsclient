@@ -3,6 +3,7 @@ import os
 import io
 from irods.models import DataObject, Collection
 from irods.manager import Manager
+from irods.manager._internal import _api_impl, _logical_path
 from irods.message import (
     iRODSMessage, FileOpenRequest, ObjCopyRequest, StringStringMap, DataObjInfo, ModDataObjMeta,
     DataObjChksumRequest, DataObjChksumResponse, RErrorStack, STR_PI
@@ -726,3 +727,48 @@ class DataObjectManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+
+    def touch(self, path, **options):
+        """Change the mtime of a data object.
+
+        A path argument that does not exist will be created as an empty data
+        object, unless "no_create=True" is supplied.
+
+        Parameters
+        ----------
+        path: string
+            The absolute logical path of a data object.
+
+        no_create: boolean, optional
+            Instructs the system not to create a data object when it does not
+            exist.
+
+        replica_number: integer, optional
+            The replica number of the replica to update. Replica numbers cannot
+            be used to create data objects or additional replicas. Cannot be used
+            with "leaf_resource_name".
+
+        leaf_resource_name: string, optional
+            The name of the leaf resource containing the replica to update. If
+            the object identified by the "path" parameter does not exist and this
+            parameter holds a valid resource, the data object will be created at
+            the specified resource. Cannot be used with "replica_number" parameter.
+
+        seconds_since_epoch: integer, optional
+            The number of seconds since epoch representing the new mtime. Cannot
+            be used with "reference" parameter.
+
+        reference: string, optional
+            Use the mtime of the logical path to the data object or collection
+            identified by this option. Cannot be used with "seconds_since_epoch"
+            parameter.
+
+        Raises
+        ------
+        InvalidInputArgument
+            If the path points to a collection.
+        """
+        if _logical_path._is_collection(self.sess, path):
+            raise ex.InvalidInputArgument()
+
+        _api_impl._touch_impl(self.sess, path, **options)

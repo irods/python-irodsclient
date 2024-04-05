@@ -23,6 +23,10 @@ class DoesNotExist(PycommandsException):
     pass
 
 
+class InvalidInputArgument(PycommandsException):
+    pass
+
+
 class DataObjectDoesNotExist(DoesNotExist):
     pass
 

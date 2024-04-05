@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from __future__ import absolute_import
+from datetime import datetime
 import base64
 import concurrent.futures
 import contextlib  # check if redundant
@@ -2043,6 +2044,42 @@ class TestDataObjOps(unittest.TestCase):
         finally:
             if data.exists(testfile):
                 data.unlink(testfile,force=True)
+
+    def test_update_mtime_of_data_object_using_touch_operation_as_non_admin__525(self):
+        try:
+            user_session = self.logins.session_for_user(RODSUSER)
+
+            # Create a data object.
+            data_object_path = f'{helpers.home_collection(user_session)}/test_update_mtime_of_data_object_using_touch_operation__525.txt'
+            self.assertFalse(user_session.data_objects.exists(data_object_path))
+            user_session.data_objects.touch(data_object_path)
+            self.assertTrue(user_session.data_objects.exists(data_object_path))
+
+            # Capture mtime of data object.
+            data_object = user_session.data_objects.get(data_object_path)
+            old_mtime = data_object.replicas[0].modify_time
+
+            # Set the mtime to an earlier time.
+            new_mtime = 1400000000
+            user_session.data_objects.touch(data_object_path, seconds_since_epoch=new_mtime)
+
+            # Compare mtimes for correctness.
+            data_object = user_session.data_objects.get(data_object_path)
+            self.assertEqual(datetime.utcfromtimestamp(int(new_mtime)), data_object.replicas[0].modify_time)
+            self.assertGreater(old_mtime, data_object.replicas[0].modify_time)
+
+        finally:
+            if data_object:
+                user_session.data_objects.unlink(data_object.path, force=True)
+
+    def test_touch_operation_does_not_work_when_given_a_collection__525(self):
+        user_session = self.logins.session_for_user(RODSUSER)
+
+        # Show the touch operation for data objects throws an exception when
+        # given a path pointing to a collection.
+        home_collection_path = helpers.home_collection(user_session)
+        with self.assertRaises(ex.InvalidInputArgument):
+            user_session.data_objects.touch(home_collection_path)
 
 
 if __name__ == '__main__':

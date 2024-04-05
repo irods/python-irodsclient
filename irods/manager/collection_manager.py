@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from irods.models import Collection, DataObject
 from irods.manager import Manager
+from irods.manager._internal import _api_impl
 from irods.message import iRODSMessage, CollectionRequest, FileOpenRequest, ObjCopyRequest, StringStringMap
 from irods.exception import CollectionDoesNotExist, NoResultFound
 from irods.api_number import api_number
@@ -150,3 +151,40 @@ class CollectionManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
+
+    def touch(self, path, **options):
+        """Change the mtime of an existing collection.
+
+        Parameters
+        ----------
+        path: string
+            The absolute logical path of a collection.
+
+        seconds_since_epoch: integer, optional
+            The number of seconds since epoch representing the new mtime. Cannot
+            be used with "reference" parameter.
+
+        reference: string, optional
+            Use the mtime of the logical path to the data object or collection
+            identified by this option. Cannot be used with "seconds_since_epoch"
+            parameter.
+
+        Raises
+        ------
+        CollectionDoesNotExist
+            If the target collection does not exist or does not point to a
+            collection.
+        """
+        # Attempt to lookup the collection. If it does not exist, the call
+        # will raise an exception.
+        #
+        # Enforces the requirement that collections must exist before this
+        # operation is invoked.
+        self.get(path)
+
+        # The following options to the touch API are not allowed for collections.
+        options.pop('no_create', None)
+        options.pop('replica_number', None)
+        options.pop('leaf_resource_name', None)
+
+        _api_impl._touch_impl(self.sess, path, no_create=True, **options)

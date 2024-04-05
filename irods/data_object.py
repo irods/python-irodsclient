@@ -70,7 +70,9 @@ class iRODSDataObject(object):
                 r[DataObject.resc_hier],
                 checksum=r[DataObject.checksum],
                 size=r[DataObject.size],
-                comments=r[DataObject.comments]
+                comments=r[DataObject.comments],
+                create_time=r[DataObject.create_time],
+                modify_time=r[DataObject.modify_time]
             ) for r in replicas]
         self._meta = None
 
