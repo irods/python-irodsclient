@@ -47,7 +47,7 @@ from irods.manager import data_object_manager
 from irods.message import RErrorStack
 from irods.message import ( ET, XML_Parser_Type, default_XML_parser, current_XML_parser )
 from datetime import datetime
-from tempfile import NamedTemporaryFile, gettempdir
+from tempfile import NamedTemporaryFile, gettempdir, mktemp
 from irods.test.helpers import (unique_name, my_function_name)
 from irods.ticket import Ticket
 import irods.parallel
