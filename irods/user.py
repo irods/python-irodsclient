@@ -65,13 +65,15 @@ class iRODSUser(object):
         return "<iRODSUser {id} {name} {type} {zone}>".format(**vars(self))
 
     def remove(self):
-        self.manager.remove(self.name, self.zone)
+        self.manager.remove(self.name, self.zone, _object = self)
 
     def temp_password(self):
         return self.manager.temp_password_for_user(self.name)
 
 
 class iRODSGroup(object):
+
+    type = "rodsgroup"
 
     def remove_quota(self, resource = 'total'):
         self.set_quota(amount = 0, resource = resource)
@@ -90,7 +92,7 @@ class iRODSGroup(object):
         return "<iRODSGroup {id} {name}>".format(**vars(self))
 
     def remove(self):
-        self.manager.remove(self.name)
+        self.manager.remove(self.name, _object = self)
 
     @property
     def members(self):
