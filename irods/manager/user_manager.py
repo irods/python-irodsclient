@@ -89,10 +89,12 @@ class UserManager(Manager):
         logger.debug(response.int_info)
         return self.get(user_name, user_zone)
 
-    def remove(self, user_name, user_zone=""):
+    def remove(self, user_name, user_zone="", _object = None):
+        if _object is None:
+            _object = self.get(user_name, user_zone)
         message_body = GeneralAdminRequest(
             "rm",
-            "user",
+            "user" if (_object.type != "rodsgroup" or self.sess.server_version < (4, 3, 2)) else "group",
             user_name,
             user_zone
         )
