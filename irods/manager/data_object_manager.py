@@ -142,7 +142,7 @@ class DataObjectManager(Manager):
             with self.open(obj, 'r', returned_values = data_open_returned_values_, **options) as o:
                 if self.should_parallelize_transfer (num_threads, o, open_options = options.items()):
                     f.close()
-                    if not self.parallel_get( (obj,o), local_path, num_threads = num_threads,
+                    if not self.parallel_get( (obj,o), local_file, num_threads = num_threads,
                                               target_resource_name = options.get(kw.RESC_NAME_KW,''),
                                               data_open_returned_values = data_open_returned_values_):
                         raise RuntimeError("parallel get failed")
