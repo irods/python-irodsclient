@@ -1,6 +1,18 @@
 Changelog
 =========
 
+v2.0.1 (2024-04-30)
+-------------------
+- [#543] Fix issue with parallel downloads to a directory [Raoul Schram]
+- [#521] clearer documentation and errors regarding pam/pam_password [Daniel Moore]
+- [#518] preserve login_<auth-type> internally generated exceptions [Daniel Moore]
+- [#522][#523] allow '=' and ';' in PAM passwords [Daniel Moore]
+- [#519] force verify mode to CERT_NONE if irods verify setting is explicitly none [Daniel Moore]
+- [#526] can now opt out of strong primes to speed up SSL & PAM tests [Daniel Moore]
+- [#3] make sure tempfile.mktemp imported where needed for tests [Daniel Moore]
+- [#3] tweak compatibility to iRODS 4.3.2 [Daniel Moore]
+- [#539] iRODS 4.3.2 rmgroup adaptation [Daniel Moore]
+
 v2.0.0 (2024-02-12)
 -------------------
 - [#3] version bump for 2.0.0 [Terrell Russell]
