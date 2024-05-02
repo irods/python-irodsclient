@@ -1606,6 +1606,16 @@ If you want to create a user in a federated zone, use:
 >>> session.users.create('user', 'rodsuser', 'OtherZone', auth_str)
 ```
 
+Showing client hints
+--------------
+
+You can get a list of available microservices, rules, etc. using the `client_hints`
+attribute of the session.
+
+```python
+>>> session.client_hints
+```
+
 And more ...
 ------------
 
