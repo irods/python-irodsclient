@@ -95,9 +95,6 @@ class MetadataManager(Manager):
                for row in results]
 
     def add(self, model_cls, path, meta, **opts):
-        # Avoid sending request with empty argument(s)
-        if not(len(path) and len(meta.name) and len(meta.value)):
-            raise ValueError('Empty value in ' + repr(meta))
 
         resource_type = self._model_class_to_resource_type(model_cls)
         message_body = MetadataRequest(

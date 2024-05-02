@@ -520,13 +520,41 @@ class TestMeta(unittest.TestCase):
                 if d: d.unlink(force = True)
                 helpers.remove_unused_metadata(session)
 
+    def test_AVUs_populated_improperly_with_empties_or_nonstrings_fail_identically__issue_547(self):
+        try:
+            to_delete = []
+            hc = helpers.home_collection(self.sess)
+            mtemplate = iRODSMeta('some_name', 'some_value', 'some_units')
+            for index in ('name','value','units'):
+                for edge_case_arg in ('', 3):
+                    # Empty units are permitted, ie. iRODSMeta(attr,value,'') and iRODSMeta(attr,value) are equivalent.
+                    if edge_case_arg in ('',b'') and index == 'units':
+                        continue
+                    for method in ('set','add'):
+                        data = self.sess.data_objects.create("{hc}/{index}_{edge_case_arg}_{method}_AZ__issue_547".format(**locals()))
+                        to_delete.append(data)
+                        m = iRODSMeta(*mtemplate)
+                        setattr(m, index, edge_case_arg)
+                        with self.assertRaises(Bad_AVU_Field):
+                            getattr(data.metadata, method)(*m)
+        finally:
+            for d in to_delete:
+                d.unlink(force=True)
+
     def test_nonstring_as_AVU_value_raises_an_error__issue_434(self):
+        args =  ("an_attribute",0)
         with self.assertRaisesRegexp(Bad_AVU_Field,'incorrect type'):
-            self.coll.metadata.set("an_attribute",0)
+            self.coll.metadata.set(*args)
+        with self.assertRaisesRegexp(Bad_AVU_Field,'incorrect type'):
+            self.coll.metadata.add(*args)
 
     def test_empty_string_as_AVU_value_raises_an_error__issue_434(self):
+        args = ("an_attribute","")
         with self.assertRaisesRegexp(Bad_AVU_Field,'zero-length'):
-            self.coll.metadata.set("an_attribute","")
+            self.coll.metadata.set(*args)
+        with self.assertRaisesRegexp(Bad_AVU_Field,'zero-length'):
+            self.coll.metadata.add(*args)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
