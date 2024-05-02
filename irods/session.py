@@ -11,6 +11,7 @@ import weakref
 from irods.query import Query
 from irods.pool import Pool
 from irods.account import iRODSAccount
+from irods.api_number import api_number
 from irods.manager.collection_manager import CollectionManager
 from irods.manager.data_object_manager import DataObjectManager
 from irods.manager.metadata_manager import MetadataManager
@@ -18,6 +19,7 @@ from irods.manager.access_manager import AccessManager
 from irods.manager.user_manager import UserManager, GroupManager
 from irods.manager.resource_manager import ResourceManager
 from irods.manager.zone_manager import ZoneManager
+from irods.message import iRODSMessage
 from irods.exception import NetworkException
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
@@ -300,6 +302,14 @@ class iRODSSession(object):
             version = conn.server_version
             conn.release()
             return version
+
+    @property
+    def client_hints(self):
+        message = iRODSMessage('RODS_API_REQ', int_info=api_number['CLIENT_HINTS_AN'])
+        with self.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+        return response.get_json_encoded_struct()
 
     @property
     def pam_pw_negotiated(self):
