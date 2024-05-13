@@ -9,6 +9,7 @@ import os
 import threading
 import weakref
 from irods.query import Query
+from irods.genquery2 import GenQuery2
 from irods.pool import Pool
 from irods.account import iRODSAccount
 from irods.api_number import api_number
@@ -268,6 +269,20 @@ class iRODSSession(object):
 
     def query(self, *args, **kwargs):
         return Query(self, *args, **kwargs)
+
+    def genquery2_object(self, **kwargs):
+        """ Returns GenQuery2 object
+
+            Returns GenQuery2 object that can be used to execute GenQuery2 queries,
+            to retrieve the SQL query for a particular GenQuery2 query, and to
+            get GenQuery2 column mappings.
+        """
+        return GenQuery2(self, **kwargs)
+
+    def genquery2(self, query, **kwargs):
+        """Shorthand for executing a single GenQuery2 query."""
+        q = GenQuery2(self)
+        return q.execute(query, **kwargs)
 
     @property
     def username(self):

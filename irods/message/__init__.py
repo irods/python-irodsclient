@@ -628,6 +628,12 @@ class GenQueryResponse(Message):
 # openFlags; double offset; double dataSize; int numThreads; int oprType;
 # struct *SpecColl_PI; struct KeyValPair_PI;"
 
+class GenQuery2Request(Message):
+    _name = 'Genquery2Input_PI'
+    query_string = StringProperty()
+    zone = StringProperty()
+    sql_only = IntegerProperty()
+    column_mappings = IntegerProperty()
 
 class FileOpenRequest(Message):
     _name = 'DataObjInp_PI'
