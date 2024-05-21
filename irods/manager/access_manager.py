@@ -116,12 +116,15 @@ class AccessManager(Manager):
         elif users_out is None: pass
         else:                   raise TypeError
 
-        acls = [ iRODSAccess ( r[access_column.name],
+        # Instantiate as set before converting to a list, in order to remove duplicate iRODSAccess
+        # objects. [#557]
+
+        acls = list({ iRODSAccess ( r[access_column.name],
                                target.path,
                                user_lookup[r[access_column.user_id]].name,
                                user_lookup[r[access_column.user_id]].zone,
                                user_lookup[r[access_column.user_id]].type,
-                             ) for r in rows ]
+                             ) for r in rows })
         return acls
 
 
