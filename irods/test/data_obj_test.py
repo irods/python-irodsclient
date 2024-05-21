@@ -129,6 +129,19 @@ class TestDataObjOps(unittest.TestCase):
             self.sess.resources.remove(Leaf)
             self.sess.resources.remove(Root)
 
+    def test_acls_are_uniquely_listed_for_replicated_data_objects__issue_557(self):
+        with self.create_simple_resc() as newResc1:
+            d = None
+            try:
+                path = self.coll_path + "/" + unique_name(my_function_name(), datetime.now())
+                d = self.sess.data_objects.create(path)
+                acls_pre = self.sess.acls.get(d)
+                d.replicate(resource = newResc1)
+                acls_post = self.sess.acls.get(d)
+                self.assertEqual(len(acls_pre), len(acls_post))
+            finally:
+                if d:
+                    d.unlink(force = True)
 
     def _helper_for_testing_that_replicate_obeys_default_resource_setting__issue_459(self, get_session_function):
         with self.create_simple_resc() as newResc1:

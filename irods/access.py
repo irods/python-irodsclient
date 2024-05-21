@@ -1,6 +1,7 @@
 import collections
 import copy
 import six
+from irods.path import iRODSPath
 
 class _Access_LookupMeta(type):
     def __getitem__(self, key): return self.codes[key]
@@ -62,6 +63,18 @@ class iRODSAccess(six.with_metaclass(_Access_LookupMeta)):
         self.user_name = user_name
         self.user_zone = user_zone
         self.user_type = user_type
+
+    def __eq__(self,other):
+        return self.access_name == other.access_name and \
+               iRODSPath(self.path) == iRODSPath(other.path) and \
+               self.user_name == other.user_name and \
+               self.user_zone == other.user_zone
+
+    def __hash__(self):
+        return hash((self.access_name,
+                     iRODSPath(self.path),
+                     self.user_name,
+                     self.user_zone))
 
     def copy(self, decanonicalize = False):
         other = copy.deepcopy(self)
