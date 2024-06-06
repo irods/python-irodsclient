@@ -428,6 +428,7 @@ class DataObjectManager(Manager):
                 # This is the actual redirect.
                 directed_sess = self.sess.clone(host = redirected_host)
                 returned_values['session'] = directed_sess
+                conn.release()
                 conn = directed_sess.pool.get_connection()
                 logger.debug('redirect_to_host = %s', redirected_host)
 
