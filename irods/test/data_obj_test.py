@@ -2094,6 +2094,35 @@ class TestDataObjOps(unittest.TestCase):
         with self.assertRaises(ex.InvalidInputArgument):
             user_session.data_objects.touch(home_collection_path)
 
+    def test_client_redirect_lets_go_of_connections__issue_562(self):
+        self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
+        # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource
+        total_conns = lambda session: len(session.pool.idle | session.pool.active)
+        with self.create_simple_resc(hostname = 'localhost') as resc_name:
+            # A reasonable number of data objects to create without eliciting problems.
+            # (But before resolution of #562, a NetworkException was eventually thrown from
+            # this test loop if a session cleanup() did not intervene between open() calls.)
+            REPS_TO_REPRODUCE_CONNECT_ERROR = 100
+            paths=[]
+            prev_conns = None
+            try:
+                # Try to exhaust connections
+                for n in range(REPS_TO_REPRODUCE_CONNECT_ERROR):
+                    data_path = '{self.coll_path}/issue_562_test_obj_{n:03d}.dat'.format(**locals())
+                    paths.append(data_path)
+                    with self.sess.data_objects.open(data_path, 'w', **{kw.DEST_RESC_NAME_KW: resc_name}) as f:
+                        pass
+                    # Assert number of connections does not increase
+                    current_conns = total_conns(self.sess)
+                    if isinstance(prev_conns,int):
+                        self.assertLessEqual(current_conns, prev_conns)
+                    prev_conns = current_conns
+            finally:
+                # Clean up data objects before resource is deleted.
+                for data_path in paths:
+                    if self.sess.data_objects.exists(data_path):
+                        self.sess.data_objects.unlink(data_path, force = True)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
