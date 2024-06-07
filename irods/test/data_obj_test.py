@@ -2044,6 +2044,26 @@ class TestDataObjOps(unittest.TestCase):
             if data.exists(testfile):
                 data.unlink(testfile,force=True)
 
+    def test_client_redirect_lets_go_of_connections__issue_562(self):
+        self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
+        # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource
+        with self.create_simple_resc(hostname = 'localhost') as resc_name:
+            REPS_TO_REPRODUCE_CONNECT_ERROR = 100
+            paths=[]
+            try:
+                # Try to exhaust connections
+                for n in range(REPS_TO_REPRODUCE_CONNECT_ERROR):
+                    data_path = '{self.coll_path}/issue_562_test_obj_{n:03d}.dat'.format(**locals())
+                    paths.append(data_path)
+                    with self.sess.data_objects.open(data_path, 'w', **{kw.DEST_RESC_NAME_KW: resc_name}) as f:
+                        pass
+            finally:
+                # Clean up data objects before resource is deleted.
+                for data_path in paths:
+                    if self.sess.data_objects.exists(data_path):
+                        self.sess.data_objects.unlink(data_path, force = True)
+                    else:
+                        break
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
