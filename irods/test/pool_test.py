@@ -273,7 +273,7 @@ class TestPool(unittest.TestCase):
 
         if self.sess.host != socket.gethostname() and not LOCALHOST_REGEX.match (self.sess.host):
             self.skipTest('local test only - client dot does not like the extra logging')
-         
+
         # Set 'irods_connection_refresh_time' to '3' (in seconds) in
         # ~/.irods/irods_environment.json file. This means any connection
         # that was created more than 3 seconds ago will be dropped and
