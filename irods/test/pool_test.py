@@ -57,13 +57,6 @@ class TestPool(unittest.TestCase):
         '''Close connections
         '''
         self.sess.cleanup()
-    @classmethod
-    def tearDownClass(cls):
-        p = l = logging.getLogger('irods.connection')
-        print ("*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=""*=")
-        while p:
-          print(p.name,logging._levelToName[p.level], p.handlers)
-          p = p.parent
 
     def test_release_connection(self):
         with self.sess.pool.get_connection():
