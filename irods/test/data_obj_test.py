@@ -2059,11 +2059,14 @@ class TestDataObjOps(unittest.TestCase):
                 data.unlink(testfile,force=True)
 
     def test_update_mtime_of_data_object_using_touch_operation_as_non_admin__525(self):
+        # prevent UnboundLocalError
+        data_object = None
         try:
             user_session = self.logins.session_for_user(RODSUSER)
 
             # Create a data object.
-            data_object_path = f'{helpers.home_collection(user_session)}/test_update_mtime_of_data_object_using_touch_operation__525.txt'
+            home_collection = helpers.home_collection(user_session)
+            data_object_path = '{home_collection}/test_update_mtime_of_data_object_using_touch_operation__525.txt'.format(**locals())
             self.assertFalse(user_session.data_objects.exists(data_object_path))
             user_session.data_objects.touch(data_object_path)
             self.assertTrue(user_session.data_objects.exists(data_object_path))
