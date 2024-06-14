@@ -420,7 +420,8 @@ class TestCollection(unittest.TestCase):
         user_session = self.logins.session_for_user(RODSUSER)
 
         # The collection should not exist.
-        collection_path = f'{helpers.home_collection(user_session)}/test_touch_operation_does_not_create_new_collections__525'
+        home_collection = helpers.home_collection(user_session)
+        collection_path = '{home_collection}/test_touch_operation_does_not_create_new_collections__525'.format(**locals())
         with self.assertRaises(CollectionDoesNotExist):
             user_session.collections.get(collection_path)
 
@@ -436,9 +437,10 @@ class TestCollection(unittest.TestCase):
     def test_touch_operation_does_not_work_when_given_a_data_object__525(self):
         try:
             user_session = self.logins.session_for_user(RODSUSER)
+            home_collection = helpers.home_collection(user_session)
 
             # Create a data object.
-            data_object_path = f'{helpers.home_collection(user_session)}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt'
+            data_object_path = '{home_collection}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt'.format(**locals())
             self.assertFalse(user_session.data_objects.exists(data_object_path))
             user_session.data_objects.touch(data_object_path)
             self.assertTrue(user_session.data_objects.exists(data_object_path))
@@ -453,7 +455,9 @@ class TestCollection(unittest.TestCase):
 
     def test_touch_operation_ignores_unsupported_options__525(self):
         user_session = self.logins.session_for_user(RODSUSER)
-        path = f'{helpers.home_collection(user_session)}/test_touch_operation_ignores_unsupported_options__525'
+
+        home_collection = helpers.home_collection(user_session)
+        path = '{home_collection}/test_touch_operation_ignores_unsupported_options__525'.format(**locals())
 
         try:
             # Capture mtime of the home collection.
