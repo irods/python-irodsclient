@@ -99,7 +99,7 @@ def unique_name(*seed_tuple):
              session.resources.create( a_name, 'unixfilesystem', session.host, '/tmp/' + a_name )
     '''
     if not getattr(_thrlocal,"rand_gen",None) : _thrlocal.rand_gen = random.Random()
-    _thrlocal.rand_gen.seed(seed_tuple)
+    _thrlocal.rand_gen.seed(hash(seed_tuple))
     return '%016X' % _thrlocal.rand_gen.randint(0,(1<<64)-1)
 
 
