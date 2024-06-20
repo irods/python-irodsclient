@@ -5,6 +5,7 @@ import copy
 import errno
 import json
 import logging
+from numbers import Number
 import os
 import threading
 import weakref
@@ -349,9 +350,20 @@ class iRODSSession(object):
 
     @connection_timeout.setter
     def connection_timeout(self, seconds):
+        if seconds == 0:
+            exc = ValueError("Setting an iRODS connection_timeout to 0 seconds would make it non-blocking.")
+            raise exc
+        elif isinstance(seconds, Number):
+            if seconds < 0 or str(seconds) == 'nan' or str(abs(seconds)) == 'inf':
+                exc = ValueError("The iRODS connection_timeout may not be assigned a negative or otherwise rogue value (eg: NaN, Inf).")
+                raise exc
+        elif seconds is None:
+            pass
+        else:
+            exc = ValueError("The iRODS connection_timeout must be assigned a positive int, positive float, or None.")
+            raise exc
         self._cached_connection_timeout = seconds
-        if seconds is not None:
-            self.pool.connection_timeout = seconds
+        self.pool.connection_timeout = seconds
 
     @staticmethod
     def get_irods_password_file():
