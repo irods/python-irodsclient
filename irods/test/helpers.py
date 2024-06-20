@@ -17,6 +17,7 @@ import datetime
 import json
 import sys
 import irods.client_configuration as config
+import irods.rule
 from irods.session import iRODSSession
 from irods.message import (iRODSMessage, IRODS_VERSION)
 from irods.password_obfuscation import encode
@@ -377,3 +378,26 @@ def enableLogging(logger, handlerType, args, level_ = logging.INFO):
             logger.removeHandler(h)
 
 
+class _unlikely_value: pass
+
+@contextlib.contextmanager
+def temporarily_assign_attribute(target, attr, value, not_set_indicator = _unlikely_value()):
+    save = not_set_indicator
+    try:
+        save = getattr(target, attr, not_set_indicator)
+        setattr(target, attr, value)
+        yield
+    finally:
+        if save != not_set_indicator:
+            setattr(target, attr, save)
+        else:
+            delattr(target, attr)
+
+# Implement a server-side wait that ensures no TCP communication from server end for a given interval.
+# Useful to test the effect of socket inactivity on a client.  See python-irodsclient issue #569
+def server_side_sleep(session, seconds):
+    # Round floating-point seconds to nearest integer + microseconds figure, required by msiSleep.
+    int_, frac_ = [int(_) for _ in divmod(seconds * 1.0e6 + 0.5, 1.0e6)]
+    rule_code = "msiSleep('{}','{}')".format(int_,frac_)
+    # Call the msiSleep microservice.
+    irods.rule.Rule(session, body = rule_code, instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance').execute()

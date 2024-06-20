@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from irods.exception import NetworkException
 import irods.test.helpers as helpers
-
+from irods.test.helpers import (server_side_sleep, temporarily_assign_attribute as temp_setter)
 
 class TestConnections(unittest.TestCase):
 
@@ -105,22 +105,79 @@ class TestConnections(unittest.TestCase):
             if local_file:
                 os.unlink(local_file.name)
 
-    def assert_timeout_value_propagated_to_socket(self, session, timeout_value):
+    def _assert_timeout_value_is_propagated_to_all_sockets__issue_569(self, session, expected_timeout_value = 'POOL_TIMEOUT_SETTING'):
+        pool = session.pool
+        new_conn = None
+        if expected_timeout_value == 'POOL_TIMEOUT_SETTING':
+            expected_timeout_value = pool.connection_timeout
+        connections = set()
+        # make sure idle pool is not empty
         session.collections.get(helpers.home_collection(session))
-        conn = next(iter(session.pool.idle))
-        self.assertEqual(conn.socket.gettimeout(), timeout_value)
+        # On any connections thus far created, check that their internal socket objects are set to the expected timeout value.
+        try:
+            # Peel connections off the idle pool and check each for the expected timeout value, but don't release them to that pool yet.
+            while (pool.idle):
+                # Peel a connection (guaranteed newly-allocated for purposes of this test) and check for the proper timeout.
+                conn = pool.get_connection()
+                connections |= {conn}
+                self.assertEqual(conn.socket.gettimeout(), expected_timeout_value)
+
+            # Get an additional connection while idle pool is empty; this way, we know it to be newly-allocated.
+            new_conn = pool.get_connection()
+
+            # Check the expected timeout applies to the newly-allocated connection
+            self.assertEqual(new_conn.socket.gettimeout(), expected_timeout_value)
+
+        finally:
+            # Release and destroy the connection that was newly-allocated for this test.
+            if new_conn:
+                new_conn.release(destroy = True)
+            # Release connections that had been cached, by the same normal mechanism the API endpoints indirectly employ.
+            for conn in connections:
+                pool.release_connection(conn)
 
     def test_connection_timeout_parameter_in_session_init__issue_377(self):
         timeout = 1.0
         sess = helpers.make_session(connection_timeout = timeout)
-        self.assert_timeout_value_propagated_to_socket(sess, timeout)
+        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, timeout)
 
     def test_assigning_session_connection_timeout__issue_377(self):
-        sess = self.sess
+        sess = helpers.make_session()
         for timeout in (999999, None):
             sess.connection_timeout = timeout
-            sess.cleanup()
-            self.assert_timeout_value_propagated_to_socket(sess, timeout)
+            self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, timeout)
+
+    def test_assigning_session_connection_timeout_to_invalid_values__issue_569(self):
+        sess = helpers.make_session()
+        DESIRED_TIMEOUT = 64.25
+        sess.connection_timeout = DESIRED_TIMEOUT
+        # Test our desired connection pool default timeout has taken hold.
+        self.assertEqual(sess.connection_timeout, DESIRED_TIMEOUT)
+
+        # Test that bad timeout values are met with an exception.
+        for value in (float('NaN'), float('Inf'), -float('Inf'), -1, 0, 0.0, "banana"):
+            with self.assertRaises(ValueError):
+                sess.connection_timeout = value
+
+        # Test previously set value is unaffected
+        self.assertEqual(sess.connection_timeout, DESIRED_TIMEOUT)
+
+    def test_assigning_session_connection_timeout__issue_569(self):
+        sess = helpers.make_session()
+        old_timeout = sess.connection_timeout
+
+        with temp_setter(sess, 'connection_timeout',1.0):
+            # verify we can reproduce a NetworkException from a server timeout
+            with self.assertRaises(NetworkException):
+               server_side_sleep(sess,2.5)
+            # temporarily suspend timeouts on a session
+            with temp_setter(sess, 'connection_timeout',None):
+               server_side_sleep(sess,2.5)
+            # temporarily increase (from 1.0 to 4) the timeout on a session
+            with temp_setter(sess, 'connection_timeout',4):
+               server_side_sleep(sess,2.5)
+        self.assertEqual(old_timeout, sess.connection_timeout)
+        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, old_timeout)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

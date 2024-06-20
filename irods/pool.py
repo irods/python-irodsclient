@@ -22,6 +22,13 @@ def attribute_from_return_value(attrname):
 
 DEFAULT_APPLICATION_NAME = 'python-irodsclient'
 
+def _adjust_timeout_to_pool_default(conn):
+    set_timeout = conn.socket.gettimeout()
+    desired_value = conn.pool.connection_timeout
+    if desired_value == set_timeout:
+        return
+    conn.socket.settimeout(desired_value)
+
 class Pool(object):
 
     def __init__(self, account, application_name='', connection_refresh_time=-1, session = None):
@@ -57,6 +64,7 @@ class Pool(object):
 
     @attribute_from_return_value("_conn")
     def get_connection(self):
+        new_conn = False
         with self._lock:
             try:
                 conn = self.idle.pop()
@@ -73,9 +81,11 @@ class Pool(object):
                     # code more predictable as we are not relying on when garbage collector is called
                     conn.disconnect()
                     conn = Connection(self, self.account)
+                    new_conn = True
                     logger.debug("Created new connection with id: {}".format(id(conn)))
             except KeyError:
                 conn = Connection(self, self.account)
+                new_conn = True
                 logger.debug("No connection found in idle set. Created a new connection with id: {}".format(id(conn)))
 
             self.active.add(conn)
@@ -86,6 +96,11 @@ class Pool(object):
                 sess.ticket_applied[conn] = True
 
             logger.debug("Adding connection with id {} to active set".format(id(conn)))
+
+            # If the connection we're about to make active was cached, it already has a socket object internal to it,
+            # so we potentially have to modify it to have the desired timeout.
+            if not new_conn:
+                _adjust_timeout_to_pool_default(conn)
 
         logger.debug('num active: {}'.format(len(self.active)))
         logger.debug('num idle: {}'.format(len(self.idle)))

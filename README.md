@@ -184,8 +184,12 @@ session object:
 >>> session.connection_timeout = 300
 ```
 
-This will set the timeout to five minutes for any associated
-connections.
+This will set the timeout to five minutes for any associated connections.
+
+Timeouts are either a positive `int` or `float` with units of seconds, or `None`, all in accordance with their
+meaning in the context of the socket module.  A value of `None` indicates timeouts are effectively
+infinite in value, i.e. turned off.  Setting a session's `connection_timeout` value to 0 is disallowed
+because this would cause the socket to enter non-blocking mode.
 
 Session objects and cleanup
 ---------------------------
