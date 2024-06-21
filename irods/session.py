@@ -350,8 +350,7 @@ class iRODSSession(object):
     @connection_timeout.setter
     def connection_timeout(self, seconds):
         self._cached_connection_timeout = seconds
-        if seconds is not None:
-            self.pool.connection_timeout = seconds
+        self.pool.connection_timeout = seconds
 
     @staticmethod
     def get_irods_password_file():
