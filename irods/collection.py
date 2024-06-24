@@ -50,7 +50,7 @@ class iRODSCollection(object):
     def subcollections(self):
         query = self.manager.sess.query(Collection)\
             .filter(Collection.parent_name == self.path)
-        return [iRODSCollection(self.manager, row) for row in query]
+        return [iRODSCollection(self.manager, row) for row in query if row[Collection.name] != '/']
 
     @property
     def data_objects(self):
