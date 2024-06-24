@@ -85,6 +85,7 @@ class Pool(object):
                     logger.debug("Created new connection with id: {}".format(id(conn)))
             except KeyError:
                 conn = Connection(self, self.account)
+                new_conn = True
                 logger.debug("No connection found in idle set. Created a new connection with id: {}".format(id(conn)))
 
             self.active.add(conn)
