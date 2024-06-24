@@ -350,6 +350,9 @@ class iRODSSession(object):
     @connection_timeout.setter
     def connection_timeout(self, seconds):
         self._cached_connection_timeout = seconds
+        if seconds == 0:
+            exc = ValueError("Setting an iRODS connection_timeout to 0 seconds would make it nonblocking.")
+            raise exc
         self.pool.connection_timeout = seconds
 
     @staticmethod
