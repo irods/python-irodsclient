@@ -489,6 +489,15 @@ class TestCollection(unittest.TestCase):
             if collection:
                 user_session.collections.remove(path, recurse=True, force=True)
 
+    def test_subcollections_member_excludes_root_collection__571(self):
+
+        root_coll = self.sess.collections.get("/")
+
+        # Assert that none of the root collection's immediate children (as listed in the object's
+        # 'subcollections' property) point to the root subcollection.
+        self.assertEqual(root_coll.path, "/")
+        self.assertEqual([], [_ for _ in root_coll.subcollections if _.path == "/"])
+
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
