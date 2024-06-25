@@ -105,30 +105,25 @@ class TestConnections(unittest.TestCase):
             if local_file:
                 os.unlink(local_file.name)
 
-    def _assert_timeout_value_is_propagated_to_all_sockets__issue_569(self, session, timeout_value = 'POOL_DEFAULT'):
+    def _assert_timeout_value_is_propagated_to_all_sockets__issue_569(self, session, timeout_value = 'POOL_TIMEOUT_SETTING'):
         pool = session.pool
-        if timeout_value == 'POOL_DEFAULT':
+        if timeout_value == 'POOL_TIMEOUT_SETTING':
             timeout_value = pool.connection_timeout
         connections = set()
+        # make sure idle pool is not empty
+        session.collections.get(helpers.home_collection(session))
         try:
             while (pool.idle):
                 conn = pool.get_connection()
                 connections |= {conn}
                 self.assertEqual(conn.socket.gettimeout(), timeout_value)
-            # get a connection while idle pool is empty
+            # Get an additional connection while idle pool is empty
             conn = pool.get_connection()
             self.assertEqual(conn.socket.gettimeout(), timeout_value)
-            conn.release()
         finally:
+            conn.release(destroy = True)
             for conn in connections:
-                pool.release_connection(c)
-
-# TODO : be sure to delete 
-#
-#   def assert_timeout_value_propagated_to_socket(self, session, timeout_value):
-#       session.collections.get(helpers.home_collection(session))
-#       conn = next(iter(session.pool.idle))
-#       self.assertEqual(conn.socket.gettimeout(), timeout_value)
+                pool.release_connection(conn)
 
     def test_connection_timeout_parameter_in_session_init__issue_377(self):
         timeout = 1.0
@@ -155,7 +150,6 @@ class TestConnections(unittest.TestCase):
             # temporarily increase (from 1.0 to 4) the timeout on a session
             with temp_setter(sess, 'connection_timeout',4):
                server_side_sleep(sess,2.5)
-
         self.assertEqual(old_timeout, sess.connection_timeout)
         self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, old_timeout)
 
