@@ -5,6 +5,7 @@ import copy
 import errno
 import json
 import logging
+from numbers import Number
 import os
 import threading
 import weakref
@@ -349,10 +350,13 @@ class iRODSSession(object):
 
     @connection_timeout.setter
     def connection_timeout(self, seconds):
-        self._cached_connection_timeout = seconds
         if seconds == 0:
             exc = ValueError("Setting an iRODS connection_timeout to 0 seconds would make it nonblocking.")
             raise exc
+        elif isinstance(seconds, Number) and seconds < 0:
+            exc = ValueError("The iRODS connection_timeout may not be assigned a negative value.")
+            raise exc
+        self._cached_connection_timeout = seconds
         self.pool.connection_timeout = seconds
 
     @staticmethod
