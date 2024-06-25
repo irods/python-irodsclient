@@ -157,9 +157,7 @@ class TestConnections(unittest.TestCase):
                server_side_sleep(sess,2.5)
 
         self.assertEqual(old_timeout, sess.connection_timeout)
-        self.assertEqual(old_timeout, sess.pool.connection_timeout)
-
-        assert_timeout_value_gets_propagated_to_all_sockets(self, session, old_timeout)
+        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, old_timeout)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
