@@ -376,4 +376,23 @@ def enableLogging(logger, handlerType, args, level_ = logging.INFO):
         if h in logger.handlers:
             logger.removeHandler(h)
 
+@contextlib.contextmanager
+def configure_logger(logger, propagate = None, level = None, handler = None):
+    try:
+        if level is not None:
+            saved_level = logger.level
+            logger.setLevel(level)
+        if propagate is not None:
+            saved_propagate = logger.propagate
+            logger.propagate = propagate
+        if handler:
+            logger.addHandler(handler)
+        yield logger
+    finally:
+        if level is not None:
+            logger.setLevel(saved_level)
+        if propagate is not None:
+            logger.propagate = saved_propagate
+        if handler:
+            logger.removeHandler(handler)
 

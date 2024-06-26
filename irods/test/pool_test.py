@@ -243,23 +243,6 @@ class TestPool(unittest.TestCase):
             self.assertEqual(0, len(self.sess.pool.active))
             self.assertEqual(0, len(self.sess.pool.idle))
 
-    @staticmethod
-    @contextlib.contextmanager
-    def configure_logger(logger, propagate = None, level = None, handler = None):
-        try:
-            saved_level = logger.level
-            logger.setLevel(level)
-            saved_propagate = logger.propagate
-            logger.propagate = propagate
-            if handler:
-                logger.addHandler(handler)
-            yield logger
-        finally:
-            if handler:
-                logger.removeHandler(handler)
-            logger.setLevel(saved_level)
-            logger.propagate = saved_propagate
-
     # Test to confirm the connection destructor log message is actually
     # logged to file, to confirm the destructor is called
     def test_connection_destructor_called(self):
@@ -281,8 +264,8 @@ class TestPool(unittest.TestCase):
         my_log_file = tempfile.NamedTemporaryFile()
         file_handler = logging.FileHandler(my_log_file.name, mode='a')
         file_handler.setLevel(logging.DEBUG)
-        with self.configure_logger(logging.getLogger('irods.connection'),
-                                   propagate = False, level = logging.DEBUG, handler = file_handler):
+        with helpers.configure_logger(logging.getLogger('irods.connection'),
+                              propagate = False, level = logging.DEBUG, handler = file_handler):
             with self.sess.pool.get_connection() as conn:
                 conn_obj_id_1 = id(conn)
                 curr_time = datetime.datetime.now()
