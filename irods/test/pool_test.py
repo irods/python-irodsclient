@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from __future__ import absolute_import
+import contextlib
 import datetime
 import gc
 import logging
@@ -260,17 +261,11 @@ class TestPool(unittest.TestCase):
         create_time_2 = None
         last_used_time_1 = None
         last_used_time_2 = None
-
-        try:
-
-            # Create a temporary log file
-            my_log_file = tempfile.NamedTemporaryFile()
-
-            logging.getLogger('irods.connection').setLevel(logging.DEBUG)
-            file_handler = logging.FileHandler(my_log_file.name, mode='a')
-            file_handler.setLevel(logging.DEBUG)
-            logging.getLogger('irods.connection').addHandler(file_handler)
-
+        my_log_file = tempfile.NamedTemporaryFile()
+        file_handler = logging.FileHandler(my_log_file.name, mode='a')
+        file_handler.setLevel(logging.DEBUG)
+        with helpers.configure_logger(logging.getLogger('irods.connection'),
+                              propagate = False, level = logging.DEBUG, handler = file_handler):
             with self.sess.pool.get_connection() as conn:
                 conn_obj_id_1 = id(conn)
                 curr_time = datetime.datetime.now()
@@ -313,9 +308,7 @@ class TestPool(unittest.TestCase):
             with open(my_log_file.name, 'r') as fh:
                 lines = fh.read().splitlines()
                 self.assertTrue(DESTRUCTOR_MSG in lines)
-        finally:
-            # Remove irods.connection's file_handler that was added just for this test
-            logging.getLogger('irods.connection').removeHandler(file_handler)
+        file_handler.close()
 
     def test_get_connection_refresh_time_no_env_file_input_param(self):
         connection_refresh_time = self.sess.get_connection_refresh_time(first_name="Magic", last_name="Johnson")
