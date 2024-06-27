@@ -308,6 +308,7 @@ class TestPool(unittest.TestCase):
             with open(my_log_file.name, 'r') as fh:
                 lines = fh.read().splitlines()
                 self.assertTrue(DESTRUCTOR_MSG in lines)
+        file_handler.close()
 
     def test_get_connection_refresh_time_no_env_file_input_param(self):
         connection_refresh_time = self.sess.get_connection_refresh_time(first_name="Magic", last_name="Johnson")
