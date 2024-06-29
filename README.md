@@ -232,6 +232,48 @@ will spawn a number of threads in order to optimize performance for
 iRODS server versions 4.2.9+ and file sizes larger than a default
 threshold value of 32 Megabytes.
 
+Progress bars
+-------------
+
+The PRC now has support for progress bars which function on the basis of
+an "update" callback function.  In the case of a tqdm progress bar (see https://github.com/tqdm/tqdm), you can always just
+pass the update method of the progress bar instance directly to the data_object
+`put` or `get` method:
+
+```python
+   pbar = tqdm.tqdm(total = data_obj.size)
+   session.data_objects.get(file_name, data_obj.path, updatables = pbar.update)
+```
+
+The updatables parameter can be a list or tuple of update-enabling objects and/or bound methods.
+
+Alternatively, the tqdm progress bar object itself can be passed in, if an adapting
+function such as the following is first registered:
+
+```python
+    def adapt_tqdm(pbar, l = threading.Lock()):
+        def _update(n):
+            with l:
+                pbar.update(n)
+        return _update
+    irods.manager.data_objects_manager.register_update_type( adapt_tqdm )
+    session.data_objects.put( file, logical_path, updatables = [tqdm_1,tqdm_2] ) # update two tqdm's simultaneously
+```
+
+Other progress bars may be included in an updatables parameter, but may require more extensive adaptation.
+For example, the ProgressBar object (from the progressbar module) also has an update method, but this one
+takes an up-to-date cumulative byte-count, instead of the size of an individual transfer in bytes,
+as its sole parameter.  There can be other complications:  e.g. a ProgressBar instance does not allow a weak
+reference to itself to be formed, which interferes with the Python iRODS Client's internal scheme of accounting
+for progress bar instances "still in progress" while also preventing resource leaks.
+
+In such cases, it is probably best to implement a wrapper for the progress
+bar in question, and submit the wrapper instance as the updatable parameter.  Whether
+a wrapper or the progress-bar object itself is thus employed, it is recommended that the user take steps to
+ensure the lifetime of the updatable instance extends beyond the time needed for the transfer to complete.
+
+See `irods/test/data_obj_test.py` for examples of these and other subtleties of progress-bar usage.
+
 Working with collections
 ------------------------
 

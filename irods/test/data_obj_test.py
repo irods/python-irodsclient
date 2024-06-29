@@ -18,9 +18,20 @@ import stat
 import string
 import sys
 import subprocess
+import threading
 import time
 import unittest
 import xml.etree.ElementTree
+
+try:
+    import tqdm
+except ImportError:
+    tqdm = None
+
+try:
+    import progressbar
+except ImportError:
+    progressbar = None
 
 ip_pattern = re.compile(r'(\d+)\.(\d+)\.(\d+)\.(\d+)$')
 localhost_with_optional_domain_pattern = re.compile('localhost(\.\S\S*)?$')
@@ -88,7 +99,6 @@ def make_ufs_resc_in_tmpdir(session, base_name, allow_local = False, client_vaul
 
 
 class TestDataObjOps(unittest.TestCase):
-
 
     from irods.test.helpers import (create_simple_resc)
 
@@ -2179,6 +2189,164 @@ class TestDataObjOps(unittest.TestCase):
                     if self.sess.data_objects.exists(data_path):
                         self.sess.data_objects.unlink(data_path, force = True)
 
+    @unittest.skipIf(progressbar is None, "progressbar is not installed")
+    def test_progressbar_style_of_pbar_without_registering__issue_574(self):
+        # As this test demonstrates, we can always just register an update wrapper for an object rather than the object or its update method directly.
+        # This is good if the progressbar instance is not inherently threadsafe or unable to be referred to by a weak reference.
+        from irods.manager.data_object_manager import register_update_instance
+
+        class wrapper:
+            def __init__(self,pbar):
+                self.lock = threading.Lock()
+                self.total = 0
+                self.pbar = pbar
+                pbar.start()
+
+            def update(self,n):
+                with self.lock:
+                    self.total += n
+                    self.pbar.update(self.total)
+
+            @property
+            def value(self):
+                try: 
+                    return self.pbar.value
+                except AttributeError:
+                    return self.pbar.currval
+
+        LEN = 1024**2*40
+        content = b'_'*LEN
+
+        progress_bar = progressbar.ProgressBar(maxval=len(content))
+        wrapped = wrapper(progress_bar)
+
+        register_update_instance(wrapped, wrapped.update)
+
+        self._run_pbars_for_parallel_io(content, [wrapped])
+        self.assertEqual(wrapped.value, LEN)
+
+    @unittest.skipIf(progressbar is None, "progressbar is not installed")
+    def test_progressbar_style_of_pbar_by_registering_type__issue_574(self):
+        # In this test, registering the instance type allows us to use the progressbar instance in the updatables list
+        from irods.manager.data_object_manager import (register_update_type, unregister_update_type)
+
+        # This is the ProgressBar from either of the following sources:
+        #    - https://pypi.org/project/progressbar/
+        #    - https://pypi.org/project/progressbar2/
+        # Wrapping the ProgressBar instances is useful in the case of both of the above libraries,
+        # due to their instances being callable - which confuses our methodology for managing registered objects - or,
+        # in the former case, being unusable as weak references.
+
+        class ProgressBar_wrapper:
+            def start(self,*x):
+                return self.pbar.start(*x)
+            def update(self,*x):
+                return self.pbar.update(*x)
+            @property
+            def value(self):
+                try: 
+                    return self.pbar.value
+                except AttributeError:
+                    return self.pbar.currval
+            def __init__(self,*args,**kw):
+                self.pbar = progressbar.ProgressBar(*args,**kw)
+
+        def adapt_ProgressBar(pbar):
+            total = [0]
+            l = threading.Lock()
+            # This extra step is necessary for progressbar / progressbar2 instances:
+            pbar.start()
+            # Here's the actual updating callable that will be returned for the current pbar instance (also part of the closure)
+            # and then registered for update during the data transfer.
+            def _update(n):
+                with l:
+                    # 'total' was made a list-of-single-integer to make it modifiable in Python2 clients. (We could have made it
+                    # a bare integer, declared as "nonlocal total" to scope it properly, and this would have worked in Python3.
+                    # Note, too: this type of progress bar requires a cumulative sum as its argument to the update method.
+                    total[0] += n
+                    pbar.update(total[0])
+            return _update
+
+        try:
+            register_update_type(ProgressBar_wrapper, adapt_ProgressBar)
+
+            LEN = 1024**2*40
+            content = b'_'*LEN
+            pbar = ProgressBar_wrapper(maxval=len(content))
+            self._run_pbars_for_parallel_io(content, [pbar])
+            self.assertEqual(pbar.value, LEN)
+
+        finally:
+            unregister_update_type(ProgressBar_wrapper)
+
+    @unittest.skipIf(tqdm is None, "tqdm is not installed")
+    def test_passing_multiple_tqdm_instances_to_be_updated__issue_574(self):
+        from irods.manager.data_object_manager import (register_update_type, unregister_update_type)
+
+        def adapt_tqdm(pbar):
+            l = threading.Lock()
+            def _update(n):
+                with l:
+                    pbar.update(n)
+            return _update
+
+        try:
+            register_update_type(tqdm.tqdm, adapt_tqdm)
+
+            LEN = 1024**2*40
+            content = b'_'*LEN
+            tqdm_1 = tqdm.tqdm(total=len(content))
+            tqdm_2 = tqdm.tqdm(total=len(content))
+            self._run_pbars_for_parallel_io(content, [tqdm_1,tqdm_2]) # The bare the bound instance method itself, ie tqdm_2.update,
+                                                                      # could be passed in, if we knew it to be thread-safe.
+            self.assertEqual(tqdm_1.n, LEN)
+            self.assertEqual(tqdm_2.n, LEN)
+
+        finally:
+            unregister_update_type(tqdm.tqdm)
+
+    def _run_pbars_for_parallel_io(self, file_content, list_of_progress_bars_and_update_callbacks):
+        # Helper method for issue #574 tests.
+        Data = self.sess.data_objects
+        logical_path = ''
+        try:
+            with NamedTemporaryFile() as f:
+                f.write(file_content) # large file for a parallel put
+                f.flush()
+                logical_path = '{}/{}'.format(self.coll_path,os.path.basename(f.name))
+                Data.put(f.name, logical_path, updatables = list_of_progress_bars_and_update_callbacks)
+        finally:
+            if logical_path and Data.exists(logical_path):
+                Data.unlink(logical_path, force = True)
+
+    def test_mock_progress_bar_for_parallel_io__issue_574(self):
+
+        # Simulated progress bar in the style of TQDM
+        class mock_progress_bar:
+            def percent_done(self): return 100.0 * self.i / self.total
+            def __init__(self, total):
+                self.i = 0
+                self.total = total
+            def update(self,n):
+                self.i += n
+
+        def thread_safe(update_fn):
+            l = threading.Lock()
+            def _update(n):
+                with l:
+                    update_fn(n)
+            return _update
+
+        FILE_LENGTH = 1024**2 * 40
+        pbar = mock_progress_bar(total = FILE_LENGTH)
+
+        with NamedTemporaryFile() as f:
+            f.write(b'_'*FILE_LENGTH) # large file for a parallel put
+            f.flush()
+            logical_path = '{}/{}'.format(self.coll_path,os.path.basename(f.name))
+            self.sess.data_objects.put(f.name, logical_path, updatables = [thread_safe(pbar.update)])
+
+        self.assertEqual(pbar.percent_done(), 100)
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib

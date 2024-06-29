@@ -1,6 +1,12 @@
 from __future__ import absolute_import
-import os
+import ast
+import collections
 import io
+import json
+import logging
+import os
+import six
+import weakref
 from irods.models import DataObject, Collection
 from irods.manager import Manager
 from irods.manager._internal import _api_impl, _logical_path
@@ -17,11 +23,72 @@ import irods.client_configuration as client_config
 import irods.keywords as kw
 import irods.parallel as parallel
 from irods.parallel import deferred_call
-import six
-import ast
-import json
-import logging
 
+logger = logging.getLogger(__name__)
+
+_update_types = []
+_update_functions = weakref.WeakKeyDictionary()
+
+def register_update_instance(object_, updater): # updater
+    _update_functions[object_] = updater
+
+def register_update_type(type_, factory_):
+    """
+    Create an entry corresponding to a type_ of instance to be allowed among updatables, with processing
+    based on the factory_ callable.
+
+    Parameters:
+    type_ : a type of instance to be allowed in the updatables parameter.
+    factory_ : a function accepting the instance passed in, and yielding an update callable.
+               If None, then remove the type from the list.
+    """
+
+    # Delete if already present in list
+    z = tuple(zip(*_update_types))
+    if z and type_ in z[0]:
+        _update_types.pop(z[0].index(type_))
+    # Rewrite the list
+    #     - with the new item introduced at the start of the list but otherwise in the same order, and
+    #     - preserving only pairs that do not contain 'None' as the second member.
+    _update_types[:] = list((k,v) for k,v in collections.OrderedDict([(type_,factory_)] + _update_types).items() if v is not None)
+
+
+def unregister_update_type(type_):
+    """
+    Remove type_ from the listof recognized updatable types maintained by the PRC.
+    """
+    register_update_type(type_, None)
+
+
+def do_progress_updates(updatables, n, logging_function = logger.warning):
+    """
+    Used internally by Python iRODS Client's data transfer routines (put, get) to iterate through updatables to be processed.
+    This, in turn, should cause the underlying corresponding progress bars or indicators to be updated.
+    """
+    if not isinstance(updatables, (list,tuple)):
+        updatables = [updatables]
+
+    for object_ in updatables:
+        # If an updatable is directly callable, we set that up to be called without further ado.
+        if callable(object_):
+            update_func = object_
+        else:
+            # If not, we search for a registered type that matches object_ and register (or look up if previously registered) a factory-produced updater for that instance.
+            # Examine the unit tests for issue #574 in data_obj_test.py for factory examples.
+            update_func = _update_functions.get(object_)
+            if not update_func:
+                # search based on type
+                for class_,factory_ in _update_types:
+                    if isinstance(object_,class_):
+                        update_func = factory_(object_)
+                        register_update_instance(object_, update_func)
+                        break
+                else:
+                    logging_function("Could not derive an update function for: %r",object_)
+                    continue
+
+        # Do the update.
+        if update_func: update_func(n)
 
 
 def call___del__if_exists(super_):
@@ -124,7 +191,7 @@ class DataObjectManager(Manager):
                 open_options[kw.DATA_SIZE_KW] = size
 
 
-    def _download(self, obj, local_path, num_threads, progress_bar, **options):
+    def _download(self, obj, local_path, num_threads, updatables = (), **options):
         """Transfer the contents of a data object to a local file.
 
         Called from get() when a local path is named.
@@ -146,16 +213,15 @@ class DataObjectManager(Manager):
                     if not self.parallel_get( (obj,o), local_file, num_threads = num_threads,
                                               target_resource_name = options.get(kw.RESC_NAME_KW,''),
                                               data_open_returned_values = data_open_returned_values_,
-                                              progress_bar=progress_bar):
+                                              updatables = updatables):
                         raise RuntimeError("parallel get failed")
                 else:
                     for chunk in chunks(o, self.READ_BUFFER_SIZE):
                         f.write(chunk)
-                        if progress_bar is not None:
-                            progress_bar.update(len(chunk))
+                        do_progress_updates(updatables, len(chunk))
 
 
-    def get(self, path, local_path = None, num_threads = DEFAULT_NUMBER_OF_THREADS, progress_bar = None, **options):
+    def get(self, path, local_path = None, num_threads = DEFAULT_NUMBER_OF_THREADS, updatables = (), **options):
         """
         Get a reference to the data object at the specified `path'.
 
@@ -166,7 +232,7 @@ class DataObjectManager(Manager):
 
         # TODO: optimize
         if local_path:
-            self._download(path, local_path, num_threads = num_threads, progress_bar=progress_bar, **options)
+            self._download(path, local_path, num_threads = num_threads, updatables = updatables, **options)
 
         query = self.sess.query(DataObject)\
             .filter(DataObject.name == irods_basename(path))\
@@ -183,7 +249,7 @@ class DataObjectManager(Manager):
         return iRODSDataObject(self, parent, results)
 
 
-    def put(self, local_path, irods_path, return_data_object = False, num_threads = DEFAULT_NUMBER_OF_THREADS, progress_bar = None, **options):
+    def put(self, local_path, irods_path, return_data_object = False, num_threads = DEFAULT_NUMBER_OF_THREADS, updatables = (), **options):
 
         if self.sess.collections.exists(irods_path):
             obj = iRODSCollection.normalize_path(irods_path, os.path.basename(local_path))
@@ -198,7 +264,7 @@ class DataObjectManager(Manager):
                 if not self.parallel_put( local_path, (obj,o), total_bytes = sizelist[0], num_threads = num_threads,
                                           target_resource_name = options.get(kw.RESC_NAME_KW,'') or
                                                                  options.get(kw.DEST_RESC_NAME_KW,''),
-                                          open_options = options, progress_bar = progress_bar):
+                                          open_options = options, updatables = updatables):
                     raise RuntimeError("parallel put failed")
             else:
                 with self.open(obj, 'w', **options) as o:
@@ -207,8 +273,7 @@ class DataObjectManager(Manager):
                         options[kw.OPR_TYPE_KW] = 1 # PUT_OPR
                     for chunk in chunks(f, self.WRITE_BUFFER_SIZE):
                         o.write(chunk)
-                        if progress_bar is not None:
-                            progress_bar.update(len(chunk))
+                        do_progress_updates(updatables, len(chunk))
         if kw.ALL_KW in options:
             repl_options = options.copy()
             repl_options[kw.UPDATE_REPL_KW] = ''
@@ -265,7 +330,7 @@ class DataObjectManager(Manager):
                      target_resource_name = '',
                      data_open_returned_values = None,
                      progressQueue = False,
-                     progress_bar = None):
+                     updatables = ()):
         """Call into the irods.parallel library for multi-1247 GET.
 
         Called from a session.data_objects.get(...) (via the _download method) on
@@ -277,7 +342,7 @@ class DataObjectManager(Manager):
                                  num_threads = num_threads, target_resource_name = target_resource_name,
                                  data_open_returned_values = data_open_returned_values,
                                  queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0),
-                                 progress_bar = progress_bar)
+                                 updatables = updatables)
 
     def parallel_put(self,
                      file_ ,
@@ -287,7 +352,7 @@ class DataObjectManager(Manager):
                      num_threads = 0,
                      target_resource_name = '',
                      open_options = {},
-                     progress_bar = None,
+                     updatables = (),
                      progressQueue = False):
         """Call into the irods.parallel library for multi-1247 PUT.
 
@@ -298,8 +363,8 @@ class DataObjectManager(Manager):
         return parallel.io_main( self.sess, data_or_path_, parallel.Oper.PUT | (parallel.Oper.NONBLOCKING if async_ else 0), file_,
                                  num_threads = num_threads, total_bytes = total_bytes,  target_resource_name = target_resource_name,
                                  open_options = open_options,
-                                 progress_bar = progress_bar,
-                                 queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0)
+                                 queueLength = (DEFAULT_QUEUE_DEPTH if progressQueue else 0),
+                                 updatables = updatables,
                                )
 
 

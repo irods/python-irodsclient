@@ -223,13 +223,14 @@ def _io_send_bytes_progress (queueObject, item):
 
 COPY_BUF_SIZE = (1024 ** 2) * 4
 
-def _copy_part( src, dst, length, queueObject, debug_info, mgr, progress_bar):
+def _copy_part( src, dst, length, queueObject, debug_info, mgr, updatables = ()):
     """
     The work-horse for performing the copy between file and data object.
 
     It also helps determine whether there has been a large enough increment of
     bytes to inform the progress bar of a need to update.
     """
+    from irods.manager.data_object_manager import do_progress_updates
     bytecount = 0
     accum = 0
     while True and bytecount < length:
@@ -240,8 +241,7 @@ def _copy_part( src, dst, length, queueObject, debug_info, mgr, progress_bar):
         bytecount += buf_len
         accum += buf_len
         if queueObject and accum and _io_send_bytes_progress(queueObject,accum): accum = 0
-        if progress_bar is not None:
-            progress_bar.update(buf_len)
+        do_progress_updates(updatables, buf_len)
         if verboseConnection:
             print ("("+debug_info+")",end='',file=sys.stderr)
             sys.stderr.flush()
@@ -303,7 +303,7 @@ class _Multipart_close_manager:
         self.initial_io.close()
 
 
-def _io_part (objHandle, range_, file_, opr_, mgr_, thread_debug_id = '', queueObject = None, progress_bar = None):
+def _io_part (objHandle, range_, file_, opr_, mgr_, thread_debug_id = '', queueObject = None, updatables = None):
     """
     Runs in a separate thread to manage the transfer of a range of bytes within the data object.
 
@@ -317,12 +317,12 @@ def _io_part (objHandle, range_, file_, opr_, mgr_, thread_debug_id = '', queueO
     file_.seek(offset)
     if thread_debug_id == '':  # for more succinct thread identifiers while debugging.
         thread_debug_id = str(threading.currentThread().ident)
-    return ( _copy_part (file_, objHandle, length, queueObject, thread_debug_id, mgr_, progress_bar) if Operation.isPut()
-        else _copy_part (objHandle, file_, length, queueObject, thread_debug_id, mgr_, progress_bar) )
+    return ( _copy_part (file_, objHandle, length, queueObject, thread_debug_id, mgr_, updatables) if Operation.isPut()
+        else _copy_part (objHandle, file_, length, queueObject, thread_debug_id, mgr_, updatables) )
 
 
 def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str, session, fname,
-                           total_size, num_threads, progress_bar, **extra_options):
+                           total_size, num_threads, **extra_options):
     """Called by _io_main.
 
     Carve up (0,total_size) range into `num_threads` parts and initiate a transfer thread for each one.
@@ -344,9 +344,9 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
 
     logger.info(u"num_threads = %s ; bytes_per_thread = %s", num_threads, bytes_per_thread)
 
-    _queueLength = extra_options.get('_queueLength',0)
-    if _queueLength > 0:
-        queueObject = Queue(_queueLength)
+    queueLength = extra_options.get('queueLength',0)
+    if queueLength > 0:
+        queueObject = Queue(queueLength)
     else:
         queueObject = None
 
@@ -357,6 +357,11 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
     counter = 1
     gen_file_handle = lambda: open(fname, Operation.disk_file_mode(initial_open = (counter == 1)))
     File = gen_file_handle()
+
+    thread_opts = { 'updatables' : extra_options.get('updatables',()),
+                    'queueObject' : queueObject
+                  }
+
     for byte_range in ranges:
         if Io is None:
             Io = session.data_objects.open( Data_object.path, Operation.data_object_mode(initial_open = False),
@@ -368,12 +373,14 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
         mgr.add_io( Io )
         logger.debug(u'target_host = %s', Io.raw.session.pool.account.host)
         if File is None: File = gen_file_handle()
-        futures.append(executor.submit( _io_part, Io, byte_range, File, Operation, mgr, str(counter), queueObject, progress_bar))
+        futures.append(executor.submit(_io_part, Io, byte_range, File, Operation, mgr,
+                                       thread_debug_id = str(counter),
+                                       **thread_opts))
         counter += 1
         Io = File = None
 
     if Operation.isNonBlocking():
-        if _queueLength:
+        if queueLength:
             return futures, queueObject, mgr
         else:
             return futures
@@ -383,7 +390,7 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
 
 
 
-def io_main( session, Data, opr_, fname, R='', progress_bar = None, **kwopt):
+def io_main( session, Data, opr_, fname, R='', **kwopt):
     """
     The entry point for parallel transfers (multithreaded PUT and GET operations).
 
@@ -467,10 +474,11 @@ def io_main( session, Data, opr_, fname, R='', progress_bar = None, **kwopt):
     (replica_token , resc_hier) = rawfile.replica_access_info()
 
     queueLength = kwopt.get('queueLength',0)
+
+    pass_thru_options = ('updatables','queueLength')
     retval = _io_multipart_threaded (Operation, (Data, Io), replica_token, resc_hier, session, fname, total_bytes,
                                      num_threads = num_threads,
-                                     _queueLength = queueLength,
-                                     progress_bar = progress_bar)
+                                     **{k:v for k,v in kwopt.items() if k in pass_thru_options})
 
     # SessionObject.data_objects.parallel_{put,get} will return:
     #   - immediately with an AsyncNotify instance, if Oper.NONBLOCKING flag is used.
