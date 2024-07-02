@@ -182,6 +182,7 @@ class MetadataManager(Manager):
         if not all(isinstance(op,AVUOperation) for op in avu_ops):
             raise InvalidAtomicAVURequest("avu_ops must contain 1 or more AVUOperations")
         request = {
+            "admin_mode": True if kw.ADMIN_KW in self.__kw.keys() else False,
             "entity_name": path,
             "entity_type": self._model_class_to_resource_description(model_cls),
             "operations" : [self._avu_operation_to_dict(op) for op in avu_ops]
