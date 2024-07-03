@@ -338,6 +338,35 @@ class TestMeta(unittest.TestCase):
             if d: d.unlink(force=True)
             if user: user.remove()
 
+    def test_atomic_metadata_operations_with_admin_kw__issue_576(self):
+        ses = data = user = None
+        adm = self.sess
+
+        if adm.server_version <= (4,2,11):
+            self.skipTest('ADMIN_KW not valid for Metadata API in iRODS 4.2.11 and previous')
+
+        try:
+            # Create a rodsuser
+            user = adm.users.create('bobby', 'rodsuser')
+            user.modify('password', 'bpass')
+
+            # Log in as rodsuser and create a data object owned by that user.
+            ses = iRODSSession(port = adm.port, zone = adm.zone, host = adm.host, user = user.name, password = 'bpass')
+            home = helpers.home_collection(ses)
+            data = ses.data_objects.create('{home}/issue_576'.format(**locals()))
+
+            # Do and test the results of the atomic set using the admin session, with the ADMIN_KW turned on.
+            data_via_admin = adm.data_objects.get(data.path)
+            avu_item = iRODSMeta('issue_576', 'dummy_value')
+            data_via_admin.metadata(admin=True).apply_atomic_operations(AVUOperation(operation = "add", avu = avu_item))
+            self.assertIn(avu_item, data_via_admin.metadata.items())
+        finally:
+            # Clean up objects after use.
+            if ses:
+                if ses.data_objects.exists(data.path):
+                    ses.data_objects.unlink(data.path, force = True)
+                ses.cleanup()
+            if user: user.remove()
 
     def test_add_coll_meta(self):
         # add metadata to test collection
