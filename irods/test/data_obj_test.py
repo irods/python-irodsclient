@@ -2086,6 +2086,20 @@ class TestDataObjOps(unittest.TestCase):
                     config.load(**load_logging_options)
                     self.assertTrue(config.data_objects.auto_close, RANDOM_VALUE - i - 1)
 
+    @unittest.skipIf(os.environ.get("PYTHON_IRODSCLIENT_CONFIGURATION_PATH",None) is not None,"test will not run if configuration file set.")
+    def test_setting_xml_parser_choice_by_environment_only__issue_584(self):
+        program = os.path.join(test_modules.__path__[0], 'test_xml_parser.py')
+        xml_parser_control_var = 'PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT'
+        with helpers.environment_variable_backed_up(xml_parser_control_var):
+            for alternate_setting in ('QUASI_XML', 'STANDARD_XML', 'SECURE_XML'):
+                # Set xml parser for the process to be spawned.
+                os.environ[xml_parser_control_var]="'{alternate_setting}'".format(**locals())
+                # Run a simple script that imports PRC and prints which XML parser is the active default.
+                p = subprocess.Popen([sys.executable,program], stdout=subprocess.PIPE)
+                parser_id = p.communicate()[0].decode().strip()
+                # Assert the printed result is as expected.
+                self.assertEqual(parser_id, alternate_setting)
+
     def test_append_mode_will_append_to_data_object__issue_495(self):
         append_string = b'to_be_written'.lower()
         reverse_bytes = lambda s: ''.join(reversed(s)) if six.PY2 else bytes(reversed(s))

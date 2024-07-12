@@ -327,21 +327,30 @@ def load(root = None, file = '', failure_modes = (), verify_only = False, loggin
             _load_config_line(root, match.group('key'), match.group('value'))
 
         if use_environment_variables:
-            for key, variable in _calculate_overriding_environment_variables().items():
-                value = os.environ.get(variable)
-                if value is not None:
-                    _load_config_line(root, key, value)
+            _load_settings_from_environment(root)
+
     finally:
         if _file:
             _file.close()
 
+
 default_config_dict = {}
+
+def _load_settings_from_environment(root = None):
+    if root is None:
+        root = sys.modules[__name__]
+    for key, variable in _calculate_overriding_environment_variables().items():
+        value = os.environ.get(variable)
+        if value is not None:
+            _load_config_line(root, key, value)
 
 def preserve_defaults():
     default_config_dict.update((k,copy.deepcopy(v)) for k,v in globals().items() if isinstance(v,iRODSConfiguration))
 
 def autoload(_file_to_load):
-    if _file_to_load is not None:
+    if _file_to_load is None:
+        _load_settings_from_environment()
+    else:
         load(file = _file_to_load, use_environment_variables = True)
 
 def new_default_config():
