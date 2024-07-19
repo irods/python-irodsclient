@@ -20,7 +20,7 @@ from irods.message.property import (BinaryProperty, StringProperty,
                                     IntegerProperty, LongProperty, ArrayProperty,
                                     SubmessageProperty)
 
-class Bad_AVU_Field(Exception):
+class Bad_AVU_Field(ValueError):
     pass
 
 _TUPLE_LIKE_TYPES = (tuple, list)
