@@ -1860,6 +1860,57 @@ class TestDataObjOps(unittest.TestCase):
         finally:
             s.resources.remove('parent')
 
+    @unittest.skipIf(set(os.environ.keys()) & {'PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT',
+                                               'PYTHON_IRODSCLIENT_CONFIGURATION_PATH', 'PYTHON_IRODSCLIENT_DEFAULT_XML'},
+                     "skipping due to possible overwriting of test-apropos settings by a configuration file or environment setting")
+    def test_temporary_xml_mode_change_with_operation_as_proof__issue_586(self):
+        from irods.helpers import (xml_mode, home_collection)
+        sess = irods.test.helpers.make_session()
+        hc = home_collection(sess)
+        odd_name = '{hc}/\1'.format(**locals())
+
+        # Currently 'STANDARD_XML' is the default, and 'QUASI_XML' is a convenient alternative to use when
+        # object names are used which contain special characters (e.g. '\1') hostile to standard XML parsers.
+        default_xml_parser = 'STANDARD_XML'
+
+        from irods.message import (current_XML_parser, string_for_XML_parser)
+        active_xml_parser_for_thread = lambda : string_for_XML_parser(current_XML_parser())
+
+        self.assertEqual(active_xml_parser_for_thread(), default_xml_parser)
+
+        with xml_mode('QUASI_XML'):
+            sess.data_objects.create(odd_name)
+
+        # Test that the xml parser setting isn't permanently changed
+        self.assertEqual(active_xml_parser_for_thread(), default_xml_parser)
+
+        try:
+            if default_xml_parser == 'STANDARD_XML':
+                with self.assertRaises(xml.etree.ElementTree.ParseError):
+                    sess.collections.get(hc).data_objects
+        finally:
+            with xml_mode('QUASI_XML'):
+                sess.data_objects.unlink(odd_name, force = True)
+
+    def test_temporary_xml_mode_changes_have_desired_thread_limited_effect__issue_586(self):
+        from irods.message import (current_XML_parser, string_for_XML_parser)
+        active_xml_parser_for_thread = lambda : string_for_XML_parser(current_XML_parser())
+        from concurrent.futures import ThreadPoolExecutor
+        from irods.helpers import xml_mode
+        original_xml_parser = active_xml_parser_for_thread()
+        other_xml_parser = list({'STANDARD_XML', 'QUASI_XML', 'SECURE_XML'} - {original_xml_parser})[0]
+
+        self.assertNotEqual(other_xml_parser, original_xml_parser)
+
+        with xml_mode(other_xml_parser):
+            # Test that this thread is the only one affected, and that in it we get 'QUASI_XML' when we call
+            # current_XML_parser(), i.e. the function used internally by ET() to retrieve the current parser module.
+            self.assertEqual(other_xml_parser, active_xml_parser_for_thread())
+            self.assertEqual(original_xml_parser, ThreadPoolExecutor(max_workers = 1).submit(active_xml_parser_for_thread).result())
+
+        self.assertEqual(active_xml_parser_for_thread(), original_xml_parser)
+
+
     def test_register_with_xml_special_chars(self):
         test_dir = helpers.irods_shared_tmp_dir()
         loc_server = self.sess.host in ('localhost', socket.gethostname())

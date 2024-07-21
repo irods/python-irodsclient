@@ -67,7 +67,9 @@ else:
     XML_Parser_Type.__members__ = {k:v for k,v in XML_Parser_Type.__dict__.items()
                                    if isinstance(v,XML_Parser_Type)}
 
-    PARSER_TYPE_STRINGS = {v:k for k,v in XML_Parser_Type.__members__.items() if v.value != 0}
+# This creates a mapping from the "valid" (nonzero) XML_Parser_Type enums -- those which represent the actual parser
+# choices -- to their corresponding names as strings (e.g. XML_Parser_Type.STANDARD_XML is mapped to 'STANDARD_XML'):
+PARSER_TYPE_STRINGS = {v:k for k,v in XML_Parser_Type.__members__.items() if v.value != 0}
 
 # We maintain values on a per-thread basis of:
 #   - the server version with which we're communicating
@@ -110,6 +112,9 @@ def current_XML_parser(get_module = False):
 def default_XML_parser(get_module = False):
     d = _default_XML
     return d if not get_module else _XML_parsers[d]
+
+def string_for_XML_parser(parser_enum):
+    return PARSER_TYPE_STRINGS[parser_enum]
 
 _XML_parsers = {
     XML_Parser_Type.STANDARD_XML : ET_xml,

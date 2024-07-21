@@ -151,6 +151,20 @@ def make_environment_and_auth_files( dir_, **params ):
 # Create a connection for test, based on ~/.irods environment by default.
 
 def make_session(test_server_version = True, **kwargs):
+    """Connect to an iRODS server as determined by any client environment
+    file present at a standard location, and by any keyword arguments given.
+
+    Arguments:
+
+    test_server_version: Of type bool; in the `irods.test.helpers` version of this
+                         function, defaults to True.  A True value causes
+                         *iRODS_Server_Too_Recent* to be raised if the server
+                         connected to is more recent than the current Python iRODS
+                         client's advertised level of compatibility.
+
+    **kwargs:            Keyword arguments.  Fed directly to the iRODSSession
+                         constructor.  """
+
     try:
         env_file = kwargs.pop('irods_env_file')
     except KeyError:
@@ -159,7 +173,6 @@ def make_session(test_server_version = True, **kwargs):
         except KeyError:
             env_file = os.path.expanduser('~/.irods/irods_environment.json')
     session = iRODSSession( irods_env_file = env_file, **kwargs )
-
     if test_server_version:
         connected_version = session.server_version[:3]
         advertised_version = IRODS_VERSION[:3]
@@ -172,6 +185,7 @@ def make_session(test_server_version = True, **kwargs):
 
 
 def home_collection(session):
+    """Return a string value for the given session's home collection."""
     return "/{0.zone}/home/{0.username}".format(session)
 
 

@@ -732,7 +732,17 @@ QUASI_XML parser for the default one:
 
 ```
     from irods.message import (XML_Parser_Type, ET)
-    ET( XML_Parser_Type.QUASI_XML, session.server_version )
+    ET( XML_Parser_Type.QUASI_XML,
+        server_version = session.server_version
+    )
+```
+
+The server_version parameter can be used independently, if desired, to change the
+current thread's choice of entities during QUASI_XML transactions with the server.
+(This is only a concern when interacting with servers before iRODS 4.2.9.)
+
+```
+    ET(server_version = (4,2,8))
 ```
 
 Two dedicated environment variables may also be used to customize the
@@ -755,8 +765,20 @@ particular server version.
 
 Finally, note that these global defaults, once set, may be overridden on
 a per-thread basis using `ET(parser_type, server_version)`.
-We can also revert the current thread's XML parser back to the global
-default by calling `ET(None)`.
+
+The current thread's XML parser can always be reverted to the global default by the
+explicit use of `ET(None)`.  However, when frequently switching back and forth between
+parsers, it may be more convenient to use the `xml_mode` context manager:
+
+```
+    # ... Interactions with the server now use the default XML parser.
+
+    from irods.helpers import xml_mode
+    with xml_mode('QUASI_XML'):
+        # ... Interactions with the server, in the current thread, temporarily use QUASI_XML
+
+    # ... We have now returned to using the default XML parser.
+```
 
 Rule Execution
 --------------
