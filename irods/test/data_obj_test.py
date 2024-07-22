@@ -107,8 +107,9 @@ class TestDataObjOps(unittest.TestCase):
         self.sess.cleanup()
 
     @staticmethod
-    def In_Memory_Stream():
-        return io.BytesIO() if sys.version_info < (3,) else io.StringIO()
+    def In_Memory_Stream(always_unicode = False):
+        return io.StringIO() if sys.version_info >= (3,) or always_unicode \
+            else io.BytesIO()
 
 
     @contextlib.contextmanager
@@ -318,9 +319,9 @@ class TestDataObjOps(unittest.TestCase):
             options = { kw.DEST_RESC_NAME_KW:Root,
                         kw.RESC_NAME_KW:Root }
 
-            PUT_LOG = self.In_Memory_Stream()
-            GET_LOG = self.In_Memory_Stream()
-            NumThreadsRegex = re.compile('^num_threads\s*=\s*(\d+)',re.MULTILINE)
+            PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+            GET_LOG = self.In_Memory_Stream(always_unicode = True)
+            NumThreadsRegex = re.compile(u'^num_threads\s*=\s*(\d+)',re.MULTILINE)
 
             try:
                 logger = logging.getLogger('irods.parallel')
@@ -830,7 +831,7 @@ class TestDataObjOps(unittest.TestCase):
                 data_ctx['initialize']()
                 sess = data_ctx['session']
                 remote_name = data_ctx['path']
-                PUT_LOG = self.In_Memory_Stream()
+                PUT_LOG = self.In_Memory_Stream(always_unicode = True)
                 with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                            logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG),\
                      helpers.enableLogging(logging.getLogger('irods.parallel'),
@@ -839,11 +840,11 @@ class TestDataObjOps(unittest.TestCase):
                 def srch(BUF):
                     nthr = 0
                     search_text = BUF.getvalue()
-                    find_iterator = itertools.chain( re.finditer('redirect_to_host = (\S+)', search_text),
-                                                     re.finditer('target_host = (\S+)', search_text) )
+                    find_iterator = itertools.chain( re.finditer(u'redirect_to_host = (\S+)', search_text),
+                                                     re.finditer(u'target_host = (\S+)', search_text) )
                     for match in find_iterator:
                         nthr += 1
-                        self.assertEqual(match.group(1), 'localhost')
+                        self.assertEqual(match.group(1), u'localhost')
                     occur_threshold = (1 if len(content) <= 32*MEBI else 2)
                     self.assertGreaterEqual(nthr, occur_threshold)
                 srch(PUT_LOG)
@@ -858,7 +859,7 @@ class TestDataObjOps(unittest.TestCase):
                     data_ctx_get = next(generator)
                     data_ctx_get['initialize']()
                     sess = data_ctx_get['session']
-                GET_LOG = self.In_Memory_Stream()
+                GET_LOG = self.In_Memory_Stream(always_unicode = True)
                 with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                            logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG),\
                      helpers.enableLogging(logging.getLogger('irods.parallel'),
@@ -2097,6 +2098,7 @@ class TestDataObjOps(unittest.TestCase):
         with self.assertRaises(ex.InvalidInputArgument):
             user_session.data_objects.touch(home_collection_path)
 
+    @unittest.skipIf(six.PY2, "Python2 won't destruct an out-of-scope iRODSSession due to lazy GC ref-cycle detection.")
     def test_client_redirect_lets_go_of_connections__issue_562(self):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
         # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource
