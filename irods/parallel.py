@@ -340,7 +340,7 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
 
     ranges = [bytes_range_for_thread(i, num_threads, total_size, bytes_per_thread) for i in range(num_threads)]
 
-    logger.info("num_threads = %s ; bytes_per_thread = %s", num_threads, bytes_per_thread)
+    logger.info(u"num_threads = %s ; bytes_per_thread = %s", num_threads, bytes_per_thread)
 
     _queueLength = extra_options.get('_queueLength',0)
     if _queueLength > 0:
@@ -364,7 +364,7 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
                                                 kw.RESC_HIER_STR_KW: hier_str,
                                                 kw.REPLICA_TOKEN_KW: replica_token })
         mgr.add_io( Io )
-        logger.debug('target_host = %s', Io.raw.session.pool.account.host)
+        logger.debug(u'target_host = %s', Io.raw.session.pool.account.host)
         if File is None: File = gen_file_handle()
         futures.append(executor.submit( _io_part, Io, byte_range, File, Operation, mgr, str(counter), queueObject))
         counter += 1
