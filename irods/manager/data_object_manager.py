@@ -534,6 +534,37 @@ class DataObjectManager(Manager):
             ret_value.seek(0,io.SEEK_END)
         return ret_value
 
+    def replica_truncate(self, path, desired_size, **options):
+
+        if self.sess.server_version == (4,3,2):
+            message = 'replica_truncate responses can fail to parse with iRODS 4.3.2 due to routine omission of the JSON response string, so this method is not supported for iRODS 4.3.2.'
+            raise ex.OperationNotSupported(message)
+        else:
+            required_server_version = (4,3,3)
+            if self.sess.server_version < required_server_version:
+                raise ex.NotImplementedInIRODSServer('replica_truncate', required_server_version)
+
+        message_body = FileOpenRequest(
+            objPath=path,
+            createMode=0,
+            openFlags=0,
+            offset=0,
+            dataSize=desired_size,
+            numThreads=self.sess.numThreads,
+            oprType=0,
+            KeyValPair_PI=StringStringMap(options),
+        )
+        message = iRODSMessage('RODS_API_REQ',
+                               msg=message_body,
+                               int_info=api_number["REPLICA_TRUNCATE_AN"])
+
+        with self.sess.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+            msg = response.get_main_message( STR_PI )
+
+        return json.loads(msg.myStr)
+
     def trim(self, path, **options):
 
         try:

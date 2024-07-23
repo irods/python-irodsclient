@@ -69,7 +69,7 @@ class MultipleResultsFound(QueryException):
     pass
 
 
-class NotImplementedInIRODSServer(RuntimeError):
+class NotImplementedInIRODSServer(PycommandsException):
     def __init__(self, feature_description, required_iRODS_version = ()):
         super(NotImplementedInIRODSServer,self).__init__(feature_description + ': Not supported by the connected iRODS server.')
         self.required_iRODS_version = required_iRODS_version
@@ -639,6 +639,10 @@ class SYS_BAD_INPUT(iRODSException):
 
 class SYS_REPLICA_DOES_NOT_EXIST(iRODSException):
     code = -164000
+
+
+class SYS_REPLICA_INACCESSIBLE(iRODSException):
+    code = -168000
 
 
 class SYS_NOT_ALLOWED(iRODSException):
