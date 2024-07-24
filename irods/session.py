@@ -21,8 +21,8 @@ from irods.manager.access_manager import AccessManager
 from irods.manager.user_manager import UserManager, GroupManager
 from irods.manager.resource_manager import ResourceManager
 from irods.manager.zone_manager import ZoneManager
-from irods.message import iRODSMessage
-from irods.exception import NetworkException
+from irods.message import (iRODSMessage, STR_PI)
+from irods.exception import (NetworkException, NotImplementedInIRODSServer)
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import DEFAULT_CONNECTION_TIMEOUT
@@ -60,6 +60,17 @@ logger = logging.getLogger(__name__)
 class NonAnonymousLoginWithoutPassword(RuntimeError): pass
 
 class iRODSSession(object):
+
+    def library_features(self):
+        irods_version_needed = (4,3,1)
+        if self.server_version < irods_version_needed:
+            raise NotImplementedInIRODSServer('library_features', irods_version_needed)
+        message = iRODSMessage('RODS_API_REQ', int_info = api_number['GET_LIBRARY_FEATURES_AN'])
+        with self.pool.get_connection() as conn:
+            conn.send(message)
+            response = conn.recv()
+            msg = response.get_main_message( STR_PI )
+            return json.loads(msg.myStr)
 
     @property
     def env_file (self):

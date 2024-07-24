@@ -157,6 +157,8 @@ api_number = {
     "RM_COLL201_AN": 663,
     "OPEN_COLLECTION201_AN": 712,
 
+    "GET_LIBRARY_FEATURES_AN": 801,
+
     # 1000 - 1059 - NETCDF API calls
     "NC_OPEN_AN": 1000,
     "NC_CREATE_AN": 1001,

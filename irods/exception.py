@@ -69,6 +69,17 @@ class MultipleResultsFound(QueryException):
     pass
 
 
+class NotImplementedInIRODSServer(RuntimeError):
+    def __init__(self, feature_description, required_iRODS_version = ()):
+        super(NotImplementedInIRODSServer,self).__init__(feature_description + ': Not supported by the connected iRODS server.')
+        self.required_iRODS_version = required_iRODS_version
+    def __str__(self):
+        nv = self.required_iRODS_version
+        return '{}{}'.format(self.args, ' [requires iRODS version: {nv}]'.format(**locals()) if nv else '')
+    def __repr__(self):
+        return self.__class__.__name__ + str(self)
+
+
 class iRODSExceptionMeta(type):
     codes = {}
     positive_code_error_message = "For {name}, a positive code of {attrs[code]} was declared."
