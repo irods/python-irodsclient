@@ -10,6 +10,7 @@ from irods.collection import iRODSCollection
 from irods.column import In, Like
 from irods.exception import UserDoesNotExist
 from irods.models import User,Collection,DataObject
+from irods.path import iRODSPath
 from irods.user import iRODSUser
 from irods.session import iRODSSession
 import irods.test.helpers as helpers
@@ -370,6 +371,85 @@ class TestAccess(unittest.TestCase):
                 pass
             else:
                 u.remove()
+
+    def test_iRODSAccess_can_be_constructed_using_iRODSCollection__issue_558(self):
+        user_name = "testuser"
+        collection_path = "/".join([helpers.home_collection(self.sess), "give_read_access_to_this"])
+
+        try:
+            user = self.sess.users.create(user_name, 'rodsuser')
+            collection = self.sess.collections.create(collection_path)
+
+            # Give user access to data object. This should succeed. Before the fix in #558, this would cause an error
+            # from pickle during a call to deepcopy of the iRODSAccess object. The library does not know how to pickle
+            # an iRODSCollection object.
+            access = iRODSAccess('read', collection, user.name)
+            self.sess.acls.set(access)
+
+            # We can get permissions from collection, and the test user's entry is there.
+            perms = self.sess.acls.get(collection)
+            self.assertTrue(any(p for p in perms if p.user_name == user_name))
+
+        finally:
+            self.sess.users.get(user_name).remove()
+            self.sess.collections.remove(collection_path, force=True)
+
+    def test_iRODSAccess_can_be_constructed_using_iRODSDataObject__issue_558(self):
+        user_name = "testuser"
+        data_object_path = "/".join([helpers.home_collection(self.sess), "give_read_access_to_this"])
+
+        try:
+            user = self.sess.users.create(user_name, 'rodsuser')
+            data_object = self.sess.data_objects.create(data_object_path)
+
+            # Give user access to data object. This should succeed. Before the fix in #558, this would cause an error
+            # from pickle during a call to deepcopy of the iRODSAccess object. The library does not know how to pickle
+            # an iRODSDataObject object.
+            access = iRODSAccess('read', data_object, user.name)
+            self.sess.acls.set(access)
+
+            # We can get permissions from the data object, and the test user's entry is there.
+            perms = self.sess.acls.get(data_object)
+            self.assertTrue(any(p for p in perms if p.user_name == user_name))
+
+        finally:
+            self.sess.users.get(user_name).remove()
+            self.sess.data_objects.unlink(data_object_path, force=True)
+
+    def test_iRODSAccess_can_be_constructed_using_iRODSPath__issue_558(self):
+        user_name = "testuser"
+        data_object_path = "/".join([helpers.home_collection(self.sess), "give_read_access_to_this"])
+
+        try:
+            irods_path = iRODSPath(data_object_path)
+
+            user = self.sess.users.create(user_name, 'rodsuser')
+            data_object = self.sess.data_objects.create(data_object_path)
+
+            # Give user access to data object. This should succeed. Before the fix in #558, this would cause an error
+            # from pickle during a call to deepcopy of the iRODSAccess object. The library does not know how to pickle
+            # an iRODSDataObject object.
+            access = iRODSAccess('read', irods_path, user.name)
+            self.sess.acls.set(access)
+
+            # We can get permissions from the data object, and the test user's entry is there.
+            perms = self.sess.acls.get(data_object)
+            self.assertTrue(any(p for p in perms if p.user_name == user_name))
+
+        finally:
+            self.sess.users.get(user_name).remove()
+            self.sess.data_objects.unlink(data_object_path, force=True)
+
+    def test_iRODSAccess_cannot_be_constructed_using_unsupported_type__issue_558(self):
+        # Before the fix in #558, this would have been allowed and only later would the type discrepancy be revealed,
+        # leading to opaque error messages. Now, the types are checked on the way in to ensure clarity and correctness.
+        # TODO(#480): We cannot use the unittest.assertRaises context manager as this was introduced in python 3.1.
+        self.assertRaisesRegex(
+            TypeError,
+            "'path' parameter must be of type 'str', 'irods.collection.iRODSCollection', "
+            "'irods.data_object.iRODSDataObject', or 'irods.path.iRODSPath'.",
+            iRODSAccess, 'read', self.sess)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
