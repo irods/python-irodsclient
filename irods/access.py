@@ -1,6 +1,8 @@
 import collections
 import copy
 import six
+from irods.collection import iRODSCollection
+from irods.data_object import iRODSDataObject
 from irods.path import iRODSPath
 
 class _Access_LookupMeta(type):
@@ -59,7 +61,15 @@ class iRODSAccess(six.with_metaclass(_Access_LookupMeta)):
 
     def __init__(self, access_name, path, user_name='', user_zone='', user_type=None):
         self.access_name = access_name
-        self.path = path
+        if isinstance(path, (iRODSCollection, iRODSDataObject)):
+            self.path = path.path
+        elif isinstance(path, str):
+            # This should cover irods.path.iRODSPath as well as it is a descendant type of str.
+            self.path = path
+        else:
+            raise TypeError(
+                "'path' parameter must be of type 'str', 'irods.collection.iRODSCollection', "
+                "'irods.data_object.iRODSDataObject', or 'irods.path.iRODSPath'.")
         self.user_name = user_name
         self.user_zone = user_zone
         self.user_type = user_type
