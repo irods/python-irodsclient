@@ -180,24 +180,27 @@ class TestQuery(unittest.TestCase):
 
         # BETWEEN tests
 
-        result13 = self.sess.query(DataObject.name).filter(
-            Collection.name == self.coll_path).filter(
-            Between(DataObject.name, [self.case_sensitive_obj_name1,
-                                      self.case_sensitive_obj_name1 + "_"])).all()
-        self.assertTrue(result13.has_value(self.case_sensitive_obj_name1))
-        self.assertEqual(len(result13), 1)
+        # TODO(#600): Uncomment these lines and/or make a new test when database flavor can be detected.
+        # The resultset for BETWEEN queries can differ from database to database.
 
-        result14 = self.sess.query(DataObject.name).filter(
-            Collection.name == self.coll_path).filter(
-            Between(DataObject.name, [str.lower(self.case_sensitive_obj_name1),
-                                      str.lower(self.case_sensitive_obj_name1) + "_"])).all()
-        self.assertEqual(len(result14), 0)
+        #result13 = self.sess.query(DataObject.name).filter(
+        #    Collection.name == self.coll_path).filter(
+        #    Between(DataObject.name, [self.case_sensitive_obj_name1,
+        #                              self.case_sensitive_obj_name1 + "_"])).all()
+        #self.assertTrue(result13.has_value(self.case_sensitive_obj_name1))
+        #self.assertEqual(len(result13), 1)
 
-        result15 = self.sess.query(DataObject.name).filter(
-            Collection.name == self.coll_path).filter(
-            Between(DataObject.name, [str.upper(self.case_sensitive_obj_name1),
-                                      str.upper(self.case_sensitive_obj_name1) + "_"])).all()
-        self.assertEqual(len(result15), 0)
+        #result14 = self.sess.query(DataObject.name).filter(
+        #    Collection.name == self.coll_path).filter(
+        #    Between(DataObject.name, [str.lower(self.case_sensitive_obj_name1),
+        #                              str.lower(self.case_sensitive_obj_name1) + "_"])).all()
+        #self.assertEqual(len(result14), 0)
+
+        #result15 = self.sess.query(DataObject.name).filter(
+        #    Collection.name == self.coll_path).filter(
+        #    Between(DataObject.name, [str.upper(self.case_sensitive_obj_name1),
+        #                              str.upper(self.case_sensitive_obj_name1) + "_"])).all()
+        #self.assertEqual(len(result15), 0)
 
     def test_files_query_case_insensitive(self):
         # This tests that GenQueries are case-insensitive when the case_sensitive
