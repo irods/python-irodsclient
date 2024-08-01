@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+import numbers
 import os
-import sys
-import socket
 import posix
+import socket
 import shutil
 from subprocess import (Popen, PIPE)
+import sys
 
 IRODS_SSL_DIR = '/etc/irods/ssl'
 SERVER_CERT_HOSTNAME = None
@@ -71,23 +72,32 @@ def test(options, args=()):
         ssl_dir_files = create_ssl_dir(use_strong_primes_for_dh_generation = dh_strong_primes)
         print('ssl_dir_files=', ssl_dir_files, file = sys.stderr)
     
+def usage(exit_code = None):
+
+    print("""Usage: {sys.argv[0]} [-f] [-h <hostname>] [-k] [-q] [-x <extension>] 
+    -f      Force replacement of the existing SSL directory (/etc/irods/ssl) with a new one, containing newly generated files.
+    -h      In the generated certificate, use the given hostname rather than the value returned from socket.gethostname()
+    -k      (Keep old secrets files.) Do not generate new key file or dhparams.pem file.
+    -q      For testing; do a quick generation of a dhparams.pem file rather than waiting on system entropy to make it more secure.
+    -x      Optional extra extension for appending to end of the filename for the generated certificate.
+    --help  Print this help.
+
+    Any invalid option prints this help.
+    """.format(**globals()), file = sys.stderr)
+    if isinstance(exit_code, numbers.Integral):
+        exit(exit_code)
+
 if __name__ == '__main__':
     import getopt
     try:
-        opt, arg_list = getopt.getopt(sys.argv[1:],'x:fh:kq')
+        opt, arg_list = getopt.getopt(sys.argv[1:],'x:fh:kq',['help'])
     except getopt.GetoptError:
-        print("""Usage: {sys.argv[0]} [-f] [-h <hostname>] [-k] [-q] [-x <extension>] 
-        -f  Force replacement of the existing SSL directory (/etc/irods/ssl) with a new one, containing newly generated files.
-        -h  In the generated certificate, use the given hostname rather than the value returned from socket.gethostname()
-        -k  (Keep old secrets files.) Do not generate new key file or dhparams.pem file.
-        -q  For testing; do a quick generation of a dhparams.pem file rather than waiting on system entropy to make it more secure.
-        -x  Optional extra extension for appending to end of the filename for the generated certificate.
-
-        Any invalid option prints this help.
-        """.format(**locals()), file = sys.stderr)
-        exit(1)
+        usage(exit_code = 1)
 
     opt_lookup = dict(opt)
+
+    if '--help' in opt_lookup:
+        usage(exit_code = 0)
 
     ext = opt_lookup.get('-x','')
     if ext:
