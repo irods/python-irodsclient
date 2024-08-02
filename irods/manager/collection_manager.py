@@ -82,9 +82,10 @@ class CollectionManager(Manager):
         self.remove(path, **options)
 
 
-    def exists(self, path):
+    def exists(self, path, return_object = ()):
         try:
-            self.get(path)
+            obj = self.get(path)
+            if return_object == []: return_object.append(obj)
         except CollectionDoesNotExist:
             return False
         return True
