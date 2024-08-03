@@ -22,7 +22,7 @@ from irods.manager.user_manager import UserManager, GroupManager
 from irods.manager.resource_manager import ResourceManager
 from irods.manager.zone_manager import ZoneManager
 from irods.message import (iRODSMessage, STR_PI)
-from irods.exception import (NetworkException, NotImplementedInIRODSServer)
+from irods.exception import (NetworkException, NotImplementedInIRODSServer, DoesNotExist)
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import DEFAULT_CONNECTION_TIMEOUT
@@ -446,3 +446,40 @@ class iRODSSession(object):
                 connection_refresh_time = -1
 
         return connection_refresh_time
+
+
+    def user_has_access(self, collection_or_data_path, user_name, access_name, zone = ''):
+
+        from irods.test.access_test import get_name_mapping
+        from irods.access import iRODSAccess
+
+        zone = (zone or self.zone)
+
+        mapping = get_name_mapping(self)
+        true_access_name = mapping[access_name]
+        access_type_int = iRODSAccess.to_int(true_access_name)
+
+        exist = []
+
+        if not self.collections.exists(collection_or_data_path, return_object = exist):
+            self.data_objects.exists(collection_or_data_path, return_object = exist)
+
+        if not exist:
+            raise DoesNotExist
+
+        access_rights = {}
+        user_is_group = self.users.get(user_name).user_type == 'rodsgroup'
+
+        for acl in self.acls.get(exist[0]):
+            if iRODSAccess.to_int(acl.access_name) >= access_type_int:
+                if acl.user_name == user_name and (acl.user_zone == zone or user_is_group):
+                    access_rights[user_name] = acl.access_name
+                    break
+                elif acl.user_type == "rodsgroup":
+                    group = self.groups.get(acl.user_name)
+                    matching_group_members = [u for u in self.groups.get(acl.user_name).members if u.name == user_name and u.zone == zone]
+                    if matching_group_members:
+                        access_rights[group.name] = acl.access_name
+                        break
+
+        return len(access_rights) > 0

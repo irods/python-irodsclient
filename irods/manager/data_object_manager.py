@@ -597,9 +597,10 @@ class DataObjectManager(Manager):
             self.unlink(path, **options)
 
 
-    def exists(self, path):
+    def exists(self, path, return_object = ()):
         try:
-            self.get(path)
+            obj = self.get(path)
+            if return_object == []: return_object.append(obj)
         except ex.DoesNotExist:
             return False
         return True
