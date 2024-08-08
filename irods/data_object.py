@@ -115,6 +115,9 @@ class iRODSDataObject(object):
     def truncate(self, size):
         self.manager.truncate(self.path, size)
 
+    def replica_truncate(self, size, **options):
+        return self.manager.replica_truncate(self.path, size, **options)
+
     def replicate(self, resource = None, **options):
         self.manager.replicate(self.path, resource = resource, **options)
 

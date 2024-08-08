@@ -3,7 +3,8 @@ from __future__ import absolute_import
 from datetime import datetime
 import base64
 import concurrent.futures
-import contextlib  # check if redundant
+import contextlib
+import errno
 import hashlib
 import io
 import itertools
@@ -2361,6 +2362,84 @@ class TestDataObjOps(unittest.TestCase):
             self.sess.data_objects.put(f.name, logical_path, updatables = [thread_safe(pbar.update)])
 
         self.assertEqual(pbar.percent_done(), 100)
+
+    def test_replica_truncate_related_errors__issue_534(self):
+        sess = self.sess
+        data_objs = self.sess.data_objects
+        truncated_size = 16
+
+        try:
+            # Set path for a new, as yet nonexisting data object.
+            data_path = '{}/{}'.format(
+                helpers.home_collection(sess),
+                unique_name(my_function_name(), datetime.now(), truncated_size) + "issue_534_errors")
+            self.assertFalse (data_objs.exists(data_path), "Data object should not yet exist.")
+
+            # Assert appropriate error is raised for the nonexisting object.
+            with self.assertRaises(ex.OBJ_PATH_DOES_NOT_EXIST):
+                data_objs.replica_truncate(data_path, truncated_size)
+
+            d = data_objs.create(data_path)
+
+            # Assert appropriate error is raised for an existing object without a replica on the given resource.
+            with self.create_simple_resc() as newResc:
+                with self.assertRaises(ex.SYS_REPLICA_INACCESSIBLE):
+                    d.replica_truncate(truncated_size, **{kw.RESC_NAME_KW: newResc})
+
+            # Assert appropriate error is raised for an invalid (negative) size argument.
+            try:
+                data_objs.replica_truncate(data_path, -truncated_size)
+            except Exception as e:
+                self.assertIsInstance(e, ex.UNIX_FILE_TRUNCATE_ERR)
+                self.assertEqual('EINVAL', errno.errorcode[abs(e.code) % 1000])
+
+        finally:
+            if data_objs.exists(data_path):
+                data_objs.unlink(data_path, force = True)
+
+    def test_replica_truncate__issue_534(self):
+        sess = self.sess
+        data_objs = self.sess.data_objects
+        original_size = 16
+        original_content = b'_' * original_size
+        with self.create_simple_resc() as newResc:
+            for truncated_size in (original_size//2, original_size + 1024):
+                try:
+                    data_path = '{}/{}'.format(
+                        helpers.home_collection(sess),
+                        unique_name(my_function_name(), datetime.now(), truncated_size) + "_issue_534")
+
+                    # Create a data object with size original_size.
+                    with data_objs.open(data_path,'w') as f:
+                        f.write(original_content)
+                    d = data_objs.get(data_path)
+
+                    # Ensure there are two replicas, one on newResc as well as one on 'demoResc'
+                    d.replicate(resource = newResc)
+                    response = d.replica_truncate(truncated_size, **{kw.RESC_NAME_KW: newResc})
+
+                    # Stat data object again.
+                    d = data_objs.get(data_path)
+
+                    # Check that returned resource hierarchy and replica number match expectations.
+                    self.assertEqual(response['replica_number'],
+                        [_ for _ in data_objs.get(data_path).replicas if _.resource_name == newResc][0].number)
+                    self.assertEqual(response['resource_hierarchy'], newResc)
+
+                    # Make sure sizes are as expected.
+                    self.assertEqual([_ for _ in d.replicas if _.resource_name == newResc][0].size, truncated_size)
+                    self.assertEqual([_ for _ in d.replicas if _.resource_name != newResc][0].size, original_size)
+
+                    # Check that content of truncated replicas is as expected.
+                    if truncated_size <= original_size:
+                        self.assertEqual( d.open('r').read(), original_content[:truncated_size])
+                    else:
+                        self.assertEqual( d.open('r').read(), original_content + b'\0' * (truncated_size - original_size))
+
+                finally:
+                    if data_objs.exists(data_path):
+                        data_objs.unlink(data_path, force = True)
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
