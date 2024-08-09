@@ -444,7 +444,11 @@ class TestAccess(unittest.TestCase):
         # Before the fix in #558, this would have been allowed and only later would the type discrepancy be revealed,
         # leading to opaque error messages. Now, the types are checked on the way in to ensure clarity and correctness.
         # TODO(#480): We cannot use the unittest.assertRaises context manager as this was introduced in python 3.1.
-        self.assertRaisesRegex(
+        assertCall = getattr(self,'assertRaisesRegex',None)
+        if assertCall is None:
+            assertCall = self.assertRaisesRegexp
+
+        assertCall(
             TypeError,
             "'path' parameter must be of type 'str', 'irods.collection.iRODSCollection', "
             "'irods.data_object.iRODSDataObject', or 'irods.path.iRODSPath'.",
