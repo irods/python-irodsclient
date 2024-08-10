@@ -1,3 +1,5 @@
+import os
+import sys
 import unittest
 
 import irods.test.helpers as helpers
@@ -6,27 +8,28 @@ import irods.test.helpers as helpers
 class TestGenQuery2(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.sess = helpers.make_session()
+    def setUpClass(cls):
+        # cls.sess will be available to instance (test_*) methods as self.sess
+        cls.sess = helpers.make_session()
 
-        if self.sess.server_version < (4, 3, 2):
-            self.skipTest(
+        if cls.sess.server_version < (4, 3, 2):
+            raise unittest.SkipTest(
                 'GenQuery2 is not available by default in iRODS before v4.3.2.')
 
-        self.coll_path_a = '/{}/home/{}/test_query2_coll_a'.format(
-            self.sess.zone, self.sess.username)
-        self.coll_path_b = '/{}/home/{}/test_query2_coll_b'.format(
-            self.sess.zone, self.sess.username)
-        self.sess.collections.create(self.coll_path_a)
-        self.sess.collections.create(self.coll_path_b)
+        cls.coll_path_a = '/{}/home/{}/test_query2_coll_a'.format(
+            cls.sess.zone, cls.sess.username)
+        cls.coll_path_b = '/{}/home/{}/test_query2_coll_b'.format(
+            cls.sess.zone, cls.sess.username)
+        cls.sess.collections.create(cls.coll_path_a)
+        cls.sess.collections.create(cls.coll_path_b)
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         '''Remove test data and close connections
         '''
-        self.sess.collections.remove(self.coll_path_a, force=True)
-        self.sess.collections.remove(self.coll_path_b, force=True)
-        self.sess.cleanup()
+        cls.sess.collections.remove(cls.coll_path_a, force=True)
+        cls.sess.collections.remove(cls.coll_path_b, force=True)
+        cls.sess.cleanup()
 
     def test_select(self):
         query = "SELECT COLL_NAME WHERE COLL_NAME = '{}'".format(self.coll_path_a)
@@ -85,3 +88,9 @@ class TestGenQuery2(unittest.TestCase):
         self.assertIn("DATA_ID", result.keys())
         self.assertIn("RESC_ID", result.keys())
         self.assertIn("USER_ID", result.keys())
+
+
+if __name__ == '__main__':
+    # let the tests find the parent irods lib
+    sys.path.insert(0, os.path.abspath('../..'))
+    unittest.main()
