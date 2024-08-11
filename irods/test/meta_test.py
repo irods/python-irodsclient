@@ -6,8 +6,9 @@ import sys
 import time
 import datetime
 import unittest
-from irods.meta import (iRODSMeta, AVUOperation, BadAVUOperationValue, BadAVUOperationKeyword)
+import irods.exception as ex
 from irods.manager.metadata_manager import InvalidAtomicAVURequest
+from irods.meta import (iRODSMeta, AVUOperation, BadAVUOperationValue, BadAVUOperationKeyword)
 from irods.models import (DataObject, Collection, Resource, CollectionMeta)
 import irods.test.helpers as helpers
 import irods.keywords as kw
@@ -119,7 +120,39 @@ class TestMeta(unittest.TestCase):
         helpers.remove_unused_metadata(self.sess)
         self.sess.cleanup()
 
-    from irods.test.helpers import create_simple_resc_hierarchy
+    from irods.test.helpers import (create_simple_resc, create_simple_resc_hierarchy)
+
+    def test_replica_truncate_json_error__issue_606(self):
+        path = self.coll_path + "/atomic_meta_issue_606"
+        obj = self.sess.data_objects.create(path)
+        with self.create_simple_resc('repl_trunc_test_resc__issue_606') as f:
+            try:
+                obj.replica_truncate(1,**{kw.RESC_NAME_KW:f})
+            except ex.iRODSException as e:
+                resp = e.server_msg.get_json_encoded_struct()
+                # Test that returned structure is a dict containing at least one item.
+                self.assertIsInstance(resp, dict)
+                self.assertTrue(resp)
+
+    def test_atomic_metadata_json_error__issue_606(self):
+        path = self.coll_path + "/atomic_meta_issue_606"
+        obj = self.sess.data_objects.create(path)
+        obj.unlink(force = True)
+        fail_message = ''
+        try:
+            obj.metadata.apply_atomic_operations(AVUOperation(operation="add", avu=iRODSMeta('a','b','c')))
+        except ex.iRODSException as e:
+            resp = e.server_msg.get_json_encoded_struct()
+            self.assertIn(
+                'Entity does not exist [entity_name={}]'.format(obj.path),
+                resp['error_message'])
+        except Exception as e:
+            fail_message = 'apply_atomic_operations on a nonexistent object raised an unexpected exception {e!r}'.format(**locals())
+        else:
+            fail_message = 'apply_atomic_operations on a nonexistent object did not raise an exception as expected.'
+
+        if fail_message:
+            self.fail(fail_message)
 
     def test_atomic_metadata_operations_244(self):
         user = self.sess.users.get("rods")
