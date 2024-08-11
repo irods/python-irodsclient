@@ -265,6 +265,9 @@ class BinBytesBuf(Message):
 class JSON_Binary_Response(BinBytesBuf):
     pass
 
+class XMLMessageNotConvertibleToJSON(Exception):
+    pass
+
 class iRODSMessage(object):
 
     class ResponseNotParseable(Exception):
@@ -285,13 +288,35 @@ class iRODSMessage(object):
         self.int_info = int_info
 
     def get_json_encoded_struct (self):
+        """For messages having STR_PI and *BytesBuf_PI in the highest level XML tag.
+
+           Invoke this method to recover a (usually JSON-formatted) server message
+           returned by a server API.
+        """
         Xml = ET().fromstring(self.msg.replace(b'\0',b''))
-        json_str = Xml.find('buf').text
+
+        # Handle STR_PI case, which corresponds to server APIs with a 'char**' output parameter.
+        if Xml.tag == 'STR_PI':
+            STR_PI_element = Xml.find('myStr')
+            if STR_PI_element is not None:
+                return json.loads( STR_PI_element.text )
+
+        # Handle remaining cases, i.e. BinBytesBuf_PI and BytesBuf_PI.
+        json_str = getattr(Xml.find('buf'), 'text', None)
+        if json_str is None:
+            error_text = "Message does not have a suitable 'buf' tag from which to extract text or binary content."
+            raise XMLMessageNotConvertibleToJSON(error_text)
+
         if Xml.tag == 'BinBytesBuf_PI':
             mybin = JSON_Binary_Response()
             mybin.unpack(Xml)
             json_str = mybin.buf.replace(b'\0',b'').decode()
-        return json.loads( json_str )
+
+        if Xml.tag in ('BinBytesBuf_PI', 'BytesBuf_PI'):
+            return json.loads( json_str )
+
+        error_text = "Inappropriate top-level tag '{Xml.tag}' used in iRODSMessage.get_json_encoded_struct".format(**locals())
+        raise XMLMessageNotConvertibleToJSON(error_text)
 
     @staticmethod
     def recv(sock):

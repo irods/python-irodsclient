@@ -149,7 +149,9 @@ class Connection(object):
             except TypeError:
                 err_msg = None
             if nominal_code(msg.int_info) not in acceptable_codes:
-                raise get_exception_by_code(msg.int_info, err_msg)
+                exc = get_exception_by_code(msg.int_info, err_msg)
+                exc.server_msg = msg
+                raise exc
         return msg
 
     def recv_into(self, buffer, **options):

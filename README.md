@@ -732,6 +732,30 @@ from an object:
 ...     Object.metadata.apply_atomic_operations( *[AVUOperation(operation='remove', avu=i) for i in avus_on_Object] )
 ```
 
+Extracting JSON encoded server information in case of error
+-----------------------------------------------------------
+
+Some server apis, including atomic metadata and replica truncation, can fail for various reasons and generate an
+exception.  In these cases the message object returned from the server is made available in the 'server_msg' attribute
+of the iRODSException object.
+
+This enables an approach like the following, which logs server information possibly underlying the error that was evoked:
+
+```python
+    try:
+        Object.metadata.apply_atomic_operations( ops )
+        # or:
+        DataObject.replica_truncate( size )
+    except iRODSException as exc:
+        log.error('Server API call failure. Traceback = %r ; iRODS Server info = %r',
+            traceback.extract_tb(sys.exc_info()[2]),
+            exc.server_msg.get_json_encoded_struct())
+```
+
+For `DataObject.replica_truncate(...)`, note that exc.server_msg.get_json_encoded_struct() can be used in the exception-handling
+code path to retrieve the same information that would have been routinely returned from the truncate call itself, had it actually
+completed without error.
+
 Special Characters
 ------------------
 
