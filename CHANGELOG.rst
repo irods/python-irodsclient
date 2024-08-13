@@ -1,6 +1,39 @@
 Changelog
 =========
 
+v2.1.0 (2024-08-13)
+-------------------
+- [#3] v2.1.0 and update changelog [Terrell Russell]
+- [#3] allow genquery2_test to work under all Python2/3 versions [Daniel Moore]
+- [#3] call assertRaisesRegex[p] with/without final 'p' (depends on Python 2 or 3) [Daniel Moore]
+- [#534] implement replica truncate [Daniel Moore]
+- [#584] load settings from environment even without use of config file [Daniel Moore]
+- [#600] Comment out test_files_query_case_sensitive BETWEEN tests [Alan King]
+- [#597] genquery2_test: Replace Postgres-specific assertions [Alan King]
+- [#566] Rename login_auth_test.py to prevent running with full suite [Alan King]
+- [#533][#556] implement library features [Daniel Moore]
+- [#537] add --help option to the script setupssl.py [Daniel Moore]
+- [#574] rename progress_bar to updatables, allow for genericity [Daniel Moore]
+- [#574] Allow for tqdm progress bars to be used [Raoul Schram]
+- [#586] implement xml_mode() in a new irods.helpers module [Daniel Moore]
+- [#558] iRODSAccess: Handle non-str types in constructor [Alan King]
+- [#558] Add tests for iRODSAccess constructor type checking [Alan King]
+- [#567] return logging to normal after a run of the pool_test [Daniel Moore]
+- [#3][#562] skip issue 562 (leaking connections) test for Python2 [Daniel Moore]
+- [#565] Descend Bad_AVU_Value from ValueError [Daniel Moore]
+- [#587] unique_name now hashes the call tuple for a random seed. [Daniel Moore]
+- [#3][#525] allow touch API tests to run on Python 2 [Daniel Moore]
+- [#532,#564,#569] fix stored connections to match desired connection timeout. [Daniel Moore]
+- [#562] release old connection when redirecting [Daniel Moore]
+- [#576] test admin mode in metadata.apply_atomic_operations [Daniel Moore]
+- [#576] Add missing admin_mode in JSON message for metadata.apply_atomic_operations [Paul Borgermans]
+- [#571] exclude collection "/" from subcollections [Daniel Moore]
+- [#557] de-duplicate acl lists in case of multiple replicas. [Daniel Moore]
+- [#525] Add support for touch API operation. [Kory Draughn]
+- [#535] Implement basic support for GenQuery2 [Sietse Snel]
+- [#547] unify AVU field exceptions interface for metadata add and set [Daniel Moore]
+- [#550] Add support for client hints [Sietse Snel]
+
 v2.0.1 (2024-04-30)
 -------------------
 - [#543] Fix issue with parallel downloads to a directory [Raoul Schram]
