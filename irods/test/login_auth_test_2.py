@@ -1,1 +1,1 @@
-login_auth_test.py
+login_auth_test_must_run_manually.py
