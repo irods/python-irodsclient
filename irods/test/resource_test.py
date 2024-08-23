@@ -11,7 +11,8 @@ import irods.test.helpers as helpers
 
 class TestResource(unittest.TestCase):
 
-    from helpers import create_simple_resc_hierarchy, create_simple_resc
+    create_simple_resc_hierarchy = helpers.create_simple_resc_hierarchy
+    create_simple_resc = helpers.create_simple_resc
 
     def setUp(self):
         self.sess = helpers.make_session()
