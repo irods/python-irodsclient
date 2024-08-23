@@ -32,8 +32,15 @@ _fds_lock = threading.Lock()
 _sessions = None
 _sessions_lock = threading.Lock()
 
-
 def _cleanup_remaining_sessions():
+    try:
+        import fs_irods.iRODSFS, sys
+        lfs = list(sys.modules[fs_irods.iRODSFS.__module__].fses)
+        for fs in lfs:
+            fs._finalize_files()
+    except Exception as e:
+        logging.getLogger(__name__).debug('%r attempting to close iRODSFS file descriptors',e)
+
     for fd in list(_fds.keys()):
         if not fd.closed:
             fd.close()
