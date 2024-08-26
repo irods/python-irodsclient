@@ -27,6 +27,8 @@ from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import DEFAULT_CONNECTION_TIMEOUT
 
+from .at_client_exit import (register as register_for_cleanup, DURING_PRC)
+
 _fds = None
 _fds_lock = threading.Lock()
 _sessions = None
@@ -51,7 +53,7 @@ def _weakly_reference(ses):
                 if do_register:
                     _sessions = weakref.WeakKeyDictionary()
                     _fds = weakref.WeakKeyDictionary()
-                    atexit.register(_cleanup_remaining_sessions)
+                    register_for_cleanup(DURING_PRC, _cleanup_remaining_sessions)
     finally:
         _sessions[ses] = None
 
