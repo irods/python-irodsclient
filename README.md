@@ -928,6 +928,45 @@ parsers, it may be more convenient to use the `xml_mode` context manager:
     # ... We have now returned to using the default XML parser.
 ```
 
+Application Cleanup
+-------------------
+
+Using the `irods.at_client_exit` module, we may register user-defined functions to be executed at or around the
+time when the Python iRODS Client is engaged in object teardown (also called "cleanup") operations.
+This is analogous to Python's [atexit module](https://docs.python.org/3/library/atexit.html#module-atexit),
+except that here we have the extra resolution to specify that a function or callable object be expressly before,
+or expressly after, aforementioned object teardown stage:
+
+```python
+    from irods import at_client_exit
+    at_client_exit.register_for_execution_after_prc_cleanup(lambda: print("PRC cleanup has completed."))
+    at_client_exit.register_for_execution_before_prc_cleanup(lambda: print("PRC cleanup is about to start."))
+```
+
+A function normally cannot be registered multiple times to run in the same stage, but we may overcome this limitation
+(and, optionally, arguments set for the invocation) by wrapping the same function into two different callable objects:
+
+```python
+    def print_exit_message(n):
+        print(f"Called just after PRC cleanup - iteration {n}")
+
+    for n_iter in (1,2):
+        at_client_exit.register_for_execution_after_prc_cleanup(
+            at_client_exit.unique_function_invocation(print_exit_message, tup_args = (n_iter,))
+            )
+```
+
+The output of the above, upon script exit, will be:
+
+```
+Called just after PRC cleanup - iteration 2
+Called just after PRC cleanup - iteration 1
+```
+
+which may be reversed from the order that one might expect.  This is because -- similarly as with Python atexit module, and
+consistently with the teardown of higher abstractions before lower ones -- functions _registered_ later within a given cleanup
+stage will actually be _executed_ sooner (i.e. in "LIFO" order).
+
 Rule Execution
 --------------
 
