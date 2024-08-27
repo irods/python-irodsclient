@@ -15,6 +15,7 @@ for _ in priority.__members__:
 initialized = False
 
 def register(priority_for_execution, function):
+    global initialized
     if not initialized:
         initialized = True
         atexit.register(call_cleanup)
