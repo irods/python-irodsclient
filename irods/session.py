@@ -156,7 +156,8 @@ class iRODSSession(object):
         self.zones = ZoneManager(self)
         self._auto_cleanup = auto_cleanup
         self.ticket__ = ''
-        self.ticket_applied = weakref.WeakKeyDictionary() # conn -> ticket applied
+        # A mapping for each connection - holds whether the session's assigned ticket has been applied.
+        self.ticket_applied = weakref.WeakKeyDictionary()
         if auto_cleanup:
             _weakly_reference(self)
 
@@ -189,7 +190,7 @@ class iRODSSession(object):
 
         other.cleanup(new_host = kwargs.pop('host',''))
         other.ticket__ = kwargs.pop('ticket',self.ticket__)
-        self.ticket_applied = weakref.WeakKeyDictionary() # conn -> ticket applied
+        other.ticket_applied = weakref.WeakKeyDictionary()
         if other._auto_cleanup:
             _weakly_reference(other)
         return other

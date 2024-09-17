@@ -79,6 +79,35 @@ class TestRodsUserTicketOps(unittest.TestCase):
             for u in self.users:
                 ses.users.remove(u)
 
+    def test_session_clone_initialization_of_tickets_applied__issue_619(self):
+        ticket_string=''
+        try:
+            # Make a ticket with target collection being a rodsuser's home:
+            with self.login(self.alice) as alice:
+                alice_home_path = helpers.home_collection(alice)
+                ticket_string = Ticket(alice).issue('read', alice_home_path).string
+
+            # Create an original session. Cause a connection to be generated and used.
+            old_sess = helpers.make_session()
+            Ticket(old_sess, ticket_string).supply()
+            old_sess.collections.get(alice_home_path)
+
+            # Clone the session.
+            new_sess = old_sess.clone()
+
+            # Original session object should have had the ticket applied to a connection.
+            self.assertLess(0, len(old_sess.ticket_applied))
+            # Cloned session object should be starting out with a zero-length ticket/connection map.
+            self.assertEqual(0, len(new_sess.ticket_applied))
+
+            # The cloned session should inherit the original's associated ticket. We therefore test
+            # that the new session can avail itself of the permissions granted by that ticket.
+            new_sess.collections.get(alice_home_path)
+
+        finally:
+            # Delete the rodsuser ticket.
+            if ticket_string:
+                Ticket(new_sess, ticket_string).delete(**{kw.ADMIN_KW:''})
 
     def test_admin_keyword_for_tickets (self):
 
