@@ -171,6 +171,17 @@ iCommands.
 Caveat for iRODS 4.3+: when upgrading from 4.2, the "irods_authentication_scheme" setting must be changed from "pam" to "pam_password" in
 `~/.irods/irods_environment.json` for all file-based client environments.
 
+To replicate iinit's capability for creating valid PAM login credentials file (.irodsA) for the client login environment, we can set these
+two configuration variables:
+
+```
+legacy_auth.pam.password_for_auto_renew "my_pam_password"
+legacy_auth.pam.store_password_to_environment True
+```
+
+Optionally, the `legacy_auth.pam.time_to_live_in_hours` may also be set to determine the time-to-live for the new password.
+Leaving it at the default value defers this decision to the server.
+
 Maintaining a connection
 ------------------------
 
