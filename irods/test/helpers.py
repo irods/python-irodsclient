@@ -21,6 +21,7 @@ import irods.rule
 from irods.session import iRODSSession
 from irods.message import (iRODSMessage, IRODS_VERSION)
 from irods.password_obfuscation import encode
+from irods import env_filename_from_keyword_args
 from six.moves import range
 
 class iRODSUserLogins(object):
@@ -148,7 +149,6 @@ def make_environment_and_auth_files( dir_, **params ):
     os.chmod(auth,0o600)
     return (config, auth)
 
-
 # Create a connection for test, based on ~/.irods environment by default.
 
 def make_session(test_server_version = True, **kwargs):
@@ -166,13 +166,7 @@ def make_session(test_server_version = True, **kwargs):
     **kwargs:            Keyword arguments.  Fed directly to the iRODSSession
                          constructor.  """
 
-    try:
-        env_file = kwargs.pop('irods_env_file')
-    except KeyError:
-        try:
-            env_file = os.environ['IRODS_ENVIRONMENT_FILE']
-        except KeyError:
-            env_file = os.path.expanduser('~/.irods/irods_environment.json')
+    env_file = env_filename_from_keyword_args( kwargs )
     session = iRODSSession( irods_env_file = env_file, **kwargs )
     if test_server_version:
         connected_version = session.server_version[:3]

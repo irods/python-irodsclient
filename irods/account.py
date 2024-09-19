@@ -1,10 +1,10 @@
-import os
+from irods import derived_auth_filename
 
 class iRODSAccount(object):
 
     @property
     def derived_auth_file(self):
-        return '' if not self.env_file else os.path.join(os.path.dirname(self.env_file),'.irodsA')
+        return derived_auth_filename(self.env_file)
 
     def __init__(self, irods_host, irods_port, irods_user_name, irods_zone_name,
                  irods_authentication_scheme='native',
