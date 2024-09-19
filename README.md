@@ -162,6 +162,24 @@ the `encryption_*` and `ssl_*` options
 directly to the constructor as keyword arguments, even though it is
 required when they are placed in the environment file.
 
+Creating PAM or Native Credentials File (.irodsA)
+-------------------------------------------------
+
+Two free functions exist for creating encoded authentication files:
+```
+irods.client_init.write_native_credentials_to_secrets_file
+irods.client_init.write_pam_credentials_to_secrets_file
+```
+
+Each takes a cleartext password and writes an appropriately processed version of it
+into an .irodsA (secrets) file in the login environment.
+
+Note, in the `pam_password` case, this involves sending the cleartext password
+to the server (SSL should thus be enabled!) and then writing the scrambled token that
+returns from the transaction.
+
+If an .irodsA file exists already, it will be overwritten.
+
 PAM logins
 ----------
 
@@ -171,8 +189,7 @@ iCommands.
 Caveat for iRODS 4.3+: when upgrading from 4.2, the "irods_authentication_scheme" setting must be changed from "pam" to "pam_password" in
 `~/.irods/irods_environment.json` for all file-based client environments.
 
-To replicate iinit's capability for creating valid PAM login credentials file (.irodsA) for the client login environment, we can set these
-two configuration variables:
+To use the PRC PAM login credentials update function for the client login environment, we can set these two configuration variables:
 
 ```
 legacy_auth.pam.password_for_auto_renew "my_pam_password"
