@@ -25,13 +25,12 @@ from irods.message import (iRODSMessage, STR_PI)
 from irods.exception import (NetworkException, NotImplementedInIRODSServer)
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
-from . import DEFAULT_CONNECTION_TIMEOUT
+from . import (DEFAULT_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT)
 
 _fds = None
 _fds_lock = threading.Lock()
 _sessions = None
 _sessions_lock = threading.Lock()
-
 
 def _cleanup_remaining_sessions():
     for fd in list(_fds.keys()):
@@ -58,6 +57,7 @@ def _weakly_reference(ses):
 logger = logging.getLogger(__name__)
 
 class NonAnonymousLoginWithoutPassword(RuntimeError): pass
+
 
 class iRODSSession(object):
 
@@ -141,7 +141,8 @@ class iRODSSession(object):
         self._env_file = ''
         self._auth_file = ''
         self.do_configure = (kwargs if configure else {})
-        self._cached_connection_timeout = kwargs.pop('connection_timeout', DEFAULT_CONNECTION_TIMEOUT)
+        self._cached_connection_timeout = None
+        self.connection_timeout = kwargs.pop('connection_timeout', DEFAULT_CONNECTION_TIMEOUT)
         self.__configured = None
         if configure:
             self.__configured = self.configure(**kwargs)
@@ -366,16 +367,22 @@ class iRODSSession(object):
             exc = ValueError("Setting an iRODS connection_timeout to 0 seconds would make it non-blocking.")
             raise exc
         elif isinstance(seconds, Number):
-            if seconds < 0 or str(seconds) == 'nan' or str(abs(seconds)) == 'inf':
-                exc = ValueError("The iRODS connection_timeout may not be assigned a negative or otherwise rogue value (eg: NaN, Inf).")
+            # Note: We can handle infinities because -Inf < 0 and Inf > MAXIMUM_CONNECTION_TIMEOUT.
+            if seconds < 0 or str(seconds) == 'nan':
+                exc = ValueError("The iRODS connection_timeout may not be assigned a negative, out-of-bounds, or otherwise rogue value (eg: NaN, -Inf).")
                 raise exc
+            elif seconds > MAXIMUM_CONNECTION_TIMEOUT:
+                logging.getLogger(__name__).warning('Hard limiting connection timeout of %g to the maximum allowable value of %g',
+                    seconds, MAXIMUM_CONNECTION_TIMEOUT)
+                seconds = MAXIMUM_CONNECTION_TIMEOUT
         elif seconds is None:
             pass
         else:
             exc = ValueError("The iRODS connection_timeout must be assigned a positive int, positive float, or None.")
             raise exc
         self._cached_connection_timeout = seconds
-        self.pool.connection_timeout = seconds
+        if self.pool:
+            self.pool.connection_timeout = seconds
 
     @staticmethod
     def get_irods_password_file():

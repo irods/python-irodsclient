@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from irods.exception import NetworkException
+from irods import MAXIMUM_CONNECTION_TIMEOUT
 import irods.test.helpers as helpers
 from irods.test.helpers import (server_side_sleep, temporarily_assign_attribute as temp_setter)
 
@@ -159,8 +160,24 @@ class TestConnections(unittest.TestCase):
             with self.assertRaises(ValueError):
                 sess.connection_timeout = value
 
-        # Test previously set value is unaffected
-        self.assertEqual(sess.connection_timeout, DESIRED_TIMEOUT)
+    def test_assigning_session_connection_timeout_to_large_values__issue_623(self):
+        # Test use of a too-large timeout in iRODSSession constructor as well as on assignment to the
+        # iRODSSession property 'connection_timeout'.  In both cases, error checking and hard-limiting
+        # should be immediate.
+        sess = helpers.make_session(connection_timeout = MAXIMUM_CONNECTION_TIMEOUT + 1)
+        # The session attribute '_cached_connection_timeout' is where the session timeout value is kept
+        # safe for whenever a Pool sub-object is initialized (or re-initialized).
+        self.assertEqual(sess._cached_connection_timeout, MAXIMUM_CONNECTION_TIMEOUT)
+
+        # Make (and check) a change of the connection_timeout value so that second of the surrounding
+        # equality assertions does not accidentally succeed due to the value remaining untouched.
+        sess.connection_timeout = 1
+        self.assertEqual(sess._cached_connection_timeout, 1)
+
+        sess.connection_timeout = MAXIMUM_CONNECTION_TIMEOUT + 1
+        self.assertEqual(sess._cached_connection_timeout, MAXIMUM_CONNECTION_TIMEOUT)
+
+        self.assertEqual(sess.pool.connection_timeout, MAXIMUM_CONNECTION_TIMEOUT)
 
     def test_assigning_session_connection_timeout__issue_569(self):
         sess = helpers.make_session()
