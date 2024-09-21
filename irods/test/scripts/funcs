@@ -1,7 +1,8 @@
+SCRIPTDIR=${BASH_SOURCE[0]}
 up_from_script_dir() {
   local x incr=""
   for ((x=0;x<${1:-0};x++)); do incr+="/.."; done
-  realpath "$(dirname ${BASH_SOURCE[0]})""$incr"
+  realpath "$(dirname "$SCRIPTDIR")""$incr"
 }
 
 # Sample usages:
