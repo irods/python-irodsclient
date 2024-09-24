@@ -414,6 +414,18 @@ The current value of the setting is global in scope (i.e. applies to all
 sessions, whenever created) and is always consulted for the creation of
 any data object handle to govern that handle's cleanup behavior.
 
+Also, alternatively, the client may opt into a special "redirect" behavior
+in which data objects' open() method forge a connection directly to whichever
+iRODS server is found to host the selected replica.  Data reads and
+writes will therefore happen on that alternate network route, instead of
+through the originally-connected server.  Though not the client's default
+behavior, this approach can turn out to be more efficient, particularly
+if several concurrent data uploads ("puts") and downloads ("gets") are 
+happening which might increase traffic on the client's main communication
+route with the server.  (See, in [Python iRODS Client Settings File](#python-irods-client-settings-file),
+the client configuration setting `data_objects.allow_redirect`, which may be
+set to True for the aforementioned opt-in.)
+
 Python iRODS Client Settings File
 ---------------------------------
 
@@ -469,6 +481,12 @@ variables serving as overrides:
     -   Type: `bool`
     -   Default Value: `False`
     -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__AUTO_CLOSE`
+
+-   Setting: Let a call to data object open() redirect to the server whose storage resource hosts the given object's preferred replica.
+    -   Dotted Name: `data_objects.allow_redirect`
+    -   Type: `bool`
+    -   Default Value: `False`
+    -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__ALLOW_REDIRECT`
 
 -   Setting: Number of hours to request for the new password entry's TTL (Time To Live) when auto-renewing PAM-authenticated sessions.
     - Dotted Name: `legacy_auth.pam.time_to_live_in_hours`

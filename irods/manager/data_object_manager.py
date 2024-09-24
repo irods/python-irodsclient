@@ -422,7 +422,7 @@ class DataObjectManager(Manager):
                    auto_close = client_config.getter('data_objects','auto_close'), # The default value will be a lambda returning the
                                                                                    # global setting. Use True or False as an override.
                    returned_values = None,    # Used to update session reference, for forging more conns to same host, in irods.parallel.io_main
-                   allow_redirect = True,     # This may be set to False to disallow the client redirect-to-resource.
+                   allow_redirect = client_config.getter('data_objects','allow_redirect'), 
                    **options):
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
@@ -474,6 +474,9 @@ class DataObjectManager(Manager):
         redirected_host = ''
 
         use_get_rescinfo_apis = False
+
+        if callable(allow_redirect):
+            allow_redirect = allow_redirect()
 
         if allow_redirect and conn.server_version >= (4,3,1):
             key = 'CREATE' if mode[0] in ('w','a') else 'OPEN'

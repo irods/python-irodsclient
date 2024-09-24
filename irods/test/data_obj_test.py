@@ -834,59 +834,62 @@ class TestDataObjOps(unittest.TestCase):
             self.skipTest('Expects iRODS server version 4.3.1')
         LOCAL_FILE = mktemp()
         filename = ''
-        try:
-            with self.create_simple_resc(hostname = 'localhost') as rescName:
-                with NamedTemporaryFile(delete = False) as f:
-                    filename = f.name
-                    f.write(content)
-                data_ctx['initialize']()
-                sess = data_ctx['session']
-                remote_name = data_ctx['path']
-                PUT_LOG = self.In_Memory_Stream(always_unicode = True)
-                with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
-                                           logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG),\
-                     helpers.enableLogging(logging.getLogger('irods.parallel'),
-                                           logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG):
-                    sess.data_objects.put(filename, remote_name, **{kw.DEST_RESC_NAME_KW: rescName})
-                def srch(BUF):
-                    nthr = 0
-                    search_text = BUF.getvalue()
-                    find_iterator = itertools.chain( re.finditer(u'redirect_to_host = (\S+)', search_text),
-                                                     re.finditer(u'target_host = (\S+)', search_text) )
-                    for match in find_iterator:
-                        nthr += 1
-                        self.assertEqual(match.group(1), u'localhost')
-                    occur_threshold = (1 if len(content) <= 32*MEBI else 2)
-                    self.assertGreaterEqual(nthr, occur_threshold)
-                srch(PUT_LOG)
-                generator = None
-                # Activate a read ticket on a new session if necessary, and attempt a GET
-                if data_ctx['ticket_access']:
-                    for access in iRODSAccess('own',remote_name,self.sess.username), \
-                                  iRODSAccess('null',remote_name,sess.username):
-                        self.sess.acls.set(access, admin = True)
-                    generator = self._data_object_and_associated_ticket(data_name=remote_name, auto_delete_data = False, ticket_access='read')
-                    # Emulate the 'with'-block construction for the read ticket:
-                    data_ctx_get = next(generator)
-                    data_ctx_get['initialize']()
-                    sess = data_ctx_get['session']
-                GET_LOG = self.In_Memory_Stream(always_unicode = True)
-                with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
-                                           logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG),\
-                     helpers.enableLogging(logging.getLogger('irods.parallel'),
-                                           logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG):
-                    sess.data_objects.get(remote_name,LOCAL_FILE)
-                srch(GET_LOG)
-                with open(LOCAL_FILE,'rb') as get_result:
-                    self.assertTrue(content, get_result.read())
-                # Finalize the emulated 'with'-block construction for the read ticket, if active:
-                del generator
-                data_ctx['finalize']()
-        finally:
-            if os.path.isfile(LOCAL_FILE):
-                os.unlink(LOCAL_FILE)
-            if filename:
-                os.unlink(filename)
+        with config.loadlines(entries=[dict(setting='data_objects.allow_redirect',value=True)]):
+            try:
+                with self.create_simple_resc(hostname = 'localhost') as rescName:
+                    with NamedTemporaryFile(delete = False) as f:
+                        filename = f.name
+                        f.write(content)
+                    data_ctx['initialize']()
+                    sess = data_ctx['session']
+                    remote_name = data_ctx['path']
+                    PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+                    with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
+                                               logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG),\
+                         helpers.enableLogging(logging.getLogger('irods.parallel'),
+                                               logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG):
+                        sess.data_objects.put(filename, remote_name, **{kw.DEST_RESC_NAME_KW: rescName})
+                    # Within a buffer 'BUF' (is expected to be an io.StringIO object) assert the presence of certain
+                    # log text that will indicate a redirection was performed.
+                    def assert_expected_redirection_logging(BUF):
+                        nthr = 0
+                        search_text = BUF.getvalue()
+                        find_iterator = itertools.chain( re.finditer(u'redirect_to_host = (\S+)', search_text),
+                                                         re.finditer(u'target_host = (\S+)', search_text) )
+                        for match in find_iterator:
+                            nthr += 1
+                            self.assertEqual(match.group(1), u'localhost')
+                        occur_threshold = (1 if len(content) <= 32*MEBI else 2)
+                        self.assertGreaterEqual(nthr, occur_threshold)
+                    assert_expected_redirection_logging(PUT_LOG)
+                    generator = None
+                    # Activate a read ticket on a new session if necessary, and attempt a GET
+                    if data_ctx['ticket_access']:
+                        for access in iRODSAccess('own',remote_name,self.sess.username), \
+                                      iRODSAccess('null',remote_name,sess.username):
+                            self.sess.acls.set(access, admin = True)
+                        generator = self._data_object_and_associated_ticket(data_name=remote_name, auto_delete_data = False, ticket_access='read')
+                        # Emulate the 'with'-block construction for the read ticket:
+                        data_ctx_get = next(generator)
+                        data_ctx_get['initialize']()
+                        sess = data_ctx_get['session']
+                    GET_LOG = self.In_Memory_Stream(always_unicode = True)
+                    with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
+                                               logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG),\
+                         helpers.enableLogging(logging.getLogger('irods.parallel'),
+                                               logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG):
+                        sess.data_objects.get(remote_name,LOCAL_FILE)
+                    assert_expected_redirection_logging(GET_LOG)
+                    with open(LOCAL_FILE,'rb') as get_result:
+                        self.assertTrue(content, get_result.read())
+                    # Finalize the emulated 'with'-block construction for the read ticket, if active:
+                    del generator
+                    data_ctx['finalize']()
+            finally:
+                if os.path.isfile(LOCAL_FILE):
+                    os.unlink(LOCAL_FILE)
+                if filename:
+                    os.unlink(filename)
 
     def test_redirect_in_data_object_open__issue_452(self):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
@@ -895,18 +898,19 @@ class TestDataObjOps(unittest.TestCase):
         sess = self.sess
         home = helpers.home_collection(sess)
 
-        with self.create_simple_resc(hostname = 'localhost') as rescName:
-            try:
-                test_path = home + '/data_open_452'
-                desc = sess.data_objects.open(test_path, 'w', **{kw.RESC_NAME_KW: rescName})
-                self.assertEqual('localhost', desc.raw.session.host)
-                desc.close()
-                desc = sess.data_objects.open(test_path, 'r')
-                self.assertEqual('localhost', desc.raw.session.host)
-                desc.close()
-            finally:
-                if sess.data_objects.exists(test_path):
-                    sess.data_objects.unlink(test_path, force=True)
+        with config.loadlines(entries=[dict(setting='data_objects.allow_redirect',value=True)]):
+            with self.create_simple_resc(hostname = 'localhost') as rescName:
+                try:
+                    test_path = home + '/data_open_452'
+                    desc = sess.data_objects.open(test_path, 'w', **{kw.RESC_NAME_KW: rescName})
+                    self.assertEqual('localhost', desc.raw.session.host)
+                    desc.close()
+                    desc = sess.data_objects.open(test_path, 'r')
+                    self.assertEqual('localhost', desc.raw.session.host)
+                    desc.close()
+                finally:
+                    if sess.data_objects.exists(test_path):
+                        sess.data_objects.unlink(test_path, force=True)
 
 
     def test_create_with_checksum(self):
@@ -2174,35 +2178,53 @@ class TestDataObjOps(unittest.TestCase):
         with self.assertRaises(ex.InvalidInputArgument):
             user_session.data_objects.touch(home_collection_path)
 
+    def assert_redirect_happens_on_open(self, open_opts):
+        name = 'redirect_happens_' + unique_name (my_function_name(), datetime.now())
+        data_path = '{self.coll_path}/{name}'.format(**locals())
+        try:
+            PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+            with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
+                                       logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG):
+                with self.sess.data_objects.open(data_path,'w',**open_opts):
+                    pass
+                log_text = PUT_LOG.getvalue()
+                self.assertIn('redirect_to_host',log_text)
+        finally:
+            if self.sess.data_objects.exists(data_path):
+                self.sess.data_objects.unlink(data_path, force = True)
+
     @unittest.skipIf(six.PY2, "Python2 won't destruct an out-of-scope iRODSSession due to lazy GC ref-cycle detection.")
     def test_client_redirect_lets_go_of_connections__issue_562(self):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
         # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource
         total_conns = lambda session: len(session.pool.idle | session.pool.active)
-        with self.create_simple_resc(hostname = 'localhost') as resc_name:
-            # A reasonable number of data objects to create without eliciting problems.
-            # (But before resolution of #562, a NetworkException was eventually thrown from
-            # this test loop if a session cleanup() did not intervene between open() calls.)
-            REPS_TO_REPRODUCE_CONNECT_ERROR = 100
-            paths=[]
-            prev_conns = None
-            try:
-                # Try to exhaust connections
-                for n in range(REPS_TO_REPRODUCE_CONNECT_ERROR):
-                    data_path = '{self.coll_path}/issue_562_test_obj_{n:03d}.dat'.format(**locals())
-                    paths.append(data_path)
-                    with self.sess.data_objects.open(data_path, 'w', **{kw.DEST_RESC_NAME_KW: resc_name}) as f:
-                        pass
-                    # Assert number of connections does not increase
-                    current_conns = total_conns(self.sess)
-                    if isinstance(prev_conns,int):
-                        self.assertLessEqual(current_conns, prev_conns)
-                    prev_conns = current_conns
-            finally:
-                # Clean up data objects before resource is deleted.
-                for data_path in paths:
-                    if self.sess.data_objects.exists(data_path):
-                        self.sess.data_objects.unlink(data_path, force = True)
+        with config.loadlines(entries=[dict(setting='data_objects.allow_redirect',value=True)]):
+            with self.create_simple_resc(hostname = 'localhost') as resc_name:
+                self.assert_redirect_happens_on_open( {kw.DEST_RESC_NAME_KW: resc_name} )
+                # A reasonable number of data objects to create without eliciting problems.
+                # (But before resolution of #562, a NetworkException was eventually thrown from
+                # this test loop if a session cleanup() did not intervene between open() calls.)
+                REPS_TO_REPRODUCE_CONNECT_ERROR = 100
+                paths=[]
+                prev_conns = None
+                try:
+                    # Try to exhaust connections
+                    for n in range(REPS_TO_REPRODUCE_CONNECT_ERROR):
+                        data_path = '{self.coll_path}/issue_562_test_obj_{n:03d}.dat'.format(**locals())
+                        paths.append(data_path)
+                        with self.sess.data_objects.open(data_path, 'w', **{kw.DEST_RESC_NAME_KW: resc_name}) as f:
+                            pass
+                        # Assert number of connections does not increase
+                        current_conns = total_conns(self.sess)
+                        if isinstance(prev_conns,int):
+                            self.assertLessEqual(current_conns, prev_conns)
+                        prev_conns = current_conns
+                finally:
+                    # Clean up data objects before resource is deleted.
+                    for data_path in paths:
+                        if self.sess.data_objects.exists(data_path):
+                            self.sess.data_objects.unlink(data_path, force = True)
+
 
     @unittest.skipIf(progressbar is None, "progressbar is not installed")
     def test_progressbar_style_of_pbar_without_registering__issue_574(self):
@@ -2396,6 +2418,34 @@ class TestDataObjOps(unittest.TestCase):
         finally:
             if data_objs.exists(data_path):
                 data_objs.unlink(data_path, force = True)
+
+    def test_allow_redirect_configuration_setting__issue_627(self):
+
+        self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
+
+        logical_paths = ['{}/issue_627_{}_{}'.format(self.coll_path, n, unique_name(my_function_name(), datetime.now())) for n in range(2)]
+
+        with self.create_simple_resc(hostname = 'localhost') as newResc1,\
+             self.create_simple_resc() as newResc2:
+
+            if self.sess.resources.get(newResc1).location == self.sess.resources.get(newResc2).location:
+                self.skipTest('test runs only if host locations differ between experimental and control resource')
+
+            for use_redirect in (True,False):
+
+                with config.loadlines(entries = [dict(setting = 'data_objects.allow_redirect',value = use_redirect)]):
+
+                    try:
+                        with self.sess.data_objects.open(logical_paths[0], 'w', **{kw.RESC_NAME_KW:newResc1}) as d1,\
+                             self.sess.data_objects.open(logical_paths[1], 'w', **{kw.RESC_NAME_KW:newResc2}) as d2:
+
+                            hostname_inequality_relation = (d1.raw.session.host != d2.raw.session.host)
+                            self.assertEqual(use_redirect, hostname_inequality_relation)
+                    finally:
+                        for path in logical_paths:
+                            if self.sess.data_objects.exists(path):
+                                self.sess.data_objects.unlink(path, force = True)
+
 
     def test_replica_truncate__issue_534(self):
         sess = self.sess

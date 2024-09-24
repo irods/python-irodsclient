@@ -57,7 +57,8 @@ connections = ConnectionsProperties()
 # (irods.client_configuration.data_objects is one such category):
 
 class DataObjects(iRODSConfiguration):
-    __slots__ = ('auto_close',)
+    __slots__ = ('auto_close',
+                 'allow_redirect',)
 
     def __init__(self):
 
@@ -71,6 +72,7 @@ class DataObjects(iRODSConfiguration):
         # >>> irods.client_configuration.data_objects.auto_close = True
 
         self.auto_close = False
+        self.allow_redirect = False
 
 # #############################################################################
 #
