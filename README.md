@@ -1442,7 +1442,7 @@ ticket, either as a timestamp or in seconds since the epoch:
 >>> t=Ticket(ses); s = t.string
 vIOQ6qzrWWPO9X7
 >>> t.issue('read','/some/path')
->>> t.modify('expiry','2021-04-01.12:34:56')  # timestamp assumed as UTC
+>>> t.modify('expire','2021-04-01.12:34:56')  # timestamp assumed as UTC
 ```
 
 To check the results of the above, we could invoke this icommand
@@ -1462,7 +1462,7 @@ relations:
 >>> from irods.models import TicketQuery
 >>> delay = lambda secs: int( time.time() + secs + 1)
 >>> Ticket(ses).issue('read','/path/to/data_object').modify(
-                      'expiry',delay(7*24*3600))             # lasts 1 week
+                      'expire',delay(7*24*3600))             # lasts 1 week
 >>> Q = ses.query (TicketQuery.Ticket, TicketQuery.DataObject).filter(
 ...                                                            TicketQuery.DataObject.name == 'data_object')
 >>> print ([ _[TicketQuery.Ticket.expiry_ts] for _ in Q ])
