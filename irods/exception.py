@@ -1354,6 +1354,10 @@ class CAT_TICKET_EXPIRED(TicketException):
     code = -891000
 
 
+class CAT_TICKET_USES_EXCEEDED(TicketException):
+    code = -892000
+
+
 class MiscException(iRODSException):
     pass
 
