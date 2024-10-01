@@ -1,0 +1,61 @@
+```
+(py3) userXY@HOSTNAME:~/python-irodsclient/irods/experimental/client/http$ bash iter_or_page.sh page
+---
+[row(COLL_NAME='/'),
+ row(COLL_NAME='/tempZone'),
+ row(COLL_NAME='/tempZone/home')]
+---
+[row(COLL_NAME='/tempZone/home/alice'),
+ row(COLL_NAME="/tempZone/home/alice/a'b"),
+ row(COLL_NAME='/tempZone/home/public')]
+---
+[row(COLL_NAME='/tempZone/home/public/rods'),
+ row(COLL_NAME='/tempZone/home/public/thing'),
+ row(COLL_NAME='/tempZone/home/rods')]
+---
+[row(COLL_NAME='/tempZone/home/rods/c_files'),
+ row(COLL_NAME='/tempZone/home/rods/hello'),
+ row(COLL_NAME='/tempZone/trash')]
+---
+[row(COLL_NAME='/tempZone/trash/home'),
+ row(COLL_NAME='/tempZone/trash/home/alice'),
+ row(COLL_NAME='/tempZone/trash/home/public')]
+---
+[row(COLL_NAME='/tempZone/trash/home/rods')]
+---
+(py3) userXY@HOSTNAME:~/python-irodsclient/irods/experimental/client/http$ bash iter_or_page.sh iter
+---
+row(COLL_NAME='/')
+---
+row(COLL_NAME='/tempZone')
+---
+row(COLL_NAME='/tempZone/home')
+---
+row(COLL_NAME='/tempZone/home/alice')
+---
+row(COLL_NAME="/tempZone/home/alice/a'b")
+---
+row(COLL_NAME='/tempZone/home/public')
+---
+row(COLL_NAME='/tempZone/home/public/rods')
+---
+row(COLL_NAME='/tempZone/home/public/thing')
+---
+row(COLL_NAME='/tempZone/home/rods')
+---
+row(COLL_NAME='/tempZone/home/rods/c_files')
+---
+row(COLL_NAME='/tempZone/home/rods/hello')
+---
+row(COLL_NAME='/tempZone/trash')
+---
+row(COLL_NAME='/tempZone/trash/home')
+---
+row(COLL_NAME='/tempZone/trash/home/alice')
+---
+row(COLL_NAME='/tempZone/trash/home/public')
+---
+row(COLL_NAME='/tempZone/trash/home/rods')
+
+>>> 
+```
