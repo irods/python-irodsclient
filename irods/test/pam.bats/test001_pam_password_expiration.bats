@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-. "$BATS_TEST_DIRNAME"/funcs
+. "$BATS_TEST_DIRNAME"/test_support_functions
 PYTHON=python3
 
 # Setup/prerequisites are same as for login_auth_test.

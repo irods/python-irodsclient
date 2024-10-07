@@ -1,7 +1,7 @@
 # The tests in this BATS module must be run as a (passwordless) sudo-enabled user.
 # It is also required that the python irodsclient be installed under irods' ~/.local environment.
 
-. $BATS_TEST_DIRNAME/scripts/funcs
+. $BATS_TEST_DIRNAME/scripts/test_support_functions
 
 setup() {
 
