@@ -461,16 +461,14 @@ class Connection(object):
 
         import irods.client_configuration as cfg
         inline_password = (self.account.authentication_scheme == self.account._original_authentication_scheme)
-        # By default, let server determine the TTL.
-        time_to_live_in_hours = 0
+        time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
         # For certain characters in the pam password, if they need escaping with '\' then do so.
         new_pam_password = PAM_PW_ESC_PATTERN.sub(lambda m: '\\'+m.group(1), self.account.password)
-        if not inline_password:
+        if not inline_password and cfg.legacy_auth.pam.password_for_auto_renew is not None:
             # Login using PAM password from .irodsA
             try:
                 self._login_native()
             except (ex.CAT_PASSWORD_EXPIRED, ex.CAT_INVALID_USER, ex.CAT_INVALID_AUTHENTICATION) as exc:
-                time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
                 if cfg.legacy_auth.pam.password_for_auto_renew:
                     new_pam_password = cfg.legacy_auth.pam.password_for_auto_renew
                     # Fall through and retry the native login later, after creating a new PAM password
@@ -532,8 +530,9 @@ class Connection(object):
         self._login_native(password = auth_out.result_)
 
         # Store new password in .irodsA if requested.
-        if self.account._auth_file and cfg.legacy_auth.pam.store_password_to_environment:
-            with open(self.account._auth_file,'w') as f:
+        auth_file = (self.account._auth_file or self.account.derived_auth_file)
+        if auth_file and cfg.legacy_auth.pam.store_password_to_environment:
+            with open(auth_file,'w') as f:
                 f.write(obf.encode(auth_out.result_))
                 logger.debug('new PAM pw write succeeded')
 
