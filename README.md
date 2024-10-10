@@ -180,6 +180,29 @@ returns from the transaction.
 
 If an .irodsA file exists already, it will be overwritten.
 
+Examples:
+For the native authentication scheme, we can use the currently set iRODS password to create .irodsA file from Python thus:
+
+```python
+import irods.client_init as iinit
+iinit.write_native_credentials_to_secrets_file(irods_password)
+```
+
+For the `pam_password` authentication scheme, we must first ensure an `irods_environment.json` file exists in the 
+client environment (necessary for establishing SSL/TLS connection parameters as well as obtaining a PAM token from the server after connecting)
+and then make the call to write .irodsA using the Bash commands:
+
+```bash
+$ cat > ~/.irods/irods_environment.json << EOF
+{
+  "irods_user_name":"rods",
+  "irods_host":"server-hostname",
+  ...  [all other connection settings, including SSL parameters, needed for communication with iRODS] ...
+}
+EOF
+$ python -c "import irods.client_init as iinit; iinit.write_pam_credentials_to_secrets_file(pam_cleartext_password)
+```
+
 PAM logins
 ----------
 
