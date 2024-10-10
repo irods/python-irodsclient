@@ -10,13 +10,13 @@ PYTHON=python3
 # Run as ubuntu user with sudo; python_irodsclient must be installed (in either ~/.local or a virtualenv)
 #
 
-PASSWD=test123
+ALICES_PAM_PASSWORD=test123
 
 setup()
 {
     export SKIP_IINIT_FOR_PASSWORD=1
-    setup_pam_login_for_alice $PASSWD
-    SKIP_IINIT_FOR_PASSWORD=""
+    setup_pam_login_for_alice "$ALICES_PAM_PASSWORD"
+    unset SKIP_IINIT_FOR_PASSWORD
 }
 
 teardown()
@@ -42,7 +42,7 @@ print ('env_auth_scheme=%s' % ses.pool.account._original_authentication_scheme)
 
     # First invocation.  PRC will both authenticate with pam_password, and write the generated secrets to the auth file,
     OUTPUT=$($PYTHON -c "import irods.client_configuration as cfg
-cfg.legacy_auth.pam.password_for_auto_renew = '$PASSWD'
+cfg.legacy_auth.pam.password_for_auto_renew = '$ALICES_PAM_PASSWORD'
 cfg.legacy_auth.pam.time_to_live_in_hours = 1
 cfg.legacy_auth.pam.store_password_to_environment = True
 $SCRIPT")
@@ -54,7 +54,7 @@ $SCRIPT")
 
     # Second invocation.  PRC will use previously generated secrets from the auth file generated in the first invocation.
     OUTPUT=$($PYTHON -c "import irods.client_configuration as cfg
-#cfg.legacy_auth.pam.password_for_auto_renew = '$PASSWD'
+#cfg.legacy_auth.pam.password_for_auto_renew = '$ALICES_PAM_PASSWORD'
 cfg.legacy_auth.pam.time_to_live_in_hours = 1
 cfg.legacy_auth.pam.store_password_to_environment = True
 $SCRIPT")

@@ -10,12 +10,12 @@ PYTHON=python3
 # Run as ubuntu user with sudo; python_irodsclient must be installed (in either ~/.local or a virtualenv)
 #
 
-OLD_PAM_PASSWD="test123"
-NEW_PAM_PASSWD="new_pass"
+ALICES_OLD_PAM_PASSWD="test123"
+ALICES_NEW_PAM_PASSWD="new_pass"
 
 setup()
 {
-    setup_pam_login_for_alice "$OLD_PAM_PASSWD"
+    setup_pam_login_for_alice "$ALICES_OLD_PAM_PASSWD"
 }
 
 teardown()
@@ -27,9 +27,9 @@ teardown()
 @test create_secrets_file {
 
     # Old .irodsA is already created, so we delete it and alter the pam password.
-    sudo chpasswd <<<"alice:$NEW_PAM_PASSWD"
+    sudo chpasswd <<<"alice:$ALICES_NEW_PAM_PASSWD"
     rm -f ~/.irods/.irodsA
-    $PYTHON -c "import irods.client_init; irods.client_init.write_pam_credentials_to_secrets_file('$NEW_PAM_PASSWD')"
+    $PYTHON -c "import irods.client_init; irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD')"
 
     # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
     # without an exception being raised.
