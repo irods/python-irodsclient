@@ -3,12 +3,20 @@ import irods.client_configuration as cfg
 import irods.password_obfuscation as obf
 import irods.helpers as h
 import getpass
+import os
 import sys
 
 def write_native_credentials_to_secrets_file(password, **kw):
     env_file = env_filename_from_keyword_args(kw)
     auth_file = derived_auth_filename(env_file)
-    open(auth_file,'w').write(obf.encode(password))
+    old_mask = None
+    try:
+        old_mask = os.umask(0o77)
+        open(auth_file,'w').write(obf.encode(password))
+    finally:
+        if old_mask is not None:
+            os.umask(old_mask)
+            
     return True
 
 def write_pam_credentials_to_secrets_file( password ,**kw):
