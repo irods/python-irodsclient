@@ -261,6 +261,8 @@ class iRODSSession(object):
         missing_file_path = []
         error_args = []
         pw = creds['password'] = self.get_irods_password(session_ = self, file_path_if_not_found = missing_file_path, **creds)
+        # For native authentication, a missing password should be flagged as an error for non-anonymous logins.
+        # However, the pam_password case has its own internal checks.
         if auth_scheme.lower() not in PAM_AUTH_SCHEMES:
             if not pw and creds.get('irods_user_name') != 'anonymous':
                 if missing_file_path:
