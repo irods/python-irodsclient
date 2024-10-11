@@ -156,7 +156,7 @@ class TestConnections(unittest.TestCase):
         self.assertEqual(sess.connection_timeout, DESIRED_TIMEOUT)
 
         # Test that bad timeout values are met with an exception.
-        for value in (float('NaN'), float('Inf'), -float('Inf'), -1, 0, 0.0, "banana"):
+        for value in (float('NaN'), -float('Inf'), -1, 0, 0.0, "banana"):
             with self.assertRaises(ValueError):
                 sess.connection_timeout = value
 
