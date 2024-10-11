@@ -1,5 +1,35 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project **only** adheres to the following _(as defined at [Semantic Versioning](https://semver.org/spec/v2.0.0.html))_:
+
+> Given a version number MAJOR.MINOR.PATCH, increment the:
+> 
+> - MAJOR version when you make incompatible API changes
+> - MINOR version when you add functionality in a backward compatible manner
+> - PATCH version when you make backward compatible bug fixes
+
+## [v2.2.0] - 2024-10-14
+
+### Changed
+
+- Bump server compatibility to iRODS 4.3.3 (#3).
+- Limit maximum value for connection timeouts (#623).
+- Disable client redirection to resource, by default (#626, #627).
+
+### Fixed
+
+- Adjust use of imported symbols from module for testing (#613).
+- Modify the correct object in session.clone() for `ticket_applied` attribute (#619).
+- Correct ticket expire example in README (#630).
+
+### Added
+
+- Attach server response to exception as `server_msg` attribute (#606).
+- Add `CAT_TICKET_USES_EXCEEDED` to irods.exception module (#632).
+
 ## [v2.1.0] - 2024-08-13
 
 - [#3] v2.1.0 and update changelog [Terrell Russell]
