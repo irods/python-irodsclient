@@ -1,8 +1,7 @@
-Changelog
-=========
+# Changelog
 
-v2.1.0 (2024-08-13)
--------------------
+## [v2.1.0] - 2024-08-13
+
 - [#3] v2.1.0 and update changelog [Terrell Russell]
 - [#3] allow genquery2_test to work under all Python2/3 versions [Daniel Moore]
 - [#3] call assertRaisesRegex[p] with/without final 'p' (depends on Python 2 or 3) [Daniel Moore]
@@ -34,8 +33,8 @@ v2.1.0 (2024-08-13)
 - [#547] unify AVU field exceptions interface for metadata add and set [Daniel Moore]
 - [#550] Add support for client hints [Sietse Snel]
 
-v2.0.1 (2024-04-30)
--------------------
+## [v2.0.1] - 2024-04-30
+
 - [#543] Fix issue with parallel downloads to a directory [Raoul Schram]
 - [#521] clearer documentation and errors regarding pam/pam_password [Daniel Moore]
 - [#518] preserve login_<auth-type> internally generated exceptions [Daniel Moore]
@@ -46,8 +45,8 @@ v2.0.1 (2024-04-30)
 - [#3] tweak compatibility to iRODS 4.3.2 [Daniel Moore]
 - [#539] iRODS 4.3.2 rmgroup adaptation [Daniel Moore]
 
-v2.0.0 (2024-02-12)
--------------------
+## [v2.0.0] - 2024-02-12
+
 - [#3] version bump for 2.0.0 [Terrell Russell]
 - [#3] update project description [Terrell Russell]
 - [#495] append modes seek to end on data_object.open(...) [Daniel Moore]
@@ -71,8 +70,8 @@ v2.0.0 (2024-02-12)
 - [#474][#479] Allow querying, setting, and removing quotas [Daniel Moore]
 - [#483] make PRC version available as tuple [Daniel Moore]
 
-v1.1.9 (2023-10-13)
--------------------
+## [v1.1.9] - 2023-10-13
+
 - [#471][#472] allow save, load, and autoload of configuration [Daniel Moore]
 - [#456] auto-close data objects that go out of scope [Daniel Moore]
 - [#455] remove ticket check [Daniel Moore]
@@ -80,8 +79,8 @@ v1.1.9 (2023-10-13)
 - [#455] introduce low level ticket api changes [Daniel Moore]
 - [#234] Implement case-insensitive queries [Sietse Snel]
 
-v1.1.8 (2023-05-18)
--------------------
+## [v1.1.8] - 2023-05-18
+
 - [#450] test for setting/getting comments [Daniel Moore]
 - [#377] fix iRODSSession connection timeout [Daniel Moore]
 - [#450] Get property comments from replica object [Gwenael Leysour de Rohello]
@@ -89,8 +88,8 @@ v1.1.8 (2023-05-18)
 - [#442] allow non-default string types in AVU fields [Daniel Moore]
 - [#443] add NotLike (GenQuery 'NOT LIKE') operator [Daniel Moore]
 
-v1.1.7 (2023-03-28)
--------------------
+## [v1.1.7] - 2023-03-28
+
 - [#435] unregister can target a single replica [Daniel Moore]
 - [#434] metadata calls now require AVU fields to be nonzero-length strings [Daniel Moore]
 - [#431][irods/irods#6921] filter user_id results from R_OBJT_ACCESS through IDs still in R_USER_MAIN [Daniel Moore]
@@ -98,8 +97,8 @@ v1.1.7 (2023-03-28)
 - [#3] compatibility bump to iRODS 4.3.1 [Daniel Moore]
 - [#426][#428][#429] groupadmin capabilities update [Daniel Moore]
 
-v1.1.6 (2023-01-18)
--------------------
+## [v1.1.6] - 2023-01-18
+
 - [#420][#422] present appropriate iRODSAccess.codes, in sorted order [Daniel Moore]
 - [#420] store integer codes & strings for access levels [Daniel Moore]
 - [#418] raise error in test for IRODS_VERSION mismatch [Daniel Moore]
@@ -117,15 +116,15 @@ v1.1.6 (2023-01-18)
 - [#5] minor README fix: XML_Parser_Type code sample [Sietse Snel]
 - [#5] adds module loading to RErrorStack example [John Constable]
 
-v1.1.5 (2022-09-21)
--------------------
+## [v1.1.5] - 2022-09-21
+
 - [#383] correct logical path normalization [Daniel Moore]
 - [#369] remove dynamic generation of message classes [Daniel Moore]
 - [#386][#389] only load timestamps when requested [Daniel Moore]
 - [#386] initial change to add create and modify times for metadata [Paul Borgermans]
 
-v1.1.4 (2022-06-29)
--------------------
+## [v1.1.4] - 2022-06-29
+
 - [#372] eliminate SyntaxWarning ("is" operator being used with a literal) [Daniel Moore]
 - [#358] eliminate fcntl import [Daniel Moore]
 - [#368] ensure connection is finalized properly [Daniel Moore]
@@ -138,12 +137,12 @@ v1.1.4 (2022-06-29)
 - [#3][irods/irods#5927] test_repave_replica now passes in iRODS >= 4.2.12 [Daniel Moore]
 - [#3][irods/irods#6340] test_replica_number passes on 4.3.0 [Daniel Moore]
 
-v1.1.3 (2022-04-07)
--------------------
+## [v1.1.3] - 2022-04-07
+
 - [#356] Removing call to partially unsupported getpeername() [Kaivan Kamali]
 
-v1.1.2 (2022-03-15)
--------------------
+## [v1.1.2] - 2022-03-15
+
 - [#3][#345] Allow tests to pass and accommodate older Python [Daniel Moore]
 - [#352] Fix the infinite loop issue when sock.recv() returns an empty buffer [Kaivan Kamali]
 - [#345] Fix connection destructor issue [Kaivan Kamali]
@@ -159,14 +158,14 @@ v1.1.2 (2022-03-15)
 - [#349] normalize() argument not necessarily absolute [Daniel Moore]
 - [#323] remove trailing slashes in collection names [Daniel Moore]
 
-v1.1.1 (2022-01-31)
--------------------
+## [v1.1.1] - 2022-01-31
+
 - [#338] clarify Python RE Plugin limitations [Daniel Moore]
 - [#339] correction to README regarding RULE_ENGINE_ERROR [Daniel Moore]
 - [#336] rule files can now be submitted from a memory file object [Daniel Moore]
 
-v1.1.0 (2022-01-20)
--------------------
+## [v1.1.0] - 2022-01-20
+
 - [#334] add SECURE_XML to parser selection [Daniel Moore]
 - [#279] allow long tokens via PamAuthRequest [Daniel Moore]
 - [#190] session_cleanup is optional after rule execution. [Daniel Moore]
@@ -191,13 +190,13 @@ v1.1.0 (2022-01-20)
 - [#287] allow passing RError stack through CHKSUM library call [Daniel Moore]
 - [#282] add NO_COMPUTE keyword [Daniel Moore]
 
-v1.0.0 (2021-06-03)
--------------------
+## [v1.0.0] - 2021-06-03
+
 - [#274] calculate common vault dir for unicode query tests [Daniel Moore]
 - [#269] better session cleanup [Daniel Moore]
 
-v0.9.0 (2021-05-14)
--------------------
+## [v0.9.0] - 2021-05-14
+
 - [#269] cleanup() is now automatic with session destruct [Daniel Moore]
 - [#235] multithreaded parallel transfer for PUT and GET [Daniel Moore]
 - [#232] do not arbitrarily pick first replica for DEST RESC [Daniel Moore]
@@ -213,8 +212,8 @@ v0.9.0 (2021-05-14)
 - [#255] make results of atomic metadata operations visible [Daniel Moore]
 - [#250] add exception for SYS_INVALID_INPUT_PARAM [Daniel Moore]
 
-v0.8.6 (2021-01-22)
--------------------
+## [v0.8.6] - 2021-01-22
+
 - [#244] added capability to add/remove atomic metadata [Daniel Moore]
 - [#226] Document creation of users [Ruben Garcia]
 - [#230] Add force option to data_object_manager create [Ruben Garcia]
@@ -224,12 +223,12 @@ v0.8.6 (2021-01-22)
 - [#241] [irods/irods_capability_automated_ingest#136] fix redundant disconnect [Daniel Moore]
 - [#227] [#228] enable ICAT entries for zones and foreign-zone users [Daniel Moore]
 
-v0.8.5 (2020-11-10)
--------------------
+## [v0.8.5] - 2020-11-10
+
 - [#220] Use connection create time to determine stale connections [Kaivan Kamali]
 
-v0.8.4 (2020-10-19)
--------------------
+## [v0.8.4] - 2020-10-19
+
 - [#221] fix tests which were failing in Py3.4 and 3.7 [Daniel Moore]
 - [#220] Replace stale connections pulled from idle pools [Kaivan Kamali]
 - [#3] tests failing on Python3 unicode defaults [Daniel Moore]
@@ -242,8 +241,8 @@ v0.8.4 (2020-10-19)
 - [#156] fix the PAM authentication with env json file. [Patrice Linel]
 - [#207] add raw-acl permissions getter [Daniel Moore]
 
-v0.8.3 (2020-06-05)
--------------------
+## [v0.8.3] - 2020-06-05
+
 - [#3] remove order sensitivity in test_user_dn [Daniel Moore]
 - [#5] clarify unlink specific replica example [Terrell Russell]
 - [irods/irods#4796] add data object copy tests [Daniel Moore]
@@ -255,8 +254,8 @@ v0.8.3 (2020-06-05)
 - [#183] fix key error when tables from order_by() not in query() [Daniel Moore]
 - [#5] fix ssl example in README.rst [Terrell Russell]
 
-v0.8.2 (2019-11-13)
--------------------
+## [v0.8.2] - 2019-11-13
+
 - [#8] Add PAM Authentication handling (still needs tests) [Mattia D'Antonio]
 - [#5] Remove commented-out import [Alan King]
 - [#5] Add .idea directory to .gitignore [Jonathan Landrum]
@@ -271,15 +270,15 @@ v0.8.2 (2019-11-13)
 - [#175] Add metadata property for instances of iRODSResource [Daniel Moore]
 - [#163] add keywords to query objects [Daniel Moore]
 
-v0.8.1 (2018-09-27)
--------------------
+## [v0.8.1] - 2018-09-27
+
 - [#140] Remove randomization from password test [Alan King]
 - [#139] Use uppercase queries in tests [Alan King]
 - [#137] Handle filenames with ampersands [Alan King]
 - [#126] Add size attribute to iRODSReplica [Alan King]
 
-v0.8.0 (2018-05-03)
--------------------
+## [v0.8.0] - 2018-05-03
+
 - Add rescName and replNum awareness. [Hao Xu]
 - Document put() method in README.rst. [Terrell Russell]
 - Add support for specifying resource hierarchy. [Hao Xu]
@@ -303,8 +302,8 @@ v0.8.0 (2018-05-03)
 - Python 2/3 compability. [Jonathan de Bruin]
 
 
-v0.7.0 (2017-12-15)
--------------------
+## [v0.7.0] - 2017-12-15
+
 - Dynamic instance method definition for Python2/3. [Antoine de Torcy]
 - Filter by collection path. [Antoine de Torcy]
 - Add truncate flag. [Antoine de Torcy]
@@ -357,8 +356,8 @@ v0.7.0 (2017-12-15)
 - Fix exception hierarchy. [Antoine de Torcy]
 
 
-v0.6.0 (2017-05-23)
--------------------
+## [v0.6.0] - 2017-05-23
+
 - Patch for GSI. [pdonorio]
 - Add keywords for atomic put. [Antoine de Torcy]
 - Raise recv error. Don't call exit() [Alex Lemann]
@@ -409,9 +408,8 @@ v0.6.0 (2017-05-23)
 - Unit test. [Antoine de Torcy]
 - First pass at data object replication. [Antoine de Torcy]
 
+## [v0.5.0] - 2016-08-15
 
-v0.5.0 (2016-08-15)
--------------------
 - Update package files. [Antoine de Torcy]
 - Add set operation for metadata. [Illyoung Choi]
 - Add truncate function to data_object class and test case for it.
@@ -767,5 +765,3 @@ v0.5.0 (2016-08-15)
 - Added message and session classes. [Chris La Rose]
 - Successfully disconnnecting. [Chris La Rose]
 - Initial commit. [Chris La Rose]
-
-
