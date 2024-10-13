@@ -1,1 +1,1 @@
-include AUTHORS CHANGELOG.md LICENSE.txt README.md irods/test/README.rst irods/test/unicode_sampler.xml irods/test/test-data/*.json
+include CHANGELOG.md LICENSE.txt README.md irods/test/README.rst irods/test/unicode_sampler.xml irods/test/test-data/*.json
