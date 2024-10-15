@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import ast
 import atexit
 import copy
@@ -59,7 +58,7 @@ logger = logging.getLogger(__name__)
 class NonAnonymousLoginWithoutPassword(RuntimeError): pass
 
 
-class iRODSSession(object):
+class iRODSSession:
 
     def library_features(self):
         irods_version_needed = (4,3,1)

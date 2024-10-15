@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from __future__ import absolute_import
+
 import os
 import sys
 import unittest
@@ -18,9 +18,9 @@ class TestFiles(unittest.TestCase):
         self.collection = self.sess.collections.create(self.coll_path)
 
         self.obj_name = 'test1'
-        self.content_str = u'blah'
-        self.write_str = u'0123456789'
-        self.write_str1 = u'INTERRUPT'
+        self.content_str = 'blah'
+        self.write_str = '0123456789'
+        self.write_str1 = 'INTERRUPT'
 
         self.test_obj_path = '{coll_path}/{obj_name}'.format(**vars(self))
 

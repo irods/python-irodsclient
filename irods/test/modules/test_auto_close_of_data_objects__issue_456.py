@@ -6,7 +6,6 @@
 #    irods.test.data_obj_test.TestDataObjOps.test_data_objects_auto_close_on_function_exit__issue_456
 #    irods.test.data_obj_test.TestDataObjOps.test_data_objects_auto_close_on_process_exit__issue_456
 
-from __future__ import print_function
 import contextlib
 try:
     import irods.client_configuration as config

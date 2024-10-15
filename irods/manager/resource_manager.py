@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from irods.models import Resource
 from irods.manager import Manager
 from irods.message import GeneralAdminRequest, iRODSMessage

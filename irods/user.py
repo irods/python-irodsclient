@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from irods.models import User, Group, UserAuth
 from irods.meta import iRODSMetaCollection
 from irods.exception import NoResultFound
@@ -7,7 +6,7 @@ _Not_Defined = ()
 
 class Bad_password_change_parameter(Exception): pass
 
-class iRODSUser(object):
+class iRODSUser:
 
     def remove_quota(self, resource = 'total'):
         self.manager.remove_quota(self.name, resource = resource)
@@ -62,7 +61,7 @@ class iRODSUser(object):
         self.manager.modify(self.name, *args, **kwargs)
 
     def __repr__(self):
-        return "<iRODSUser {id} {name} {type} {zone}>".format(**vars(self))
+        return f"<iRODSUser {self.id} {self.name} {self.type} {self.zone}>"
 
     def remove(self):
         self.manager.remove(self.name, self.zone, _object = self)
@@ -71,7 +70,7 @@ class iRODSUser(object):
         return self.manager.temp_password_for_user(self.name)
 
 
-class iRODSGroup(object):
+class iRODSGroup:
 
     type = "rodsgroup"
 
@@ -89,7 +88,7 @@ class iRODSGroup(object):
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSGroup {id} {name}>".format(**vars(self))
+        return f"<iRODSGroup {self.id} {self.name}>"
 
     def remove(self):
         self.manager.remove(self.name, _object = self)

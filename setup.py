@@ -28,9 +28,6 @@ setup(name='python-irodsclient',
       classifiers=[
                    'License :: OSI Approved :: BSD License',
                    'Development Status :: 5 - Production/Stable',
-                   'Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3.4',
-                   'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6',
                    'Programming Language :: Python :: 3.7',
                    'Programming Language :: Python :: 3.8',
@@ -38,19 +35,16 @@ setup(name='python-irodsclient',
                    'Programming Language :: Python :: 3.10',
                    'Programming Language :: Python :: 3.11',
                    'Programming Language :: Python :: 3.12',
+                   'Programming Language :: Python :: 3.13',
                    'Operating System :: POSIX :: Linux',
                    ],
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-                        'six>=1.10.0',
                         'PrettyTable>=0.7.2',
                         'defusedxml',
-                        # - the new syntax:
-                        #'futures; python_version == "2.7"'
                         ],
-      # - the old syntax:
-      extras_require={ ':python_version == "2.7"': ['futures'],
+      extras_require={
                        'tests': ['unittest-xml-reporting']  # for xmlrunner
                      }
       )

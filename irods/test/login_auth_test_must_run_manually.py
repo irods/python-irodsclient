@@ -1,6 +1,5 @@
 #! /usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
+
 import os
 import sys
 import tempfile
@@ -23,7 +22,6 @@ import contextlib
 import socket
 from re import compile as regex
 import gc
-import six
 from irods.test.setupssl import create_ssl_dir
 
 #
@@ -450,7 +448,6 @@ class TestMiscellaneous(unittest.TestCase):
         self.admin.users.remove('alice')
         self.admin.cleanup()
 
-    @unittest.skipUnless(six.PY3, "Skipping in Python2 because it doesn't reliably do cyclic GC.")
     def test_destruct_session_with_no_pool_315(self):
 
         destruct_flag = [False]
