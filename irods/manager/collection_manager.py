@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from irods.models import Collection, DataObject
 from irods.manager import Manager
 from irods.manager._internal import _api_impl

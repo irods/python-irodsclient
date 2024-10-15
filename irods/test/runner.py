@@ -6,7 +6,7 @@ NOTE: "If a test package name (directory with __init__.py) matches the pattern
        exists then it will be called with loader, tests, pattern."
 """
 
-from __future__ import absolute_import
+
 import os
 import sys
 from unittest import TestLoader, TestSuite

@@ -1,11 +1,9 @@
 """Define objects related to communication with iRODS server API endpoints."""
 
-import sys
 import struct
 import logging
 import socket
 import json
-from six.moves import builtins
 import irods.exception as ex
 import xml.etree.ElementTree as ET_xml
 import defusedxml.ElementTree as ET_secure_xml
@@ -15,10 +13,10 @@ from collections import namedtuple
 import os
 import ast
 import threading
-from irods.message.message import Message
-from irods.message.property import (BinaryProperty, StringProperty,
-                                    IntegerProperty, LongProperty, ArrayProperty,
-                                    SubmessageProperty)
+from .message import Message
+from .property_types import (BinaryProperty, StringProperty,
+                             IntegerProperty, LongProperty, ArrayProperty,
+                             SubmessageProperty)
 
 class Bad_AVU_Field(ValueError):
     pass
@@ -32,40 +30,12 @@ def _qxml_server_version( var ):
     if not isinstance( vsn, _TUPLE_LIKE_TYPES ): return None
     return tuple( vsn )
 
-if sys.version_info >= (3,):
-    import enum
-    class XML_Parser_Type(enum.Enum):
-        _invalid = 0
-        STANDARD_XML = 1
-        QUASI_XML = 2
-        SECURE_XML = 3
-else:
-    #TODO remove when Python2 support goes away.
-    class MyIntEnum(int):
-        """An integer enum class suited to the purpose. A shim until we get rid of Python2."""
-        def __init__(self,i):
-            """Initialize based on an integer or another instance."""
-            super(MyIntEnum,self).__init__()
-            try:self.i = i._value()
-            except AttributeError:
-                self.i = i
-        def _value(self): return self.i
-        @builtins.property
-        def value(self): return self._value()
-        def __repr__(self): return '<{}: {}>'.format(self.__class__.__name__, self._value())
-
-    class XML_Parser_Type(MyIntEnum):
-        """An enum specifying which XML parser is active."""
-        def __repr__(self):
-            int_value = self._value()
-            string_value = PARSER_TYPE_STRINGS.get(int_value,"<invalid>")
-            return '<{}: {} ({})>'.format(self.__class__.__name__, int_value, string_value)
-
-    XML_Parser_Type.STANDARD_XML = XML_Parser_Type (1)
-    XML_Parser_Type.QUASI_XML = XML_Parser_Type (2)
-    XML_Parser_Type.SECURE_XML = XML_Parser_Type (3)
-    XML_Parser_Type.__members__ = {k:v for k,v in XML_Parser_Type.__dict__.items()
-                                   if isinstance(v,XML_Parser_Type)}
+import enum
+class XML_Parser_Type(enum.Enum):
+    _invalid = 0
+    STANDARD_XML = 1
+    QUASI_XML = 2
+    SECURE_XML = 3
 
 # This creates a mapping from the "valid" (nonzero) XML_Parser_Type enums -- those which represent the actual parser
 # choices -- to their corresponding names as strings (e.g. XML_Parser_Type.STANDARD_XML is mapped to 'STANDARD_XML'):
@@ -172,12 +142,7 @@ logger = logging.getLogger(__name__)
 
 IRODS_VERSION = (4, 3, 3, 'd')
 
-try:
-    # Python 2
-    UNICODE = unicode
-except NameError:
-    # Python 3
-    UNICODE = str
+UNICODE = str
 
 _METADATA_FIELD_TYPES = {str,UNICODE,bytes}
 
@@ -268,7 +233,7 @@ class JSON_Binary_Response(BinBytesBuf):
 class XMLMessageNotConvertibleToJSON(Exception):
     pass
 
-class iRODSMessage(object):
+class iRODSMessage:
 
     class ResponseNotParseable(Exception):
 
@@ -502,7 +467,7 @@ class PamAuthRequest(Message):
 class PamAuthRequestOut(Message):
     _name = 'pamAuthRequestOut_PI'
     irodsPamPassword = StringProperty()
-    @builtins.property
+    @property
     def result_(self): return self.irodsPamPassword
 
 
@@ -1110,7 +1075,7 @@ class RErrorStack(list):
             self[:] = [ RError(Err.RErrMsg_PI[i]) for i in range(Err.count) ]
 
 
-class RError(object):
+class RError:
 
     """One of a list of RError messages potentially returned to the client
        from an iRODS API call.  """
@@ -1124,7 +1089,7 @@ class RError(object):
         self.status_ = entry.status
 
 
-    @builtins.property
+    @property
     def message(self): #return self.raw_msg_.decode(self.Encoding)
         msg_ = self.raw_msg_
         if type(msg_) is UNICODE:
@@ -1134,11 +1099,11 @@ class RError(object):
         else:
             raise RuntimeError('bad msg type in',msg_)
 
-    @builtins.property
+    @property
     def status(self): return int(self.status_)
 
 
-    @builtins.property
+    @property
     def status_str(self):
         """Retrieve the IRODS error identifier."""
         return ex.get_exception_class_by_code( self.status, name_only=True )

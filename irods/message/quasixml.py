@@ -49,7 +49,7 @@ class Element():
         return '{}({})'.format(self.name, repr(self.body))
 
 
-class Token(object):
+class Token:
     """A utility class for parsing XML."""
     def __init__(self, s):
         """Create a `Token' object from `s', the text comprising the parsed token."""

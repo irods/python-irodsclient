@@ -1,4 +1,3 @@
-from __future__ import print_function
 import ast
 import collections
 import contextlib
@@ -7,7 +6,6 @@ import io
 import logging
 import os
 import re
-import six
 import sys
 import types
 
@@ -16,7 +14,7 @@ from .. import DEFAULT_CONFIG_PATH
 
 logger = logging.Logger(__name__)
 
-class iRODSConfiguration(object):
+class iRODSConfiguration:
     __slots__ = ()
 
 def getter(category, setting):
@@ -39,7 +37,7 @@ class iRODSConfigAliasMetaclass(type):
                 isinstance(v,property) and v.fset is not None)
         return cls
 
-class ConnectionsProperties(six.with_metaclass(iRODSConfigAliasMetaclass,iRODSConfiguration)):
+class ConnectionsProperties(iRODSConfiguration, metaclass = iRODSConfigAliasMetaclass):
     @property
     def xml_parser_default(self):
         from irods.message import get_default_XML_by_name

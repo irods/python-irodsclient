@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-import six
 from datetime import datetime
 from calendar import timegm
 
 
-class QueryKey(object):
+class QueryKey:
 
     def __init__(self, column_type):
         self.column_type = column_type
@@ -28,7 +26,7 @@ class QueryKey(object):
         return Criterion('>=', self, other)
 
 
-class Criterion(object):
+class Criterion:
 
     def __init__(self, op, query_key, value):
         self.op = op
@@ -105,7 +103,7 @@ class Keyword(QueryKey):
 
 
 # consider renaming columnType
-class ColumnType(object):
+class ColumnType:
 
     @staticmethod
     def to_python(string):
@@ -137,11 +135,11 @@ class String(ColumnType):
     def to_irods(data):
         try:
             # Convert to Unicode string (aka decode)
-            data = six.text_type(data, 'utf-8', 'replace')
+            data = str(data, 'utf-8', 'replace')
         except TypeError:
             # Some strings are already Unicode so they do not need decoding
             pass
-        return u"'{}'".format(data)
+        return "'{}'".format(data)
 
 
 class DateTime(ColumnType):

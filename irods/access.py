@@ -1,6 +1,5 @@
 import collections
 import copy
-import six
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
 from irods.path import iRODSPath
@@ -11,7 +10,7 @@ class _Access_LookupMeta(type):
     def values(self): return list(self.codes[k] for k in self.codes.keys())
     def items(self): return list(zip(self.keys(),self.values()))
 
-class iRODSAccess(six.with_metaclass(_Access_LookupMeta)):
+class iRODSAccess(metaclass = _Access_LookupMeta):
 
     @classmethod
     def to_int(cls,key):
@@ -101,9 +100,7 @@ class iRODSAccess(six.with_metaclass(_Access_LookupMeta)):
         object_dict = vars(self)
         access_name = self.access_name.replace(' ','_')
         user_type_hint = ("({user_type})" if object_dict.get('user_type') is not None else "").format(**object_dict)
-        return "<iRODSAccess {0} {path} {user_name}{1} {user_zone}>".format(access_name,
-                                                                            user_type_hint,
-                                                                            **object_dict)
+        return f"<iRODSAccess {access_name} {self.path} {self.user_name}{user_type_hint} {self.user_zone}>"
 
 class _iRODSAccess_pre_4_3_0(iRODSAccess):
     codes = collections.OrderedDict(
