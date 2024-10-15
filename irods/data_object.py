@@ -1,7 +1,6 @@
 import io
 import sys
 import logging
-import six
 import os
 import ast
 
@@ -51,7 +50,7 @@ class iRODSDataObject(object):
         self.manager = manager
         if parent and results:
             self.collection = parent
-            for attr, value in six.iteritems(DataObject.__dict__):
+            for attr, value in DataObject.__dict__.items():
                 if not attr.startswith('_'):
                     try:
                         setattr(self, attr, results[0][value])

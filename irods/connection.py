@@ -2,7 +2,6 @@ import socket
 import logging
 import struct
 import hashlib
-import six
 import os
 import ssl
 import datetime
@@ -582,28 +581,19 @@ class Connection(object):
         # one "session" signature per connection
         # see https://github.com/irods/irods/blob/4.2.1/plugins/auth/native/libnative.cpp#L137
         # and https://github.com/irods/irods/blob/4.2.1/lib/core/src/clientLogin.cpp#L38-L60
-        if six.PY2:
-            self._client_signature = "".join("{:02x}".format(ord(c)) for c in challenge[:16])
-        else:
-            self._client_signature = "".join("{:02x}".format(c) for c in challenge[:16])
+        self._client_signature = "".join("{:02x}".format(c) for c in challenge[:16])
 
-        if six.PY3:
-            challenge = challenge.strip()
-            padded_pwd = struct.pack(
-                "%ds" % MAX_PASSWORD_LENGTH, password.encode(
-                    'utf-8').strip())
-        else:
-            padded_pwd = struct.pack(
-                "%ds" % MAX_PASSWORD_LENGTH, password)
+        challenge = challenge.strip()
+        padded_pwd = struct.pack(
+            "%ds" % MAX_PASSWORD_LENGTH, password.encode(
+                'utf-8').strip())
 
         m = hashlib.md5()
         m.update(challenge)
         m.update(padded_pwd)
         encoded_pwd = m.digest()
 
-        if six.PY2:
-            encoded_pwd = encoded_pwd.replace('\x00', '\x01')
-        elif b'\x00' in encoded_pwd:
+        if b'\x00' in encoded_pwd:
             encoded_pwd_array = bytearray(encoded_pwd)
             encoded_pwd = bytes(encoded_pwd_array.replace(b'\x00', b'\x01'))
 

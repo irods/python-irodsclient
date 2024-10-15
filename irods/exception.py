@@ -5,7 +5,6 @@
 import errno
 import numbers
 import os
-import six
 import sys
 
 
@@ -112,7 +111,7 @@ class Errno:
         return self.int_code
 
 
-class iRODSException(six.with_metaclass(iRODSExceptionMeta, Exception)):
+class iRODSException(Exception, metaclass = iRODSExceptionMeta):
     """An exception that originates from a server error.
        Exception classes that are derived from this base and represent a concrete error, should
        store a unique error code (X*1000) in their 'code' attribute, where X < 0.

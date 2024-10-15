@@ -6,7 +6,6 @@ import io
 import logging
 import os
 import re
-import six
 import sys
 import types
 
@@ -38,7 +37,7 @@ class iRODSConfigAliasMetaclass(type):
                 isinstance(v,property) and v.fset is not None)
         return cls
 
-class ConnectionsProperties(six.with_metaclass(iRODSConfigAliasMetaclass,iRODSConfiguration)):
+class ConnectionsProperties(iRODSConfiguration, metaclass = iRODSConfigAliasMetaclass):
     @property
     def xml_parser_default(self):
         from irods.message import get_default_XML_by_name

@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import os
-import six
 import sys
 import unittest
 
@@ -44,13 +43,13 @@ class TestResource(unittest.TestCase):
                             self.assertEqual(resc.parent_id, (None if n == 0 else parent_resc.id))
                             self.assertEqual(resc.parent_name, (None if n == 0 else parent_resc.name))
                             self.assertEqual(resc.hierarchy_string, hier_str)
-                            self.assertIs(type(resc.hierarchy_string), str)                   # type of hierarchy field is string.
+                            self.assertIs(type(resc.hierarchy_string), str)  # type of hierarchy field is string.
                             if resc.parent is None:
                                 self.assertIs(resc.parent_id, None)
                                 self.assertIs(resc.parent_name, None)
                             else:
-                                self.assertIn(type(resc.parent_id), six.integer_types) # type of a non-null id field is integer.
-                                self.assertIs(type(resc.parent_name), str)             # type of a non-null name field is string.
+                                self.assertIs(type(resc.parent_id), int)     # type of a non-null id field is integer.
+                                self.assertIs(type(resc.parent_name), str)   # type of a non-null name field is string.
                             parent_resc = resc
                 finally:
                     ses.resources.remove_child(root, pt + "_0")

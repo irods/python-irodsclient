@@ -1,6 +1,5 @@
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
 from irods.message.ordered import OrderedMetaclass, OrderedClass
-import six
 
 
 class MessageMetaclass(OrderedMetaclass):
@@ -11,7 +10,7 @@ class MessageMetaclass(OrderedMetaclass):
             prop.dub(name)
 
 
-class Message(six.with_metaclass(MessageMetaclass, OrderedClass)):
+class Message(OrderedClass, metaclass = MessageMetaclass):
 
     def __init__(self, *args, **kwargs):
         super(Message, self).__init__()

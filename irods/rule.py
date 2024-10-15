@@ -3,7 +3,6 @@ from irods.api_number import api_number
 import irods.exception as ex
 from io import open as io_open
 from irods.message import Message, StringProperty
-import six
 
 class RemoveRuleMessage(Message):
     #define RULE_EXEC_DEL_INP_PI "str ruleExecId[NAME_LEN];"
@@ -86,7 +85,7 @@ class Rule(object):
         self.body = '@external\n'
 
 
-        with (io_open(rule_file, encoding = encoding) if isinstance(rule_file,six.string_types) else rule_file
+        with (io_open(rule_file, encoding = encoding) if isinstance(rule_file,str) else rule_file
         ) as f:
 
             # parse rule file line-by-line

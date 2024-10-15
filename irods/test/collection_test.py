@@ -12,7 +12,6 @@ from irods.exception import CollectionDoesNotExist
 from irods.models import Collection, DataObject
 import irods.test.helpers as helpers
 import irods.keywords as kw
-from six.moves import range
 from irods.test.helpers import my_function_name, unique_name
 from irods.collection import iRODSCollection
 

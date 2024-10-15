@@ -1,12 +1,10 @@
 from irods.column import Column, Integer, String, DateTime, Keyword
-import six
-
 
 class ModelBase(type):
     columns = {}
 
     def __new__(cls, name, bases, attr):
-        columns = [y for (x, y) in six.iteritems(attr) if isinstance(y, Column)]
+        columns = [y for (x, y) in attr.items() if isinstance(y, Column)]
         for col in columns:
             ModelBase.columns[col.icat_id] = col
         attr['_columns'] = columns
@@ -14,7 +12,7 @@ class ModelBase(type):
         return type.__new__(cls, name, bases, attr)
 
 
-class Model(six.with_metaclass(ModelBase, object)):
+class Model(metaclass = ModelBase):
     pass
 
 

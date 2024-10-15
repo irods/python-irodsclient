@@ -11,7 +11,6 @@ from irods.access import iRODSAccess
 from irods.column import In
 from irods.user import iRODSUser
 
-import six
 import logging
 import warnings
 
@@ -21,7 +20,7 @@ def users_by_ids(session,ids=()):
     try:
         ids=list(iter(ids))
     except TypeError:
-        if type(ids) in (str,) + six.integer_types: ids=int(ids)
+        if type(ids) in (str,int): ids=int(ids)
         else: raise
     cond = () if not ids \
            else (In(User.id,list(map(int,ids))),) if len(ids)>1 \

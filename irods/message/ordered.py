@@ -1,7 +1,6 @@
 # Ordered property classes stolen from Kris Kowal of Ask a Wizard
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
 from itertools import count
-import six
 
 try:
     next_counter = count().__next__
@@ -33,5 +32,5 @@ class OrderedMetaclass(type):
         )
 
 
-class OrderedClass(six.with_metaclass(OrderedMetaclass, object)):
+class OrderedClass(metaclass = OrderedMetaclass):
     pass

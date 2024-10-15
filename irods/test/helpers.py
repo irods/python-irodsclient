@@ -20,7 +20,6 @@ from irods.session import iRODSSession
 from irods.message import (iRODSMessage, IRODS_VERSION)
 from irods.password_obfuscation import encode
 from irods import env_filename_from_keyword_args
-from six.moves import range
 
 class iRODSUserLogins(object):
     """A class which creates users and set passwords from a given dict or list of tuples of

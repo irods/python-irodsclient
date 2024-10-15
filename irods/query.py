@@ -10,7 +10,6 @@ from irods.message import (
 from irods.api_number import api_number
 from irods.exception import CAT_NO_ROWS_FOUND, MultipleResultsFound, NoResultFound
 from irods.results import ResultSet, SpecificQueryResultSet
-import six
 
 query_number = {'ORDER_BY': 0x400,
                 'ORDER_BY_DESC': 0x800,
@@ -26,7 +25,7 @@ query_number = {'ORDER_BY': 0x400,
                 'SELECT_COUNT': 6}
 
 
-class Query(object):
+class Query:
 
     def __init__(self, sess, *args, **kwargs):
         self.sess = sess
@@ -147,7 +146,7 @@ class Query(object):
 
     def _select_message(self):
         dct = OrderedDict([(column.icat_id, value)
-                           for (column, value) in six.iteritems(self.columns)])
+                           for (column, value) in self.columns.items()])
         return IntegerIntegerMap(dct)
 
     # todo store criterion for columns and criterion for keywords in seaparate

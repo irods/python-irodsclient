@@ -30,7 +30,7 @@ class iRODSResource(object):
         '''
         self.manager = manager
         if result:
-            for attr, value in six.iteritems(Resource.__dict__):
+            for attr, value in Resource.__dict__.items():
                 if not attr.startswith('_'):
                     try:
                         setattr(self, attr, result[value])

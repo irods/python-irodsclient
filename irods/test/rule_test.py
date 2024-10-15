@@ -10,7 +10,6 @@ from irods.models import DataObject
 from irods.exception import (FAIL_ACTION_ENCOUNTERED_ERR, RULE_ENGINE_ERROR, UnknowniRODSError)
 import irods.test.helpers as helpers
 from irods.rule import Rule
-import six
 from io import open as io_open
 import io
 

@@ -9,12 +9,11 @@ import contextlib
 import concurrent.futures
 import threading
 import multiprocessing
-import six
 
 from irods.data_object import iRODSDataObject
 from irods.exception import DataObjectDoesNotExist
 import irods.keywords as kw
-from six.moves.queue import Queue,Full,Empty
+from queue import Queue,Full,Empty
 
 
 logger = logging.getLogger( __name__ )
@@ -48,30 +47,7 @@ class deferred_call(object):
         return self.function(*self.args, **self.keywords)
 
 
-try:
-    from threading import Barrier   # Use 'Barrier' class if included (as in Python >= 3.2) ...
-except ImportError:                 # ... but otherwise, use this ad hoc:
-    # Based on https://stackoverflow.com/questions/26622745/implementing-barrier-in-python2-7 :
-    class Barrier(object):
-        def __init__(self, n):
-            """Initialize a Barrier to wait on n threads."""
-            self.n = n
-            self.count = 0
-            self.mutex = threading.Semaphore(1)
-            self.barrier = threading.Semaphore(0)
-        def wait(self):
-            """Per-thread wait function.
-
-            As in Python3.2 threading, returns 0 <= wait_serial_int < n
-            """
-            self.mutex.acquire()
-            self.count += 1
-            count = self.count
-            self.mutex.release()
-            if count == self.n: self.barrier.release()
-            self.barrier.acquire()
-            self.barrier.release()
-            return count - 1
+from threading import Barrier
 
 RECOMMENDED_NUM_THREADS_PER_TRANSFER = 3
 
@@ -121,7 +97,7 @@ class AsyncNotify (object):
                     except Empty:
                         pass
                     if i is not None:
-                        if isinstance(i,six.integer_types) and i >= 0: this.progress[0] += i
+                        if isinstance(i,int) and i >= 0: this.progress[0] += i
                         else: break
             self._progress_fn = _progress
             self._progress_thread = threading.Thread( target = self._progress_fn, args = (progress_Queue, self))
@@ -335,7 +311,7 @@ def _io_multipart_threaded(operation_ , dataObj_and_IO, replica_token, hier_str,
             end_offs = (i + 1) * chunk
         else:
             end_offs = total_bytes
-        return six.moves.range(begin_offs, end_offs)
+        return range(begin_offs, end_offs)
 
     bytes_per_thread = total_size // num_threads
 
@@ -406,7 +382,7 @@ def io_main( session, Data, opr_, fname, R='', **kwopt):
     if isinstance(Data,tuple):
         (Data, Io) = Data[:2]
 
-    if isinstance (Data, six.string_types):
+    if isinstance (Data, str):
         d_path = Data
         try:
             Data = session.data_objects.get( Data )

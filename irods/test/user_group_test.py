@@ -15,7 +15,6 @@ from irods.session import iRODSSession
 import irods.exception as ex
 import irods.test.helpers as helpers
 from irods.user import iRODSUser, Bad_password_change_parameter
-from six.moves import range
 
 def user_quotas_implemented():
     return getattr(iRODSUser, "set_quota", None) is not None

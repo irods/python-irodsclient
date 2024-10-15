@@ -13,7 +13,6 @@ import logging
 import os
 import random
 import re
-import six
 import socket
 import stat
 import string
@@ -2107,7 +2106,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_append_mode_will_append_to_data_object__issue_495(self):
         append_string = b'to_be_written'.lower()
-        reverse_bytes = lambda s: ''.join(reversed(s)) if six.PY2 else bytes(reversed(s))
+        reverse_bytes = lambda s: bytes(reversed(s))
         session, data = (self.sess, self.sess.data_objects)
         testfile = '{}/issue_495'.format(helpers.home_collection(session))
         # Make sure data object doesn't exist.
@@ -2193,7 +2192,6 @@ class TestDataObjOps(unittest.TestCase):
             if self.sess.data_objects.exists(data_path):
                 self.sess.data_objects.unlink(data_path, force = True)
 
-    @unittest.skipIf(six.PY2, "Python2 won't destruct an out-of-scope iRODSSession due to lazy GC ref-cycle detection.")
     def test_client_redirect_lets_go_of_connections__issue_562(self):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
         # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource

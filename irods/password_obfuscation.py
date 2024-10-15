@@ -4,7 +4,6 @@ import os
 import time
 import random
 import string
-import six
 from irods import MAX_PASSWORD_LENGTH
 
 seq_list = [
@@ -228,7 +227,7 @@ def unscramble(s, key=default_password_key, scramble_prefix=default_scramble_pre
     for c in to_unscramble:
         if c in wheel:
             #the index of the target character in wheel
-            wheel_index = (wheel.index(c) - six.indexbytes(encoder_ring, encoder_ring_index % 61) - chain) % len(wheel)
+            wheel_index = (wheel.index(c) - encoder_ring[encoder_ring_index % 61] - chain) % len(wheel)
             unscrambled_string += wheel[wheel_index]
             if block_chaining:
                 chain = ord(c) & 0xff
@@ -256,7 +255,7 @@ def scramble(s, key=default_password_key, scramble_prefix=default_scramble_prefi
     for c in to_scramble:
         if c in wheel:
             #the index of the target character in wheel
-            wheel_index = (wheel.index(c) + six.indexbytes(encoder_ring, encoder_ring_index % 61) + chain) % len(wheel)
+            wheel_index = (wheel.index(c) + encoder_ring[encoder_ring_index % 61] + chain) % len(wheel)
             scrambled_string += wheel[wheel_index]
             if block_chaining:
                 chain = ord(scrambled_string[-1]) & 0xff
