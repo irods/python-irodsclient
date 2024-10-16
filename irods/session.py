@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 class NonAnonymousLoginWithoutPassword(RuntimeError): pass
 
 
-class iRODSSession(object):
+class iRODSSession:
 
     def library_features(self):
         irods_version_needed = (4,3,1)

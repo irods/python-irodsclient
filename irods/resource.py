@@ -1,9 +1,8 @@
 from irods.models import Resource
 from irods.meta import iRODSMetaCollection
-import six
 
 
-class iRODSResource(object):
+class iRODSResource:
 
     def __init__(self, manager, result=None):
         self._hierarchy_string = ''

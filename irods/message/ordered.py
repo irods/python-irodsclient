@@ -8,7 +8,7 @@ except AttributeError:
     next_counter = count().next
 
 
-class OrderedProperty(object):
+class OrderedProperty:
 
     def __init__(self, *args, **kws):
         self._creation_counter = next_counter()

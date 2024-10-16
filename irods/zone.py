@@ -1,7 +1,7 @@
 from irods.models import Zone
 
 
-class iRODSZone(object):
+class iRODSZone:
 
     def __init__(self, manager, result=None):
         """Construct an iRODSZone object."""

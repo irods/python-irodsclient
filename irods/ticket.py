@@ -28,7 +28,7 @@ def get_epoch_seconds (utc_timestamp):
         raise # final try at conversion, so a failure is an error
 
 
-class Ticket(object):
+class Ticket:
     def __init__(self, session,  ticket = '', result = None, allow_punctuation = False):
         self._session = session
         try:

@@ -10,7 +10,7 @@ def _first_char( *Strings ):
         if s: return s[0]
     return ''
 
-class iRODSCollection(object):
+class iRODSCollection:
 
     class AbsolutePathRequired(Exception):
         """Exception raised by iRODSCollection.normalize_path.

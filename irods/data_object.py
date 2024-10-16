@@ -24,7 +24,7 @@ def irods_basename(path):
     return path.rsplit('/', 1)[1]
 
 
-class iRODSReplica(object):
+class iRODSReplica:
 
     def __init__(self, number, status, resource_name, path, resc_hier, **kwargs):
         self.number = number
@@ -44,7 +44,7 @@ class iRODSReplica(object):
         )
 
 
-class iRODSDataObject(object):
+class iRODSDataObject:
 
     def __init__(self, manager, parent=None, results=None):
         self.manager = manager

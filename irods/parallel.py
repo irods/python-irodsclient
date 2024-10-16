@@ -24,7 +24,7 @@ logger.addHandler( _nullh )
 MINIMUM_SERVER_VERSION = (4,2,9)
 
 
-class deferred_call(object):
+class deferred_call:
 
     """
     A callable object that stores a function to be called later, along
@@ -55,7 +55,7 @@ verboseConnection = False
 
 class BadCallbackTarget(TypeError): pass
 
-class AsyncNotify (object):
+class AsyncNotify:
 
     """A type returned when the PUT or GET operation passed includes NONBLOCKING.
        If enabled, the callback function (or callable object) will be triggered
@@ -149,7 +149,7 @@ class AsyncNotify (object):
     def futures_done(self): return dict(self._futures_done)
 
 
-class Oper(object):
+class Oper:
 
     """A custom enum-type class with utility methods.
 

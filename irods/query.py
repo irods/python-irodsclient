@@ -261,7 +261,7 @@ class Query:
 #         pass
 
 
-class SpecificQuery(object):
+class SpecificQuery:
 
     def __init__(self, sess, sql=None, alias=None, columns=None, args=None):
         if not sql and not alias:

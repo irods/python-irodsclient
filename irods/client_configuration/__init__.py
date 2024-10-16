@@ -14,7 +14,7 @@ from .. import DEFAULT_CONFIG_PATH
 
 logger = logging.Logger(__name__)
 
-class iRODSConfiguration(object):
+class iRODSConfiguration:
     __slots__ = ()
 
 def getter(category, setting):

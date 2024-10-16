@@ -6,7 +6,7 @@ _Not_Defined = ()
 
 class Bad_password_change_parameter(Exception): pass
 
-class iRODSUser(object):
+class iRODSUser:
 
     def remove_quota(self, resource = 'total'):
         self.manager.remove_quota(self.name, resource = resource)
@@ -70,7 +70,7 @@ class iRODSUser(object):
         return self.manager.temp_password_for_user(self.name)
 
 
-class iRODSGroup(object):
+class iRODSGroup:
 
     type = "rodsgroup"
 

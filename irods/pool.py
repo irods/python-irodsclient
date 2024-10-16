@@ -28,7 +28,7 @@ def _adjust_timeout_to_pool_default(conn):
         return
     conn.socket.settimeout(desired_value)
 
-class Pool(object):
+class Pool:
 
     def __init__(self, account, application_name='', connection_refresh_time=-1, session = None):
         '''

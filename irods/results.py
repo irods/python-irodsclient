@@ -1,7 +1,7 @@
 from prettytable import PrettyTable
 from irods.models import ModelBase
 
-class ResultSet(object):
+class ResultSet:
 
     def __init__(self, raw):
         self.length = raw.rowCnt

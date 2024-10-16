@@ -12,7 +12,7 @@ class RemoveRuleMessage(Message):
         super(RemoveRuleMessage,self).__init__()
         self.ruleExecId = str(id_)
 
-class Rule(object):
+class Rule:
     def __init__(self, session, rule_file=None, body='', params=None, output='', instance_name = None, irods_3_literal_style = False):
         """
         Initialize a rule object.
