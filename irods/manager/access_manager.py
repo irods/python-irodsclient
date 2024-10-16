@@ -136,7 +136,7 @@ class AccessManager(Manager):
         acl = acl.copy(decanonicalize = True)
         message_body = ModAclRequest(
             recursiveFlag=int(recursive),
-            accessLevel='{prefix}{access_name}'.format(prefix=prefix, **vars(acl)),
+            accessLevel=f'{prefix}{acl.access_name}',
             userName=userName_,
             zone=zone_,
             path=acl.path

@@ -61,7 +61,7 @@ class Rule:
                 conn.send(request)
                 response = conn.recv()
                 if response.int_info != 0:
-                    raise RuntimeError("Error removing rule {id_}".format(**locals()))
+                    raise RuntimeError(f"Error removing rule {id_}")
 
     def load(self, rule_file, encoding = 'utf-8'):
         """Load rule code with rule-file (*.r) semantics.

@@ -61,7 +61,7 @@ class iRODSUser:
         self.manager.modify(self.name, *args, **kwargs)
 
     def __repr__(self):
-        return "<iRODSUser {id} {name} {type} {zone}>".format(**vars(self))
+        return f"<iRODSUser {self.id} {self.name} {self.type} {self.zone}>"
 
     def remove(self):
         self.manager.remove(self.name, self.zone, _object = self)
@@ -88,7 +88,7 @@ class iRODSGroup:
         self._meta = None
 
     def __repr__(self):
-        return "<iRODSGroup {id} {name}>".format(**vars(self))
+        return f"<iRODSGroup {self.id} {self.name}>"
 
     def remove(self):
         self.manager.remove(self.name, _object = self)

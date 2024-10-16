@@ -78,7 +78,7 @@ class iRODSDataObject:
 
 
     def __repr__(self):
-        return "<iRODSDataObject {id} {name}>".format(**vars(self))
+        return f"<iRODSDataObject {self.id} {self.name}>"
 
     @property
     def metadata(self):

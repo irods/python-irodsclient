@@ -75,7 +75,7 @@ class UserManager(Manager):
             "add",
             "user",
             user_name if not user_zone or user_zone == self.sess.zone \
-                      else "{}#{}".format(user_name,user_zone),
+                      else f"{user_name}#{user_zone}",
             user_type,
             user_zone,
             auth_str
@@ -188,8 +188,8 @@ class UserManager(Manager):
                     with open(auth_file) as f:
                         stored_pw = obf.decode(f.read())
                     if stored_pw != old_value:
-                        message = "Not changing contents of '{}' - "\
-                                  "stored password is non-native or false match to old password".format(auth_file)
+                        message = f"Not changing contents of '{auth_file}' - "\
+                                  "stored password is non-native or false match to old password"
                         raise UserManager.EnvStoredPasswordNotEdited(message)
                     with open(auth_file,'w') as f:
                         f.write(obf.encode(new_value))

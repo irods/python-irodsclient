@@ -88,7 +88,7 @@ class Connection:
                 auth_type = None
 
         if not auth_type:
-            msg = "Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}, auth_module = {auth_module!r}, ".format(**locals())
+            msg = f"Authentication failed: scheme = {scheme!r}, auth_type = {auth_type!r}, auth_module = {auth_module!r}, "
             raise ValueError(msg)
 
         self.create_time = datetime.datetime.now()
