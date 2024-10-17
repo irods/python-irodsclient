@@ -116,11 +116,6 @@ class TestDataObjOps(unittest.TestCase):
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
 
-    @staticmethod
-    def In_Memory_Stream(always_unicode = False):
-        return io.StringIO() if sys.version_info >= (3,) or always_unicode \
-            else io.BytesIO()
-
 
     @contextlib.contextmanager
     def create_resc_hierarchy (self, Root, Leaf = None):
@@ -329,8 +324,8 @@ class TestDataObjOps(unittest.TestCase):
             options = { kw.DEST_RESC_NAME_KW:Root,
                         kw.RESC_NAME_KW:Root }
 
-            PUT_LOG = self.In_Memory_Stream(always_unicode = True)
-            GET_LOG = self.In_Memory_Stream(always_unicode = True)
+            PUT_LOG = io.StringIO()
+            GET_LOG = io.StringIO()
             NumThreadsRegex = re.compile('^num_threads\s*=\s*(\d+)',re.MULTILINE)
 
             try:
@@ -842,7 +837,7 @@ class TestDataObjOps(unittest.TestCase):
                     data_ctx['initialize']()
                     sess = data_ctx['session']
                     remote_name = data_ctx['path']
-                    PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+                    PUT_LOG = io.StringIO()
                     with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                                logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG),\
                          helpers.enableLogging(logging.getLogger('irods.parallel'),
@@ -872,7 +867,7 @@ class TestDataObjOps(unittest.TestCase):
                         data_ctx_get = next(generator)
                         data_ctx_get['initialize']()
                         sess = data_ctx_get['session']
-                    GET_LOG = self.In_Memory_Stream(always_unicode = True)
+                    GET_LOG = io.StringIO()
                     with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                                logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG),\
                          helpers.enableLogging(logging.getLogger('irods.parallel'),
@@ -2181,7 +2176,7 @@ class TestDataObjOps(unittest.TestCase):
         name = 'redirect_happens_' + unique_name (my_function_name(), datetime.now())
         data_path = '{self.coll_path}/{name}'.format(**locals())
         try:
-            PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+            PUT_LOG = io.StringIO()
             with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                        logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG):
                 with self.sess.data_objects.open(data_path,'w',**open_opts):
