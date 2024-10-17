@@ -544,7 +544,7 @@ class TestMeta(unittest.TestCase):
                 meta = d.metadata
                 avu = iRODSMeta('no_ts','val',units())
                 meta.set(avu)
-                self.assertEqual((None, None),		# Assert no timestamps are stored.
+                self.assertEqual((None, None),  # Assert no timestamps are stored.
                                  self.check_timestamps(meta, key = avu.name))
 
                 # -- Test metadata access with timestamps
@@ -556,11 +556,11 @@ class TestMeta(unittest.TestCase):
                 now = datetime.datetime.utcnow()
                 time.sleep(1.5)
                 avu_use_ts.units = units()
-                meta_ts.set(avu_use_ts)			# Set an AVU with modified units.
+                meta_ts.set(avu_use_ts)         # Set an AVU with modified units.
 
                 (create, modify) = self.check_timestamps(meta_ts, key = avu_use_ts.name)
 
-                self.assertLess(create, now)		#  Ensure timestamps are in proper order.
+                self.assertLess(create, now)    #  Ensure timestamps are in proper order.
                 self.assertLess(now, modify)
             finally:
                 if d: d.unlink(force = True)
