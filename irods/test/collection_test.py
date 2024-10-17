@@ -168,7 +168,7 @@ class TestCollection(unittest.TestCase):
 
 
     def test_repr_coll(self):
-        coll_name = self.test_coll.name.encode('utf-8')
+        coll_name = self.test_coll.name
         coll_id = self.test_coll.id
 
         self.assertEqual(

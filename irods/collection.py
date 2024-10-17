@@ -107,4 +107,4 @@ class iRODSCollection:
         return irods.path.iRODSPath(*paths, absolute = absolute)
 
     def __repr__(self):
-        return "<iRODSCollection {id} {name}>".format(id = self.id, name = self.name.encode('utf-8'))
+        return f"<iRODSCollection {self.id} {self.name}>"
