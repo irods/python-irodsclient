@@ -1,6 +1,4 @@
-import six
-
-class iRODSMeta(object):
+class iRODSMeta:
 
     def __init__(self, name, value, units=None, avu_id=None, create_time=None, modify_time=None):
         self.avu_id = avu_id
@@ -74,7 +72,7 @@ class AVUOperation(dict):
 
 import copy
 
-class iRODSMetaCollection(object):
+class iRODSMetaCollection:
 
     def __call__(self, admin = False, timestamps = False, **opts):
         x = copy.copy(self)
@@ -95,12 +93,8 @@ class iRODSMetaCollection(object):
         """
         Returns a list of iRODSMeta associated with a given key
         """
-        if six.PY2:
-            if isinstance(key, unicode):
-                key = key.encode('utf8')
-        else:
-            if isinstance(key, bytes):
-                key = key.decode('utf8')
+        if isinstance(key, bytes):
+            key = key.decode('utf8')
         if not isinstance(key, str):
             raise TypeError
         return [m for m in self._meta if m.name == key]

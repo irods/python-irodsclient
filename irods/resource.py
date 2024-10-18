@@ -1,10 +1,8 @@
-from __future__ import absolute_import
 from irods.models import Resource
 from irods.meta import iRODSMetaCollection
-import six
 
 
-class iRODSResource(object):
+class iRODSResource:
 
     def __init__(self, manager, result=None):
         self._hierarchy_string = ''
@@ -31,7 +29,7 @@ class iRODSResource(object):
         '''
         self.manager = manager
         if result:
-            for attr, value in six.iteritems(Resource.__dict__):
+            for attr, value in Resource.__dict__.items():
                 if not attr.startswith('_'):
                     try:
                         setattr(self, attr, result[value])

@@ -1,6 +1,5 @@
 #! /usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
+
 import os
 import sys
 import unittest
@@ -43,7 +42,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
 
     @staticmethod
     def irods_homedir(sess, path_only = False):
-        path = '/{0.zone}/home/{0.username}'.format(sess)
+        path = f"/{sess.zone}/home/{sess.username}"
         if path_only:
             return path
         return sess.collections.get(path)
@@ -313,7 +312,7 @@ class TestTicketOps(unittest.TestCase):
 
         # Create test collection
 
-        self.coll_path = '/{}/home/{}/ticket_test_dir'.format(admin.zone, admin.username)
+        self.coll_path = f'/{admin.zone}/home/{admin.username}/ticket_test_dir'
         self.coll = helpers.make_collection(admin, self.coll_path)
 
         # Create anonymous test user
@@ -327,7 +326,7 @@ class TestTicketOps(unittest.TestCase):
         # make new data object in the test collection with some initialized content
 
         self.INITIALIZED_DATA = b'1'*16
-        self.data_path = '{self.coll_path}/ticketed_data'.format(**locals())
+        self.data_path = f'{self.coll_path}/ticketed_data'
         helpers.make_object (admin, self.data_path, content = self.INITIALIZED_DATA)
 
         self.MODIFIED_DATA = b'2'*16

@@ -1,6 +1,6 @@
 from irods import derived_auth_filename
 
-class iRODSAccount(object):
+class iRODSAccount:
 
     @property
     def derived_auth_file(self):

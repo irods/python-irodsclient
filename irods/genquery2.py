@@ -5,7 +5,7 @@ from irods.exception import OperationNotSupported
 from irods.message import GenQuery2Request, STR_PI, iRODSMessage
 
 
-class GenQuery2(object):
+class GenQuery2:
     """Interface to the GenQuery2 API
 
        This class provides an interface to the GenQuery2 API, an experimental

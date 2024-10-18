@@ -1,3 +1,12 @@
+import sys
+
+minimum_compatible_python = (3,6)
+
+if sys.version_info < minimum_compatible_python:
+    to_dotted_string = lambda version_tuple: '.'.join(str(_) for _ in version_tuple)
+    version_message = "This library is only supported on Python {} and above.".format(to_dotted_string(minimum_compatible_python))
+    raise RuntimeError(version_message)
+
 from .version import __version__, version_as_tuple, version_as_string
 
 import logging

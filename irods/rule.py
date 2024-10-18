@@ -1,10 +1,8 @@
-from __future__ import absolute_import
 from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
 from irods.api_number import api_number
 import irods.exception as ex
 from io import open as io_open
 from irods.message import Message, StringProperty
-import six
 
 class RemoveRuleMessage(Message):
     #define RULE_EXEC_DEL_INP_PI "str ruleExecId[NAME_LEN];"
@@ -14,7 +12,7 @@ class RemoveRuleMessage(Message):
         super(RemoveRuleMessage,self).__init__()
         self.ruleExecId = str(id_)
 
-class Rule(object):
+class Rule:
     def __init__(self, session, rule_file=None, body='', params=None, output='', instance_name = None, irods_3_literal_style = False):
         """
         Initialize a rule object.
@@ -63,7 +61,7 @@ class Rule(object):
                 conn.send(request)
                 response = conn.recv()
                 if response.int_info != 0:
-                    raise RuntimeError("Error removing rule {id_}".format(**locals()))
+                    raise RuntimeError(f"Error removing rule {id_}")
 
     def load(self, rule_file, encoding = 'utf-8'):
         """Load rule code with rule-file (*.r) semantics.
@@ -87,7 +85,7 @@ class Rule(object):
         self.body = '@external\n'
 
 
-        with (io_open(rule_file, encoding = encoding) if isinstance(rule_file,six.string_types) else rule_file
+        with (io_open(rule_file, encoding = encoding) if isinstance(rule_file,str) else rule_file
         ) as f:
 
             # parse rule file line-by-line

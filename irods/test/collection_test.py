@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from __future__ import absolute_import
+
 from datetime import datetime
 import os
 import sys
@@ -12,7 +12,6 @@ from irods.exception import CollectionDoesNotExist
 from irods.models import Collection, DataObject
 import irods.test.helpers as helpers
 import irods.keywords as kw
-from six.moves import range
 from irods.test.helpers import my_function_name, unique_name
 from irods.collection import iRODSCollection
 
@@ -169,7 +168,7 @@ class TestCollection(unittest.TestCase):
 
 
     def test_repr_coll(self):
-        coll_name = self.test_coll.name.encode('utf-8')
+        coll_name = self.test_coll.name
         coll_id = self.test_coll.id
 
         self.assertEqual(

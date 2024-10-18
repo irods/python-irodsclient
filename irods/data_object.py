@@ -1,8 +1,6 @@
-from __future__ import absolute_import
 import io
 import sys
 import logging
-import six
 import os
 import ast
 
@@ -26,7 +24,7 @@ def irods_basename(path):
     return path.rsplit('/', 1)[1]
 
 
-class iRODSReplica(object):
+class iRODSReplica:
 
     def __init__(self, number, status, resource_name, path, resc_hier, **kwargs):
         self.number = number
@@ -46,13 +44,13 @@ class iRODSReplica(object):
         )
 
 
-class iRODSDataObject(object):
+class iRODSDataObject:
 
     def __init__(self, manager, parent=None, results=None):
         self.manager = manager
         if parent and results:
             self.collection = parent
-            for attr, value in six.iteritems(DataObject.__dict__):
+            for attr, value in DataObject.__dict__.items():
                 if not attr.startswith('_'):
                     try:
                         setattr(self, attr, results[0][value])
@@ -80,7 +78,7 @@ class iRODSDataObject(object):
 
 
     def __repr__(self):
-        return "<iRODSDataObject {id} {name}>".format(**vars(self))
+        return f"<iRODSDataObject {self.id} {self.name}>"
 
     @property
     def metadata(self):

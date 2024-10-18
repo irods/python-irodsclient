@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from __future__ import absolute_import
+
 from datetime import datetime
 import base64
 import concurrent.futures
@@ -13,7 +13,6 @@ import logging
 import os
 import random
 import re
-import six
 import socket
 import stat
 import string
@@ -116,11 +115,6 @@ class TestDataObjOps(unittest.TestCase):
         '''
         self.coll.remove(recurse=True, force=True)
         self.sess.cleanup()
-
-    @staticmethod
-    def In_Memory_Stream(always_unicode = False):
-        return io.StringIO() if sys.version_info >= (3,) or always_unicode \
-            else io.BytesIO()
 
 
     @contextlib.contextmanager
@@ -330,9 +324,9 @@ class TestDataObjOps(unittest.TestCase):
             options = { kw.DEST_RESC_NAME_KW:Root,
                         kw.RESC_NAME_KW:Root }
 
-            PUT_LOG = self.In_Memory_Stream(always_unicode = True)
-            GET_LOG = self.In_Memory_Stream(always_unicode = True)
-            NumThreadsRegex = re.compile(u'^num_threads\s*=\s*(\d+)',re.MULTILINE)
+            PUT_LOG = io.StringIO()
+            GET_LOG = io.StringIO()
+            NumThreadsRegex = re.compile('^num_threads\s*=\s*(\d+)',re.MULTILINE)
 
             try:
                 logger = logging.getLogger('irods.parallel')
@@ -843,7 +837,7 @@ class TestDataObjOps(unittest.TestCase):
                     data_ctx['initialize']()
                     sess = data_ctx['session']
                     remote_name = data_ctx['path']
-                    PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+                    PUT_LOG = io.StringIO()
                     with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                                logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG),\
                          helpers.enableLogging(logging.getLogger('irods.parallel'),
@@ -854,11 +848,11 @@ class TestDataObjOps(unittest.TestCase):
                     def assert_expected_redirection_logging(BUF):
                         nthr = 0
                         search_text = BUF.getvalue()
-                        find_iterator = itertools.chain( re.finditer(u'redirect_to_host = (\S+)', search_text),
-                                                         re.finditer(u'target_host = (\S+)', search_text) )
+                        find_iterator = itertools.chain( re.finditer('redirect_to_host = (\S+)', search_text),
+                                                         re.finditer('target_host = (\S+)', search_text) )
                         for match in find_iterator:
                             nthr += 1
-                            self.assertEqual(match.group(1), u'localhost')
+                            self.assertEqual(match.group(1), 'localhost')
                         occur_threshold = (1 if len(content) <= 32*MEBI else 2)
                         self.assertGreaterEqual(nthr, occur_threshold)
                     assert_expected_redirection_logging(PUT_LOG)
@@ -873,7 +867,7 @@ class TestDataObjOps(unittest.TestCase):
                         data_ctx_get = next(generator)
                         data_ctx_get['initialize']()
                         sess = data_ctx_get['session']
-                    GET_LOG = self.In_Memory_Stream(always_unicode = True)
+                    GET_LOG = io.StringIO()
                     with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                                logging.StreamHandler, (GET_LOG,), level_ = logging.DEBUG),\
                          helpers.enableLogging(logging.getLogger('irods.parallel'),
@@ -1063,7 +1057,7 @@ class TestDataObjOps(unittest.TestCase):
         filename = 'test_open_file_with_options.txt'
         file_path = '/tmp/{filename}'.format(**locals())
         obj_path = '{collection}/{filename}'.format(**locals())
-        contents = u"blah blah " * 10000
+        contents = "blah blah " * 10000
         checksum = base64.b64encode(hashlib.sha256(contents.encode('utf-8')).digest()).decode()
 
         objs = self.sess.data_objects
@@ -1223,7 +1217,7 @@ class TestDataObjOps(unittest.TestCase):
             ufs_resources = []
 
             # make test file
-            obj_content = u'foobar'
+            obj_content = 'foobar'
             checksum = base64.b64encode(hashlib.sha256(obj_content.encode('utf-8')).digest()).decode()
             with open(test_file, 'w') as f:
                 f.write(obj_content)
@@ -1251,7 +1245,7 @@ class TestDataObjOps(unittest.TestCase):
                 self.assertEqual(replica.checksum, 'sha2:{}'.format(checksum))
 
             # now repave test file
-            obj_content = u'bar'
+            obj_content = 'bar'
             checksum = base64.b64encode(hashlib.sha256(obj_content.encode('utf-8')).digest()).decode()
             with open(test_file, 'w') as f:
                 f.write(obj_content)
@@ -2107,7 +2101,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_append_mode_will_append_to_data_object__issue_495(self):
         append_string = b'to_be_written'.lower()
-        reverse_bytes = lambda s: ''.join(reversed(s)) if six.PY2 else bytes(reversed(s))
+        reverse_bytes = lambda s: bytes(reversed(s))
         session, data = (self.sess, self.sess.data_objects)
         testfile = '{}/issue_495'.format(helpers.home_collection(session))
         # Make sure data object doesn't exist.
@@ -2182,7 +2176,7 @@ class TestDataObjOps(unittest.TestCase):
         name = 'redirect_happens_' + unique_name (my_function_name(), datetime.now())
         data_path = '{self.coll_path}/{name}'.format(**locals())
         try:
-            PUT_LOG = self.In_Memory_Stream(always_unicode = True)
+            PUT_LOG = io.StringIO()
             with helpers.enableLogging(logging.getLogger('irods.manager.data_object_manager'),
                                        logging.StreamHandler, (PUT_LOG,), level_ = logging.DEBUG):
                 with self.sess.data_objects.open(data_path,'w',**open_opts):
@@ -2193,7 +2187,6 @@ class TestDataObjOps(unittest.TestCase):
             if self.sess.data_objects.exists(data_path):
                 self.sess.data_objects.unlink(data_path, force = True)
 
-    @unittest.skipIf(six.PY2, "Python2 won't destruct an out-of-scope iRODSSession due to lazy GC ref-cycle detection.")
     def test_client_redirect_lets_go_of_connections__issue_562(self):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
         # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource
