@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-from __future__ import absolute_import
+
 import os
-import six
 import sys
 import tempfile
 import unittest
@@ -25,7 +23,6 @@ from irods.rule import Rule
 from irods import MAX_SQL_ROWS
 from irods.test.helpers import irods_shared_reg_resc_vault
 import irods.test.helpers as helpers
-from six.moves import range as py3_range
 import irods.keywords as kw
 
 IRODS_STATEMENT_TABLE_SIZE = 50
@@ -601,32 +598,9 @@ class TestQuery(unittest.TestCase):
             return (dir_ , register_opts)
 
 
-    @unittest.skipIf(six.PY3, 'Test is for python2 only')
-    def test_query_for_data_object_with_utf8_name_python2(self):
-        reg_info = self.common_dir_or_vault_info()
-        if not reg_info:
-            self.skipTest('server is non-localhost and no common path exists for object registration')
-        (dir_,resc_option) = reg_info
-        filename_prefix = '_prefix_ǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸ'
-        self.assertEqual(self.FILENAME_PREFIX.encode('utf-8'), filename_prefix)
-        _,test_file = tempfile.mkstemp(dir=dir_,prefix=filename_prefix)
-        obj_path = os.path.join(self.coll.path, os.path.basename(test_file))
-        results = None
-        try:
-            self.sess.data_objects.register(test_file, obj_path, **resc_option)
-            results = self.sess.query(DataObject, Collection.name).filter(DataObject.path == test_file).first()
-            result_logical_path = os.path.join(results[Collection.name], results[DataObject.name])
-            result_physical_path = results[DataObject.path]
-            self.assertEqual(result_logical_path, obj_path)
-            self.assertEqual(result_physical_path, test_file)
-        finally:
-            if results: self.sess.data_objects.unregister(obj_path)
-            os.remove(test_file)
-
     # view/change this line in text editors under own risk:
-    FILENAME_PREFIX = u'_prefix_ǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸ' 
+    FILENAME_PREFIX = '_prefix_ǠǡǢǣǤǥǦǧǨǩǪǫǬǭǮǯǰǱǲǳǴǵǶǷǸ'
 
-    @unittest.skipIf(six.PY2, 'Test is for python3 only')
     def test_query_for_data_object_with_utf8_name_python3(self):
         reg_info = self.common_dir_or_vault_info()
         if not reg_info:
@@ -637,9 +611,9 @@ class TestQuery(unittest.TestCase):
             encoded_file_path = file_path.encode('utf-8')
             return os.open(encoded_file_path,os.O_CREAT|os.O_RDWR,mode=open_mode), encoded_file_path
         fd = None
-        filename_prefix = u'_prefix_'\
-            u'\u01e0\u01e1\u01e2\u01e3\u01e4\u01e5\u01e6\u01e7\u01e8\u01e9\u01ea\u01eb\u01ec\u01ed\u01ee\u01ef'\
-            u'\u01f0\u01f1\u01f2\u01f3\u01f4\u01f5\u01f6\u01f7\u01f8'  # make more visible/changeable in VIM
+        filename_prefix = '_prefix_'\
+            '\u01e0\u01e1\u01e2\u01e3\u01e4\u01e5\u01e6\u01e7\u01e8\u01e9\u01ea\u01eb\u01ec\u01ed\u01ee\u01ef'\
+            '\u01f0\u01f1\u01f2\u01f3\u01f4\u01f5\u01f6\u01f7\u01f8'  # make more visible/changeable in VIM
         self.assertEqual(self.FILENAME_PREFIX, filename_prefix)
         (fd,encoded_test_file) = tempfile.mkstemp(dir = dir_.encode('utf-8'),prefix=filename_prefix.encode('utf-8')) \
             if sys.version_info >= (3,5) \
@@ -687,7 +661,7 @@ class TestQuery(unittest.TestCase):
                 for data_obj_path in map(lambda d:d[Collection.name]+"/"+d[DataObject.name],
                                          self.session.query(*q_params).filter(Collection.name == self.test_collection.path)):
                     data_obj = self.session.data_objects.get(data_obj_path)
-                    for key in (str(x) for x in py3_range(self.nAVUs)):
+                    for key in (str(x) for x in range(self.nAVUs)):
                         data_obj.metadata[key] = iRODSMeta(key, "1")
 
                 # - in subsequent test searches, match on each AVU of every data object in the collection:
@@ -789,8 +763,8 @@ class TestQuery(unittest.TestCase):
             Rule(self.sess).remove_by_id( results[0][RuleExec.id] )
 
     def test_utf8_equality_in_query__issue_442(self):
-        name = u'prefix-\u1000-suffix'
-        self.sess.data_objects.create(u'{}/{}'.format(self.coll_path, name))
+        name = 'prefix-\u1000-suffix'
+        self.sess.data_objects.create('{}/{}'.format(self.coll_path, name))
         query = self.sess.query(DataObject).filter( DataObject.name == name.encode('utf8'),
                                                     DataObject.collection_id == self.coll.id)
         self.assertEqual(1, len(list(query)))

@@ -1,4 +1,3 @@
-from __future__ import print_function
 __all__ = [ 'pam_password', 'native' ]
 
 AUTH_PLUGIN_PACKAGE = 'irods.auth'

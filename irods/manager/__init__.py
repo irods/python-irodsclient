@@ -1,4 +1,4 @@
-class Manager(object):
+class Manager:
 
     __server_version = ()
 

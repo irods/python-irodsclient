@@ -1,12 +1,7 @@
-from __future__ import absolute_import
 from base64 import b64encode, b64decode
 
 from irods.message.ordered import OrderedProperty
-import six
-if six.PY3:
-    from html import escape
-else:
-    from cgi import escape
+from html import escape
 
 class MessageProperty(OrderedProperty):
 
@@ -24,7 +19,7 @@ class MessageProperty(OrderedProperty):
         values = []
         values.append("<%s>" % self.name)
         my_value = self.format(value)
-        if six.PY3 and isinstance(my_value, bytes):
+        if isinstance(my_value, bytes):
             my_value = my_value.decode("utf-8")
         values.append(my_value)
         values.append("</%s>" % self.name)
@@ -61,18 +56,11 @@ class BinaryProperty(MessageProperty):
         self.length = length
         super(BinaryProperty, self).__init__()
 
-    if six.PY2:
-        def format(self, value):
+    def format(self, value):
+        if isinstance(value, bytes):
             return b64encode(value)
-
-    else:
-        # Python 3
-        def format(self, value):
-            if isinstance(value, bytes):
-                return b64encode(value)
-            else:
-                return b64encode(value.encode())
-
+        else:
+            return b64encode(value.encode())
 
     def parse(self, value):
         val = b64decode(value)
@@ -89,24 +77,14 @@ class StringProperty(MessageProperty):
     def escape_xml_string(string):
         return escape(string, quote=False)
 
-    if six.PY2:
-        def format(self, value):
-            if isinstance(value, str) or isinstance(value, unicode):
-                return self.escape_xml_string(value)
+    def format(self, value):
+        if isinstance(value, str):
+            return self.escape_xml_string(value)
 
-            return self.escape_xml_string(str(value))
+        if isinstance(value, bytes):
+            return self.escape_xml_string(value.decode())
 
-    else:
-        # Python 3
-        def format(self, value):
-            if isinstance(value, str):
-                return self.escape_xml_string(value)
-
-            if isinstance(value, bytes):
-                return self.escape_xml_string(value.decode())
-
-            return self.escape_xml_string(str(value))
-
+        return self.escape_xml_string(str(value))
 
     def parse(self, value):
         return value

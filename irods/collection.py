@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import itertools
 import operator
 
@@ -11,7 +10,7 @@ def _first_char( *Strings ):
         if s: return s[0]
     return ''
 
-class iRODSCollection(object):
+class iRODSCollection:
 
     class AbsolutePathRequired(Exception):
         """Exception raised by iRODSCollection.normalize_path.
@@ -108,4 +107,4 @@ class iRODSCollection(object):
         return irods.path.iRODSPath(*paths, absolute = absolute)
 
     def __repr__(self):
-        return "<iRODSCollection {id} {name}>".format(id = self.id, name = self.name.encode('utf-8'))
+        return f"<iRODSCollection {self.id} {self.name}>"

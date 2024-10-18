@@ -1,3 +1,8 @@
+import sys
+if sys.version_info[0] < 3:
+    version_message = "This library is only supported on Python 3 and above."
+    raise RuntimeError(version_message)
+
 from .version import __version__, version_as_tuple, version_as_string
 
 import logging

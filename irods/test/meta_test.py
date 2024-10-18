@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 import os
 import sys
 import time
@@ -13,8 +13,6 @@ from irods.models import (DataObject, Collection, Resource, CollectionMeta)
 import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.session import iRODSSession
-from six.moves import range
-from six import PY2, PY3
 from irods.message import Bad_AVU_Field
 from irods.column import Like, NotLike
 
@@ -47,7 +45,7 @@ class TestMeta(unittest.TestCase):
 
     def test_stringtypes_in_general_query__issue_442(self):
         metadata = []
-        value = u'a\u1000b'
+        value = 'a\u1000b'
         value_encoded = value.encode('utf8')
         contains_value = {type(value_encoded):b'%%'+value_encoded+b'%%',
                           type(value):'%%'+value+'%%'}
@@ -78,22 +76,9 @@ class TestMeta(unittest.TestCase):
         # Test that application of unicode and bytestring metadata were equivalent
         self.assertEqual(metadata[0], metadata[1])
 
-    @unittest.skipIf(PY3, 'Unicode strings are normal on Python3')
-    def test_unicode_AVUs_in_Python2__issue_442(self):
-        data_object = self.sess.data_objects.get(self.obj_path)
-        meta_set = iRODSMeta(u'\u1000', u'value', u'units')
-        meta_add = iRODSMeta(*tuple(meta_set))
-        meta_add.name += u"-add"
-        data_object.metadata.set(meta_set)
-        data_object.metadata.add(meta_add)
-        for index, meta in [(m.name, m) for m in (meta_add, meta_set)]:
-            fetched = data_object.metadata[index]
-            self.assertTrue(resolves_to_identical_bytestrings(fetched, meta), 'fetched unexpected meta for %r' % index)
-
-    @unittest.skipIf(PY2, 'Byte strings are normal on Python2')
     def test_bytestring_AVUs_in_Python3__issue_442(self):
         data_object = self.sess.data_objects.get(self.obj_path)
-        meta_set = iRODSMeta(u'\u1000'.encode('utf8'),b'value',b'units')
+        meta_set = iRODSMeta('\u1000'.encode('utf8'),b'value',b'units')
         meta_add = iRODSMeta(*tuple(meta_set))
         meta_add.name += b"-add"
         data_object.metadata.set(meta_set)
@@ -260,7 +245,7 @@ class TestMeta(unittest.TestCase):
                                iRODSMeta(self.attr1, self.value1, self.unit1))
 
         # Throw in some unicode for good measure
-        attribute, value = 'attr2', u'☭⛷★⚽'
+        attribute, value = 'attr2', '☭⛷★⚽'
         self.sess.metadata.add(DataObject, self.obj_path,
                                iRODSMeta(attribute, value))
 
@@ -281,8 +266,7 @@ class TestMeta(unittest.TestCase):
         assert meta[1].units == self.unit1
 
         assert meta[2].name == attribute
-        testValue = (value if PY3 else value.encode('utf8'))
-        assert meta[2].value == testValue
+        assert meta[2].value == value
 
 
     def test_add_obj_meta_empty(self):
@@ -560,7 +544,7 @@ class TestMeta(unittest.TestCase):
                 meta = d.metadata
                 avu = iRODSMeta('no_ts','val',units())
                 meta.set(avu)
-                self.assertEqual((None, None),		# Assert no timestamps are stored.
+                self.assertEqual((None, None),  # Assert no timestamps are stored.
                                  self.check_timestamps(meta, key = avu.name))
 
                 # -- Test metadata access with timestamps
@@ -572,11 +556,11 @@ class TestMeta(unittest.TestCase):
                 now = datetime.datetime.utcnow()
                 time.sleep(1.5)
                 avu_use_ts.units = units()
-                meta_ts.set(avu_use_ts)			# Set an AVU with modified units.
+                meta_ts.set(avu_use_ts)         # Set an AVU with modified units.
 
                 (create, modify) = self.check_timestamps(meta_ts, key = avu_use_ts.name)
 
-                self.assertLess(create, now)		#  Ensure timestamps are in proper order.
+                self.assertLess(create, now)    #  Ensure timestamps are in proper order.
                 self.assertLess(now, modify)
             finally:
                 if d: d.unlink(force = True)

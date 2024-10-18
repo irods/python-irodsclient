@@ -1,11 +1,9 @@
-from __future__ import absolute_import
 import ast
 import collections
 import io
 import json
 import logging
 import os
-import six
 import weakref
 from irods.models import DataObject, Collection
 from irods.manager import Manager
@@ -176,13 +174,13 @@ class DataObjectManager(Manager):
                 else:
                     pos = obj_sz.tell()
                     size = obj_sz.seek(0,os.SEEK_END)
-                    if not isinstance(size,six.integer_types):
+                    if not isinstance(size,int):
                         size = obj_sz.tell()
                     obj_sz.seek(pos,os.SEEK_SET)
                 if isinstance(measured_obj_size,list):
                     measured_obj_size[:] = [size]
                 return size > MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE
-            elif isinstance(obj_sz,six.integer_types):
+            elif isinstance(obj_sz,int):
                 return obj_sz > MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE
             message = 'obj_sz of {obj_sz!r} is neither an integer nor a seekable object'.format(**locals())
             raise RuntimeError(message)
@@ -507,7 +505,7 @@ class DataObjectManager(Manager):
                 returned_values['session'] = directed_sess
                 conn.release()
                 conn = directed_sess.pool.get_connection()
-                logger.debug(u'redirect_to_host = %s', redirected_host)
+                logger.debug('redirect_to_host = %s', redirected_host)
 
         # Restore RESC HIER for DATA_OBJ_OPEN call
         if requested_hierarchy is not None:

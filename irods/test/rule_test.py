@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 import os
 import sys
 import time
@@ -10,7 +10,6 @@ from irods.models import DataObject
 from irods.exception import (FAIL_ACTION_ENCOUNTERED_ERR, RULE_ENGINE_ERROR, UnknowniRODSError)
 import irods.test.helpers as helpers
 from irods.rule import Rule
-import six
 from io import open as io_open
 import io
 
@@ -297,14 +296,14 @@ class TestRule(unittest.TestCase):
         session = self.sess
 
         # test metadata
-        some_string = u'foo'
-        some_other_string = u'我喜欢麦当劳'
-        err_string = u'⛔'
+        some_string = 'foo'
+        some_other_string = '我喜欢麦当劳'
+        err_string = '⛔'
 
         # make rule file
         ts = time.time()
         rule_file_path = "/tmp/test_{ts}.r".format(**locals())
-        rule = textwrap.dedent(u'''\
+        rule = textwrap.dedent('''\
                                 test {{
                                     # write stuff
                                     writeLine("stdout", *some_string);
@@ -354,7 +353,7 @@ class TestRule(unittest.TestCase):
 
     def test_rulefile_in_file_like_object_1__336(self):
 
-        rule_file_contents = textwrap.dedent(u"""\
+        rule_file_contents = textwrap.dedent("""\
         hw {
                 helloWorld(*message);
                 writeLine("stdout", "Message is: [*message] ...");

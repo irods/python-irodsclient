@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 import logging
 import threading
@@ -29,7 +28,7 @@ def _adjust_timeout_to_pool_default(conn):
         return
     conn.socket.settimeout(desired_value)
 
-class Pool(object):
+class Pool:
 
     def __init__(self, account, application_name='', connection_refresh_time=-1, session = None):
         '''
@@ -74,7 +73,8 @@ class Pool(object):
                 # created more than 'connection_refresh_time' seconds ago,
                 # release the connection (as its stale) and create a new one
                 if self.refresh_connection and (curr_time - conn.create_time).total_seconds() > self.connection_refresh_time:
-                    logger.debug('Connection with id {} was created more than {} seconds ago. Releasing the connection and creating a new one.'.format(id(conn), self.connection_refresh_time))
+                    logger.debug(f"Connection with id {id(conn)} was created more than {self.connection_refresh_time} seconds ago. "
+                                 "Releasing the connection and creating a new one.")
                     # Since calling disconnect() repeatedly is safe, we call disconnect()
                     # here explicitly, instead of relying on the garbage collector to clean
                     # up the object and call disconnect(). This makes the behavior of the
@@ -82,11 +82,11 @@ class Pool(object):
                     conn.disconnect()
                     conn = Connection(self, self.account)
                     new_conn = True
-                    logger.debug("Created new connection with id: {}".format(id(conn)))
+                    logger.debug(f"Created new connection with id: {id(conn)}")
             except KeyError:
                 conn = Connection(self, self.account)
                 new_conn = True
-                logger.debug("No connection found in idle set. Created a new connection with id: {}".format(id(conn)))
+                logger.debug(f"No connection found in idle set. Created a new connection with id: {id(conn)}")
 
             self.active.add(conn)
 
@@ -95,15 +95,15 @@ class Pool(object):
                 Ticket._lowlevel_api_request(conn, "session", sess.ticket__)
                 sess.ticket_applied[conn] = True
 
-            logger.debug("Adding connection with id {} to active set".format(id(conn)))
+            logger.debug(f"Adding connection with id {id(conn)} to active set")
 
             # If the connection we're about to make active was cached, it already has a socket object internal to it,
             # so we potentially have to modify it to have the desired timeout.
             if not new_conn:
                 _adjust_timeout_to_pool_default(conn)
 
-        logger.debug('num active: {}'.format(len(self.active)))
-        logger.debug('num idle: {}'.format(len(self.idle)))
+        logger.debug(f'num active: {len(self.active)}')
+        logger.debug(f'num idle: {len(self.idle)}')
 
         return conn
 
@@ -111,16 +111,16 @@ class Pool(object):
         with self._lock:
             if conn in self.active:
                 self.active.remove(conn)
-                logger.debug("Removed connection with id: {} from active set".format(id(conn)))
+                logger.debug(f"Removed connection with id: {id(conn)} from active set")
                 if not destroy:
                     # If 'refresh_connection' flag is True, update connection's 'last_used_time'
                     if self.refresh_connection:
                         conn.last_used_time = datetime.datetime.now()
                     self.idle.add(conn)
-                    logger.debug("Added connection with id: {} to idle set".format(id(conn)))
+                    logger.debug(f"Added connection with id: {id(conn)} to idle set")
             elif conn in self.idle and destroy:
-                logger.debug("Destroyed connection with id: {}".format(id(conn)))
+                logger.debug(f"Destroying connection with id: {id(conn)}")
                 self.idle.remove(conn)
-        logger.debug('num active: {}'.format(len(self.active)))
-        logger.debug('num idle: {}'.format(len(self.idle)))
+        logger.debug(f'num active: {len(self.active)}')
+        logger.debug(f'num idle: {len(self.idle)}')
 

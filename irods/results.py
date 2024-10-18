@@ -1,18 +1,7 @@
-from __future__ import absolute_import
 from prettytable import PrettyTable
-
 from irods.models import ModelBase
-from six.moves import range
-from six import PY3
 
-
-try:
-    unicode         # Python 2
-except NameError:
-    unicode = str
-
-
-class ResultSet(object):
+class ResultSet:
 
     def __init__(self, raw):
         self.length = raw.rowCnt
@@ -48,10 +37,7 @@ class ResultSet(object):
         except (TypeError, ValueError):
             return (col, value)
 
-    _str_encode = staticmethod(lambda x:x.encode('utf-8') if type(x) is unicode else x)
-
-    _get_column_values = ( lambda self,index: [(col, col.value[index]) for col in self.cols]
-           ) if PY3 else ( lambda self,index: [(col, self._str_encode(col.value[index])) for col in self.cols] )
+    _get_column_values = (lambda self,index: [(col, col.value[index]) for col in self.cols]) 
 
     def _format_row(self, index):
         values = self._get_column_values(index)

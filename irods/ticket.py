@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from irods.api_number import api_number
 from irods.message import iRODSMessage, TicketAdminRequest
 from irods.models import TicketQuery
@@ -30,7 +28,7 @@ def get_epoch_seconds (utc_timestamp):
         raise # final try at conversion, so a failure is an error
 
 
-class Ticket(object):
+class Ticket:
     def __init__(self, session,  ticket = '', result = None, allow_punctuation = False):
         self._session = session
         try:

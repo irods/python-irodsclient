@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import os
 import io
 import tempfile
@@ -22,9 +20,8 @@ from irods.session import iRODSSession
 from irods.message import (iRODSMessage, IRODS_VERSION)
 from irods.password_obfuscation import encode
 from irods import env_filename_from_keyword_args
-from six.moves import range
 
-class iRODSUserLogins(object):
+class iRODSUserLogins:
     """A class which creates users and set passwords from a given dict or list of tuples of
        (username,password).  
 
@@ -186,7 +183,7 @@ def home_collection(session):
 
 def make_object(session, path, content=None, **options):
     if content is None:
-        content = u'blah'
+        content = 'blah'
 
     content = iRODSMessage.encode_unicode(content)
 
