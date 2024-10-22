@@ -28,7 +28,7 @@ class ResultSet(object):
         table = PrettyTable()
         for col in self.cols:
             table.add_column(
-                ModelBase.columns[col.attriInx].icat_key, col.value)
+                ModelBase.columns()[col.attriInx].icat_key, col.value)
         table.align = 'l'
         return table.get_string()
 
@@ -36,13 +36,13 @@ class ResultSet(object):
         table = PrettyTable()
         for col in self.cols:
             table.add_column(
-                ModelBase.columns[col.attriInx].icat_key, col.value)
+                ModelBase.columns()[col.attriInx].icat_key, col.value)
         table.align = 'l'
         return table.get_html_string(*args, **kwargs)
 
     @staticmethod
     def _format_attribute(attribute_index, value):
-        col = ModelBase.columns[attribute_index]
+        col = ModelBase.columns()[attribute_index]
         try:
             return (col, col.column_type.to_python(value))
         except (TypeError, ValueError):
@@ -94,7 +94,7 @@ class SpecificQueryResultSet(ResultSet):
                 column = self._query_columns[i]
                 result_key = column
             except TypeError:
-                column = ModelBase.columns[0] # SpecificQueryResult.value
+                column = ModelBase.columns()[0] # SpecificQueryResult.value
                 result_key = i
 
             try:
