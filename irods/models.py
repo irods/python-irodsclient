@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from irods.column import Column, Integer, String, DateTime, Keyword
-import six
 
 
 class ModelBase(type):
@@ -22,7 +21,7 @@ class ModelBase(type):
         return type.__new__(cls, name, bases, attr)
 
 
-class Model(six.with_metaclass(ModelBase, object)):
+class Model(metaclass = ModelBase):
     pass
 
 
