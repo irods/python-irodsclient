@@ -145,7 +145,7 @@ class DataObjectMeta(Model):
 
 
 class CollectionMeta(Model):
-    id = Column(String, 'COL_META_COLL_ATTR_UNITS', 613)
+    id = Column(String, 'COL_META_COLL_ATTR_ID', 613)
     name = Column(String, 'COL_META_COLL_ATTR_NAME', 610)
     value = Column(String, 'COL_META_COLL_ATTR_VALUE', 611)
     units = Column(String, 'COL_META_COLL_ATTR_UNITS', 612)
@@ -155,7 +155,7 @@ class CollectionMeta(Model):
 
 
 class ResourceMeta(Model):
-    id = Column(String, 'COL_META_RESC_ATTR_UNITS', 633)
+    id = Column(String, 'COL_META_RESC_ATTR_ID', 633)
     name = Column(String, 'COL_META_RESC_ATTR_NAME', 630)
     value = Column(String, 'COL_META_RESC_ATTR_VALUE', 631)
     units = Column(String, 'COL_META_RESC_ATTR_UNITS', 632)
@@ -277,9 +277,9 @@ class TicketQuery:
     class AllowedUsers(Model):
         """For queries concerning R_TICKET_ALLOWED_USERS."""
         ticket_id = Column(String, 'COL_TICKET_ALLOWED_USER_TICKET_ID', 2222)
-        user_name = Column(String, 'COL_TICKET_ALLOWED_USER', 2223)
+        user_name = Column(String, 'COL_TICKET_ALLOWED_USER_NAME', 2223)
 
     class AllowedGroups(Model):
         """For queries concerning R_TICKET_ALLOWED_GROUPS."""
         ticket_id = Column(String, 'COL_TICKET_ALLOWED_GROUP_TICKET_ID', 2224)
-        group_name = Column(String, 'COL_TICKET_ALLOWED_GROUP', 2225)
+        group_name = Column(String, 'COL_TICKET_ALLOWED_GROUP_NAME', 2225)
