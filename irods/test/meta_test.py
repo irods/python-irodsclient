@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import sys
 import time
 import datetime
@@ -14,6 +15,7 @@ import irods.test.helpers as helpers
 import irods.keywords as kw
 from irods.session import iRODSSession
 from irods.message import Bad_AVU_Field
+from irods.models import ModelBase
 from irods.column import Like, NotLike
 
 
@@ -35,6 +37,8 @@ def resolves_to_identical_bytestrings(avu1, avu2, key = normalize_to_bytes):
         if key(field1) != key(field2):
             return False
     return True
+
+RODS_GENQUERY_INCLUDE_FILE_PATH = '/usr/include/irods/rodsGenQuery.h'
 
 class TestMeta(unittest.TestCase):
     '''Suite of tests on metadata operations
@@ -600,6 +604,26 @@ class TestMeta(unittest.TestCase):
             self.coll.metadata.set(*args)
         with self.assertRaisesRegexp(Bad_AVU_Field,'zero-length'):
             self.coll.metadata.add(*args)
+
+    @unittest.skipUnless(os.path.isfile(RODS_GENQUERY_INCLUDE_FILE_PATH), 'need package irods-dev(el)')
+    def test_that_all_column_mappings_are_uniquely_and_properly_defined__issue_643(self):
+        column_definitions_regex = re.compile(r'\s*#\s*define\s\s*(?P<column_name>COL_\w+)\s+(?P<column_value>[0-9]+)\s*')
+
+        # extract mappings from include file
+
+        with open(RODS_GENQUERY_INCLUDE_FILE_PATH) as f:
+            include_lines = f.readlines()
+
+        server_column_defs = sorted([(match.group('column_name'),int(match.group('column_value')))
+            for match in (column_definitions_regex.match(line) for line in include_lines) if match])
+
+        # Extract all GenQuery1 name-to-number mappings from PRC model class definitions (some omit 'COL_' prefix, so allow some flexibility there.)
+        prepend_col_prefix_if_needed = lambda s: 'COL_'+s if not s.startswith('COL_') else s
+        prc_column_defs = sorted([(prepend_col_prefix_if_needed(i[1].icat_key),i[1].icat_id) for i in ModelBase.column_items])
+
+        sr = set(a for a,b in set(prc_column_defs) - set(server_column_defs))
+        allowed_outliers = {'COL_SQL_RESULT_VALUE'}
+        self.assertEqual( sr, allowed_outliers )
 
 
 if __name__ == '__main__':
