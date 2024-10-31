@@ -1,14 +1,21 @@
 from irods.column import Column, Integer, String, DateTime, Keyword
 
+
 class ModelBase(type):
-    columns = {}
+    column_items = []
+    column_dict = {}
+
+    @classmethod
+    def columns(cls):
+        if not cls.column_dict:
+            cls.column_dict = dict(cls.column_items)
+        return cls.column_dict
 
     def __new__(cls, name, bases, attr):
-        columns = [y for (x, y) in attr.items() if isinstance(y, Column)]
-        for col in columns:
-            ModelBase.columns[col.icat_id] = col
-        attr['_columns'] = columns
-        # attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
+        column_objects = [y for (x, y) in attr.items() if isinstance(y, Column)]
+        for col in column_objects:
+            ModelBase.column_items.append((col.icat_id, col))
+        attr['_columns'] = column_objects
         return type.__new__(cls, name, bases, attr)
 
 
