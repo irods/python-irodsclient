@@ -36,7 +36,13 @@ if __name__ == '__main__':
         'native': write_native_credentials_to_secrets_file
     }
 
-    if sys.argv[1] in vector:
+    if len(sys.argv) != 2:
+        print('Usage: {} AUTH_SCHEME'.format(sys.argv[0]))
+        print('  AUTH_SCHEME:')
+        for x in vector:
+            print('    {}'.format(x))
+        sys.exit(1)
+    elif sys.argv[1] in vector:
         vector[sys.argv[1]](getpass.getpass(prompt=f'{sys.argv[1]} password: '))
     else:
         print('did not recognize authentication scheme argument',file = sys.stderr)
