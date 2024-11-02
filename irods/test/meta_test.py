@@ -625,6 +625,27 @@ class TestMeta(unittest.TestCase):
         allowed_outliers = {'COL_SQL_RESULT_VALUE'}
         self.assertEqual( sr, allowed_outliers )
 
+    def test_thoroughgoing_correctness_of_genquery_result_column_mappings__issue_642(self):
+        test_coll = self.coll
+        meta_key = helpers.my_function_name()
+        meta_value = 'epoch_time'
+        meta_units = str(time.time())
+        execute_my_query = lambda: self.sess.query(CollectionMeta, Collection.name).filter(
+            Collection.name == test_coll.path,
+            CollectionMeta.name == meta_key)
+        # Make sure no iRODSMeta exists under the test key.
+        del test_coll.metadata[meta_key]
+        self.assertEqual(len(list(execute_my_query())), 0)
+        try:
+            test_coll.metadata.set(meta_key, meta_value, meta_units)
+            for column, value in execute_my_query().one().items():
+                # Prior to the #642 fix, at least one loop iteration will include an improper column mapping
+                # from the COL_META_COLL_ATTR_UNITS to the numeric column ID and will cause a test failure:
+                if column.icat_key == "COL_META_COLL_ATTR_UNITS":
+                    self.assertEqual(value, meta_units)
+        finally:
+            del test_coll.metadata[meta_key]
+
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
