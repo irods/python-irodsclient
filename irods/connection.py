@@ -11,7 +11,6 @@ from irods import MAX_NAME_LEN
 from ast import literal_eval as safe_eval
 import re
 
-PAM_PW_ESC_PATTERN = re.compile(r'([@=&;])')
 
 
 from irods.message import (
@@ -460,8 +459,7 @@ class Connection:
         import irods.client_configuration as cfg
         inline_password = (self.account.authentication_scheme == self.account._original_authentication_scheme)
         time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
-        # For certain characters in the pam password, if they need escaping with '\' then do so.
-        new_pam_password = PAM_PW_ESC_PATTERN.sub(lambda m: '\\'+m.group(1), self.account.password)
+        new_pam_password = self.account.password
         if not inline_password and cfg.legacy_auth.pam.password_for_auto_renew is not None:
             # Login using PAM password from .irodsA
             try:
@@ -476,9 +474,13 @@ class Connection:
                 # Login succeeded, so we're within the time-to-live and can return without error.
                 return
 
+        # Some characters need to be escaped for the key-value format and parser.
+        KVP_ESCAPED_CHARS = r'\;='
+        kvp_escape = lambda s:''.join((fr'\{c}' if c in KVP_ESCAPED_CHARS else c) for c in s)
+
         # Generate a new PAM password.
         ctx_user = '%s=%s' % (AUTH_USER_KEY, self.account.client_user)
-        ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, new_pam_password)
+        ctx_pwd = '%s=%s' % (AUTH_PWD_KEY, kvp_escape(new_pam_password))
         ctx_ttl = '%s=%s' % (AUTH_TTL_KEY, str(time_to_live_in_hours))
 
         ctx = ";".join([ctx_user, ctx_pwd, ctx_ttl])
@@ -487,16 +489,16 @@ class Connection:
             if getattr(self,'DISALLOWING_PAM_PLAINTEXT',True):
                 raise PlainTextPAMPasswordError
 
-        # In general authentication API, a ';' and '=' in the password would be misinterpreted due to those
-        # characters' special meaning in the context string parameter.
-        use_dedicated_pam_api = len(ctx) >= MAX_NAME_LEN or \
-                                {';','='}.intersection(set(new_pam_password))
+        use_dedicated_pam_api = (len(ctx) >= MAX_NAME_LEN) or \
+                                cfg.legacy_auth.pam.force_use_of_dedicated_pam_api
 
         if use_dedicated_pam_api:
+            method = "PamAuthRequest"
             message_body = PamAuthRequest( pamUser = self.account.client_user,
                                            pamPassword = new_pam_password,
                                            timeToLive = time_to_live_in_hours)
         else:
+            method = "PluginAuthMessage"
             message_body = PluginAuthMessage( auth_scheme_ = PAM_AUTH_SCHEME,  context_ = ctx)
 
         auth_req = iRODSMessage(
@@ -534,7 +536,7 @@ class Connection:
                 f.write(obf.encode(auth_out.result_))
                 logger.debug('new PAM pw write succeeded')
 
-        logger.info("PAM authorization validated")
+        logger.info(f"PAM authorization validated (via {method})")
 
     def read_file(self, desc, size=-1, buffer=None):
         if size < 0:
