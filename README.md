@@ -559,6 +559,13 @@ variables serving as overrides:
     - Default Value: `False`
     - Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__STORE_PASSWORD_TO_ENVIRONMENT`
 
+-   Setting: Force the use of PAM_AUTH_REQUEST_AN API for entering a new PAM password into the catalog.  This API accommodates longer passwords and avoids the step of parsing a semicolon-delimited
+    "context" parameter.
+    - Dotted Name: `legacy_auth.pam.force_use_of_dedicated_pam_api`
+    - Type: `bool`
+    - Default Value: `False`
+    - Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__FORCE_USE_OF_DEDICATED_PAM_API`
+
 -   Setting: Default choice of XML parser for all new threads.
     -   Dotted Name: `connections.xml_parser_default`
     -   Type: `str`
