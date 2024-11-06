@@ -49,7 +49,7 @@ irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD'
         log_content=$(cat $logfile)
         declare -A method=([True]=PamAuthRequest
                            [False]=PluginAuthMessage)
-         [[ $log_content =~ "PAM authorization validated (via ${method[$force_long_token_compatible_api]})" ]]
+        [[ $log_content =~ "PAM authorization validated (via ${method[$force_long_token_compatible_api]})" ]]
 
         # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
         # without an exception being raised.
