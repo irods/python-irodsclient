@@ -536,7 +536,7 @@ class Connection:
                 f.write(obf.encode(auth_out.result_))
                 logger.debug('new PAM pw write succeeded')
 
-        logger.info(f"PAM authorization validated (via {method})")
+        logger.info(f"PAM authorization validated (via %s)",method)
 
     def read_file(self, desc, size=-1, buffer=None):
         if size < 0:

@@ -34,10 +34,14 @@ teardown()
         sudo su - irods -c 'iadmin rpp alice'
         rm -f ~/.irods/.irodsA
         $PYTHON -c "import irods.client_init
-import logging
-logger = logging.getLogger('irods.connection')
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.FileHandler('$logfile'))
+import logging.config
+logging.config.dictConfig(
+{'handlers': {'file': {'class': 'logging.FileHandler',
+                       'filename': '$logfile'}},
+ 'loggers': {'irods.connection': {'handlers': ['file'],
+                                  'level': 'INFO'}},
+ 'version': 1}
+)
 irods.client_configuration.legacy_auth.pam.force_use_of_dedicated_pam_api = $force_long_token_compatible_api
 irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD')"
 
