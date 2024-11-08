@@ -5,6 +5,7 @@ import hashlib
 import os
 import ssl
 import datetime
+import errno
 import irods.auth
 import irods.password_obfuscation as obf
 from irods import MAX_NAME_LEN
@@ -325,7 +326,17 @@ class Connection:
                     self.socket = self.socket.unwrap()
                 except AttributeError:
                     pass
-                self.socket.shutdown(socket.SHUT_RDWR)
+                try:
+                    # BSD/MacOS calls to socket.shutdown() only succeed
+                    # if the socket is still open.  Linux and Windows do
+                    # not care.  So this call may fail sometimes if the
+                    # socket is already closed/disconnected by the OS.
+                    # OSError: [Errno 57] Socket is not connected
+                    self.socket.shutdown(socket.SHUT_RDWR)
+                except OSError as e:
+                    # Re-raise if this error is not the known BSD/MacOS error
+                    if e.errno != errno.ENOTCONN:
+                        raise
                 self.socket.close()
         finally:
             self._disconnected = True  # Issue 368 - because of undefined destruction order during interpreter shutdown,
