@@ -489,6 +489,11 @@ class Connection:
             if getattr(self,'DISALLOWING_PAM_PLAINTEXT',True):
                 raise PlainTextPAMPasswordError
 
+        # Normally, we use the AUTH_PLUG_REQ_AN api ( generalized to handle both PAM and GSI, as evidenced in the gsi_client_auth_request() method.)
+        # However, it has a practical limit to the number of characters in a context_ parameter (defined in packStruct as str[MAX_NAME_LEN].
+        # Whereas PAM_AUTH_REQUEST_AN is an older api and defines pamPassword as type str*, with apparently no length limit.
+        # TODO : perhaps we should always use PAM_AUTH_REQUEST_AN ??
+
         use_dedicated_pam_api = (len(ctx) >= MAX_NAME_LEN) or \
                                 cfg.legacy_auth.pam.force_use_of_dedicated_pam_api
 
