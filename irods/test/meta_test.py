@@ -646,6 +646,34 @@ class TestMeta(unittest.TestCase):
         finally:
             del test_coll.metadata[meta_key]
 
+    def test_xml_mode_addresses_odd_metadata_characters__issue_582(self):
+        # By "odd" characters we mean those not customary for printing or for inclusion in the iRODS 
+        # STANDARD_XML protocol.
+        session = self.sess
+        from irods.helpers import xml_mode
+        # Character '\x01' is unprintable and messes up the default(STANDARD_XML) parser.
+        hexvalue = "53:6b:6f:70:65:43:61:6c:58:c3:af:c2:bf:c2:bd:c3:af:c2:bf:c2:bd:23:01:32:64:31"
+        hex_list = [int(byte, 16) for byte in hexvalue.split(":")]
+        string_value = "".join([chr(byte) for byte in hex_list])
+        attr_str = "awesome"
+        hc = helpers.home_collection(session)
+        obj = session.collections.get(hc)
+        try:
+            with xml_mode('QUASI_XML'):
+                # Each of these statements would generate an xml.etree.ElementTree.ParseError
+                # if the STANDARD_XML parser were in use:
+                obj.metadata.add(attr_str, string_value)
+                self.assertEqual(1, len([_ for _ in (session.query(CollectionMeta).filter(
+                        Collection.name==hc,
+                        CollectionMeta.name==attr_str,
+                        CollectionMeta.value==string_value))
+                    ]))
+        finally:
+            with xml_mode('QUASI_XML'):
+                # This statement also would generate a ParseError if the STANDARD_XML parser
+                # in use, with the "odd" characters being present in the metadata value.
+                del obj.metadata[attr_str]
+           
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
