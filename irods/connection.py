@@ -493,8 +493,8 @@ class Connection:
         # However, it has a practical limit to the number of characters in a context_ parameter (defined in packStruct as "str[MAX_NAME_LEN]".
         # Whereas PAM_AUTH_REQUEST_AN is an older api and defines pamPassword as a "str*" entry, with apparently no length limit.
 
-        use_dedicated_pam_api = (len(ctx) >= MAX_NAME_LEN) or \
-                                cfg.legacy_auth.pam.force_use_of_dedicated_pam_api
+        use_dedicated_pam_api = cfg.legacy_auth.pam.force_use_of_dedicated_pam_api or (
+                                len(ctx) >= MAX_NAME_LEN )
 
         if use_dedicated_pam_api:
             method = "PamAuthRequest"
@@ -505,10 +505,12 @@ class Connection:
             method = "PluginAuthMessage"
             message_body = PluginAuthMessage( auth_scheme_ = PAM_AUTH_SCHEME,  context_ = ctx)
 
+        api_name = ('PAM_AUTH_REQUEST_AN' if use_dedicated_pam_api else 'AUTH_PLUG_REQ_AN')
+
         auth_req = iRODSMessage(
             msg_type='RODS_API_REQ',
             msg=message_body,
-            int_info=api_number['PAM_AUTH_REQUEST_AN' if use_dedicated_pam_api else 'AUTH_PLUG_REQ_AN']
+            int_info=api_number[api_name]
         )
 
         self.send(auth_req)
@@ -540,7 +542,7 @@ class Connection:
                 f.write(obf.encode(auth_out.result_))
                 logger.debug('new PAM pw write succeeded')
 
-        logger.info(f"PAM authorization validated (via %s)",method)
+        logger.info(f"PAM authorization validated (via %s)", api_name)
 
     def read_file(self, desc, size=-1, buffer=None):
         if size < 0:
