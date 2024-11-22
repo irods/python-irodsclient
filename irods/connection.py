@@ -497,12 +497,10 @@ class Connection:
                                 len(ctx) >= MAX_NAME_LEN )
 
         if use_dedicated_pam_api:
-            method = "PamAuthRequest"
             message_body = PamAuthRequest( pamUser = self.account.client_user,
                                            pamPassword = new_pam_password,
                                            timeToLive = time_to_live_in_hours)
         else:
-            method = "PluginAuthMessage"
             message_body = PluginAuthMessage( auth_scheme_ = PAM_AUTH_SCHEME,  context_ = ctx)
 
         api_name = ('PAM_AUTH_REQUEST_AN' if use_dedicated_pam_api else 'AUTH_PLUG_REQ_AN')
@@ -542,7 +540,7 @@ class Connection:
                 f.write(obf.encode(auth_out.result_))
                 logger.debug('new PAM pw write succeeded')
 
-        logger.info(f"PAM authorization validated (via %s)", api_name)
+        logger.info("PAM authorization validated (via %s)", api_name)
 
     def read_file(self, desc, size=-1, buffer=None):
         if size < 0:
