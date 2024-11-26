@@ -320,11 +320,10 @@ class iRODSSession:
 
     @property
     def server_version(self):
-        try:
-            reported_vsn = os.environ.get("PYTHON_IRODSCLIENT_REPORTED_SERVER_VERSION","")
-            return tuple(ast.literal_eval(reported_vsn))
-        except SyntaxError:  # environment variable was malformed, empty, or unset
-            return self.__server_version()
+        reported_vsn = os.environ.get("PYTHON_IRODSCLIENT_REPORTED_SERVER_VERSION","")
+        if reported_vsn:
+            return tuple(ast.literal_eval(reported_vsn)) 
+        return self.__server_version()
 
     def __server_version(self):
         try:
