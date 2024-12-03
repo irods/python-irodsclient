@@ -28,9 +28,6 @@ def derived_auth_filename(env_filename):
     default_irods_authentication_file = os.path.join(os.path.dirname(env_filename),'.irodsA')
     return os.environ.get('IRODS_AUTHENTICATION_FILE', default_irods_authentication_file)
 
-# This has no effect if basicConfig() was previously called.
-logging.basicConfig()
-
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 gHandler = None
