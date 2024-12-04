@@ -88,11 +88,12 @@ data_objects = DataObjects()
 class LegacyAuth(iRODSConfiguration):
     __slots__ = ('pam',)
     class Pam(iRODSConfiguration):
-        __slots__ = ('time_to_live_in_hours', 'password_for_auto_renew', 'store_password_to_environment')
+        __slots__ = ('time_to_live_in_hours', 'password_for_auto_renew', 'store_password_to_environment', 'force_use_of_dedicated_pam_api')
         def __init__(self):
             self.time_to_live_in_hours = 0 # -> We default to the server's TTL preference.
             self.password_for_auto_renew = ''
             self.store_password_to_environment = False
+            self.force_use_of_dedicated_pam_api = False
     def __init__(self):
         self.pam = self.Pam()
 
