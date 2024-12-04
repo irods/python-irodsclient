@@ -422,6 +422,7 @@ class DataObjectManager(Manager):
                    returned_values = None,    # Used to update session reference, for forging more conns to same host, in irods.parallel.io_main
                    allow_redirect = client_config.getter('data_objects','allow_redirect'), 
                    **options):
+        _buffering = options.pop('_buffering', -1)
         _raw_fd_holder =  options.get('_raw_fd_holder',[])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
         # then use the default resource in the client configuration.
@@ -527,12 +528,19 @@ class DataObjectManager(Manager):
             # Use case: auto_close has defaulted to the irods.configuration getter.
             # access entry in irods.configuration
             auto_close = auto_close()
+
+        bufopt = {}
+        if _buffering >= 0:  # originally '>' - DWM
+            bufopt['buffer_size'] = _buffering
+
         if auto_close:
-            ret_value = ManagedBufferedRandom(raw, _session = self.sess)
+            ret_value = ManagedBufferedRandom(raw, _session = self.sess, **bufopt)
         else:
-            ret_value = io.BufferedRandom(raw)
+            ret_value = io.BufferedRandom(raw, **bufopt)
+
         if 'a' in mode:
             ret_value.seek(0,io.SEEK_END)
+
         return ret_value
 
     def replica_truncate(self, path, desired_size, **options):
