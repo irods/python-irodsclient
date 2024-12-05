@@ -15,6 +15,14 @@ from irods.session import iRODSSession
 import irods.test.helpers as helpers
 
 
+def get_name_mappings(session):
+        VERSION_DEPENDENT_STRINGS = { 'MODIFY':'modify_object', 'READ':'read_object' } if self.sess.server_version >= (4,3) \
+                               else { 'MODIFY':'modify object', 'READ':'read object' }
+        return dict( [(i,i) for i in ( 'own', VERSION_DEPENDENT_STRINGS['MODIFY'], VERSION_DEPENDENT_STRINGS['READ'])] +
+                     [('write',VERSION_DEPENDENT_STRINGS['MODIFY']), ('read', VERSION_DEPENDENT_STRINGS['READ'])] )
+
+
+
 class TestAccess(unittest.TestCase):
 
     def setUp(self):
@@ -23,10 +31,8 @@ class TestAccess(unittest.TestCase):
         # Create test collection
         self.coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
-        VERSION_DEPENDENT_STRINGS = { 'MODIFY':'modify_object', 'READ':'read_object' } if self.sess.server_version >= (4,3) \
-                               else { 'MODIFY':'modify object', 'READ':'read object' }
-        self.mapping = dict( [(i,i) for i in ( 'own', VERSION_DEPENDENT_STRINGS['MODIFY'], VERSION_DEPENDENT_STRINGS['READ'])] +
-                             [('write',VERSION_DEPENDENT_STRINGS['MODIFY']), ('read', VERSION_DEPENDENT_STRINGS['READ'])] )
+
+        self.mapping = get_name_mappings(self.sess)
 
     def tearDown(self):
         '''Remove test data and close connections
