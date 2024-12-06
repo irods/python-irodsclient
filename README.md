@@ -178,7 +178,9 @@ Note, in the `pam_password` case, this involves sending the cleartext password
 to the server (SSL should thus be enabled!) and then writing the scrambled token that
 returns from the transaction.
 
-If an .irodsA file exists already, it will be overwritten.
+If an .irodsA file exists already, it will be overwritten by default; however, if these functions'
+overwrite parameter is set to `False`, an exception of type `irods.client_init.irodsA_already_exists`
+will be raised to indicate the older .irodsA file is present.
 
 Examples:
 For the `native` authentication scheme, we can use the currently set iRODS password to create .irodsA file from Python thus:
