@@ -2,6 +2,7 @@ import atexit
 import enum
 import logging
 import sys
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -13,41 +14,50 @@ class LibraryCleanupStage(enum.Enum):
     def __lt__(self, other):
         return self.value < other.value
 
-_cleanup_functions = {LibraryCleanupStage.BEFORE:[],
-                      LibraryCleanupStage.DURING:[],
-                      LibraryCleanupStage.AFTER:[]
-                     }
-initialized = False
-
-_stage_notify = {}
-
 def NOTIFY_VIA_ATTRIBUTE(func, stage):
     func.at_exit_stage = stage
 
+initialization_lock = threading.Lock()
+initialized = False
+_stage_notify = {}
+
 def _register(stage_for_execution, function, stage_notify_function = None):
-    global initialized
-    if not initialized:
-        initialized = True
-        atexit.register(_call_cleanup_functions)
+    with initialization_lock:
+        global initialized
+        if not initialized:
+            initialized = True
+            atexit.register(_call_cleanup_functions)
     array = _cleanup_functions[stage_for_execution]
     if function not in array:
         array.append(function)
         _stage_notify[function] = stage_notify_function
 
+def _reset_cleanup_functions():
+    global _cleanup_functions
+    _cleanup_functions = {LibraryCleanupStage.BEFORE:[],
+                          LibraryCleanupStage.DURING:[],
+                          LibraryCleanupStage.AFTER:[]
+                         }
+
+_reset_cleanup_functions()
+
 def _call_cleanup_functions():
     ordered_funclists = sorted((pri,fl) for (pri,fl) in _cleanup_functions.items())
+    try:
     # Run each cleanup stage.
-    for stage,function_list in ordered_funclists:
-        # Within each cleanup stage, run all registered functions last-in, first-out. (Per atexit conventions.)
-        for function in reversed(function_list):
-            # Ensure we execute all cleanup functions regardless of some of them raising exceptions.
-            try:
-                notify = _stage_notify.get(function)
-                if notify:
-                    notify(function, stage)
-                function()
-            except Exception as exc:
-                logger.warning("%r raised from %s", exc, function)
+        for stage,function_list in ordered_funclists:
+            # Within each cleanup stage, run all registered functions last-in, first-out. (Per atexit conventions.)
+            for function in reversed(function_list):
+                # Ensure we execute all cleanup functions regardless of some of them raising exceptions.
+                try:
+                    notify = _stage_notify.get(function)
+                    if notify:
+                        notify(function, stage)
+                    function()
+                except Exception as exc:
+                    logger.warning("%r raised from %s", exc, function)
+    finally:
+        _reset_cleanup_functions()
 
 # The primary interface: 'before' and 'after' are the execution order relative to the DURING stage,
 # in which the Python client cleans up its own session objects and runs the optional data object auto-close facility.
