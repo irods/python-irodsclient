@@ -51,7 +51,7 @@ def write_pam_credentials_to_secrets_file(password, overwrite = True, **kw):
     with cfg.loadlines( [dict(setting='legacy_auth.pam.password_for_auto_renew',value=None),
                          dict(setting='legacy_auth.pam.store_password_to_environment',value=False)] ):
         to_encode = s.pam_pw_negotiated
-    auth_file_path = s.pool.account.derived_auth_file
+    auth_file = s.pool.account.derived_auth_file
     if overwrite or not os.path.exists(auth_file):
         if to_encode:
             with _open_file_for_protected_contents(auth_file,'w',**kw) as irodsA:
