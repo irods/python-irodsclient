@@ -24,6 +24,7 @@ from irods.message import (iRODSMessage, STR_PI)
 from irods.exception import (NetworkException, NotImplementedInIRODSServer)
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
+from . import at_client_exit
 from . import (DEFAULT_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT)
 
 _fds = None
@@ -32,13 +33,18 @@ _sessions = None
 _sessions_lock = threading.Lock()
 
 def _cleanup_remaining_sessions():
-    for fd in list(_fds.keys()):
+    for fd in list((_fds or {}).keys()):
         if not fd.closed:
             fd.close()
         # remove refs to session objects no longer needed
         fd._iRODS_session = None
-    for ses in _sessions.copy():
+    for ses in (_sessions or []).copy():
         ses.cleanup()  # internally modifies _sessions
+
+with _sessions_lock:
+    at_client_exit._register(
+        at_client_exit.LibraryCleanupStage.DURING,
+        _cleanup_remaining_sessions)
 
 def _weakly_reference(ses):
     global _sessions, _fds
@@ -49,7 +55,6 @@ def _weakly_reference(ses):
                 if do_register:
                     _sessions = weakref.WeakKeyDictionary()
                     _fds = weakref.WeakKeyDictionary()
-                    atexit.register(_cleanup_remaining_sessions)
     finally:
         _sessions[ses] = None
 
