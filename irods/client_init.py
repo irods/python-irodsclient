@@ -9,11 +9,11 @@ import irods.password_obfuscation as obf
 import irods.helpers as h
 
 @contextlib.contextmanager
-def _open_file_for_protected_contents(file_path,*arg,**kw):
+def _open_file_for_protected_contents(file_path, *arg, **kw):
     f = old_mask = None
     try:
         old_mask = os.umask(0o77)
-        f = open(file_path,*arg,**kw)
+        f = open(file_path, *arg, **kw)
         yield f
     finally:
         if f is not None:
@@ -33,7 +33,7 @@ def write_native_credentials_to_secrets_file(password, overwrite = True, **kw):
     auth_file = derived_auth_filename(env_file)
     old_mask = os.umask(0o77)
     if overwrite or not os.path.exists(auth_file):
-        with _open_file_for_protected_contents(auth_file,'w',**kw) as irodsA:
+        with _open_file_for_protected_contents(auth_file, 'w', **kw) as irodsA:
             irodsA.write(obf.encode(password))
         return True
     return False
