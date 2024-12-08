@@ -16,10 +16,10 @@ def _open_file_for_protected_contents(file_path, *arg, **kw):
         f = open(file_path, *arg, **kw)
         yield f
     finally:
-        if f is not None:
-            f.close()
         if old_mask is not None:
             os.umask(old_mask)
+        if f is not None:
+            f.close()
 
 class irodsA_already_exists(Exception):
     pass
@@ -34,7 +34,6 @@ def write_native_credentials_to_secrets_file(password, overwrite = True, **kw):
     """
     env_file = env_filename_from_keyword_args(kw)
     auth_file = derived_auth_filename(env_file)
-    old_mask = os.umask(0o77)
     if not overwrite and os.path.exists(auth_file):
         raise irodsA_already_exists(f'Overwriting not enabled and {auth_file} already exists.')
     with _open_file_for_protected_contents(auth_file, 'w', **kw) as irodsA:
