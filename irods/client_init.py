@@ -24,47 +24,42 @@ def _open_file_for_protected_contents(file_path, *arg, **kw):
 class irodsA_already_exists(Exception):
     pass
 
+def _write_encoded_auth_value(auth_file, encode_input, overwrite):
+    if not auth_file:
+        raise RuntimeError(f'Path to irodsA ({auth_file}) is null.')
+    if not overwrite and os.path.exists(auth_file):
+        raise irodsA_already_exists(f'Overwriting not enabled and {auth_file} already exists.')
+    with _open_file_for_protected_contents(auth_file, 'w') as irodsA:
+        irodsA.write(obf.encode(encode_input))
+
 def write_native_credentials_to_secrets_file(password, overwrite = True, **kw):
     """Write the credentials to an .irodsA file that will enable logging in with native authentication
        using the given cleartext password.
 
-       If overwrite is False, an already existing .irodsA will not be overwritten.
-
-       Assuming no exceptions occur, this function returns True.
+       If overwrite is False, irodsA_already_exists may be raised if an .irodsA is found at the 
+       expected path.
     """
     env_file = env_filename_from_keyword_args(kw)
     auth_file = derived_auth_filename(env_file)
-    if not overwrite and os.path.exists(auth_file):
-        raise irodsA_already_exists(f'Overwriting not enabled and {auth_file} already exists.')
-    with _open_file_for_protected_contents(auth_file, 'w', **kw) as irodsA:
-        irodsA.write(obf.encode(password))
-    return True
+    _write_encoded_auth_value(auth_file, password, overwrite)
 
 def write_pam_credentials_to_secrets_file(password, overwrite = True, **kw):
     """Write the credentials to an .irodsA file that will enable logging in with PAM authentication
        using the given cleartext password.
 
-       If overwrite is False, an already existing .irodsA will not be overwritten.
-
-       Assuming no exceptions occur, this function returns:
-          - True if PAM credentials were written to the .irodsA file,
-          - False if the internally called PAM login function fails to produce a valid password token
-            for encode()'ing.
-    """
+       If overwrite is False, irodsA_already_exists may be raised if an .irodsA is found at the 
+       expected path.
+     """
     s = h.make_session()
     s.pool.account.password = password
     to_encode = []
     with cfg.loadlines( [dict(setting='legacy_auth.pam.password_for_auto_renew',value=None),
                          dict(setting='legacy_auth.pam.store_password_to_environment',value=False)] ):
         to_encode = s.pam_pw_negotiated
+    if not to_encode:
+        raise RuntimeError(f'Password token was not passed from server.')
     auth_file = s.pool.account.derived_auth_file
-    if not overwrite and os.path.exists(auth_file):
-        raise irodsA_already_exists(f'Overwriting not enabled and {auth_file} already exists.')
-    if to_encode:
-        with _open_file_for_protected_contents(auth_file, 'w', **kw) as irodsA:
-            irodsA.write(obf.encode(to_encode[0]))
-        return True
-    return False
+    _write_encoded_auth_value(auth_file, to_encode[0], overwrite)
 
 if __name__ == '__main__':
     vector = {
