@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 #
 # Test creation of .irodsA for iRODS pam_password authentication using the free function,
-#    irods.client_init.write_native_credentials_to_secrets_file
+#    irods.client_init.write_pam_credentials_to_secrets_file
 
 . "$BATS_TEST_DIRNAME"/test_support_functions
 PYTHON=python3
@@ -10,18 +10,26 @@ PYTHON=python3
 # Run as ubuntu user with sudo; python_irodsclient must be installed (in either ~/.local or a virtualenv)
 #
 
-@test create_irods_secrets_file {
+ALICES_OLD_PAM_PASSWD="test123"
+ALICES_NEW_PAM_PASSWD="new_pass"
 
-    rm -fr ~/.irods
-    mkdir ~/.irods
-    cat > ~/.irods/irods_environment.json <<-EOF
-	{ "irods_host":"$(hostname)",
-      "irods_port":1247,
-      "irods_user_name":"rods",
-      "irods_zone_name":"tempZone"
-    }
-	EOF
-    $PYTHON -c "import irods.client_init; irods.client_init.write_native_credentials_to_secrets_file('rods')"
+setup()
+{
+    setup_pam_login_for_alice "$ALICES_OLD_PAM_PASSWD"
+}
+
+teardown()
+{
+    finalize_pam_login_for_alice
+    test_specific_cleanup
+}
+
+@test create_secrets_file {
+
+    # Old .irodsA is already created, so we delete it and alter the pam password.
+    sudo chpasswd <<<"alice:$ALICES_NEW_PAM_PASSWD"
+    rm -f ~/.irods/.irodsA
+    $PYTHON -c "import irods.client_init; irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD')"
 
     # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
     # without an exception being raised.
@@ -34,5 +42,6 @@ print ('env_auth_scheme=%s' % ses.pool.account._original_authentication_scheme)
 "
     OUTPUT=$($PYTHON -c "$SCRIPT")
     # Assert passing value
-    [ $OUTPUT = "env_auth_scheme=native" ]
+    [ $OUTPUT = "env_auth_scheme=pam_password" ]
+
 }
