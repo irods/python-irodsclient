@@ -31,7 +31,7 @@ teardown()
     AUTH_FILE=~/.irods/.irodsA
 
     # Test assertion: No pre-existing authentication file.
-    [ ! -e $AUTH_FILE ]
+    ! [ -e $AUTH_FILE ]
 
     local SCRIPT="
 import irods.test.helpers as h
@@ -67,5 +67,5 @@ $SCRIPT")
     [ "$SECRETS_0" = "$SECRETS_1" ]
 
     # Test assertion: authentication method is pam_password
-    [[ $OUTPUT = "env_auth_scheme=pam"* ]]
+    [ $OUTPUT = "env_auth_scheme=pam_password" ]
 }

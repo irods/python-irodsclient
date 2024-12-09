@@ -31,7 +31,7 @@ teardown()
     AUTH_FILE=~/.irods/.irodsA
 
     # Test assertion: No pre-existing authentication file.
-    [ ! -e $AUTH_FILE ]
+    ! [ -e $AUTH_FILE ]
 
     local SCRIPT="
 import irods.test.helpers as h
@@ -50,6 +50,7 @@ $SCRIPT")
     SECRETS_0=$(cat $AUTH_FILE)
     STAT_0=$(stat -c%y $AUTH_FILE)
 
+#echo "$OUTPUT">/tmp/original_inv
     sleep 1.1
 
     # Second invocation.  PRC will use previously generated secrets from the auth file generated in the first invocation.
@@ -67,5 +68,17 @@ $SCRIPT")
     [ "$SECRETS_0" = "$SECRETS_1" ]
 
     # Test assertion: authentication method is pam_password
-    [[ $OUTPUT = "env_auth_scheme=pam"* ]]
+    [ $OUTPUT = "env_auth_scheme=pam_password" ]
+    LARGE_FILE=/tmp/largefile
+    dd if=/dev/zero count=150k bs=1k of=$LARGE_FILE
+    python -ic "
+from irods.helpers import *
+s=make_session()
+s.data_objects.put('$LARGE_FILE',home_collection(s))
+s.connection_timeout = 1e-5
+try:
+  s.data_objects.chksum('$LARGE_FILE')
+except Exception as e:
+  print(type(e),'was thrown')
+                "
 }
