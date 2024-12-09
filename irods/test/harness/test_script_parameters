@@ -15,9 +15,10 @@ declare -A wrappers=(
     [PRC_issue_362.bats]=./login_auth_test.sh
     [test001_pam_password_expiration.bats]=../login_auth_test.sh
     [demo.sh]=./demo_hook.sh
-    [test006.bats]=../login_auth_test.sh
+    [test002_write_native_credentials_to_secrets_file.bats]=../login_auth_test.sh
+    [test003_write_pam_credentials_to_secrets_file.bats]=../login_auth_test.sh
     [test004_prc_pam_password_internal_secrets_file_generation.bats]=../login_auth_test.sh
-
+    [test005.bats]=../login_auth_test.sh
 )
 
 # keys for Image and User refer to the basename after resolution to a wrapper if one is used
