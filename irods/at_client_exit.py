@@ -44,7 +44,7 @@ _reset_cleanup_functions()
 def _call_cleanup_functions():
     ordered_funclists = sorted((pri,fl) for (pri,fl) in _cleanup_functions.items())
     try:
-    # Run each cleanup stage.
+        # Run each cleanup stage.
         for stage,function_list in ordered_funclists:
             # Within each cleanup stage, run all registered functions last-in, first-out. (Per atexit conventions.)
             for function in reversed(function_list):
