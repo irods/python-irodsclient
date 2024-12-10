@@ -48,6 +48,23 @@ class TestCleanupFunctions(unittest.TestCase):
         self.assertEqual(b','.join([m.group() for m in re.finditer(br'(\w+)',stdout_content)]),
                          b'before,during,after2,after1')
 
+    def test_notifying_client_exit_functions_of_stage_in_which_they_are_called__issue_614(self):
+        process = subprocess.Popen([sys.executable, '-c',
+            textwrap.dedent("""
+            from irods.at_client_exit import (unique_function_invocation,
+                get_stage, LibraryCleanupStage, NOTIFY_VIA_ATTRIBUTE,
+                register_for_execution_before_prc_cleanup,
+                register_for_execution_after_prc_cleanup)
+            def before(): print(f'before:{get_stage().name}')
+            def after(): print(f'after:{get_stage().name}')
+            register_for_execution_before_prc_cleanup(unique_function_invocation(before), stage_notify_function = NOTIFY_VIA_ATTRIBUTE)
+            register_for_execution_after_prc_cleanup(unique_function_invocation(after), stage_notify_function = NOTIFY_VIA_ATTRIBUTE)
+            """)], stdout=subprocess.PIPE)
+        stdout_content, _ = process.communicate()
+        stdout_lines = stdout_content.split(b"\n")
+        self.assertIn(b"before:BEFORE", stdout_lines)
+        self.assertIn(b"after:AFTER", stdout_lines)
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))

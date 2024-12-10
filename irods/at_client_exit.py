@@ -94,17 +94,3 @@ def get_stage(n = 2):
     caller = sys._getframe(n).f_locals.get('self')
     if isinstance(caller, unique_function_invocation):
         return caller.at_exit_stage
-
-if __name__ == '__main__':
-
-    def myfunction(message='the_default_message'):
-        print(f"\n{message = }")
-        print(f"{get_stage() = }")
-
-    register_for_execution_before_prc_cleanup(unique_function_invocation(myfunction, ['#1 pre']), stage_notify_function = NOTIFY_VIA_ATTRIBUTE)
-    register_for_execution_before_prc_cleanup(unique_function_invocation(myfunction, ['#2 pre']))
-
-    register_for_execution_after_prc_cleanup(unique_function_invocation(myfunction, ['post']), stage_notify_function = NOTIFY_VIA_ATTRIBUTE)
-    register_for_execution_after_prc_cleanup(myfunction)
-
-    print('-- prepare to see more printed out during cleanup! --')
