@@ -7,6 +7,7 @@ import unittest
 import tempfile
 import shutil
 from subprocess import check_output, CalledProcessError
+from irods import client_init
 from irods import MAX_PASSWORD_LENGTH
 from irods.exception import GroupDoesNotExist, UserDoesNotExist
 from irods.meta import iRODSMetaCollection, iRODSMeta
@@ -604,6 +605,19 @@ class TestUserAndGroup(unittest.TestCase):
             if bob:
                 ses.users.remove(bob.name)
 
+    def test_we_cannot_overwrite_irodsA_without_overwrite_option_true__issue_635(self):
+        # Assert the auth_file exists and store the contents for later reference.
+        auth_file = os.path.expanduser('~/.irods/.irodsA')
+        self.assertTrue(os.path.isfile(auth_file))
+        with open(auth_file,'rb') as f:
+            auth_file_contents = f.read()
+
+        with self.assertRaises(client_init.irodsA_already_exists):
+            client_init.write_native_credentials_to_secrets_file('somevalue',overwrite=False)
+
+        # Assert the auth file's contents haven't changed.
+        with open(auth_file,'rb') as f:
+            self.assertEqual(auth_file_contents, f.read())
 
 if __name__ == '__main__':
     # let the tests find the parent irods lib
