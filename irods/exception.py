@@ -638,6 +638,10 @@ class SYS_REPLICA_DOES_NOT_EXIST(iRODSException):
     code = -164000
 
 
+class SYS_LIBRARY_ERROR(iRODSException):
+    code = -167000
+
+
 class SYS_REPLICA_INACCESSIBLE(iRODSException):
     code = -168000
 
