@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
+
 import contextlib
 import getpass
 import os
 import sys
+import textwrap
 
 from irods import (env_filename_from_keyword_args, derived_auth_filename)
 import irods.client_configuration as cfg
@@ -62,13 +65,24 @@ def write_pam_credentials_to_secrets_file(password, overwrite = True, **kw):
     _write_encoded_auth_value(auth_file, to_encode[0], overwrite)
 
 if __name__ == '__main__':
+    extra_help = textwrap.dedent("""
+    This Python module also functions as a script to produce a "secrets" (i.e. encoded password) file.
+    Similar to iinit in this capacity, if the environment - and where applicable, the PAM
+    configuration for both system and user - is already set up in every other regard, this program
+    will generate the secrets file with appropriate permissions and in the normal location, usually:
+
+       ~/.irods/.irodsA
+
+    The user will be interactively prompted to enter their cleartext password.
+    """)
+
     vector = {
         'pam_password': write_pam_credentials_to_secrets_file,
         'native': write_native_credentials_to_secrets_file
     }
 
     if len(sys.argv) != 2:
-        print('Usage: {} AUTH_SCHEME'.format(sys.argv[0]))
+        print('{}\nUsage: {} AUTH_SCHEME'.format(extra_help, sys.argv[0]))
         print('  AUTH_SCHEME:')
         for x in vector:
             print('    {}'.format(x))
