@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import sys
 import socket
@@ -412,7 +412,7 @@ class TestCollection(unittest.TestCase):
 
         # Compare mtimes for correctness.
         collection = user_session.collections.get(home_collection_path)
-        self.assertEqual(datetime.utcfromtimestamp(new_mtime), collection.modify_time)
+        self.assertEqual(datetime.fromtimestamp(new_mtime, timezone.utc), collection.modify_time)
         self.assertGreater(old_mtime, collection.modify_time)
 
     def test_touch_operation_does_not_create_new_collections__525(self):
@@ -486,7 +486,7 @@ class TestCollection(unittest.TestCase):
 
             # Compare mtimes for correctness.
             collection = user_session.collections.get(path)
-            self.assertEqual(datetime.utcfromtimestamp(int(new_mtime)), collection.modify_time)
+            self.assertEqual(datetime.fromtimestamp(int(new_mtime), timezone.utc), collection.modify_time)
 
         finally:
             if collection:

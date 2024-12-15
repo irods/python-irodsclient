@@ -7,7 +7,7 @@ import tempfile
 import unittest
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from irods.models import (User, UserMeta,
                           Resource, ResourceMeta,
                           Collection, CollectionMeta,
@@ -466,7 +466,7 @@ class TestQuery(unittest.TestCase):
         session = self.sess
 
         start_date = datetime(2016, 1, 1, 0, 0)
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
 
         query = session.query(Resource.name, Collection.name, DataObject.name)\
             .filter(Between(DataObject.modify_time, (start_date, end_date)))
@@ -543,10 +543,10 @@ class TestQuery(unittest.TestCase):
             AVU_unique_incr = lambda obj,suffix='' : ( 'a_'+suffix,
                                                        'v_'+suffix,
                                                        str_number_incr(avu.units for avu in obj.metadata.items()) )
-            before = datetime.utcnow()
+            before = datetime.now(timezone.utc)
             time.sleep(1.5)
             for suffix,obj in objects.items(): obj.metadata.add( *AVU_unique_incr(obj,suffix) )
-            after = datetime.utcnow()
+            after = datetime.now(timezone.utc)
             for suffix, tblpair in tables.items():
                 self.sess.query( *tblpair ).filter(tblpair[1].modify_time <= after )\
                                            .filter(tblpair[1].modify_time > before )\

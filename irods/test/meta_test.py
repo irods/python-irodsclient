@@ -557,7 +557,7 @@ class TestMeta(unittest.TestCase):
                 avu_use_ts = iRODSMeta('use_ts','val',units())
                 meta_ts.set(avu_use_ts)
                 time.sleep(1.5)
-                now = datetime.datetime.utcnow()
+                now = datetime.datetime.now(datetime.timezone.utc)
                 time.sleep(1.5)
                 avu_use_ts.units = units()
                 meta_ts.set(avu_use_ts)         # Set an AVU with modified units.

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from calendar import timegm
 
 
@@ -146,7 +146,7 @@ class DateTime(ColumnType):
 
     @staticmethod
     def to_python(string):
-        return datetime.utcfromtimestamp(int(string))
+        return datetime.fromtimestamp(int(string), timezone.utc)
 
     @staticmethod
     def to_irods(data):
