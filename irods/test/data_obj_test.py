@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from datetime import datetime
+from datetime import datetime, timezone
 import base64
 import concurrent.futures
 import contextlib
@@ -1600,7 +1600,7 @@ class TestDataObjOps(unittest.TestCase):
         qu = self.sess.query(DataObject.size, DataObject.modify_time).filter(DataObject.name == filename, DataObject.collection_id == collection_id)
         for res in qu:
             self.assertEqual(int(res[DataObject.size]), 1024)
-            self.assertEqual(res[DataObject.modify_time], datetime.utcfromtimestamp(4096))
+            self.assertEqual(res[DataObject.modify_time], datetime.fromtimestamp(4096, timezone.utc))
 
         # leave physical file on disk
         self.sess.data_objects.unregister(obj_path)
@@ -2156,7 +2156,7 @@ class TestDataObjOps(unittest.TestCase):
 
             # Compare mtimes for correctness.
             data_object = user_session.data_objects.get(data_object_path)
-            self.assertEqual(datetime.utcfromtimestamp(int(new_mtime)), data_object.replicas[0].modify_time)
+            self.assertEqual(datetime.fromtimestamp(int(new_mtime), timezone.utc), data_object.replicas[0].modify_time)
             self.assertGreater(old_mtime, data_object.replicas[0].modify_time)
 
         finally:
