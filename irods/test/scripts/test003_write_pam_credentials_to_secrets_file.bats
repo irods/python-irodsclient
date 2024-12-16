@@ -25,11 +25,27 @@ teardown()
 }
 
 @test create_secrets_file {
+    auth_file=~/.irods/.irodsA
 
-    # Old .irodsA is already created, so we delete it and alter the pam password.
+    CONTENTS1=$(cat $auth_file)
+
+    # Alter the pam password.
     sudo chpasswd <<<"alice:$ALICES_NEW_PAM_PASSWD"
-    rm -f ~/.irods/.irodsA
+    OUTPUT=$($PYTHON -c "import irods.client_init;
+try:
+    irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD', overwrite = False)
+except irods.client_init.irodsA_already_exists:
+    print ('CANNOT OVERWRITE')
+")
+    [ "$OUTPUT" = "CANNOT OVERWRITE" ]
+    # Assert the previous contents of irodsA have not changed, and aren't zero length.
+    CONTENTS2=$(cat $auth_file)
+    [ -n "$CONTENTS1" -a "$CONTENTS1" = "$CONTENTS2" ]
+
+    # Now delete the already existing irodsA and repeat without negating overwrite.
     $PYTHON -c "import irods.client_init; irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD')"
+    CONTENTS3=$(cat $auth_file)
+    [ "$CONTENTS2" != "$CONTENTS3" ]
 
     # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
     # without an exception being raised.
