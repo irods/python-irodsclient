@@ -1,3 +1,12 @@
+Running all or part of the Python iRODS Client test suite
+---------------------------------------------------------
+
+The test suite is based on assertions that use the unittest module. Regarding the test output:  FAIL (or F) or ERROR (or E) is bad; "ok" or "."
+means a passing result.
+
+There are several ways to run the suite.  All require the user running them to have prepared an irods environment (located in ~/.irods)
+which points at a running server and authenticates as a rodsadmin.
+
 To run specific tests
 ---------------------
 
