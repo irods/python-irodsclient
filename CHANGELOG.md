@@ -11,6 +11,31 @@ and this project **only** adheres to the following _(as defined at [Semantic Ver
 > - MINOR version when you add functionality in a backward compatible manner
 > - PATCH version when you make backward compatible bug fixes
 
+## [v3.0.0] - 2024-12-19
+
+This major release primarily focuses on the removal of Python 2 compatibility. With that comes improvements for PAM authentication and facilities to help with cleaning up resources on program shutdown. 
+
+### Changed
+
+- Remove Python 2 compatibility (#480).
+- Format codebase using Black formatter (#615).
+- Expose keyword parameter for controlling whether the .irodsA file is to be overwritten (#635).
+- Check environment variable is defined before use, to avoid SyntaxError (#641).
+- Improve documentation (#651, #654).
+- Replace use of `utcfromtimestamp` and `utcnow` (#670).
+
+### Fixed
+
+- Correct faulty GenQuery1 column mappings (#642, #643).
+- Escape special characters in passwords for PAM authentication (#649, #650).
+- Catch `ENOTCONN` error from `socket.shutdown()` on BSD/MacOS (#657).
+- Remove call to initialize log facilities on import of irods module (#660).
+
+### Added
+
+- Provide mechanism for registering deterministic execution of cleanup functions on program shutdown (#614).
+- Add `SYS_LIBRARY_ERROR` to irods.exception module (#668).
+
 ## [v2.2.0] - 2024-10-14
 
 ### Changed
