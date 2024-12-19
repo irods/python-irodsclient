@@ -40,7 +40,7 @@ Currently supported:
 Installing
 ----------
 
-PRC requires Python 2.7 or 3.4+.
+PRC requires Python 3.6 or better.
 
 Canonically, to install with pip:
 
@@ -54,22 +54,6 @@ Uninstalling
 ------------
 
     pip uninstall python-irodsclient
-
-Hazard: Outdated Python
------------------------
-
-With older versions of Python (as of this writing, the aforementioned
-2.7 and 3.4), we can take preparatory steps toward securing workable
-versions of pip and virtualenv by using these commands:
-
-    $ pip install --upgrade --user pip'<21.0'
-    $ python -m pip install --user virtualenv
-
-We are then ready to use any of the following commands relevant to and
-required for the installation:
-
-    $ python -m virtualenv ... 
-    $ python -m pip install ...
 
 Establishing a (secure) connection
 ----------------------------------
@@ -255,10 +239,9 @@ closed out by the session object's cleanup() method.
 
 Starting with PRC Release 0.9.0, code has been included in the session
 object's `__del__` method to call cleanup(), properly closing out
-network connections. However, `__del__` cannot be relied to run under
-all circumstances (Python2 being more problematic), so an alternative
-may be to call session.cleanup() on any session variable which might not
-be used again.
+network connections. However, `__del__`  is not guaranteed to run as
+expected, so an alternative may be to call session.cleanup()
+on any session variable which might not be used again.
 
 Simple PUTs and GETs
 --------------------
@@ -1843,7 +1826,7 @@ of setting up may be necessary first:
     -   earlier releases (\<= 1.1.0) will install the outdated
         `xmlrunner` module automatically
 3.  Follow further instructions in the [test
-    directory](https://github.com/irods/python-irodsclient/tree/main/irods/test)
+    README file](https://github.com/irods/python-irodsclient/tree/main/irods/test/README.rst)
 
 Testing S3 parallel transfer
 ----------------------------
