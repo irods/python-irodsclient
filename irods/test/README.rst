@@ -20,6 +20,15 @@ To run the full test suite
  python runner.py
 
 This imports all tests in the ``test`` directory and runs them. It will not die upon error.
+The script depends on the :code:`xmlrunner` module, so prior to running it, be sure the extra 
+"tests" dependency has been installed:
+
+:: 
+
+ pip install python-irodsclient[tests]
+
+The above ensures the installation of the :code:`unittest-xml-reporting` package, which contains
+the most current version of the :code:`xmlrunner` module.
 
 
 Test dependencies
