@@ -15,39 +15,41 @@ import irods.keywords as kw
 from irods.test.helpers import my_function_name, unique_name
 from irods.collection import iRODSCollection
 
-RODSUSER = 'nonadmin'
+RODSUSER = "nonadmin"
+
 
 class TestCollection(unittest.TestCase):
 
-    class WrongUserType(RuntimeError): pass
+    class WrongUserType(RuntimeError):
+        pass
 
     @classmethod
     def setUpClass(cls):
         adm = helpers.make_session()
-        if adm.users.get(adm.username).type != 'rodsadmin':
-            raise cls.WrongUserType('Must be an iRODS admin to run tests in class {0.__name__}'.format(cls))
+        if adm.users.get(adm.username).type != "rodsadmin":
+            raise cls.WrongUserType(
+                "Must be an iRODS admin to run tests in class {0.__name__}".format(cls)
+            )
         cls.logins = helpers.iRODSUserLogins(adm)
-        cls.logins.create_user(RODSUSER, 'abc123')
-
+        cls.logins.create_user(RODSUSER, "abc123")
 
     @classmethod
     def tearDownClass(cls):
         # TODO(#553): Skipping this will result in an interpreter seg fault for Py3.6 but not 3.11; why?
         del cls.logins
 
-
     def setUp(self):
         self.sess = helpers.make_session()
 
-        self.test_coll_path = '/{}/home/{}/test_dir'.format(self.sess.zone, self.sess.username)
+        self.test_coll_path = "/{}/home/{}/test_dir".format(
+            self.sess.zone, self.sess.username
+        )
         self.test_coll = self.sess.collections.create(self.test_coll_path)
 
-
     def tearDown(self):
-        """ Delete the test collection after each test """
+        """Delete the test collection after each test"""
         self.test_coll.remove(recurse=True, force=True)
         self.sess.cleanup()
-
 
     def test_get_collection(self):
         # path = "/tempZone/home/rods"
@@ -63,26 +65,23 @@ class TestCollection(unittest.TestCase):
         self.assertIsNotNone(coll.owner_zone)
 
     def test_append_to_collection(self):
-        """ Append a new file to the collection"""
+        """Append a new file to the collection"""
         pass
-
 
     def test_remove_from_collection(self):
-        """ Delete a file from a collection """
+        """Delete a file from a collection"""
         pass
-
 
     def test_update_in_collection(self):
-        """ Modify a file in a collection """
+        """Modify a file in a collection"""
         pass
-
 
     def test_create_recursive_collection(self):
         # make path with recursion
         root_coll_path = self.test_coll_path + "/recursive/collection/test"
         self.sess.collections.create(root_coll_path, recurse=True)
 
-        #confirm col create
+        # confirm col create
         coll = self.sess.collections.get(root_coll_path)
         self.assertEqual(root_coll_path, coll.path)
 
@@ -100,7 +99,12 @@ class TestCollection(unittest.TestCase):
 
         # make test collection
         helpers.make_deep_collection(
-            self.sess, root_coll_path, depth=depth, objects_per_level=1, object_content=None)
+            self.sess,
+            root_coll_path,
+            depth=depth,
+            objects_per_level=1,
+            object_content=None,
+        )
 
         # delete test collection
         self.sess.collections.remove(root_coll_path, recurse=True, force=True)
@@ -109,12 +113,9 @@ class TestCollection(unittest.TestCase):
         with self.assertRaises(CollectionDoesNotExist):
             self.sess.collections.get(root_coll_path)
 
-
     def test_rename_collection(self):
         # test args
-        args = {'collection': self.test_coll_path,
-                'old_name': 'foo',
-                'new_name': 'bar'}
+        args = {"collection": self.test_coll_path, "old_name": "foo", "new_name": "bar"}
 
         # make collection
         path = "{collection}/{old_name}".format(**args)
@@ -137,12 +138,13 @@ class TestCollection(unittest.TestCase):
         # remove collection
         coll.remove(recurse=True, force=True)
 
-
     def test_move_coll_to_coll(self):
         # test args
-        args = {'base_collection': self.test_coll_path,
-                'collection1': 'foo',
-                'collection2': 'bar'}
+        args = {
+            "base_collection": self.test_coll_path,
+            "collection1": "foo",
+            "collection2": "bar",
+        }
 
         # make collection1 and collection2 in base collection
         path1 = "{base_collection}/{collection1}".format(**args)
@@ -166,26 +168,26 @@ class TestCollection(unittest.TestCase):
         # remove collection
         coll1.remove(recurse=True, force=True)
 
-
     def test_repr_coll(self):
         coll_name = self.test_coll.name
         coll_id = self.test_coll.id
 
         self.assertEqual(
-            repr(self.test_coll), "<iRODSCollection {coll_id} {coll_name}>".format(**locals()))
-
+            repr(self.test_coll),
+            "<iRODSCollection {coll_id} {coll_name}>".format(**locals()),
+        )
 
     def test_walk_collection_topdown(self):
         depth = 20
 
         # files that will be ceated in each subcollection
-        filenames = ['foo', 'bar', 'baz']
+        filenames = ["foo", "bar", "baz"]
 
         # make nested collections
         coll_path = self.test_coll_path
         for d in range(depth):
             # create subcollection with files
-            coll_path += '/sub' + str(d)
+            coll_path += "/sub" + str(d)
             helpers.make_collection(self.sess, coll_path, filenames)
 
         # now walk nested collections
@@ -200,7 +202,7 @@ class TestCollection(unittest.TestCase):
 
             # check subcollection name
             if d < depth:
-                sub_coll_name = 'sub' + str(d)
+                sub_coll_name = "sub" + str(d)
                 self.assertEqual(sub_coll_name, subcollections[0].name)
             else:
                 # last coll has no subcolls
@@ -217,30 +219,29 @@ class TestCollection(unittest.TestCase):
         with self.assertRaises(StopIteration):
             next(colls)
 
-
     def test_walk_collection(self):
         depth = 20
 
         # files that will be ceated in each subcollection
-        filenames = ['foo', 'bar', 'baz']
+        filenames = ["foo", "bar", "baz"]
 
         # make nested collections
         coll_path = self.test_coll_path
         for d in range(depth):
             # create subcollection with files
-            coll_path += '/sub' + str(d)
+            coll_path += "/sub" + str(d)
             helpers.make_collection(self.sess, coll_path, filenames)
 
         # now walk nested collections
         colls = self.test_coll.walk(topdown=False)
-        sub_coll_name = ''
+        sub_coll_name = ""
         for d in range(depth - 1, -2, -1):
             # get next result
             collection, subcollections, data_objects = next(colls)
 
             # check collection name
             if d >= 0:
-                coll_name = 'sub' + str(d)
+                coll_name = "sub" + str(d)
                 self.assertEqual(collection.name, coll_name)
             else:
                 # root collection
@@ -267,18 +268,17 @@ class TestCollection(unittest.TestCase):
     def test_collection_metadata(self):
         self.assertIsInstance(self.test_coll.metadata, iRODSMetaCollection)
 
-
     def test_register_collection(self):
         tmp_dir = helpers.irods_shared_tmp_dir()
-        loc_server = self.sess.host in ('localhost', socket.gethostname())
-        if not(tmp_dir) and not(loc_server):
-            self.skipTest('Requires access to server-side file(s)')
+        loc_server = self.sess.host in ("localhost", socket.gethostname())
+        if not (tmp_dir) and not (loc_server):
+            self.skipTest("Requires access to server-side file(s)")
 
         # test vars
         file_count = 10
-        dir_name = 'register_test_dir'
-        dir_path = os.path.join((tmp_dir or '/tmp'), dir_name)
-        coll_path = '{}/{}'.format(self.test_coll.path, dir_name)
+        dir_name = "register_test_dir"
+        dir_path = os.path.join((tmp_dir or "/tmp"), dir_name)
+        coll_path = "{}/{}".format(self.test_coll.path, dir_name)
 
         # make test dir
         helpers.make_flat_test_dir(dir_path, file_count)
@@ -290,7 +290,9 @@ class TestCollection(unittest.TestCase):
         coll = self.sess.collections.get(coll_path)
 
         # confirm object count in collection
-        query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
+        query = (
+            self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
+        )
         obj_count = next(query.get_results())[DataObject.id]
         self.assertEqual(file_count, int(obj_count))
 
@@ -300,31 +302,32 @@ class TestCollection(unittest.TestCase):
         # delete test dir
         shutil.rmtree(dir_path)
 
-
     def test_register_collection_with_checksums(self):
         tmp_dir = helpers.irods_shared_tmp_dir()
-        loc_server = self.sess.host in ('localhost', socket.gethostname())
-        if not(tmp_dir) and not(loc_server):
-            self.skipTest('Requires access to server-side file(s)')
+        loc_server = self.sess.host in ("localhost", socket.gethostname())
+        if not (tmp_dir) and not (loc_server):
+            self.skipTest("Requires access to server-side file(s)")
 
         # test vars
         file_count = 10
-        dir_name = 'register_test_dir_with_chksums'
-        dir_path = os.path.join((tmp_dir or '/tmp'), dir_name)
-        coll_path = '{}/{}'.format(self.test_coll.path, dir_name)
+        dir_name = "register_test_dir_with_chksums"
+        dir_path = os.path.join((tmp_dir or "/tmp"), dir_name)
+        coll_path = "{}/{}".format(self.test_coll.path, dir_name)
 
         # make test dir
         helpers.make_flat_test_dir(dir_path, file_count)
 
         # register test dir
-        options = {kw.VERIFY_CHKSUM_KW: ''}
+        options = {kw.VERIFY_CHKSUM_KW: ""}
         self.sess.collections.register(dir_path, coll_path, **options)
 
         # confirm collection presence
         coll = self.sess.collections.get(coll_path)
 
         # confirm object count in collection
-        query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
+        query = (
+            self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
+        )
         obj_count = next(query.get_results())[DataObject.id]
         self.assertEqual(file_count, int(obj_count))
 
@@ -342,11 +345,12 @@ class TestCollection(unittest.TestCase):
         # delete test dir
         shutil.rmtree(dir_path)
 
-
     def test_collection_with_trailing_slash__323(self):
         Home = helpers.home_collection(self.sess)
-        subcoll, dataobj = [unique_name(my_function_name(),time.time()) for x in range(2)]
-        subcoll_fullpath = "{}/{}".format(Home,subcoll)
+        subcoll, dataobj = [
+            unique_name(my_function_name(), time.time()) for x in range(2)
+        ]
+        subcoll_fullpath = "{}/{}".format(Home, subcoll)
         subcoll_unnormalized = subcoll_fullpath + "/"
         try:
             # Test create and exists with trailing slashes.
@@ -357,46 +361,48 @@ class TestCollection(unittest.TestCase):
             self.assertTrue(self.sess.collections.exists(subcoll_unnormalized))
 
             # Test data put to unnormalized collection name.
-            with open(dataobj, "wb") as f: f.write(b'hello')
+            with open(dataobj, "wb") as f:
+                f.write(b"hello")
             self.sess.data_objects.put(dataobj, subcoll_unnormalized)
             self.assertEqual(
-                self.sess.query(DataObject).filter(DataObject.name == dataobj).one()[DataObject.collection_id]
-               ,c1.id
+                self.sess.query(DataObject)
+                .filter(DataObject.name == dataobj)
+                .one()[DataObject.collection_id],
+                c1.id,
             )
         finally:
             if self.sess.collections.exists(subcoll_fullpath):
-                self.sess.collections.remove(subcoll_fullpath, recurse = True, force = True)
+                self.sess.collections.remove(subcoll_fullpath, recurse=True, force=True)
             if os.path.exists(dataobj):
                 os.unlink(dataobj)
 
-
     def test_concatenation__323(self):
-        coll = iRODSCollection.normalize_path('/zone/','/home/','/dan//','subdir///')
-        self.assertEqual(coll, '/zone/home/dan/subdir')
+        coll = iRODSCollection.normalize_path("/zone/", "/home/", "/dan//", "subdir///")
+        self.assertEqual(coll, "/zone/home/dan/subdir")
 
     def test_object_paths_with_dot_and_dotdot__323(self):
 
         normalize = iRODSCollection.normalize_path
         session = self.sess
-        home = helpers.home_collection( session )
+        home = helpers.home_collection(session)
 
         # Test requirement for collection names to be absolute
         with self.assertRaises(iRODSCollection.AbsolutePathRequired):
-            normalize('../public', enforce_absolute = True)
+            normalize("../public", enforce_absolute=True)
 
         # Test '.' and double slashes
-        public_home = normalize(home,'..//public/.//')
-        self.assertEqual(public_home, '/{sess.zone}/home/public'.format(sess = session))
+        public_home = normalize(home, "..//public/.//")
+        self.assertEqual(public_home, "/{sess.zone}/home/public".format(sess=session))
 
         # Test that '..' cancels last nontrival path element
-        subpath = normalize(home,'./collA/coll2/./../collB')
+        subpath = normalize(home, "./collA/coll2/./../collB")
         self.assertEqual(subpath, home + "/collA/collB")
 
         # Test multiple '..'
-        home1 = normalize('/zone','holmes','public/../..','home','user')
-        self.assertEqual(home1, '/zone/home/user')
-        home2 = normalize('/zone','holmes','..','home','public','..','user')
-        self.assertEqual(home2, '/zone/home/user')
+        home1 = normalize("/zone", "holmes", "public/../..", "home", "user")
+        self.assertEqual(home1, "/zone/home/user")
+        home2 = normalize("/zone", "holmes", "..", "home", "public", "..", "user")
+        self.assertEqual(home2, "/zone/home/user")
 
     def test_update_mtime_of_collection_using_touch_operation_as_non_admin__525(self):
         user_session = self.logins.session_for_user(RODSUSER)
@@ -408,11 +414,15 @@ class TestCollection(unittest.TestCase):
 
         # Set the mtime to an earlier time.
         new_mtime = 1400000000
-        user_session.collections.touch(home_collection_path, seconds_since_epoch=new_mtime)
+        user_session.collections.touch(
+            home_collection_path, seconds_since_epoch=new_mtime
+        )
 
         # Compare mtimes for correctness.
         collection = user_session.collections.get(home_collection_path)
-        self.assertEqual(datetime.fromtimestamp(new_mtime, timezone.utc), collection.modify_time)
+        self.assertEqual(
+            datetime.fromtimestamp(new_mtime, timezone.utc), collection.modify_time
+        )
         self.assertGreater(old_mtime, collection.modify_time)
 
     def test_touch_operation_does_not_create_new_collections__525(self):
@@ -420,7 +430,9 @@ class TestCollection(unittest.TestCase):
 
         # The collection should not exist.
         home_collection = helpers.home_collection(user_session)
-        collection_path = '{home_collection}/test_touch_operation_does_not_create_new_collections__525'.format(**locals())
+        collection_path = "{home_collection}/test_touch_operation_does_not_create_new_collections__525".format(
+            **locals()
+        )
         with self.assertRaises(CollectionDoesNotExist):
             user_session.collections.get(collection_path)
 
@@ -439,7 +451,9 @@ class TestCollection(unittest.TestCase):
             home_collection = helpers.home_collection(user_session)
 
             # Create a data object.
-            data_object_path = '{home_collection}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt'.format(**locals())
+            data_object_path = "{home_collection}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt".format(
+                **locals()
+            )
             self.assertFalse(user_session.data_objects.exists(data_object_path))
             user_session.data_objects.touch(data_object_path)
             self.assertTrue(user_session.data_objects.exists(data_object_path))
@@ -456,7 +470,9 @@ class TestCollection(unittest.TestCase):
         user_session = self.logins.session_for_user(RODSUSER)
 
         home_collection = helpers.home_collection(user_session)
-        path = '{home_collection}/test_touch_operation_ignores_unsupported_options__525'.format(**locals())
+        path = "{home_collection}/test_touch_operation_ignores_unsupported_options__525".format(
+            **locals()
+        )
 
         try:
             # Capture mtime of the home collection.
@@ -464,7 +480,7 @@ class TestCollection(unittest.TestCase):
             old_mtime = collection.modify_time
 
             # Capture the current time.
-            time.sleep(2) # Guarantees the mtime is different.
+            time.sleep(2)  # Guarantees the mtime is different.
             new_mtime = int(time.time())
 
             # The touch API for the iRODS server will attempt to create a new data object
@@ -478,15 +494,20 @@ class TestCollection(unittest.TestCase):
             #
             # They are included to prove the PRC handles them appropriately (i.e. unsupported
             # parameters are removed from the request).
-            user_session.collections.touch(path,
-                                           no_create=False,
-                                           replica_number=525,
-                                           seconds_since_epoch=new_mtime,
-                                           leaf_resource_name='ufs525')
+            user_session.collections.touch(
+                path,
+                no_create=False,
+                replica_number=525,
+                seconds_since_epoch=new_mtime,
+                leaf_resource_name="ufs525",
+            )
 
             # Compare mtimes for correctness.
             collection = user_session.collections.get(path)
-            self.assertEqual(datetime.fromtimestamp(int(new_mtime), timezone.utc), collection.modify_time)
+            self.assertEqual(
+                datetime.fromtimestamp(int(new_mtime), timezone.utc),
+                collection.modify_time,
+            )
 
         finally:
             if collection:
@@ -504,5 +525,5 @@ class TestCollection(unittest.TestCase):
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
-    sys.path.insert(0, os.path.abspath('../..'))
+    sys.path.insert(0, os.path.abspath("../.."))
     unittest.main()

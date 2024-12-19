@@ -18,7 +18,9 @@ from irods.connection import DESTRUCTOR_MSG
 #  Regular expression to match common synonyms for localhost.
 #
 
-LOCALHOST_REGEX = re.compile(r"""^(127(\.\d+){1,3}|[0:]+1|(.*-)?localhost(\.\w+)?)$""",re.IGNORECASE)
+LOCALHOST_REGEX = re.compile(
+    r"""^(127(\.\d+){1,3}|[0:]+1|(.*-)?localhost(\.\w+)?)$""", re.IGNORECASE
+)
 USE_ONLY_LOCALHOST = False
 
 
@@ -29,33 +31,44 @@ class TestPool(unittest.TestCase):
     preferred_parameters = {}
 
     @classmethod
-    def setUpClass(cls):              # generate test env files using connect data from ~/.irods environment
-        if USE_ONLY_LOCALHOST: return
+    def setUpClass(
+        cls,
+    ):  # generate test env files using connect data from ~/.irods environment
+        if USE_ONLY_LOCALHOST:
+            return
         Nonlocal_Ext = ".test"
         with helpers.make_session() as session:
-            cls.preferred_parameters = { 'irods_host':session.host,
-                                         'irods_port':session.port,
-                                         'irods_user_name':session.username,
-                                         'irods_zone_name':session.zone }
-            test_configs_dir = os.path.join(irods_test_path(),"test-data")
-            for config in [os.path.join(test_configs_dir,f) for f in os.listdir(test_configs_dir)
-                           if f.endswith(cls.config_extension)]:
-                with open(config,"r") as in_, open(config + Nonlocal_Ext,"w") as out_:
+            cls.preferred_parameters = {
+                "irods_host": session.host,
+                "irods_port": session.port,
+                "irods_user_name": session.username,
+                "irods_zone_name": session.zone,
+            }
+            test_configs_dir = os.path.join(irods_test_path(), "test-data")
+            for config in [
+                os.path.join(test_configs_dir, f)
+                for f in os.listdir(test_configs_dir)
+                if f.endswith(cls.config_extension)
+            ]:
+                with open(config, "r") as in_, open(config + Nonlocal_Ext, "w") as out_:
                     cf = json.load(in_)
                     cf.update(cls.preferred_parameters)
-                    json.dump(cf, out_,indent=4)
+                    json.dump(cf, out_, indent=4)
             cls.test_extension = Nonlocal_Ext
-
 
     def setUp(self):
         self.sess = helpers.make_session(
-            irods_env_file=os.path.join(irods_test_path(),"test-data","irods_environment.json" + self.test_extension))
-        if USE_ONLY_LOCALHOST and not LOCALHOST_REGEX.match (self.sess.host):
-            self.skipTest('for non-local server')
+            irods_env_file=os.path.join(
+                irods_test_path(),
+                "test-data",
+                "irods_environment.json" + self.test_extension,
+            )
+        )
+        if USE_ONLY_LOCALHOST and not LOCALHOST_REGEX.match(self.sess.host):
+            self.skipTest("for non-local server")
 
     def tearDown(self):
-        '''Close connections
-        '''
+        """Close connections"""
         self.sess.cleanup()
 
     def test_release_connection(self):
@@ -245,7 +258,7 @@ class TestPool(unittest.TestCase):
 
     @staticmethod
     @contextlib.contextmanager
-    def configure_logger(logger, propagate = None, level = None, handler = None):
+    def configure_logger(logger, propagate=None, level=None, handler=None):
         try:
             saved_level = logger.level
             logger.setLevel(level)
@@ -264,8 +277,12 @@ class TestPool(unittest.TestCase):
     # logged to file, to confirm the destructor is called
     def test_connection_destructor_called(self):
 
-        if self.sess.host != socket.gethostname() and not LOCALHOST_REGEX.match (self.sess.host):
-            self.skipTest('local test only - client dot does not like the extra logging')
+        if self.sess.host != socket.gethostname() and not LOCALHOST_REGEX.match(
+            self.sess.host
+        ):
+            self.skipTest(
+                "local test only - client dot does not like the extra logging"
+            )
 
         # Set 'irods_connection_refresh_time' to '3' (in seconds) in
         # ~/.irods/irods_environment.json file. This means any connection
@@ -279,10 +296,14 @@ class TestPool(unittest.TestCase):
         last_used_time_1 = None
         last_used_time_2 = None
         my_log_file = tempfile.NamedTemporaryFile()
-        file_handler = logging.FileHandler(my_log_file.name, mode='a')
+        file_handler = logging.FileHandler(my_log_file.name, mode="a")
         file_handler.setLevel(logging.DEBUG)
-        with self.configure_logger(logging.getLogger('irods.connection'),
-                                   propagate = False, level = logging.DEBUG, handler = file_handler):
+        with self.configure_logger(
+            logging.getLogger("irods.connection"),
+            propagate=False,
+            level=logging.DEBUG,
+            handler=file_handler,
+        ):
             with self.sess.pool.get_connection() as conn:
                 conn_obj_id_1 = id(conn)
                 curr_time = datetime.datetime.now()
@@ -322,33 +343,56 @@ class TestPool(unittest.TestCase):
                 self.assertEqual(0, len(self.sess.pool.idle))
 
             # Assert that connection destructor called
-            with open(my_log_file.name, 'r') as fh:
+            with open(my_log_file.name, "r") as fh:
                 lines = fh.read().splitlines()
                 self.assertTrue(DESTRUCTOR_MSG in lines)
         file_handler.close()
 
     def test_get_connection_refresh_time_no_env_file_input_param(self):
-        connection_refresh_time = self.sess.get_connection_refresh_time(first_name="Magic", last_name="Johnson")
+        connection_refresh_time = self.sess.get_connection_refresh_time(
+            first_name="Magic", last_name="Johnson"
+        )
         self.assertEqual(connection_refresh_time, -1)
 
     def test_get_connection_refresh_time_none_existant_env_file(self):
         connection_refresh_time = self.sess.get_connection_refresh_time(
-            irods_env_file=os.path.join(irods_test_path(),"test-data","irods_environment_non_existant.json" + self.test_extension))
+            irods_env_file=os.path.join(
+                irods_test_path(),
+                "test-data",
+                "irods_environment_non_existant.json" + self.test_extension,
+            )
+        )
         self.assertEqual(connection_refresh_time, -1)
 
     def test_get_connection_refresh_time_no_connection_refresh_field(self):
         connection_refresh_time = self.sess.get_connection_refresh_time(
-            irods_env_file=os.path.join(irods_test_path(),"test-data","irods_environment_no_refresh_field.json" + self.test_extension))
+            irods_env_file=os.path.join(
+                irods_test_path(),
+                "test-data",
+                "irods_environment_no_refresh_field.json" + self.test_extension,
+            )
+        )
         self.assertEqual(connection_refresh_time, -1)
 
     def test_get_connection_refresh_time_negative_connection_refresh_field(self):
         connection_refresh_time = self.sess.get_connection_refresh_time(
-            irods_env_file=os.path.join(irods_test_path(),"test-data","irods_environment_negative_refresh_field.json" + self.test_extension))
+            irods_env_file=os.path.join(
+                irods_test_path(),
+                "test-data",
+                "irods_environment_negative_refresh_field.json" + self.test_extension,
+            )
+        )
         self.assertEqual(connection_refresh_time, -1)
 
     def test_get_connection_refresh_time(self):
-        default_path = os.path.join (irods_test_path(),"test-data","irods_environment.json" + self.test_extension)
-        connection_refresh_time = self.sess.get_connection_refresh_time(irods_env_file=default_path)
+        default_path = os.path.join(
+            irods_test_path(),
+            "test-data",
+            "irods_environment.json" + self.test_extension,
+        )
+        connection_refresh_time = self.sess.get_connection_refresh_time(
+            irods_env_file=default_path
+        )
         self.assertEqual(connection_refresh_time, 3)
 
 
@@ -356,7 +400,7 @@ def irods_test_path():
     return os.path.dirname(__file__)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # let the tests find the parent irods lib
-    sys.path.insert(0, os.path.abspath('../..'))
+    sys.path.insert(0, os.path.abspath("../.."))
     unittest.main()

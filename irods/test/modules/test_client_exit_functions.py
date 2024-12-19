@@ -4,6 +4,7 @@
 import irods.at_client_exit
 import sys
 
+
 def get_stage_object_and_value_from_name(stage_name):
     try:
         obj = getattr(irods.at_client_exit.LibraryCleanupStage, stage_name)
@@ -11,17 +12,21 @@ def get_stage_object_and_value_from_name(stage_name):
     except AttributeError:
         return None, stage_name
 
-def object_printer(name, stream = sys.stdout):
-    (obj, _) = get_stage_object_and_value_from_name(stage_name = name)
-    return lambda: print(f'[{name if not obj else obj.value}]', end='', file = stream)
+
+def object_printer(name, stream=sys.stdout):
+    (obj, _) = get_stage_object_and_value_from_name(stage_name=name)
+    return lambda: print(f"[{name if not obj else obj.value}]", end="", file=stream)
+
 
 def projected_output_from_innate_list_order(name_list):
     import io
+
     in_memory_stream = io.StringIO()
     for name in name_list:
-        func = object_printer(name, stream = in_memory_stream)
+        func = object_printer(name, stream=in_memory_stream)
         func()
     return in_memory_stream.getvalue()
+
 
 # When run as :
 #     $ test_client_exit_functions.py "misc_string" "STAGE_NAME_1" "STAGE_NAME_2" ...
@@ -32,13 +37,16 @@ def projected_output_from_innate_list_order(name_list):
 # As indicated, any string (including the empty string) that does not name a
 # particular stage name is left untransformed.
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    function_info = [[*get_stage_object_and_value_from_name(name),object_printer(name)] for name in reversed(sys.argv[1:])]
+    function_info = [
+        [*get_stage_object_and_value_from_name(name), object_printer(name)]
+        for name in reversed(sys.argv[1:])
+    ]
 
     # For each argument to the script that represents a cleanup stage: register a function to print the stage's value, to be run during that stage.
     for key in function_info.copy():
-        (stage,name,func) = key
+        (stage, name, func) = key
         if not stage:
             continue
         irods.at_client_exit._register(stage, func)

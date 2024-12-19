@@ -1,19 +1,39 @@
-from irods.message import iRODSMessage, StringStringMap, RodsHostAddress, STR_PI, MsParam, MsParamArray, RuleExecutionRequest
+from irods.message import (
+    iRODSMessage,
+    StringStringMap,
+    RodsHostAddress,
+    STR_PI,
+    MsParam,
+    MsParamArray,
+    RuleExecutionRequest,
+)
 from irods.api_number import api_number
 import irods.exception as ex
 from io import open as io_open
 from irods.message import Message, StringProperty
 
+
 class RemoveRuleMessage(Message):
-    #define RULE_EXEC_DEL_INP_PI "str ruleExecId[NAME_LEN];"
-    _name = 'RULE_EXEC_DEL_INP_PI'
+    # define RULE_EXEC_DEL_INP_PI "str ruleExecId[NAME_LEN];"
+    _name = "RULE_EXEC_DEL_INP_PI"
     ruleExecId = StringProperty()
-    def __init__(self,id_):
-        super(RemoveRuleMessage,self).__init__()
+
+    def __init__(self, id_):
+        super(RemoveRuleMessage, self).__init__()
         self.ruleExecId = str(id_)
 
+
 class Rule:
-    def __init__(self, session, rule_file=None, body='', params=None, output='', instance_name = None, irods_3_literal_style = False):
+    def __init__(
+        self,
+        session,
+        rule_file=None,
+        body="",
+        params=None,
+        output="",
+        instance_name=None,
+        irods_3_literal_style=False,
+    ):
         """
         Initialize a rule object.
 
@@ -33,37 +53,43 @@ class Rule:
         self.session = session
 
         self.params = {}
-        self.output = ''
+        self.output = ""
 
         if rule_file:
             self.load(rule_file)
         else:
-            self.body = '@external\n' + body if irods_3_literal_style \
-                   else '@external rule { ' + body + ' }'
+            self.body = (
+                "@external\n" + body
+                if irods_3_literal_style
+                else "@external rule { " + body + " }"
+            )
 
         # overwrite params and output if received arguments
-        if isinstance( params , dict ):
+        if isinstance(params, dict):
             if self.params:
-                self.params.update( params )
+                self.params.update(params)
             else:
                 self.params = params
 
-        if output != '':
+        if output != "":
             self.output = output
 
         self.instance_name = instance_name
 
-    def remove_by_id(self,*ids):
+    def remove_by_id(self, *ids):
         with self.session.pool.get_connection() as conn:
             for id_ in ids:
-                request = iRODSMessage("RODS_API_REQ", msg=RemoveRuleMessage(id_),
-                                       int_info=api_number['RULE_EXEC_DEL_AN'])
+                request = iRODSMessage(
+                    "RODS_API_REQ",
+                    msg=RemoveRuleMessage(id_),
+                    int_info=api_number["RULE_EXEC_DEL_AN"],
+                )
                 conn.send(request)
                 response = conn.recv()
                 if response.int_info != 0:
                     raise RuntimeError(f"Error removing rule {id_}")
 
-    def load(self, rule_file, encoding = 'utf-8'):
+    def load(self, rule_file, encoding="utf-8"):
         """Load rule code with rule-file (*.r) semantics.
 
         A "main" rule is defined first; name does not matter. Other rules may follow, which will be
@@ -82,10 +108,12 @@ class Rule:
         possibly by others which will be callable from the main rule as if they were part of the core rule-base.
 
         """
-        self.body = '@external\n'
+        self.body = "@external\n"
 
-
-        with (io_open(rule_file, encoding = encoding) if isinstance(rule_file,str) else rule_file
+        with (
+            io_open(rule_file, encoding=encoding)
+            if isinstance(rule_file, str)
+            else rule_file
         ) as f:
 
             # parse rule file line-by-line
@@ -96,29 +124,29 @@ class Rule:
                     line = line.decode(encoding)
 
                 # parse input line
-                if line.strip().lower().startswith('input'):
+                if line.strip().lower().startswith("input"):
 
                     input_header, input_line = line.split(None, 1)
 
-                    if input_line.strip().lower() == 'null':
+                    if input_line.strip().lower() == "null":
                         self.params = {}
                         continue
 
                     # sanity check
-                    if input_header.lower() != 'input':
+                    if input_header.lower() != "input":
                         raise ValueError
 
                     # parse *param0="value0",*param1="value1",...
-                    for pair in input_line.split(','):
-                        label, value = pair.split('=')
+                    for pair in input_line.split(","):
+                        label, value = pair.split("=")
                         self.params[label.strip()] = value.strip()
 
                 # parse output line
-                elif line.strip().lower().startswith('output'):
+                elif line.strip().lower().startswith("output"):
                     output_header, output_line = line.split(None, 1)
 
                     # sanity check
-                    if output_header.lower() != 'output':
+                    if output_header.lower() != "output":
                         raise ValueError
 
                     # use line as is
@@ -128,35 +156,58 @@ class Rule:
                 else:
                     self.body += line
 
-
-    def execute(self, session_cleanup = True,
-                      acceptable_errors = (ex.FAIL_ACTION_ENCOUNTERED_ERR,),
-                      r_error = None,
-                      return_message = ()):
+    def execute(
+        self,
+        session_cleanup=True,
+        acceptable_errors=(ex.FAIL_ACTION_ENCOUNTERED_ERR,),
+        r_error=None,
+        return_message=(),
+    ):
         try:
             # rule input
             param_array = []
             for label, value in self.params.items():
                 inOutStruct = STR_PI(myStr=value)
-                param_array.append(MsParam(label=label, type='STR_PI', inOutStruct=inOutStruct))
+                param_array.append(
+                    MsParam(label=label, type="STR_PI", inOutStruct=inOutStruct)
+                )
 
-            inpParamArray = MsParamArray(paramLen=len(param_array), oprType=0, MsParam_PI=param_array)
+            inpParamArray = MsParamArray(
+                paramLen=len(param_array), oprType=0, MsParam_PI=param_array
+            )
 
             # rule body
-            addr = RodsHostAddress(hostAddr='', rodsZone='', port=0, dummyInt=0)
-            condInput = StringStringMap( {} if self.instance_name is None
-                                            else {'instance_name':self.instance_name} )
-            message_body = RuleExecutionRequest(myRule=self.body, addr=addr, condInput=condInput, outParamDesc=self.output, inpParamArray=inpParamArray)
+            addr = RodsHostAddress(hostAddr="", rodsZone="", port=0, dummyInt=0)
+            condInput = StringStringMap(
+                {}
+                if self.instance_name is None
+                else {"instance_name": self.instance_name}
+            )
+            message_body = RuleExecutionRequest(
+                myRule=self.body,
+                addr=addr,
+                condInput=condInput,
+                outParamDesc=self.output,
+                inpParamArray=inpParamArray,
+            )
 
-            request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number['EXEC_MY_RULE_AN'])
+            request = iRODSMessage(
+                "RODS_API_REQ", msg=message_body, int_info=api_number["EXEC_MY_RULE_AN"]
+            )
 
             with self.session.pool.get_connection() as conn:
                 conn.send(request)
-                response = conn.recv(acceptable_errors = acceptable_errors, return_message = return_message)
+                response = conn.recv(
+                    acceptable_errors=acceptable_errors, return_message=return_message
+                )
                 try:
-                    out_param_array = response.get_main_message(MsParamArray, r_error = r_error)
+                    out_param_array = response.get_main_message(
+                        MsParamArray, r_error=r_error
+                    )
                 except iRODSMessage.ResponseNotParseable:
-                    return MsParamArray() # Ergo, no useful return value - but the RError stack will be accessible
+                    return (
+                        MsParamArray()
+                    )  # Ergo, no useful return value - but the RError stack will be accessible
         finally:
             if session_cleanup:
                 self.session.cleanup()

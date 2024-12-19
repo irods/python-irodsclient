@@ -17,4 +17,3 @@ class iRODSZone:
     def __repr__(self):
         """Render a user-friendly string representation for the iRODSZone object."""
         return "<iRODSZone {id} {name} {type}>".format(**vars(self))
-

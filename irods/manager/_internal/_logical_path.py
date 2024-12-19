@@ -1,5 +1,6 @@
 from irods.exception import CollectionDoesNotExist
 
+
 def _is_collection(session, path):
     """Return True if the logical path points to a collection, else False.
 

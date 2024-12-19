@@ -32,5 +32,5 @@ class OrderedMetaclass(type):
         )
 
 
-class OrderedClass(metaclass = OrderedMetaclass):
+class OrderedClass(metaclass=OrderedMetaclass):
     pass

@@ -10,24 +10,24 @@ class MessageMetaclass(OrderedMetaclass):
             prop.dub(name)
 
 
-class Message(OrderedClass, metaclass = MessageMetaclass):
+class Message(OrderedClass, metaclass=MessageMetaclass):
 
     def __init__(self, *args, **kwargs):
         super(Message, self).__init__()
         self._values = {}
-        for (name, _) in self._ordered_properties:
+        for name, _ in self._ordered_properties:
             if name in kwargs:
                 self._values[name] = kwargs[name]
 
     def pack(self):
         values = []
         values.append("<%s>" % self.__class__._name)
-        for (name, prop) in self._ordered_properties:
+        for name, prop in self._ordered_properties:
             if name in self._values:
                 values.append(prop.pack(self._values[name]))
         values.append("</%s>" % self.__class__._name)
         return "".join(values)
 
     def unpack(self, root):
-        for (name, prop) in self._ordered_properties:
+        for name, prop in self._ordered_properties:
             self._values[name] = prop.unpack(root.findall(name))

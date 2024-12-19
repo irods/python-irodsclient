@@ -5,21 +5,28 @@ import sys
 import unittest
 
 # this does not get called when imported from  runner.py
-if __name__ == '__main__':
-    sys.path.insert(0, os.path.abspath('../..'))
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.abspath("../.."))
 
 from irods.message import ET
 
 # from base64 import b64encode, b64decode
-from irods.message import (StartupPack, AuthResponse, IntegerIntegerMap,
-                           IntegerStringMap, StringStringMap, GenQueryRequest,
-                           GenQueryResponseColumn, GenQueryResponse)
+from irods.message import (
+    StartupPack,
+    AuthResponse,
+    IntegerIntegerMap,
+    IntegerStringMap,
+    StringStringMap,
+    GenQueryRequest,
+    GenQueryResponseColumn,
+    GenQueryResponse,
+)
 
 
 class TestMessages(unittest.TestCase):
 
     def test_startup_pack(self):
-        sup = StartupPack(('rods', 'tempZone'), ('rods', 'tempZone'))
+        sup = StartupPack(("rods", "tempZone"), ("rods", "tempZone"))
         sup.irodsProt = 2
         sup.reconnFlag = 3
         sup.proxyUser = "rods"
@@ -44,7 +51,7 @@ class TestMessages(unittest.TestCase):
 </StartupPack_PI>"
         self.assertEqual(xml_str, expected)
 
-        sup2 = StartupPack(('rods', 'tempZone'), ('rods', 'tempZone'))
+        sup2 = StartupPack(("rods", "tempZone"), ("rods", "tempZone"))
         sup2.unpack(ET().fromstring(expected))
         self.assertEqual(sup2.irodsProt, 2)
         self.assertEqual(sup2.reconnFlag, 3)
@@ -120,8 +127,8 @@ class TestMessages(unittest.TestCase):
 
         kvp = StringStringMap()
         kvp.ssLen = 2
-        kvp.keyWord = ['one', 'two']
-        kvp.svalue = ['three', 'four']
+        kvp.keyWord = ["one", "two"]
+        kvp.svalue = ["three", "four"]
 
         iip = IntegerIntegerMap()
         iip.iiLen = 2
@@ -131,7 +138,7 @@ class TestMessages(unittest.TestCase):
         ivp = IntegerStringMap()
         ivp.isLen = 2
         ivp.inx = [1, 2]
-        ivp.svalue = ['five', 'six']
+        ivp.svalue = ["five", "six"]
 
         gq.KeyValPair_PI = kvp
         gq.InxIvalPair_PI = iip
@@ -198,6 +205,7 @@ class TestMessages(unittest.TestCase):
 
         self.assertEqual(gqo2.rowCnt, 2)
         self.assertEqual(gqo2.pack(), expected)
+
 
 if __name__ == "__main__":
     unittest.main()
