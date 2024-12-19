@@ -1,10 +1,11 @@
 """A module providing tools for path normalization and manipulation."""
 
-__all__ = ['iRODSPath']
+__all__ = ["iRODSPath"]
 
 import re
 import logging
 import os
+
 
 class iRODSPath(str):
     """A subclass of the Python string that normalizes iRODS logical paths."""
@@ -46,21 +47,21 @@ class iRODSPath(str):
             iRODSPath('//zone/home/public/this', iRODSPath('../that',absolute=False))
             # => "/zone/home/public/that"
         """
-        absolute_ = kw.pop('absolute',True)
+        absolute_ = kw.pop("absolute", True)
         if kw:
-            logging.warning("These iRODSPath options have no effect: %r",kw.items())
+            logging.warning("These iRODSPath options have no effect: %r", kw.items())
         normalized = _normalize_iRODS_logical_path(elem_list, absolute_)
-        obj = str.__new__(cls,normalized)
+        obj = str.__new__(cls, normalized)
         return obj
 
 
 def _normalize_iRODS_logical_path(paths, make_absolute):
     build = []
 
-    if paths and paths[0][:1] == '/':
+    if paths and paths[0][:1] == "/":
         make_absolute = True
 
-    p = '/'.join(paths).split('/')
+    p = "/".join(paths).split("/")
 
     while p and not p[0]:
         p.pop(0)
@@ -70,22 +71,22 @@ def _normalize_iRODS_logical_path(paths, make_absolute):
     # Break out and resolve updir('..') and trivial path elements like '.', ''
 
     for elem in p:
-        if elem == '..':
+        if elem == "..":
             if not build:
-                prefixed_updirs += (0 if make_absolute else 1)
+                prefixed_updirs += 0 if make_absolute else 1
             else:
                 if build[-1]:
                     build.pop()
             continue
-        elif elem in ('','.'):
+        elif elem in ("", "."):
             continue
         build.append(elem)
 
     # Restore any initial updirs
-    build[:0] = ['..'] * prefixed_updirs
+    build[:0] = [".."] * prefixed_updirs
 
     # Rejoin components, respecting 'make_absolute' flag
-    path_= ('/' if make_absolute else '') + '/'.join(build)
+    path_ = ("/" if make_absolute else "") + "/".join(build)
 
     # Empty path equivalent to "current directory"
-    return '.' if not path_ else path_
+    return "." if not path_ else path_

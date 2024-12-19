@@ -14,8 +14,10 @@ from .. import DEFAULT_CONFIG_PATH
 
 logger = logging.Logger(__name__)
 
+
 class iRODSConfiguration:
     __slots__ = ()
+
 
 def getter(category, setting):
     """A programmatic way of allowing the current value of the specified setting to be
@@ -28,24 +30,33 @@ def getter(category, setting):
     See the irods.manager.data_object_manager.DataObjectManager.open(...) method signature
     for a usage example.
     """
-    return lambda:getattr(globals()[category], setting)
+    return lambda: getattr(globals()[category], setting)
+
 
 class iRODSConfigAliasMetaclass(type):
     def __new__(meta, name, bases, attrs):
         cls = type.__new__(meta, name, bases, attrs)
-        cls.writeable_properties = tuple(k for k,v in attrs.items() if
-                isinstance(v,property) and v.fset is not None)
+        cls.writeable_properties = tuple(
+            k
+            for k, v in attrs.items()
+            if isinstance(v, property) and v.fset is not None
+        )
         return cls
 
-class ConnectionsProperties(iRODSConfiguration, metaclass = iRODSConfigAliasMetaclass):
+
+class ConnectionsProperties(iRODSConfiguration, metaclass=iRODSConfigAliasMetaclass):
     @property
     def xml_parser_default(self):
         from irods.message import get_default_XML_by_name
+
         return get_default_XML_by_name()
+
     @xml_parser_default.setter
-    def xml_parser_default(self,str_value):
+    def xml_parser_default(self, str_value):
         from irods.message import set_default_XML_by_name
+
         return set_default_XML_by_name(str_value)
+
 
 connections = ConnectionsProperties()
 
@@ -54,9 +65,12 @@ connections = ConnectionsProperties()
 # Classes for building client configuration categories
 # (irods.client_configuration.data_objects is one such category):
 
+
 class DataObjects(iRODSConfiguration):
-    __slots__ = ('auto_close',
-                 'allow_redirect',)
+    __slots__ = (
+        "auto_close",
+        "allow_redirect",
+    )
 
     def __init__(self):
 
@@ -72,6 +86,7 @@ class DataObjects(iRODSConfiguration):
         self.auto_close = False
         self.allow_redirect = False
 
+
 # #############################################################################
 #
 # Instantiations of client-configuration categories:
@@ -85,56 +100,80 @@ class DataObjects(iRODSConfiguration):
 
 data_objects = DataObjects()
 
+
 class LegacyAuth(iRODSConfiguration):
-    __slots__ = ('pam',)
+    __slots__ = ("pam",)
+
     class Pam(iRODSConfiguration):
-        __slots__ = ('time_to_live_in_hours', 'password_for_auto_renew', 'store_password_to_environment', 'force_use_of_dedicated_pam_api')
+        __slots__ = (
+            "time_to_live_in_hours",
+            "password_for_auto_renew",
+            "store_password_to_environment",
+            "force_use_of_dedicated_pam_api",
+        )
+
         def __init__(self):
-            self.time_to_live_in_hours = 0 # -> We default to the server's TTL preference.
-            self.password_for_auto_renew = ''
+            self.time_to_live_in_hours = (
+                0  # -> We default to the server's TTL preference.
+            )
+            self.password_for_auto_renew = ""
             self.store_password_to_environment = False
             self.force_use_of_dedicated_pam_api = False
+
     def __init__(self):
         self.pam = self.Pam()
 
+
 legacy_auth = LegacyAuth()
+
 
 # Exposes the significant settable attributes of an iRODSConfiguration object:
 def _config_names(root):
-    slots = getattr(root,'__slots__',())
-    properties = getattr(root,'writeable_properties',())
+    slots = getattr(root, "__slots__", ())
+    properties = getattr(root, "writeable_properties", ())
     return tuple(slots) + tuple(properties)
 
+
 # Exposes one level of the configuration hierarchy from the given ("root") node:
-def _var_items(root, leaf_flag = False):
+def _var_items(root, leaf_flag=False):
     if leaf_flag:
-        flag = lambda _:(_,)
+        flag = lambda _: (_,)
     else:
-        flag = lambda _:()
-    if isinstance(root,types.ModuleType):
-        return [((i,v) + flag(False)) for i,v in vars(root).items() if isinstance(v,iRODSConfiguration)]
-    if isinstance(root,iRODSConfiguration):
-        return [(i, getattr(root,i)) + flag(True) for i in _config_names(root)]
+        flag = lambda _: ()
+    if isinstance(root, types.ModuleType):
+        return [
+            ((i, v) + flag(False))
+            for i, v in vars(root).items()
+            if isinstance(v, iRODSConfiguration)
+        ]
+    if isinstance(root, iRODSConfiguration):
+        return [(i, getattr(root, i)) + flag(True) for i in _config_names(root)]
     return []
 
+
 # Recurses through an entire configuration hierarchy:
-def _var_items_as_generator(root = sys.modules[__name__], dotted=''):
-    _v = _var_items(root, leaf_flag = True)
+def _var_items_as_generator(root=sys.modules[__name__], dotted=""):
+    _v = _var_items(root, leaf_flag=True)
     for name, sub_node, is_config in _v:
-        dn = (dotted + ('.' if dotted else '') + name)
+        dn = dotted + ("." if dotted else "") + name
         yield dn, sub_node, is_config
-#       # TODO: (#480) When Python2 support is removed, we can instead use the simpler construction:
-#       yield from _var_items_as_generator(root = sub_node, dotted = dn)
-        for _dotted, _root, _is_config in _var_items_as_generator(root = sub_node, dotted = dn):
+        #       # TODO: (#480) When Python2 support is removed, we can instead use the simpler construction:
+        #       yield from _var_items_as_generator(root = sub_node, dotted = dn)
+        for _dotted, _root, _is_config in _var_items_as_generator(
+            root=sub_node, dotted=dn
+        ):
             yield _dotted, _root, _is_config
 
-VarItemTuple = collections.namedtuple('VarItemTuple',['dotted','root','is_config'])
 
-def _var_item_tuples_as_generator(root = sys.modules[__name__]):
+VarItemTuple = collections.namedtuple("VarItemTuple", ["dotted", "root", "is_config"])
+
+
+def _var_item_tuples_as_generator(root=sys.modules[__name__]):
     for _ in _var_items_as_generator(root):
         yield VarItemTuple(*_)
 
-def save(root = None, string='', file = ''):
+
+def save(root=None, string="", file=""):
     """Save the current configuration.
 
     When called simply as save(), this function simply writes all client settings into
@@ -155,96 +194,107 @@ def save(root = None, string='', file = ''):
     try:
         if not file:
             from .. import get_settings_path
+
             file = get_settings_path()
-        if isinstance(file,str):
-            _file = open(file,'w')
+        if isinstance(file, str):
+            _file = open(file, "w")
             auto_close_settings = True
         else:
-            _file = file # assume file-like object if not a string
+            _file = file  # assume file-like object if not a string
         if root is None:
             root = sys.modules[__name__]
-        for k,v in _var_items(root):
+        for k, v in _var_items(root):
             dotted_string = string + ("." if string else "") + k
-            if isinstance(v,iRODSConfiguration):
-                save(root = v, string = dotted_string, file = _file)
+            if isinstance(v, iRODSConfiguration):
+                save(root=v, string=dotted_string, file=_file)
             else:
-                print(dotted_string, repr(v), sep='\t\t', file = _file)
+                print(dotted_string, repr(v), sep="\t\t", file=_file)
         return file
     finally:
         if _file and auto_close_settings:
             _file.close()
 
+
 @contextlib.contextmanager
-def loadlines(entries, common_root = sys.modules[__name__]):
+def loadlines(entries, common_root=sys.modules[__name__]):
     """Temporarily change the values for one or more settings in the PRC's configuration.  Useful for test code.
 
-       Parameters:
-           entries: list of dict objects of the form dict(setting="dotted.path.to.setting", value=<temp_value>).
-           common_root: root point in configuration tree (best left to its default value).
+    Parameters:
+        entries: list of dict objects of the form dict(setting="dotted.path.to.setting", value=<temp_value>).
+        common_root: root point in configuration tree (best left to its default value).
 
-       Sample usage:
-       with loadlines(entries=[dict(setting='legacy_auth.pam.password_for_auto_renew',value='my-pam-password'),
-                               dict(setting='legacy_auth.pam.store_password_to_environment',value=True)]):
-           # ... test code for which the altered setting(s) should be in force
+    Sample usage:
+    with loadlines(entries=[dict(setting='legacy_auth.pam.password_for_auto_renew',value='my-pam-password'),
+                            dict(setting='legacy_auth.pam.store_password_to_environment',value=True)]):
+        # ... test code for which the altered setting(s) should be in force
     """
-    root_item = [('root',common_root)]
+    root_item = [("root", common_root)]
     entries_ = copy.deepcopy(entries)
-    identity = lambda _:_
+    identity = lambda _: _
     try:
         # Load config values.
         entries_ = []
         for e in entries:
             e_ = dict(root_item + list(e.items()))
             L = []
-            _load_config_line(eval_func = identity, return_old = L, **e_)
-            e_['value'] = L[0]
+            _load_config_line(eval_func=identity, return_old=L, **e_)
+            e_["value"] = L[0]
             entries_.append(e_)
         yield
     finally:
         # Restore old values.
         for e_ in entries_:
-            _load_config_line(eval_func = identity, **e_)
+            _load_config_line(eval_func=identity, **e_)
 
 
-def _load_config_line(root, setting, value, return_old = None, eval_func = ast.literal_eval):
+def _load_config_line(
+    root, setting, value, return_old=None, eval_func=ast.literal_eval
+):
     """Low-level utility function for loading a line of settings, with the option to return the old (displaced) value.
 
-       The 'root' refers to the starting point in the configuration tree.  Its meaning is the same as in loadlines().
-       The 'setting' is a string containing the dotted name for the configuration setting.
-       The 'value' is the new value to be loaded.  This will be evaluated via 'eval_func' (see below).
-       The 'return_old' is either None or a list which returns the displaced value back to the caller.
-       The 'eval_func' is a function for making the supplied 'value' parameter into a Pythonic value to be assigned to the given 'setting'.
+    The 'root' refers to the starting point in the configuration tree.  Its meaning is the same as in loadlines().
+    The 'setting' is a string containing the dotted name for the configuration setting.
+    The 'value' is the new value to be loaded.  This will be evaluated via 'eval_func' (see below).
+    The 'return_old' is either None or a list which returns the displaced value back to the caller.
+    The 'eval_func' is a function for making the supplied 'value' parameter into a Pythonic value to be assigned to the given 'setting'.
     """
 
-    arr = [_.strip() for _ in setting.split('.')]
+    arr = [_.strip() for _ in setting.split(".")]
     loadexc = None
     # Compute the object referred to by the dotted name.
     try:
-        attr = ''
-        for i in filter(None,arr):
+        attr = ""
+        for i in filter(None, arr):
             if attr:
-                root = getattr(root,attr)
+                root = getattr(root, attr)
             attr = i
         # Assign into the current setting of the dotted name (effectively <root>.<attr>)
         # using the loaded value.
         if attr:
-            if isinstance(return_old,list):
+            if isinstance(return_old, list):
                 # Return, in the provided list, the old value of the setting.
-                return_old.append(getattr(root,attr))
+                return_old.append(getattr(root, attr))
             return setattr(root, attr, eval_func(value))
     except Exception as e:
         loadexc = e
 
     # If we get this far, there's a problem loading the configuration setting.  Raise an exception or log it.
-    error_message = 'Bad setting: root = {root!r}, setting = {setting!r}, value = {value!r}'.format(**locals())
+    error_message = (
+        "Bad setting: root = {root!r}, setting = {setting!r}, value = {value!r}".format(
+            **locals()
+        )
+    )
     if loadexc:
         error_message += " [{loadexc!r}]".format(**locals())
     if allow_config_load_errors:
         raise RuntimeError(error_message)
     else:
-        logging.getLogger(__name__).log(logging.ERROR, '%s', error_message)
+        logging.getLogger(__name__).log(logging.ERROR, "%s", error_message)
 
-allow_config_load_errors = ast.literal_eval(os.environ.get('PYTHON_IRODSCLIENT_CONFIGURATION_LOAD_ERRORS_FATAL','False'))
+
+allow_config_load_errors = ast.literal_eval(
+    os.environ.get("PYTHON_IRODSCLIENT_CONFIGURATION_LOAD_ERRORS_FATAL", "False")
+)
 
 # The following regular expression is used to match a configuration file line of the form:
 # ---------------------------------------------------------------
@@ -254,7 +304,8 @@ allow_config_load_errors = ast.literal_eval(os.environ.get('PYTHON_IRODSCLIENT_C
 #  value: <A Python value which can be given to ast.literal_eval(); e.g. 5, True, or 'some_string'>
 #         <optional whitespace>
 
-_key_value_pattern = re.compile(r'\s*(?P<key>\w+(\.\w+)+)\s+(?P<value>\S.*?)\s*$')
+_key_value_pattern = re.compile(r"\s*(?P<key>\w+(\.\w+)+)\s+(?P<value>\S.*?)\s*$")
+
 
 class _ConfigLoadError:
     """
@@ -262,10 +313,23 @@ class _ConfigLoadError:
     their classes are listed in the failure_modes parameter of that function.
     """
 
-class NoConfigError(Exception, _ConfigLoadError): pass
-class BadConfigError(Exception, _ConfigLoadError): pass
 
-def load(root = None, file = '', failure_modes = (), verify_only = False, logging_level = logging.WARNING, use_environment_variables = False):
+class NoConfigError(Exception, _ConfigLoadError):
+    pass
+
+
+class BadConfigError(Exception, _ConfigLoadError):
+    pass
+
+
+def load(
+    root=None,
+    file="",
+    failure_modes=(),
+    verify_only=False,
+    logging_level=logging.WARNING,
+    use_environment_variables=False,
+):
     """Load the current configuration.
 
     An example of a valid line in a configuration file is this:
@@ -292,10 +356,11 @@ def load(root = None, file = '', failure_modes = (), verify_only = False, loggin
     'logging_level' governs the internally logged messages and can be used to e.g. quiet the
     call's logging output.
     """
+
     def _existing_config(path):
         if os.path.isfile(path):
-            return open(path,'r')
-        message = 'Config file not available at %r' % (path,)
+            return open(path, "r")
+        message = "Config file not available at %r" % (path,)
         logging.getLogger(__name__).log(logging_level, message)
         if NoConfigError in failure_modes:
             raise NoConfigError(message)
@@ -305,6 +370,7 @@ def load(root = None, file = '', failure_modes = (), verify_only = False, loggin
     try:
         if not file:
             from .. import get_settings_path
+
             file = get_settings_path()
 
         _file = _existing_config(file)
@@ -312,20 +378,24 @@ def load(root = None, file = '', failure_modes = (), verify_only = False, loggin
         if root is None:
             root = sys.modules[__name__]
 
-        if verify_only: return
+        if verify_only:
+            return
 
         for line_number, line in enumerate(_file.readlines()):
             line = line.strip()
             match = _key_value_pattern.match(line)
             if not match:
-                if line != '':
+                if line != "":
                     # Log only the invalid lines that contain non-whitespace characters.
-                    message = 'Invalid configuration format at line %d: %r' % (line_number+1, line)
+                    message = "Invalid configuration format at line %d: %r" % (
+                        line_number + 1,
+                        line,
+                    )
                     logging.getLogger(__name__).log(logging_level, message)
                     if BadConfigError in failure_modes:
                         raise BadConfigError(message)
                 continue
-            _load_config_line(root, match.group('key'), match.group('value'))
+            _load_config_line(root, match.group("key"), match.group("value"))
 
         if use_environment_variables:
             _load_settings_from_environment(root)
@@ -337,7 +407,8 @@ def load(root = None, file = '', failure_modes = (), verify_only = False, loggin
 
 default_config_dict = {}
 
-def _load_settings_from_environment(root = None):
+
+def _load_settings_from_environment(root=None):
     if root is None:
         root = sys.modules[__name__]
     for key, variable in _calculate_overriding_environment_variables().items():
@@ -345,24 +416,40 @@ def _load_settings_from_environment(root = None):
         if value is not None:
             _load_config_line(root, key, value)
 
+
 def preserve_defaults():
-    default_config_dict.update((k,copy.deepcopy(v)) for k,v in globals().items() if isinstance(v,iRODSConfiguration))
+    default_config_dict.update(
+        (k, copy.deepcopy(v))
+        for k, v in globals().items()
+        if isinstance(v, iRODSConfiguration)
+    )
+
 
 def autoload(_file_to_load):
     if _file_to_load is None:
         _load_settings_from_environment()
     else:
-        load(file = _file_to_load, use_environment_variables = True)
+        load(file=_file_to_load, use_environment_variables=True)
+
 
 def new_default_config():
-    module = types.ModuleType('_')
+    module = types.ModuleType("_")
     module.__dict__.update(default_config_dict)
     return module
 
-def overriding_environment_variables():
-    uppercase_and_dot_split = lambda _:_.upper().split('.')
-    return { _tuple.dotted: '__'.join(['PYTHON_IRODSCLIENT_CONFIG']+uppercase_and_dot_split(_tuple.dotted))
-                            for _tuple in _var_item_tuples_as_generator() if _tuple.is_config }
 
-def _calculate_overriding_environment_variables(memo = overriding_environment_variables()):
+def overriding_environment_variables():
+    uppercase_and_dot_split = lambda _: _.upper().split(".")
+    return {
+        _tuple.dotted: "__".join(
+            ["PYTHON_IRODSCLIENT_CONFIG"] + uppercase_and_dot_split(_tuple.dotted)
+        )
+        for _tuple in _var_item_tuples_as_generator()
+        if _tuple.is_config
+    }
+
+
+def _calculate_overriding_environment_variables(
+    memo=overriding_environment_variables(),
+):
     return memo

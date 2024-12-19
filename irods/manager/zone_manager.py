@@ -9,6 +9,7 @@ from irods.exception import ZoneDoesNotExist, NoResultFound
 
 logger = logging.getLogger(__name__)
 
+
 class ZoneManager(Manager):
 
     def get(self, zone_name):
@@ -27,8 +28,9 @@ class ZoneManager(Manager):
             zone_name,
             zone_type,
         )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
+        request = iRODSMessage(
+            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
+        )
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -36,13 +38,10 @@ class ZoneManager(Manager):
         return self.get(zone_name)
 
     def remove(self, zone_name):
-        message_body = GeneralAdminRequest(
-            "rm",
-            "zone",
-            zone_name
+        message_body = GeneralAdminRequest("rm", "zone", zone_name)
+        request = iRODSMessage(
+            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
         )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()

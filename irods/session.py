@@ -20,17 +20,18 @@ from irods.manager.access_manager import AccessManager
 from irods.manager.user_manager import UserManager, GroupManager
 from irods.manager.resource_manager import ResourceManager
 from irods.manager.zone_manager import ZoneManager
-from irods.message import (iRODSMessage, STR_PI)
-from irods.exception import (NetworkException, NotImplementedInIRODSServer)
+from irods.message import iRODSMessage, STR_PI
+from irods.exception import NetworkException, NotImplementedInIRODSServer
 from irods.password_obfuscation import decode
 from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import at_client_exit
-from . import (DEFAULT_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT)
+from . import DEFAULT_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT
 
 _fds = None
 _fds_lock = threading.Lock()
 _sessions = None
 _sessions_lock = threading.Lock()
+
 
 def _cleanup_remaining_sessions():
     for fd in list((_fds or {}).keys()):
@@ -41,112 +42,126 @@ def _cleanup_remaining_sessions():
     for ses in (_sessions or []).copy():
         ses.cleanup()  # internally modifies _sessions
 
+
 with _sessions_lock:
     at_client_exit._register(
-        at_client_exit.LibraryCleanupStage.DURING,
-        _cleanup_remaining_sessions)
+        at_client_exit.LibraryCleanupStage.DURING, _cleanup_remaining_sessions
+    )
+
 
 def _weakly_reference(ses):
     global _sessions, _fds
     try:
         if _sessions is None:
             with _sessions_lock:
-                do_register = (_sessions is None)
+                do_register = _sessions is None
                 if do_register:
                     _sessions = weakref.WeakKeyDictionary()
                     _fds = weakref.WeakKeyDictionary()
     finally:
         _sessions[ses] = None
 
+
 logger = logging.getLogger(__name__)
 
-class NonAnonymousLoginWithoutPassword(RuntimeError): pass
+
+class NonAnonymousLoginWithoutPassword(RuntimeError):
+    pass
 
 
 class iRODSSession:
 
     def library_features(self):
-        irods_version_needed = (4,3,1)
+        irods_version_needed = (4, 3, 1)
         if self.server_version < irods_version_needed:
-            raise NotImplementedInIRODSServer('library_features', irods_version_needed)
-        message = iRODSMessage('RODS_API_REQ', int_info = api_number['GET_LIBRARY_FEATURES_AN'])
+            raise NotImplementedInIRODSServer("library_features", irods_version_needed)
+        message = iRODSMessage(
+            "RODS_API_REQ", int_info=api_number["GET_LIBRARY_FEATURES_AN"]
+        )
         with self.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
-            msg = response.get_main_message( STR_PI )
+            msg = response.get_main_message(STR_PI)
             return json.loads(msg.myStr)
 
     @property
-    def env_file (self):
+    def env_file(self):
         return self._env_file
 
     @property
-    def auth_file (self):
+    def auth_file(self):
         return self._auth_file
 
     @property
     def available_permissions(self):
-        from irods.access import (iRODSAccess,_iRODSAccess_pre_4_3_0)
+        from irods.access import iRODSAccess, _iRODSAccess_pre_4_3_0
+
         try:
             self.__access
         except AttributeError:
-            self.__access = _iRODSAccess_pre_4_3_0 if self.server_version < (4,3) else iRODSAccess
+            self.__access = (
+                _iRODSAccess_pre_4_3_0 if self.server_version < (4, 3) else iRODSAccess
+            )
         return self.__access
 
     @property
     def groups(self):
         class _GroupManager(self.user_groups.__class__):
 
-            def create(self, name,
-                             group_admin = None): # NB new default (see user_groups manager and i/f, with False as default)
+            def create(
+                self, name, group_admin=None
+            ):  # NB new default (see user_groups manager and i/f, with False as default)
 
-                user_type = 'rodsgroup'   # These are no longer parameters in the new interface, as they have no reason to vary.
-                user_zone = ""            # Groups (1) are always of type 'rodsgroup', (2) always belong to the local zone, and
-                auth_str = ""             #        (3) do not authenticate.
+                user_type = "rodsgroup"  # These are no longer parameters in the new interface, as they have no reason to vary.
+                user_zone = ""  # Groups (1) are always of type 'rodsgroup', (2) always belong to the local zone, and
+                auth_str = ""  #        (3) do not authenticate.
 
-                return super(_GroupManager, self).create(name,
-                                                         user_type,
-                                                         user_zone,
-                                                         auth_str,
-                                                         group_admin,
-                                                         suppress_deprecation_warning = True)
+                return super(_GroupManager, self).create(
+                    name,
+                    user_type,
+                    user_zone,
+                    auth_str,
+                    group_admin,
+                    suppress_deprecation_warning=True,
+                )
 
-            def addmember(self, group_name,
-                                user_name,
-                                user_zone = "",
-                                group_admin = None):
+            def addmember(self, group_name, user_name, user_zone="", group_admin=None):
 
-                return super(_GroupManager, self).addmember(group_name,
-                                                            user_name,
-                                                            user_zone,
-                                                            group_admin,
-                                                            suppress_deprecation_warning = True)
+                return super(_GroupManager, self).addmember(
+                    group_name,
+                    user_name,
+                    user_zone,
+                    group_admin,
+                    suppress_deprecation_warning=True,
+                )
 
-            def removemember(self, group_name,
-                                   user_name,
-                                   user_zone = "",
-                                   group_admin = None):
+            def removemember(
+                self, group_name, user_name, user_zone="", group_admin=None
+            ):
 
-                return super(_GroupManager, self).removemember(group_name,
-                                                               user_name,
-                                                               user_zone,
-                                                               group_admin,
-                                                               suppress_deprecation_warning = True)
+                return super(_GroupManager, self).removemember(
+                    group_name,
+                    user_name,
+                    user_zone,
+                    group_admin,
+                    suppress_deprecation_warning=True,
+                )
 
-        _groups = getattr(self,'_groups',None)
+        _groups = getattr(self, "_groups", None)
         if not _groups:
             _groups = self._groups = _GroupManager(self.user_groups.sess)
         return self._groups
 
-
-    def __init__(self, configure = True, auto_cleanup = True, **kwargs):
+    def __init__(self, configure=True, auto_cleanup=True, **kwargs):
         self.pool = None
         self.numThreads = 0
-        self._env_file = ''
-        self._auth_file = ''
-        self.do_configure = (kwargs if configure else {})
+        self._env_file = ""
+        self._auth_file = ""
+        self.do_configure = kwargs if configure else {}
         self._cached_connection_timeout = None
-        self.connection_timeout = kwargs.pop('connection_timeout', DEFAULT_CONNECTION_TIMEOUT)
+        self.connection_timeout = kwargs.pop(
+            "connection_timeout", DEFAULT_CONNECTION_TIMEOUT
+        )
         self.__configured = None
         if configure:
             self.__configured = self.configure(**kwargs)
@@ -160,7 +175,7 @@ class iRODSSession:
         self.resources = ResourceManager(self)
         self.zones = ZoneManager(self)
         self._auto_cleanup = auto_cleanup
-        self.ticket__ = ''
+        self.ticket__ = ""
         # A mapping for each connection - holds whether the session's assigned ticket has been applied.
         self.ticket_applied = weakref.WeakKeyDictionary()
         if auto_cleanup:
@@ -182,25 +197,25 @@ class iRODSSession:
     def clone(self, **kwargs):
         other = copy.copy(self)
         other.pool = None
-        for k,v in vars(self).items():
-            if getattr(v,'_set_manager_session',None) is not None:
+        for k, v in vars(self).items():
+            if getattr(v, "_set_manager_session", None) is not None:
                 vcopy = copy.copy(v)
                 # Deep-copy into the manager object for the cloned session and set its parent session
                 # reference to correspond to the clone.
-                setattr(other,k,vcopy)
+                setattr(other, k, vcopy)
                 vcopy._set_manager_session(other)
-            elif isinstance(v,iRODSAccount):
+            elif isinstance(v, iRODSAccount):
                 # Deep-copy the iRODSAccount subobject, since we might be setting the hostname on that object.
-                setattr(other,k,copy.copy(v))
+                setattr(other, k, copy.copy(v))
 
-        other.cleanup(new_host = kwargs.pop('host',''))
-        other.ticket__ = kwargs.pop('ticket',self.ticket__)
+        other.cleanup(new_host=kwargs.pop("host", ""))
+        other.ticket__ = kwargs.pop("ticket", self.ticket__)
         other.ticket_applied = weakref.WeakKeyDictionary()
         if other._auto_cleanup:
             _weakly_reference(other)
         return other
 
-    def cleanup(self, new_host = ''):
+    def cleanup(self, new_host=""):
         if self.pool:
             for conn in self.pool.active | self.pool.idle:
                 try:
@@ -208,71 +223,77 @@ class iRODSSession:
                 except NetworkException:
                     pass
                 conn.release(True)
-        if self.do_configure: 
+        if self.do_configure:
             if new_host:
-                d = self.do_configure.setdefault('_overrides',{})
-                d['irods_host'] = new_host
+                d = self.do_configure.setdefault("_overrides", {})
+                d["irods_host"] = new_host
                 self.__configured = None
             self.__configured = self.configure(**self.do_configure)
 
     def _configure_account(self, **kwargs):
         env_file = None
         try:
-            env_file = kwargs['irods_env_file']
+            env_file = kwargs["irods_env_file"]
         except KeyError:
             # For backward compatibility
-            for key in ['host', 'port', 'authentication_scheme']:
+            for key in ["host", "port", "authentication_scheme"]:
                 if key in kwargs:
-                    kwargs['irods_{}'.format(key)] = kwargs.pop(key)
+                    kwargs["irods_{}".format(key)] = kwargs.pop(key)
 
-            for key in ['user', 'zone']:
+            for key in ["user", "zone"]:
                 if key in kwargs:
-                    kwargs['irods_{}_name'.format(key)] = kwargs.pop(key)
+                    kwargs["irods_{}_name".format(key)] = kwargs.pop(key)
 
             return iRODSAccount(**kwargs)
 
         # Get credentials from irods environment file
-        creds = self.get_irods_env(env_file, session_ = self)
+        creds = self.get_irods_env(env_file, session_=self)
 
         # Update with new keywords arguments only
         creds.update((key, value) for key, value in kwargs.items() if key not in creds)
 
         if env_file:
-            creds['env_file'] = env_file
+            creds["env_file"] = env_file
 
         # Get auth scheme
         try:
-            auth_scheme = creds['irods_authentication_scheme']
+            auth_scheme = creds["irods_authentication_scheme"]
         except KeyError:
             # default
-            auth_scheme = 'native'
+            auth_scheme = "native"
 
         if auth_scheme.lower() in PAM_AUTH_SCHEMES:
             # inline password
-            if 'password' in creds:
+            if "password" in creds:
                 return iRODSAccount(**creds)
             else:
                 # password will be from irodsA file therefore use native login
                 # but let PAM still be recorded as the original scheme
-                creds['irods_authentication_scheme'] = (NATIVE_AUTH_SCHEME, auth_scheme)
-        elif auth_scheme != 'native':
+                creds["irods_authentication_scheme"] = (NATIVE_AUTH_SCHEME, auth_scheme)
+        elif auth_scheme != "native":
             return iRODSAccount(**creds)
 
         # Native auth, try to unscramble password
         try:
-            creds['irods_authentication_uid'] = kwargs['irods_authentication_uid']
+            creds["irods_authentication_uid"] = kwargs["irods_authentication_uid"]
         except KeyError:
             pass
 
         missing_file_path = []
         error_args = []
-        pw = creds['password'] = self.get_irods_password(session_ = self, file_path_if_not_found = missing_file_path, **creds)
+        pw = creds["password"] = self.get_irods_password(
+            session_=self, file_path_if_not_found=missing_file_path, **creds
+        )
         # For native authentication, a missing password should be flagged as an error for non-anonymous logins.
         # However, the pam_password case has its own internal checks.
         if auth_scheme.lower() not in PAM_AUTH_SCHEMES:
-            if not pw and creds.get('irods_user_name') != 'anonymous':
+            if not pw and creds.get("irods_user_name") != "anonymous":
                 if missing_file_path:
-                    error_args += ["Authentication file not found at {!r}".format(missing_file_path[0])]
+                    error_args += [
+                        "Authentication file not found at {!r}".format(
+                            missing_file_path[0]
+                        )
+                    ]
                 raise NonAnonymousLoginWithoutPassword(*error_args)
 
         return iRODSAccount(**creds)
@@ -282,11 +303,20 @@ class iRODSSession:
         if not account:
             account = self._configure_account(**kwargs)
         # so that _login_pam can rewrite auth file with new password if requested:
-        account._auth_file = getattr(self,'_auth_file','')
+        account._auth_file = getattr(self, "_auth_file", "")
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
-        logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
-        self.pool = Pool(account, application_name=kwargs.pop('application_name',''), connection_refresh_time=connection_refresh_time, session = self)
-        conn_timeout = getattr(self,'_cached_connection_timeout',None)
+        logger.debug(
+            "In iRODSSession's configure(). connection_refresh_time set to {}".format(
+                connection_refresh_time
+            )
+        )
+        self.pool = Pool(
+            account,
+            application_name=kwargs.pop("application_name", ""),
+            connection_refresh_time=connection_refresh_time,
+            session=self,
+        )
+        conn_timeout = getattr(self, "_cached_connection_timeout", None)
         self.pool.connection_timeout = conn_timeout
         return account
 
@@ -294,11 +324,11 @@ class iRODSSession:
         return Query(self, *args, **kwargs)
 
     def genquery2_object(self, **kwargs):
-        """ Returns GenQuery2 object
+        """Returns GenQuery2 object
 
-            Returns GenQuery2 object that can be used to execute GenQuery2 queries,
-            to retrieve the SQL query for a particular GenQuery2 query, and to
-            get GenQuery2 column mappings.
+        Returns GenQuery2 object that can be used to execute GenQuery2 queries,
+        to retrieve the SQL query for a particular GenQuery2 query, and to
+        get GenQuery2 column mappings.
         """
         return GenQuery2(self, **kwargs)
 
@@ -325,9 +355,9 @@ class iRODSSession:
 
     @property
     def server_version(self):
-        reported_vsn = os.environ.get("PYTHON_IRODSCLIENT_REPORTED_SERVER_VERSION","")
+        reported_vsn = os.environ.get("PYTHON_IRODSCLIENT_REPORTED_SERVER_VERSION", "")
         if reported_vsn:
-            return tuple(ast.literal_eval(reported_vsn)) 
+            return tuple(ast.literal_eval(reported_vsn))
         return self.__server_version()
 
     def __server_version(self):
@@ -342,7 +372,7 @@ class iRODSSession:
 
     @property
     def client_hints(self):
-        message = iRODSMessage('RODS_API_REQ', int_info=api_number['CLIENT_HINTS_AN'])
+        message = iRODSMessage("RODS_API_REQ", int_info=api_number["CLIENT_HINTS_AN"])
         with self.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
@@ -350,12 +380,12 @@ class iRODSSession:
 
     @property
     def pam_pw_negotiated(self):
-            self.pool.account.store_pw = []
-            conn = self.pool.get_connection()
-            pw = getattr(self.pool.account,'store_pw',[])
-            delattr( self.pool.account, 'store_pw')
-            conn.release()
-            return pw
+        self.pool.account.store_pw = []
+        conn = self.pool.get_connection()
+        pw = getattr(self.pool.account, "store_pw", [])
+        delattr(self.pool.account, "store_pw")
+        conn.release()
+        return pw
 
     @property
     def default_resource(self):
@@ -372,21 +402,30 @@ class iRODSSession:
     @connection_timeout.setter
     def connection_timeout(self, seconds):
         if seconds == 0:
-            exc = ValueError("Setting an iRODS connection_timeout to 0 seconds would make it non-blocking.")
+            exc = ValueError(
+                "Setting an iRODS connection_timeout to 0 seconds would make it non-blocking."
+            )
             raise exc
         elif isinstance(seconds, Number):
             # Note: We can handle infinities because -Inf < 0 and Inf > MAXIMUM_CONNECTION_TIMEOUT.
-            if seconds < 0 or str(seconds) == 'nan':
-                exc = ValueError("The iRODS connection_timeout may not be assigned a negative, out-of-bounds, or otherwise rogue value (eg: NaN, -Inf).")
+            if seconds < 0 or str(seconds) == "nan":
+                exc = ValueError(
+                    "The iRODS connection_timeout may not be assigned a negative, out-of-bounds, or otherwise rogue value (eg: NaN, -Inf)."
+                )
                 raise exc
             elif seconds > MAXIMUM_CONNECTION_TIMEOUT:
-                logging.getLogger(__name__).warning('Hard limiting connection timeout of %g to the maximum allowable value of %g',
-                    seconds, MAXIMUM_CONNECTION_TIMEOUT)
+                logging.getLogger(__name__).warning(
+                    "Hard limiting connection timeout of %g to the maximum allowable value of %g",
+                    seconds,
+                    MAXIMUM_CONNECTION_TIMEOUT,
+                )
                 seconds = MAXIMUM_CONNECTION_TIMEOUT
         elif seconds is None:
             pass
         else:
-            exc = ValueError("The iRODS connection_timeout must be assigned a positive int, positive float, or None.")
+            exc = ValueError(
+                "The iRODS connection_timeout must be assigned a positive int, positive float, or None."
+            )
             raise exc
         self._cached_connection_timeout = seconds
         if self.pool:
@@ -395,14 +434,14 @@ class iRODSSession:
     @staticmethod
     def get_irods_password_file():
         try:
-            return os.environ['IRODS_AUTHENTICATION_FILE']
+            return os.environ["IRODS_AUTHENTICATION_FILE"]
         except KeyError:
-            return os.path.expanduser('~/.irods/.irodsA')
+            return os.path.expanduser("~/.irods/.irodsA")
 
     @staticmethod
-    def get_irods_env(env_file, session_ = None):
+    def get_irods_env(env_file, session_=None):
         try:
-            with open(env_file, 'rt') as f:
+            with open(env_file, "rt") as f:
                 j = json.load(f)
                 if session_ is not None:
                     session_._env_file = env_file
@@ -412,29 +451,29 @@ class iRODSSession:
             return {}
 
     @staticmethod
-    def get_irods_password(session_ = None, file_path_if_not_found = (), **kwargs):
-        path_memo  = []
+    def get_irods_password(session_=None, file_path_if_not_found=(), **kwargs):
+        path_memo = []
         try:
-            irods_auth_file = kwargs['irods_authentication_file']
+            irods_auth_file = kwargs["irods_authentication_file"]
         except KeyError:
             irods_auth_file = iRODSSession.get_irods_password_file()
 
         try:
-            uid = kwargs['irods_authentication_uid']
+            uid = kwargs["irods_authentication_uid"]
         except KeyError:
             uid = None
 
-        _retval = ''
+        _retval = ""
 
         try:
-            with open(irods_auth_file, 'r') as f:
-                _retval = decode(f.read().rstrip('\n'), uid)
+            with open(irods_auth_file, "r") as f:
+                _retval = decode(f.read().rstrip("\n"), uid)
                 return _retval
         except IOError as exc:
             if exc.errno != errno.ENOENT:
                 raise  # Auth file exists but can't be read
-            path_memo = [ irods_auth_file ]
-            return ''                           # No auth file (as with anonymous user)
+            path_memo = [irods_auth_file]
+            return ""  # No auth file (as with anonymous user)
         finally:
             if isinstance(file_path_if_not_found, list) and path_memo:
                 file_path_if_not_found[:] = path_memo
@@ -443,22 +482,28 @@ class iRODSSession:
 
     def get_connection_refresh_time(self, **kwargs):
         connection_refresh_time = -1
-        
-        connection_refresh_time = int(kwargs.get('refresh_time', -1))
+
+        connection_refresh_time = int(kwargs.get("refresh_time", -1))
         if connection_refresh_time != -1:
             return connection_refresh_time
 
         try:
-            env_file = kwargs['irods_env_file']
+            env_file = kwargs["irods_env_file"]
         except KeyError:
             return connection_refresh_time
 
         if env_file is not None:
             env_file_map = self.get_irods_env(env_file)
-            connection_refresh_time = int(env_file_map.get('irods_connection_refresh_time', -1))
+            connection_refresh_time = int(
+                env_file_map.get("irods_connection_refresh_time", -1)
+            )
             if connection_refresh_time < 1:
                 # Negative values are not allowed.
-                logger.debug('connection_refresh_time in {} file has value of {}. Only values greater than 1 are allowed.'.format(env_file, connection_refresh_time))
+                logger.debug(
+                    "connection_refresh_time in {} file has value of {}. Only values greater than 1 are allowed.".format(
+                        env_file, connection_refresh_time
+                    )
+                )
                 connection_refresh_time = -1
 
         return connection_refresh_time

@@ -3,6 +3,7 @@ from base64 import b64encode, b64decode
 from irods.message.ordered import OrderedProperty
 from html import escape
 
+
 class MessageProperty(OrderedProperty):
 
     def __get__(self, obj, cls):

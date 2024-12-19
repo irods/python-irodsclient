@@ -8,20 +8,23 @@ from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
 from irods.api_number import api_number
-from irods.message import (JSON_Message, iRODSMessage)
+from irods.message import JSON_Message, iRODSMessage
 
 logger = logging.getLogger(__name__)
 
-IRODS_SERVER_WITH_CLOSE_REPLICA_API = (4,2,9)
+IRODS_SERVER_WITH_CLOSE_REPLICA_API = (4, 2, 9)
+
 
 def chunks(f, chunksize=io.DEFAULT_BUFFER_SIZE):
-    return iter(lambda: f.read(chunksize), b'')
+    return iter(lambda: f.read(chunksize), b"")
+
 
 def irods_dirname(path):
-    return path.rsplit('/', 1)[0]
+    return path.rsplit("/", 1)[0]
+
 
 def irods_basename(path):
-    return path.rsplit('/', 1)[1]
+    return path.rsplit("/", 1)[1]
 
 
 class iRODSReplica:
@@ -35,12 +38,9 @@ class iRODSReplica:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-
     def __repr__(self):
         return "<{}.{} {}>".format(
-            self.__class__.__module__,
-            self.__class__.__name__,
-            self.resource_name
+            self.__class__.__module__, self.__class__.__name__, self.resource_name
         )
 
 
@@ -51,31 +51,30 @@ class iRODSDataObject:
         if parent and results:
             self.collection = parent
             for attr, value in DataObject.__dict__.items():
-                if not attr.startswith('_'):
+                if not attr.startswith("_"):
                     try:
                         setattr(self, attr, results[0][value])
                     except KeyError:
                         # backward compatibility with older schema versions
                         pass
-            self.path = self.collection.path + '/' + self.name
-            replicas = sorted(
-                results, key=lambda r: r[DataObject.replica_number])
-            self.replicas = [iRODSReplica(
-                r[DataObject.replica_number],
-                r[DataObject.replica_status],
-                r[DataObject.resource_name],
-                r[DataObject.path],
-                r[DataObject.resc_hier],
-                checksum=r[DataObject.checksum],
-                size=r[DataObject.size],
-                comments=r[DataObject.comments],
-                create_time=r[DataObject.create_time],
-                modify_time=r[DataObject.modify_time]
-            ) for r in replicas]
+            self.path = self.collection.path + "/" + self.name
+            replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
+            self.replicas = [
+                iRODSReplica(
+                    r[DataObject.replica_number],
+                    r[DataObject.replica_status],
+                    r[DataObject.resource_name],
+                    r[DataObject.path],
+                    r[DataObject.resc_hier],
+                    checksum=r[DataObject.checksum],
+                    size=r[DataObject.size],
+                    comments=r[DataObject.comments],
+                    create_time=r[DataObject.create_time],
+                    modify_time=r[DataObject.modify_time],
+                )
+                for r in replicas
+            ]
         self._meta = None
-
-
-
 
     def __repr__(self):
         return f"<iRODSDataObject {self.id} {self.name}>"
@@ -84,11 +83,14 @@ class iRODSDataObject:
     def metadata(self):
         if not self._meta:
             self._meta = iRODSMetaCollection(
-                self.manager.sess.metadata, DataObject, self.path)
+                self.manager.sess.metadata, DataObject, self.path
+            )
         return self._meta
 
-    def open(self, mode='r', finalize_on_close = True, **options):
-        return self.manager.open(self.path, mode, finalize_on_close = finalize_on_close, **options)
+    def open(self, mode="r", finalize_on_close=True, **options):
+        return self.manager.open(
+            self.path, mode, finalize_on_close=finalize_on_close, **options
+        )
 
     def chksum(self, **options):
         """
@@ -116,63 +118,85 @@ class iRODSDataObject:
     def replica_truncate(self, size, **options):
         return self.manager.replica_truncate(self.path, size, **options)
 
-    def replicate(self, resource = None, **options):
-        self.manager.replicate(self.path, resource = resource, **options)
+    def replicate(self, resource=None, **options):
+        self.manager.replicate(self.path, resource=resource, **options)
 
 
 class iRODSDataObjectFileRaw(io.RawIOBase):
-
     """The raw object supporting file-like operations (read/write/seek) for the
-       iRODSDataObject."""
+    iRODSDataObject."""
 
-    session = None      # codacy
+    session = None  # codacy
 
-    def __init__(self, conn, descriptor, finalize_on_close = True, **options):
+    def __init__(self, conn, descriptor, finalize_on_close=True, **options):
         """
         Constructor needs a connection and an iRODS data object descriptor. If the
         finalize_on_close flag evaluates False, close() will invoke the REPLICA_CLOSE
         API instead of closing and finalizing the object (useful for parallel
         transfers using multiple threads).
         """
-        super(iRODSDataObjectFileRaw,self).__init__()
+        super(iRODSDataObjectFileRaw, self).__init__()
         self.conn = conn
         self.desc = descriptor
         self.options = options
         self.finalize_on_close = finalize_on_close
 
     def replica_access_info(self):
-        message_body = JSON_Message( {'fd': self.desc},
-                                     server_version = self.conn.server_version )
-        message = iRODSMessage('RODS_API_REQ', msg = message_body,
-                               int_info=api_number['GET_FILE_DESCRIPTOR_INFO_APN'])
+        message_body = JSON_Message(
+            {"fd": self.desc}, server_version=self.conn.server_version
+        )
+        message = iRODSMessage(
+            "RODS_API_REQ",
+            msg=message_body,
+            int_info=api_number["GET_FILE_DESCRIPTOR_INFO_APN"],
+        )
         self.conn.send(message)
         result = None
         try:
             result = self.conn.recv()
         except Exception as e:
-            logger.warning('''Couldn't receive or process response to GET_FILE_DESCRIPTOR_INFO_APN -- '''
-                           '''caught: %r''',e)
+            logger.warning(
+                """Couldn't receive or process response to GET_FILE_DESCRIPTOR_INFO_APN -- """
+                """caught: %r""",
+                e,
+            )
             raise
         dobj_info = result.get_json_encoded_struct()
-        replica_token = dobj_info.get("replica_token","")
-        resc_hier = ( dobj_info.get("data_object_info") or {} ).get("resource_hierarchy","")
+        replica_token = dobj_info.get("replica_token", "")
+        resc_hier = (dobj_info.get("data_object_info") or {}).get(
+            "resource_hierarchy", ""
+        )
         return (replica_token, resc_hier)
 
     def _close_replica(self):
-        server_version = ast.literal_eval(os.environ.get('IRODS_VERSION_OVERRIDE', '()' ))
-        if (server_version or self.conn.server_version) < IRODS_SERVER_WITH_CLOSE_REPLICA_API: return False
-        message_body = JSON_Message( { "fd": self.desc,
-                                       "send_notification": False,
-                                       "update_size": False,
-                                       "update_status": False,
-                                       "compute_checksum": False },
-                                     server_version = self.conn.server_version )
-        self.conn.send( iRODSMessage('RODS_API_REQ', msg = message_body,
-                                     int_info=api_number['REPLICA_CLOSE_APN']) )
+        server_version = ast.literal_eval(
+            os.environ.get("IRODS_VERSION_OVERRIDE", "()")
+        )
+        if (
+            server_version or self.conn.server_version
+        ) < IRODS_SERVER_WITH_CLOSE_REPLICA_API:
+            return False
+        message_body = JSON_Message(
+            {
+                "fd": self.desc,
+                "send_notification": False,
+                "update_size": False,
+                "update_status": False,
+                "compute_checksum": False,
+            },
+            server_version=self.conn.server_version,
+        )
+        self.conn.send(
+            iRODSMessage(
+                "RODS_API_REQ",
+                msg=message_body,
+                int_info=api_number["REPLICA_CLOSE_APN"],
+            )
+        )
         try:
             self.conn.recv().int_info
         except Exception:
-            logger.warning ('** ERROR on closing replica **')
+            logger.warning("** ERROR on closing replica **")
             raise
         return True
 

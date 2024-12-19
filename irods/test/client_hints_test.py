@@ -6,6 +6,7 @@ import unittest
 
 import irods.test.helpers as helpers
 
+
 class TestClientHints(unittest.TestCase):
 
     def setUp(self):
@@ -25,7 +26,7 @@ class TestClientHints(unittest.TestCase):
         self.assertIn("match_hash_policy", client_hints)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # let the tests find the parent irods lib
-    sys.path.insert(0, os.path.abspath('../..'))
+    sys.path.insert(0, os.path.abspath("../.."))
     unittest.main()
