@@ -5,44 +5,27 @@ Python iRODS Client (PRC)
 
 Currently supported:
 
--   Python 2.7, 3.4 or newer
--   Establish a connection to iRODS
+-   Python 3.6 or later
+-   Establish a (secure) connection to iRODS
 -   Authenticate via password, GSI, PAM
--   iRODS connection over SSL
--   Implement basic GenQueries (select columns and filtering)
--   Support more advanced GenQueries with limits, offsets, and aggregations
--   Support for queries using the GenQuery2 interface
--   Query the collections and data objects within a collection
--   Execute direct SQL queries
--   Execute iRODS rules
--   Support read, write, and seek operations for files
--   Parallel PUT/GET data objects
--   Create collections
--   Rename collections
--   Delete collections
--   Create data objects
--   Rename data objects
--   Checksum data objects
--   Delete data objects
--   Register files and directories
--   Query metadata for collections and data objects
--   Add, edit, remove metadata
--   Replicate data objects to different resource servers
--   Connection pool management
--   Implement GenQuery result sets as lazy queries
--   Return empty result sets when CAT_NO_ROWS_FOUND is raised
--   Manage permissions
+-   GenQuery and Specific Queries
+-   GenQuery2
+-   Manage collections, data objects, and permissions
+    -   Checksum data objects
+    -   Replicate data objects
+    -   Parallel PUT/GET data objects
+    -   Read, write, and seek operations
+    -   Register files and directories
 -   Manage users and groups
 -   Manage resources
--   Unicode strings
--   Ticket based access
+-   Manage and execute iRODS rules
+-   Manage metadata
+-   Manage ticket-based access
 
 Installing
 ----------
 
-PRC requires Python 2.7 or 3.4+.
-
-Canonically, to install with pip:
+Install via pip:
 
     pip install python-irodsclient
 
@@ -54,22 +37,6 @@ Uninstalling
 ------------
 
     pip uninstall python-irodsclient
-
-Hazard: Outdated Python
------------------------
-
-With older versions of Python (as of this writing, the aforementioned
-2.7 and 3.4), we can take preparatory steps toward securing workable
-versions of pip and virtualenv by using these commands:
-
-    $ pip install --upgrade --user pip'<21.0'
-    $ python -m pip install --user virtualenv
-
-We are then ready to use any of the following commands relevant to and
-required for the installation:
-
-    $ python -m virtualenv ... 
-    $ python -m pip install ...
 
 Establishing a (secure) connection
 ----------------------------------
@@ -174,21 +141,21 @@ irods.client_init.write_pam_credentials_to_secrets_file
 Each takes a cleartext password and writes an appropriately processed version of it
 into an .irodsA (secrets) file in the login environment.
 
-Note, in the `pam_password` case, this involves sending the cleartext password
-to the server (SSL should thus be enabled!) and then writing the scrambled token that
-returns from the transaction.
-
-If an .irodsA file exists already, it will be overwritten by default; however, if these functions'
-overwrite parameter is set to `False`, an exception of type `irods.client_init.irodsA_already_exists`
-will be raised to indicate the older .irodsA file is present.
-
 Examples:
-For the `native` authentication scheme, we can use the currently set iRODS password to create .irodsA file from Python thus:
+For the `native` authentication scheme, we can use the currently set iRODS password to create the .irodsA file directly:
 
 ```python
 import irods.client_init as iinit
 iinit.write_native_credentials_to_secrets_file(irods_password)
 ```
+
+Note, in the `pam_password` case, this involves sending the cleartext password
+to the server (SSL must be enabled!) and then writing the scrambled token that
+is returned from the transaction.
+
+If an .irodsA file exists already, it will be overwritten by default; however, if these functions'
+overwrite parameter is set to `False`, an exception of type `irods.client_init.irodsA_already_exists`
+will be raised to indicate the older .irodsA file is present.
 
 For the `pam_password` authentication scheme, we must first ensure an `irods_environment.json` file exists in the 
 client environment (necessary for establishing SSL/TLS connection parameters as well as obtaining a PAM token from the server after connecting)
@@ -208,7 +175,7 @@ $ python -c "import irods.client_init as iinit; iinit.write_pam_credentials_to_s
 PAM logins
 ----------
 
-Starting with v2.0.0, the python iRODS client is able to authenticate under PAM using the same file-based client environment as the
+Since v2.0.0, the Python iRODS Client is able to authenticate via PAM using the same file-based client environment as the
 iCommands.
 
 Caveat for iRODS 4.3+: when upgrading from 4.2, the "irods_authentication_scheme" setting must be changed from "pam" to "pam_password" in
@@ -227,8 +194,7 @@ Leaving it at the default value defers this decision to the server.
 Maintaining a connection
 ------------------------
 
-The default library timeout for a connection to an iRODS Server is 120
-seconds.
+The default library timeout for a connection to an iRODS Server is 120 seconds.
 
 This can be overridden by changing the session `connection_timeout` immediately after creation of the
 session object:
@@ -253,12 +219,11 @@ connected iRODS server's log file. This is frequently seen at program
 exit because socket connections are terminated without having been
 closed out by the session object's cleanup() method.
 
-Starting with PRC Release 0.9.0, code has been included in the session
+Since v0.9.0, code has been included in the session
 object's `__del__` method to call cleanup(), properly closing out
-network connections. However, `__del__` cannot be relied to run under
-all circumstances (Python2 being more problematic), so an alternative
-may be to call session.cleanup() on any session variable which might not
-be used again.
+network connections. However, `__del__`  is not guaranteed to run as
+expected, so an alternative may be to call `session.cleanup()`
+on any session variable which will not be used again.
 
 Simple PUTs and GETs
 --------------------
@@ -268,8 +233,8 @@ from) iRODS.
 
 ```python
 >>> logical_path = "/{0.zone}/home/{0.username}/{1}".format(session,"myfile.dat")
->>> session.data_objects.put( "myfile.dat", logical_path)
->>> session.data_objects.get( logical_path, "/tmp/myfile.dat.copy" )
+>>> session.data_objects.put("myfile.dat", logical_path)
+>>> session.data_objects.get(logical_path, "/tmp/myfile.dat.copy")
 ```
 
 Note that local file paths may be relative, but iRODS data objects must
@@ -277,10 +242,15 @@ always be referred to by their absolute paths. This is in contrast to
 the `iput` and `iget` icommands, which keep track of the current working
 collection (as modified by `icd`) for the unix shell.
 
+Note also that PRC `put()` is actually using the `open`, `write`, and `close` APIs, rather than the
+iRODS PUT API directly.  This is transparent to the caller, but an administrator
+should take note as this affects which policy enforcement points (PEPs) are executed
+on the iRODS server.
+
 Parallel Transfer
 -----------------
 
-Starting with release 0.9.0, data object transfers using put() and get()
+Since v0.9.0, data object transfers using `put()` and `get()`
 will spawn a number of threads in order to optimize performance for
 iRODS server versions 4.2.9+ and file sizes larger than a default
 threshold value of 32 Megabytes.
@@ -288,7 +258,7 @@ threshold value of 32 Megabytes.
 Progress bars
 -------------
 
-The PRC now has support for progress bars which function on the basis of
+The PRC supports progress bars which function on the basis of
 an "update" callback function.  In the case of a tqdm progress bar (see https://github.com/tqdm/tqdm), you can always just
 pass the update method of the progress bar instance directly to the data_object
 `put` or `get` method:
@@ -314,7 +284,7 @@ function such as the following is first registered:
 ```
 
 Other progress bars may be included in an updatables parameter, but may require more extensive adaptation.
-For example, the ProgressBar object (from the progressbar module) also has an update method, but this one
+For example, the ProgressBar object (from the progressbar module) also has an update method, but it
 takes an up-to-date cumulative byte-count, instead of the size of an individual transfer in bytes,
 as its sole parameter.  There can be other complications:  e.g. a ProgressBar instance does not allow a weak
 reference to itself to be formed, which interferes with the Python iRODS Client's internal scheme of accounting
@@ -322,13 +292,13 @@ for progress bar instances "still in progress" while also preventing resource le
 
 In such cases, it is probably best to implement a wrapper for the progress
 bar in question, and submit the wrapper instance as the updatable parameter.  Whether
-a wrapper or the progress-bar object itself is thus employed, it is recommended that the user take steps to
+a wrapper or the progress bar object itself is thus employed, it is recommended that the user take steps to
 ensure the lifetime of the updatable instance extends beyond the time needed for the transfer to complete.
 
-See `irods/test/data_obj_test.py` for examples of these and other subtleties of progress-bar usage.
+See `irods/test/data_obj_test.py` for examples of these and other subtleties of progress bar usage.
 
-Working with collections
-------------------------
+Working with collections (directories)
+--------------------------------------
 
 ```python
 >>> coll = session.collections.get("/tempZone/home/rods")
@@ -391,7 +361,7 @@ demoResc
 1
 ```
 
-Using the put() method rather than the create() method will trigger different policy enforcement points (PEPs) on the server.
+Using the `put()` method rather than the `create()` method will trigger different policy enforcement points (PEPs) on the server.
 
 Put an existing file as a new data object:
 
@@ -421,13 +391,13 @@ may replace:
 
     "/".join(["", zone, "home", user])
 
-`iRODSPath` is available beginning with PRC release `v1.1.2`.
+`iRODSPath` has been available since v1.1.2.
 
 Reading and writing files
 -------------------------
 
 PRC provides [file-like
-objects](http://docs.python.org/2/library/stdtypes.html#file-objects) for reading and writing files.
+objects](https://docs.python.org/3/glossary.html#term-file-object) for reading and writing files.
 
 ```python
 >>> obj = session.data_objects.get("/tempZone/home/rods/test1")
@@ -441,7 +411,7 @@ foo
 bar
 ```
 
-As of v1.1.9, there is also an auto-close configuration setting for data
+Since v1.1.9, there is also an auto-close configuration setting for data
 objects, set to `False` by default, which may be assigned
 the value `True` for guaranteed auto-closing of open data
 object handles at the proper time.
@@ -468,7 +438,7 @@ sessions, whenever created) and is always consulted for the creation of
 any data object handle to govern that handle's cleanup behavior.
 
 Also, alternatively, the client may opt into a special "redirect" behavior
-in which data objects' open() method forge a connection directly to whichever
+in which data objects' `open()` method makes a new connection directly to whichever
 iRODS server is found to host the selected replica.  Data reads and
 writes will therefore happen on that alternate network route, instead of
 through the originally-connected server.  Though not the client's default
@@ -477,12 +447,12 @@ if several concurrent data uploads ("puts") and downloads ("gets") are
 happening which might increase traffic on the client's main communication
 route with the server.  (See, in [Python iRODS Client Settings File](#python-irods-client-settings-file),
 the client configuration setting `data_objects.allow_redirect`, which may be
-set to True for the aforementioned opt-in.)
+set to True to designate the opt-in.)
 
 Python iRODS Client Settings File
 ---------------------------------
 
-As of v1.1.9, Python iRODS client configuration can be saved in, and
+Since v1.1.9, Python iRODS client configuration can be saved in, and
 loaded from, a settings file.
 
 If the settings file exists, each of its lines contains (a) a dotted
@@ -508,11 +478,11 @@ determined, by setting the environment variable:
 `PYTHON_IRODSCLIENT_CONFIGURATION_PATH`. If this variable
 is present but empty, this denotes use of a default settings file path
 of `~/.python-irodsclient`; if the variable's value is of
-non-zero length, the value should be an absolute path to the settings
-file whose use is desired. Also, if the variable is set, auto-load of
+non-zero length, the value should be an absolute path to the desired settings
+file location. Also, if the variable is set, auto-load of
 settings will be performed, meaning that the act of importing
 `irods` or any of its submodules will cause the automatic
-loading the settings from the settings file, assuming it exists.
+loading of the settings from the settings file, assuming it exists.
 (Failure to find the file at the indicated path will be logged as a
 warning.)
 
@@ -525,9 +495,7 @@ CONFIG_DEFAULT_PATH, as optionally overridden by the environment
 variable PYTHON_IRODSCLIENT_CONFIGURATION_PATH).
 
 Configuration settings may also be individually overridden by defining
-certain environment variables. Here are relevant descriptions for each
-one currently available, including the names of the environment
-variables serving as overrides:
+certain environment variables:
 
 -   Setting: Auto-close option for all data objects.
     -   Dotted Name: `data_objects.auto_close`
@@ -573,7 +541,7 @@ variables serving as overrides:
     -   Possible Values: Any of `["STANDARD_XML", "QUASI_XML", "SECURE_XML"]`
     -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT`
 
-For example, if `~/python_irodsclient` contains the line :
+For example, if `~/.python_irodsclient` contains the line :
 
 ```
 connections.xml_parser_default        "QUASI_XML"
@@ -597,13 +565,13 @@ XML_Parser_Type.QUASI_XML
 Computing and Retrieving Checksums
 ----------------------------------
 
-Each data object may be associated with a checksum by calling chksum()
+Each data object may be associated with a checksum by calling `chksum()`
 on the object in question. Various behaviors can be elicited by passing
 in combinations of keywords (for a description of which, please consult
-the [header documentation](https://github.com/irods/irods/blob/4-2-stable/lib/api/include/dataObjChksum.h).)
+the [header documentation](https://github.com/irods/irods/blob/4-3-stable/lib/api/include/irods/dataObjChksum.h).)
 
 As with most other iRODS APIs, it is straightforward to specify keywords
-by adding them to an option dictionary:
+by adding them to an options dictionary:
 
 ```python
 >>> data_object_1.chksum() # - computes the checksum if already in the catalog, otherwise computes and stores it
@@ -612,7 +580,7 @@ by adding them to an option dictionary:
 >>> import irods.keywords as kw
 >>> opts = { kw.VERIFY_CHKSUM_KW:'' }
 >>> try:
-...     data_object_2.chksum( **opts ) # - Uses verification option. (Does not auto-vivify a checksum field).
+...     data_object_2.chksum( **opts ) # - Uses verification option. (Does not create or save a checksum in the catalog).
 ...     # or:
 ...     opts[ kw.NO_COMPUTE_KW ] = ''
 ...     data_object_2.chksum( **opts ) # - Uses both verification and no-compute options. (Like `ichksum -K --no-compute`)
@@ -638,8 +606,7 @@ given, information can be returned and read by the client:
 Working with metadata
 ---------------------
 
-To enumerate AVUs on an object. With no metadata attached, the result
-is an empty list:
+Showing the Attribute-Value-Units (AVUs) on an object with no metadata attached shows an empty list:
 
 ```python
 >>> from irods.meta import iRODSMeta
@@ -648,8 +615,7 @@ is an empty list:
 []
 ```
 
-We then add some metadata. Just as with the icommand equivalent "imeta
-add ...", we can add multiple AVUs with the same name field:
+Adding multiple AVUs with the same name field:
 
 ```python
 >>> obj.metadata.add('key1', 'value1', 'units1')
@@ -673,7 +639,7 @@ of "key2" in a single update:
 <iRODSMeta 13186 key2 value5 units2>]
 ```
 
-Now, with only one AVU on the object with a name of "key2", *get_one*
+With only one AVU on the object with a name of "key2", *get_one*
 is assured of not throwing an exception:
 
 ```python
@@ -698,6 +664,7 @@ Finally, to remove a specific AVU from an object:
 >>> obj.metadata.remove('key1', 'value1', 'units1')
 >>> print(obj.metadata.items())
 [<iRODSMeta 13186 key2 value5 units2>, <iRODSMeta 13183 key1 value2 None>]
+```
 
 Alternately, this form of the `remove()` method can also be useful:
 
@@ -745,7 +712,7 @@ reference. A shallow copy is sufficient:
 >>> album.metadata[ meta.name ] = meta
 ```
 
-Fortunately, as of PRC >= 1.1.4, we can simply do this instead:
+Since v1.1.4, `set()` can be used instead:
 
 ```python
 >>> album.metadata.set( meta )
@@ -763,7 +730,7 @@ or even:
 >>> album.metadata(admin = True)\[meta.name\] = meta
 ```
 
-In v1.1.5, the "timestamps" keyword is provided to enable the loading
+Since v1.1.5, the "timestamps" keyword is provided to enable the loading
 of create and modify timestamps for every AVU returned from the server:
 
 ```python
@@ -775,13 +742,13 @@ datetime.datetime(2022, 9, 19, 15, 26, 7)
 Atomic operations on metadata
 -----------------------------
 
-With release 4.2.8 of iRODS, the atomic metadata API was introduced to
-allow a group of metadata add and remove operations to be performed
-transactionally, within a single call to the server. This capability can
-be leveraged in version 0.8.6 of the PRC.
+Since iRODS 4.2.8, the atomic metadata API
+allows a group of metadata add and remove operations to be performed
+transactionally, within a single call to the server. This capability is available
+since PRC v0.8.6.
 
-So, for example, if 'obj' is a handle to an object in the iRODS
-catalog (whether a data object, collection, user or storage resource),
+For example, if 'obj' is a handle to an object in the iRODS
+catalog (whether a data object, collection, user, or storage resource),
 we can send an arbitrary number of AVUOperation instances to be executed
 together as one indivisible operation on that object:
 
@@ -793,7 +760,7 @@ together as one indivisible operation on that object:
 ... )
 ```
 
-The list of operations will applied in the order given, so that a
+The list of operations are applied in the order given, so that a
 "remove" followed by an "add" of the same AVU is, in effect, a
 metadata "set" operation. Also note that a "remove" operation will
 be ignored if the AVU value given does not exist on the target object at
@@ -813,7 +780,7 @@ from an object:
 Extracting JSON encoded server information in case of error
 -----------------------------------------------------------
 
-Some server apis, including atomic metadata and replica truncation, can fail for various reasons and generate an
+Some server APIs, including atomic metadata and replica truncation, can fail for various reasons and generate an
 exception.  In these cases the message object returned from the server is made available in the 'server_msg' attribute
 of the iRODSException object.
 
@@ -830,18 +797,18 @@ This enables an approach like the following, which logs server information possi
             exc.server_msg.get_json_encoded_struct())
 ```
 
-For `DataObject.replica_truncate(...)`, note that exc.server_msg.get_json_encoded_struct() can be used in the exception-handling
+For `DataObject.replica_truncate(...)`, note that `exc.server_msg.get_json_encoded_struct()` can be used in the exception-handling
 code path to retrieve the same information that would have been routinely returned from the truncate call itself, had it actually
 completed without error.
 
 Special Characters
 ------------------
 
-Of course, it is fine to put Unicode characters into your collection and
-data object names. However, certain non-printable ASCII characters, and
-the backquote character as well, have historically presented problems
-- especially for clients using iRODS's human readable XML protocol.
-Consider this small, only slighly contrived, application:
+iRODS supports Unicode characters into collection and
+data object names. However, certain non-printable ASCII characters, in addition to
+the backquote character, have historically presented problems
+- especially for clients using the iRODS human readable XML protocol.
+Consider this small, contrived application:
 
 ```python
     from irods.test.helpers import make_session
@@ -875,7 +842,7 @@ second example, for iRODS 4.2.8 and before, a deficiency in packStruct
 XML protocol causes the backtick to be read back as an apostrophe, which
 could create problems manipulating or deleting the object later.
 
-As of PRC v1.1.0, we can mitigate both problems by switching in the
+Since v1.1.0, both problems can be mitigated by switching in the
 QUASI_XML parser for the default one:
 
 ```
@@ -885,7 +852,7 @@ QUASI_XML parser for the default one:
     )
 ```
 
-The server_version parameter can be used independently, if desired, to change the
+The server_version parameter can be used independently to change the
 current thread's choice of entities during QUASI_XML transactions with the server.
 (This is only a concern when interacting with servers before iRODS 4.2.9.)
 
@@ -911,7 +878,7 @@ use of the xml.etree and defusedxml modules, respectively.
 Only the choice of "QUASI_XML" is affected by the specification of a
 particular server version.
 
-Finally, note that these global defaults, once set, may be overridden on
+These global defaults, once set, may be overridden on
 a per-thread basis using `ET(parser_type, server_version)`.
 
 The current thread's XML parser can always be reverted to the global default by the
@@ -931,9 +898,9 @@ parsers, it may be more convenient to use the `xml_mode` context manager:
 Rule Execution
 --------------
 
-A simple example of how to execute an iRODS rule from the Python client
-is as follows. Suppose we have a rule file `native1.r`
-which contains a rule in native iRODS Rule Language:
+The following example shows how to execute an iRODS rule from the Python iRODS client.
+
+A rule file `native1.r` contains a rule in the native iRODS Rule Language:
 
 ```
     main() {
@@ -946,14 +913,14 @@ which contains a rule in native iRODS Rule Language:
 ```
 
 The following Python client code will run the rule and produce the
-appropriate output in the irods server log:
+appropriate output in the iRODS server log:
 
 ```
     r = irods.rule.Rule( session, rule_file = 'native1.r')
     r.execute()
 ```
 
-With release v1.1.1, not only can we target a specific rule engine
+Since v1.1.1, not only can we target a specific rule engine
 instance by name (which is useful when more than one is present), but we
 can also use a file-like object for the `rule_file`
 parameter:
@@ -965,8 +932,8 @@ parameter:
           instance_name = 'irods_rule_engine_plugin-irods_rule_language-instance' )
 ```
 
-Incidentally, if we wanted to change the `native1.r` rule
-code print to stdout also, we could set the `INPUT`
+If we wanted to change the `native1.r` rule
+code print to `stdout`, we could set the `INPUT`
 parameter, `*stream`, using the Rule constructor's
 `params` keyword argument. Similarly, we can change the
 `OUTPUT` parameter from `null` to
@@ -983,12 +950,9 @@ parameter, `*stream`, using the Rule constructor's
         if buf: print(buf.rstrip(b'\0').decode('utf8'))
 ```
 
-(Changing the input value to be squared in this example is left as an
-exercise for the reader!)
-
 To deal with errors resulting from rule execution failure, two
 approaches can be taken. Suppose we have defined this in the
-`/etc/irods/core.re` rule-base:
+`/etc/irods/core.re` rule base:
 
 ```
     rule_that_fails_with_error_code(*x) {
@@ -1007,7 +971,7 @@ We can run the rule thus:
 ...     ).execute( r_error = (r_errs:= irods.message.RErrorStack()) )
 ```
 
-Where we've used the Python 3.8 "walrus operator" for brevity. The
+Where we've used the Python 3.8+ "walrus operator" for brevity. The
 error will automatically be caught and translated to a returned-error
 stack:
 
@@ -1022,7 +986,7 @@ stack:
 ```
 
 Note, if a stringized negative integer is given , i.e. as a special fail
-code to be thrown within the rule, we must add this code into a special
+code to be thrown within the rule, we must add this code into the `acceptable_errors`
 parameter to have this automatically caught as well:
 
 ```python
@@ -1031,8 +995,8 @@ parameter to have this automatically caught as well:
 ...                r_error = (r_errs := irods.message.RErrorStack()) )
 ```
 
-Because the rule is written to emit a custom error message via `failmsg()`
-in this case, the resulting r_error stack will now include that custom
+Because the rule is written to emit a custom error message via `failmsg()`,
+the resulting r_error stack will now include that custom
 error message as a substring:
 
 ```python
@@ -1085,17 +1049,16 @@ print('Rule execution succeeded!')
 
 Finally, keep in mind that rule code submitted through an
 `irods.rule.Rule` object is processed by the
-exec_rule_text function in the targeted plugin instance. This may be a
+exec_rule_text function in the targeted plugin instance in the server.
+This may be a
 limitation for plugins not equipped to handle rule code in this way. In
 a sort of middle-ground case, the iRODS Python Rule Engine Plugin is not
 currently able to handle simple rule calls and the manipulation of iRODS
 core primitives (like simple parameter passing and variable expansion')
 as flexibly as the iRODS Rule Language.
 
-Also, core.py rules may not be run directly (as is also true with
-`irule`) by other than a rodsadmin user pending the
-resolution of [this
-issue](https://github.com/irods/irods_rule_engine_plugin_python/issues/105).
+Also, core.py rules may only be run directly by a rodsadmin, currently.
+[See this issue for discussion](https://github.com/irods/irods_rule_engine_plugin_python/issues/105).
 
 
 General Queries
@@ -1149,8 +1112,7 @@ Query using other models:
 ('/tempZone/home/rods', 'type', 'Project', None)
 ```
 
-Beginning with version 0.8.3 of PRC, the 'in' genquery operator is
-also available:
+Since v0.8.3, the 'In()' operator is available:
 
 ```python
 >>> from irods.models import Resource
@@ -1357,7 +1319,7 @@ using a different scheme:
 
 ```python
 >>> from irods.collection import iRODSCollection; from irods.models import Collection
->>> all_collns = [ iRODSCollection(session.collections,result) for result in session.query(Collection) ]
+>>> all_collns = [ iRODSCollection(session.collections, result) for result in session.query(Collection) ]
 ```
 
 From there, we have the ability to do useful work, or filtering based on
@@ -1424,14 +1386,16 @@ effort, but the ability to search arbitrary iRODS zones (to which we are
 federated and have the user permissions) is powerful indeed.
 
 
-GenQuery2 queries
--------
+GenQuery2 Queries
+-----------------
 
 GenQuery2 is a successor to the regular GenQuery interface. It is available
 by default on iRODS 4.3.2 and higher. GenQuery2 currently has an experimental status,
 and is subject to change.
 
-Queries can be executed using the `genquery2` function. For example:
+Queries can be executed using the `genquery2` function and passing a single querystring.  All parsing is done on the server.
+
+For example:
 
 ```
 >>> session.genquery2("SELECT COLL_NAME WHERE COLL_NAME = '/tempZone/home' OR COLL_NAME LIKE '%/genquery2_dummy_doesnotexist'")
@@ -1446,8 +1410,8 @@ Alternatively, create a GenQuery2 object and use it to execute queries. For exam
 [['/tempZone/home']]
 ```
 
-GenQuery2 objects also support retrieving the SQL generated by a GenQuery2 query using the
-`get_sql` function and retrieving column mappings using the `get_column_mappings` function.
+GenQuery2 objects also support retrieving only the SQL generated by a GenQuery2 query using the
+`get_sql` function and retrieving all available column mappings using the `get_column_mappings` function.
 
 
 Tickets
@@ -1577,12 +1541,11 @@ Then we can accomplish the replica "move" thus:
       session.data_objects.trim(path, **{kw.DATA_REPL_NUM:number, kw.COPIES_KW:1})
 ```
 
-Listing Users and Groups ; calculating Group Membership
--------------------------------------------------------
+Users and Groups
+----------------
 
-iRODS tracks groups and users using two tables, R_USER_MAIN and
-R_USER_GROUP. Under this database schema, all "user groups" are also
-users:
+iRODS tracks users and groups using two tables, R_USER_MAIN and
+R_USER_GROUP. Under this database schema, all groups are also users:
 
 ```python
 >>> from irods.models import User, Group
@@ -1641,10 +1604,9 @@ final list.
 Group Administrator Capabilities
 --------------------------------
 
-With v1.1.7, PRC acquires the full range of abilities possessed by the
-igroupadmin command.
+Since v1.1.7, group administrator functions are available.
 
-Firstly, a groupadmin may invoke methods to create groups, and may add
+A groupadmin may invoke methods to create groups, and may add
 users to, or remove them from, any group to which they themselves
 belong:
 
@@ -1655,7 +1617,7 @@ belong:
 >>> session.groups.removemember('lab','otheruser')
 ```
 
-In addition, a groupadmin may also create accounts for new users and
+A groupadmin may also create accounts for new users and
 enable their logins by initializing a native password for them:
 
 ```python
@@ -1686,10 +1648,10 @@ allow our user to write them:
 
 Finally, we can also access the list of permissions available through a
 given session object via the `available_permissions`
-property. Note that -- in keeping with changes in iRODS server 4.3 --
+property. Note that (in keeping with changes in iRODS 4.3+)
 the permissions list will be longer, as appropriate, for session objects
 connected to the more recent servers; and also that the embedded spaces
-in some 4.2 permission strings will be replaced by underscores in 4.3
+in some 4.2 permission strings are replaced by underscores in 4.3
 and later.
 
 ```python
@@ -1702,8 +1664,8 @@ and later.
 Getting and setting permissions
 -------------------------------
 
-We can find the ID's of all the collections writable (ie having
-"modify" ACL) by, but not owned by, alice (or even alice\#otherZone):
+We can find the ID's of all the collections writable (i.e. having
+a "modify" ACL) by, but not owned by, alice (or even alice\#otherZone):
 
 ```python
 >>> from irods.models import Collection,CollectionAccess,CollectionUser,User
@@ -1729,7 +1691,7 @@ being the result of
 then verify the desired change had taken place (as well as list all ACLs
 stored in the catalog for that collection).
 
-One last note on permissions: The older access manager,
+The older access manager,
 `<session>.permissions`, produced inconsistent results when
 the `get()` method was invoked with the parameter
 `report_raw_acls` set (or defaulting) to
@@ -1738,9 +1700,9 @@ the `get()` method was invoked with the parameter
 permissions as a by-product of group ACLs, whereas data objects would
 not.
 
-In release v1.1.6, we moved to correct this inconsistency by introducing
-the synonym `<session>.acls` that acts almost identically
-like `<session>.permissions`, except that the
+Since v1.1.6, this inconsistency is corrected by
+`<session>.acls` which acts almost identically
+to `<session>.permissions`, except that the
 `<session>.acls.get(...)` method does not accept the
 `report_raw_acls` parameter. When we need to detect users'
 permissions independent of their access to an object via group
@@ -1764,8 +1726,8 @@ or per user, prior to iRODS 4.3.0:
 session.users.set_quota('alice', 100000)
 ```
 
-(The default for the resource parameter is "total", denoting a general
-quota usage not bound to a particular resource.)
+The default for the resource parameter is "total", denoting a general
+quota usage not bound to a particular resource.
 
 The Quota model is also available for queries. So, to determine the
 space remaining for a certain group on a given resource:
@@ -1798,14 +1760,14 @@ You can create a user in the current zone (with an optional auth_str):
 >>> session.users.create('user', 'rodsuser', 'MyZone', auth_str)
 ```
 
-If you want to create a user in a federated zone, use:
+If you want to create a user from a federated zone, use:
 
 ```python
 >>> session.users.create('user', 'rodsuser', 'OtherZone', auth_str)
 ```
 
 Showing client hints
---------------
+--------------------
 
 You can get a list of available microservices, rules, etc. using the `client_hints`
 attribute of the session.
@@ -1814,8 +1776,8 @@ attribute of the session.
 >>> session.client_hints
 ```
 
-And more ...
-------------
+Code Samples and Tests
+----------------------
 
 Additional code samples are available in the [test
 directory](https://github.com/irods/python-irodsclient/tree/main/irods/test)
@@ -1835,15 +1797,12 @@ of setting up may be necessary first:
 2.  Install the python-irodsclient along with the
     `unittest unittest_xml_reporting` module or the older
     `xmlrunner` equivalent.
-    -   for PRC versions 1.1.1 and later:
-        -   `pip install ./path-to-python-irodsclient-repo[tests]`
-            (when using a local Git repo); or,
-        -   `pip install python-irodsclient[tests]'>=1.1.1'`
-            (when installing directly from PyPI).
-    -   earlier releases (\<= 1.1.0) will install the outdated
-        `xmlrunner` module automatically
+    -   `pip install ./path-to-python-irodsclient-repo[tests]`
+        (when using a local Git repo); or,
+    -   `pip install python-irodsclient[tests]'>=1.1.1'`
+        (when installing directly from PyPI).
 3.  Follow further instructions in the [test
-    directory](https://github.com/irods/python-irodsclient/tree/main/irods/test)
+    README file](https://github.com/irods/python-irodsclient/tree/main/irods/test/README.rst)
 
 Testing S3 parallel transfer
 ----------------------------
