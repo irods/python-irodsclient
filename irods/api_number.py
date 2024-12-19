@@ -26,7 +26,6 @@ api_number = {
     "FILE_TRUNCATE_AN": 523,
     "FILE_STAGE_TO_CACHE_AN": 524,
     "FILE_SYNC_TO_ARCH_AN": 525,
-
     # 600 - 699 - Object File I/O API calls
     "DATA_OBJ_CREATE_AN": 601,
     "DATA_OBJ_OPEN_AN": 602,
@@ -116,7 +115,6 @@ api_number = {
     "DATA_OBJ_PHYMV_AN": 697,
     "DATA_OBJ_FSYNC_AN": 698,
     "DATA_OBJ_LOCK_AN": 699,
-
     # 700 - 799 - Metadata API calls
     "GET_MISC_SVR_INFO_AN": 700,
     "GENERAL_ADMIN_AN": 701,
@@ -143,9 +141,7 @@ api_number = {
     "TICKET_ADMIN_AN": 723,
     "GET_TEMP_PASSWORD_FOR_OTHER_AN": 724,
     "PAM_AUTH_REQUEST_AN": 725,
-
     "EXEC_CMD241_AN": 634,
-
     "DATA_OBJ_READ201_AN": 603,
     "DATA_OBJ_WRITE201_AN": 604,
     "DATA_OBJ_CLOSE201_AN": 605,
@@ -156,10 +152,8 @@ api_number = {
     "COLL_REPL201_AN": 662,
     "RM_COLL201_AN": 663,
     "OPEN_COLLECTION201_AN": 712,
-
     "GET_LIBRARY_FEATURES_AN": 801,
     "REPLICA_TRUNCATE_AN": 802,
-
     # 1000 - 1059 - NETCDF API calls
     "NC_OPEN_AN": 1000,
     "NC_CREATE_AN": 1001,
@@ -172,10 +166,8 @@ api_number = {
     "NC_OPEN_GROUP_AN": 1008,
     "NC_INQ_GRPS_AN": 1009,
     "NC_REG_GLOBAL_ATTR_AN": 1010,
-
     # 1060 - 1099 - OOI API calls
     "OOI_GEN_SERV_REQ_AN": 1060,
-
     # 1100 - 1200 - SSL API calls
     "SSL_START_AN": 1100,
     "SSL_END_AN": 1101,
@@ -186,6 +178,5 @@ api_number = {
     "GET_FILE_DESCRIPTOR_INFO_APN": 20000,
     "REPLICA_CLOSE_APN": 20004,
     "TOUCH_APN": 20007,
-
-    "AUTH_PLUG_REQ_AN": 1201
+    "AUTH_PLUG_REQ_AN": 1201,
 }

@@ -1,4 +1,3 @@
-
 # https://github.com/irods/irods/blob/4.2.1/lib/core/include/irods_client_server_negotiation.hpp
 # https://github.com/irods/irods/blob/4.2.1/lib/core/src/irods_client_negotiation.cpp
 
@@ -29,4 +28,4 @@ def perform_negotiation(client_policy, server_policy):
 
 def validate_policy(policy):
     if policy not in (REQUIRE_SSL, REQUIRE_TCP):
-        raise ValueError('Invalid client-server negotiation policy: {}'.format(policy))
+        raise ValueError("Invalid client-server negotiation policy: {}".format(policy))

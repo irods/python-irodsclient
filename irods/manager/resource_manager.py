@@ -15,7 +15,9 @@ class ResourceManager(Manager):
     @staticmethod
     def serialize(context):
         if isinstance(context, dict):
-            return ';'.join("{}={}".format(key, value) for (key, value) in list(context.items()))
+            return ";".join(
+                "{}={}".format(key, value) for (key, value) in list(context.items())
+            )
         return context
 
     def get(self, name, zone=""):
@@ -30,7 +32,16 @@ class ResourceManager(Manager):
             raise ResourceDoesNotExist()
         return iRODSResource(self, result)
 
-    def create(self, name, resource_type, host="EMPTY_RESC_HOST", path="EMPTY_RESC_PATH", context="", zone="", resource_class=""):
+    def create(
+        self,
+        name,
+        resource_type,
+        host="EMPTY_RESC_HOST",
+        path="EMPTY_RESC_PATH",
+        context="",
+        zone="",
+        resource_class="",
+    ):
         with self.sess.pool.get_connection() as conn:
             # check server version
             if conn.server_version < (4, 0, 0):
@@ -43,7 +54,7 @@ class ResourceManager(Manager):
                     resource_class,
                     host,
                     path,
-                    zone
+                    zone,
                 )
             else:
                 message_body = GeneralAdminRequest(
@@ -53,11 +64,14 @@ class ResourceManager(Manager):
                     resource_type,
                     host + ":" + path,
                     self.serialize(context),
-                    zone
+                    zone,
                 )
 
-            request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                                   int_info=api_number['GENERAL_ADMIN_AN'])
+            request = iRODSMessage(
+                "RODS_API_REQ",
+                msg=message_body,
+                int_info=api_number["GENERAL_ADMIN_AN"],
+            )
 
             conn.send(request)
             response = conn.recv()
@@ -73,14 +87,10 @@ class ResourceManager(Manager):
             mode = "--dryrun"
         else:
             mode = ""
-        message_body = GeneralAdminRequest(
-            "rm",
-            "resource",
-            name,
-            mode
+        message_body = GeneralAdminRequest("rm", "resource", name, mode)
+        request = iRODSMessage(
+            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
         )
-        request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                               int_info=api_number['GENERAL_ADMIN_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -92,15 +102,14 @@ class ResourceManager(Manager):
     def modify(self, name, attribute, value):
         with self.sess.pool.get_connection() as conn:
             message_body = GeneralAdminRequest(
-                "modify",
-                "resource",
-                name,
-                attribute,
-                self.serialize(value)
+                "modify", "resource", name, attribute, self.serialize(value)
             )
 
-            request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                                   int_info=api_number['GENERAL_ADMIN_AN'])
+            request = iRODSMessage(
+                "RODS_API_REQ",
+                msg=message_body,
+                int_info=api_number["GENERAL_ADMIN_AN"],
+            )
 
             conn.send(request)
             response = conn.recv()
@@ -116,15 +125,14 @@ class ResourceManager(Manager):
                 raise OperationNotSupported
 
             message_body = GeneralAdminRequest(
-                "add",
-                "childtoresc",
-                parent,
-                child,
-                context
+                "add", "childtoresc", parent, child, context
             )
 
-            request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                                   int_info=api_number['GENERAL_ADMIN_AN'])
+            request = iRODSMessage(
+                "RODS_API_REQ",
+                msg=message_body,
+                int_info=api_number["GENERAL_ADMIN_AN"],
+            )
 
             conn.send(request)
             response = conn.recv()
@@ -140,15 +148,13 @@ class ResourceManager(Manager):
                 # No resource hierarchies before iRODS 4
                 raise OperationNotSupported
 
-            message_body = GeneralAdminRequest(
-                "rm",
-                "childfromresc",
-                parent,
-                child
-            )
+            message_body = GeneralAdminRequest("rm", "childfromresc", parent, child)
 
-            request = iRODSMessage("RODS_API_REQ", msg=message_body,
-                                   int_info=api_number['GENERAL_ADMIN_AN'])
+            request = iRODSMessage(
+                "RODS_API_REQ",
+                msg=message_body,
+                int_info=api_number["GENERAL_ADMIN_AN"],
+            )
 
             conn.send(request)
             response = conn.recv()
