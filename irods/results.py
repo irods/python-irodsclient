@@ -1,6 +1,7 @@
 from prettytable import PrettyTable
 from irods.models import ModelBase
 
+
 class ResultSet:
 
     def __init__(self, raw):
@@ -16,17 +17,15 @@ class ResultSet:
     def __str__(self):
         table = PrettyTable()
         for col in self.cols:
-            table.add_column(
-                ModelBase.columns()[col.attriInx].icat_key, col.value)
-        table.align = 'l'
+            table.add_column(ModelBase.columns()[col.attriInx].icat_key, col.value)
+        table.align = "l"
         return table.get_string()
 
     def get_html_string(self, *args, **kwargs):
         table = PrettyTable()
         for col in self.cols:
-            table.add_column(
-                ModelBase.columns()[col.attriInx].icat_key, col.value)
-        table.align = 'l'
+            table.add_column(ModelBase.columns()[col.attriInx].icat_key, col.value)
+        table.align = "l"
         return table.get_html_string(*args, **kwargs)
 
     @staticmethod
@@ -37,11 +36,15 @@ class ResultSet:
         except (TypeError, ValueError):
             return (col, value)
 
-    _get_column_values = (lambda self,index: [(col, col.value[index]) for col in self.cols]) 
+    _get_column_values = lambda self, index: [
+        (col, col.value[index]) for col in self.cols
+    ]
 
     def _format_row(self, index):
         values = self._get_column_values(index)
-        return dict([self._format_attribute(col.attriInx, value) for col, value in values])
+        return dict(
+            [self._format_attribute(col.attriInx, value) for col, value in values]
+        )
 
     def __getitem__(self, index):
         return self.rows.__getitem__(index)
@@ -69,7 +72,6 @@ class SpecificQueryResultSet(ResultSet):
         self._query_columns = columns
         super(SpecificQueryResultSet, self).__init__(raw)
 
-
     def _format_row(self, index):
         values = [col.value[index] for col in self.cols]
 
@@ -80,7 +82,7 @@ class SpecificQueryResultSet(ResultSet):
                 column = self._query_columns[i]
                 result_key = column
             except TypeError:
-                column = ModelBase.columns()[0] # SpecificQueryResult.value
+                column = ModelBase.columns()[0]  # SpecificQueryResult.value
                 result_key = i
 
             try:

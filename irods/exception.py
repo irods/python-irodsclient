@@ -43,8 +43,10 @@ class UserDoesNotExist(DoesNotExist):
 class GroupDoesNotExist(DoesNotExist):
     pass
 
+
 # NOTE: Everything of the form *UserGroup* is deprecated.
 UserGroupDoesNotExist = GroupDoesNotExist
+
 
 class ResourceDoesNotExist(DoesNotExist):
     pass
@@ -67,57 +69,78 @@ class MultipleResultsFound(QueryException):
 
 
 class NotImplementedInIRODSServer(PycommandsException):
-    def __init__(self, feature_description, required_iRODS_version = ()):
-        super(NotImplementedInIRODSServer,self).__init__(feature_description + ': Not supported by the connected iRODS server.')
+    def __init__(self, feature_description, required_iRODS_version=()):
+        super(NotImplementedInIRODSServer, self).__init__(
+            feature_description + ": Not supported by the connected iRODS server."
+        )
         self.required_iRODS_version = required_iRODS_version
+
     def __str__(self):
         nv = self.required_iRODS_version
-        return '{}{}'.format(self.args, ' [requires iRODS version: {nv}]'.format(**locals()) if nv else '')
+        return "{}{}".format(
+            self.args,
+            " [requires iRODS version: {nv}]".format(**locals()) if nv else "",
+        )
+
     def __repr__(self):
         return self.__class__.__name__ + str(self)
 
 
 class iRODSExceptionMeta(type):
     codes = {}
-    positive_code_error_message = "For {name}, a positive code of {attrs[code]} was declared."
+    positive_code_error_message = (
+        "For {name}, a positive code of {attrs[code]} was declared."
+    )
+
     def __init__(self, name, bases, attrs):
-        if 'code' in attrs:
-            if attrs['code'] > 0:
-                print(self.positive_code_error_message.format(**locals()), file = sys.stderr)
+        if "code" in attrs:
+            if attrs["code"] > 0:
+                print(
+                    self.positive_code_error_message.format(**locals()), file=sys.stderr
+                )
                 exit(1)
-            iRODSExceptionMeta.codes[attrs['code']] = self
+            iRODSExceptionMeta.codes[attrs["code"]] = self
 
 
 class Errno:
     """Encapsulates an integer error code from the operating system
-       and provides a text representation.
+    and provides a text representation.
     """
-    def __init__(self,arg0,*_):
+
+    def __init__(self, arg0, *_):
         """Initializes an object with an integer error code arg0.
-           Further arguments are optional and ignored.
+        Further arguments are optional and ignored.
         """
         self.int_code = arg0
 
     def __repr__(self):
         e = self.int_code
         try:
-            return self.__class__.__name__ + repr(tuple([e, errno.errorcode[e], os.strerror(e)]))
+            return self.__class__.__name__ + repr(
+                tuple([e, errno.errorcode[e], os.strerror(e)])
+            )
         except:
             # The errno code is unrecognized, so fall through to default representation.
             pass
-        return self.__class__.__name__ + repr(tuple([e,]))
+        return self.__class__.__name__ + repr(
+            tuple(
+                [
+                    e,
+                ]
+            )
+        )
 
     def __int__(self):
         return self.int_code
 
 
-class iRODSException(Exception, metaclass = iRODSExceptionMeta):
+class iRODSException(Exception, metaclass=iRODSExceptionMeta):
     """An exception that originates from a server error.
-       Exception classes that are derived from this base and represent a concrete error, should
-       store a unique error code (X*1000) in their 'code' attribute, where X < 0.
+    Exception classes that are derived from this base and represent a concrete error, should
+    store a unique error code (X*1000) in their 'code' attribute, where X < 0.
     """
 
-    def __init__(self,*arg):
+    def __init__(self, *arg):
         explicit_errno = None
         argl = list(arg)
 
@@ -125,11 +148,11 @@ class iRODSException(Exception, metaclass = iRODSExceptionMeta):
         # at the end of the argument list.
         # Example: err = UNIX_FILE_OPEN_ERR('message', Errno(13))
         #          err_copy = eval(repr(err))
-        if hasattr(self.__class__,'code'):
-            if argl and isinstance (argl[-1],Errno):
+        if hasattr(self.__class__, "code"):
+            if argl and isinstance(argl[-1], Errno):
                 explicit_errno = argl.pop()
 
-        super(iRODSException,self).__init__(*argl)
+        super(iRODSException, self).__init__(*argl)
 
         # To properly represent the Errno instance, the "code" attribute should be (-errno) plus the thousands
         # attribute stored in the class's code attribute.  Because Python honors the instance "code" attribute
@@ -139,49 +162,57 @@ class iRODSException(Exception, metaclass = iRODSExceptionMeta):
 
     def __repr__(self):
         args = tuple(self.args)
-        code = getattr(self,'code',None)
+        code = getattr(self, "code", None)
         if code is not None:
             os_err = abs(code) % 1000
-            if os_err: args += (Errno(os_err),)
+            if os_err:
+                args += (Errno(os_err),)
         return self.__class__.__name__ + repr(args)
 
 
-
-def nominal_code( the_code, THRESHOLD = 1000 ):
+def nominal_code(the_code, THRESHOLD=1000):
     nominal = []
-    c = rounded_code( the_code , nominal_int_repo = nominal )
+    c = rounded_code(the_code, nominal_int_repo=nominal)
     negated = -abs(nominal[0])
-    return c if (negated <= -abs(THRESHOLD)) else negated  # produce a negative for nonzero integer input
+    return (
+        c if (negated <= -abs(THRESHOLD)) else negated
+    )  # produce a negative for nonzero integer input
 
-def rounded_code( the_code , nominal_int_repo = () ):
+
+def rounded_code(the_code, nominal_int_repo=()):
     nom_err = None
     try:
-        if isinstance(the_code,type) and \
-           issubclass(the_code, iRODSException): the_code = getattr( the_code, 'code', the_code )
-        if isinstance(the_code,str):
+        if isinstance(the_code, type) and issubclass(the_code, iRODSException):
+            the_code = getattr(the_code, "code", the_code)
+        if isinstance(the_code, str):
             nom_err = globals()[the_code].code
             return nom_err
-        elif isinstance(the_code,numbers.Integral):
+        elif isinstance(the_code, numbers.Integral):
             nom_err = the_code
             return 1000 * ((-abs(the_code) - 1) // 1000 + 1)
         else:
-            message = 'Supplied code {the_code!r} must be integer or string'.format(**locals())
+            message = "Supplied code {the_code!r} must be integer or string".format(
+                **locals()
+            )
             raise RuntimeError(message)
     finally:
-        if nom_err is not None and isinstance(nominal_int_repo,list):
+        if nom_err is not None and isinstance(nominal_int_repo, list):
             nominal_int_repo[:] = [nom_err]
 
 
 def get_exception_class_by_code(code, name_only=False):
-    rounded = rounded_code (code)  # rounded up to -1000 if code <= -1000
-    cls = iRODSExceptionMeta.codes.get( rounded )
-    return cls if not name_only \
-      else (cls.__name__ if cls is not None else 'Unknown_iRODS_error')
+    rounded = rounded_code(code)  # rounded up to -1000 if code <= -1000
+    cls = iRODSExceptionMeta.codes.get(rounded)
+    return (
+        cls
+        if not name_only
+        else (cls.__name__ if cls is not None else "Unknown_iRODS_error")
+    )
 
 
-def get_exception_by_code(code, message = None):
-    exc_class = iRODSExceptionMeta.codes[ rounded_code( code ) ]
-    exc_instance = exc_class( message )
+def get_exception_by_code(code, message=None):
+    exc_class = iRODSExceptionMeta.codes[rounded_code(code)]
+    exc_instance = exc_class(message)
     exc_instance.code = code
     return exc_instance
 
@@ -1157,8 +1188,10 @@ class CAT_NO_ROWS_FOUND(CatalogLibraryException):
 class CATALOG_ALREADY_HAS_ITEM_BY_THAT_NAME(CatalogLibraryException):
     code = -809000
 
-class CAT_NO_CHECKSUM_FOR_REPLICA (CatalogLibraryException):
+
+class CAT_NO_CHECKSUM_FOR_REPLICA(CatalogLibraryException):
     code = -862000
+
 
 class CAT_INVALID_RESOURCE_TYPE(CatalogLibraryException):
     code = -810000
@@ -1294,6 +1327,7 @@ class CAT_TABLE_ACCESS_DENIED(CatalogLibraryException):
 
 class CAT_UNKNOWN_SPECIFIC_QUERY(CatalogLibraryException):
     code = -853000
+
 
 class CAT_STATEMENT_TABLE_FULL(CatalogLibraryException):
     code = -860000
@@ -2070,8 +2104,10 @@ class PHP_REQUEST_STARTUP_ERR(PHPException):
 class PHP_OPEN_SCRIPT_FILE_ERR(PHPException):
     code = -1602000
 
+
 class DIRECT_CHILD_ACCESS(iRODSException):
     code = -1816000
+
 
 class PAMException(iRODSException):
     pass

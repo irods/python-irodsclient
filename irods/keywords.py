@@ -1,34 +1,34 @@
-'''From rodsKeyWdDef.hpp
-'''
+"""From rodsKeyWdDef.hpp
+"""
 
-ALL_KW = "all"        # operation done on all replicas #
-COPIES_KW = "copies"    # the number of copies #
-EXEC_LOCALLY_KW = "execLocally"    # execute locally #
-FORCE_FLAG_KW = "forceFlag"    # force update #
+ALL_KW = "all"  # operation done on all replicas #
+COPIES_KW = "copies"  # the number of copies #
+EXEC_LOCALLY_KW = "execLocally"  # execute locally #
+FORCE_FLAG_KW = "forceFlag"  # force update #
 CLI_IN_SVR_FIREWALL_KW = "cliInSvrFirewall"  # cli behind same firewall #
-REG_CHKSUM_KW = "regChksum"    # register checksum #
-VERIFY_CHKSUM_KW = "verifyChksum"   # verify checksum #
+REG_CHKSUM_KW = "regChksum"  # register checksum #
+VERIFY_CHKSUM_KW = "verifyChksum"  # verify checksum #
 NO_COMPUTE_KW = "no_compute"
 VERIFY_BY_SIZE_KW = "verifyBySize"  # verify by size - used by irsync #
-OBJ_PATH_KW = "objPath"   # logical path of the object #
-RESC_NAME_KW = "rescName"   # resource name #
-DEST_RESC_NAME_KW = "destRescName"   # destination resource name #
-DEF_RESC_NAME_KW = "defRescName"   # default resource name #
+OBJ_PATH_KW = "objPath"  # logical path of the object #
+RESC_NAME_KW = "rescName"  # resource name #
+DEST_RESC_NAME_KW = "destRescName"  # destination resource name #
+DEF_RESC_NAME_KW = "defRescName"  # default resource name #
 BACKUP_RESC_NAME_KW = "backupRescName"  # backup resource name #
-DATA_TYPE_KW = "dataType"   # data type #
+DATA_TYPE_KW = "dataType"  # data type #
 DATA_SIZE_KW = "dataSize"
 CHKSUM_KW = "chksum"
 ORIG_CHKSUM_KW = "orig_chksum"
 VERSION_KW = "version"
-FILE_PATH_KW = "filePath"   # the physical file path #
+FILE_PATH_KW = "filePath"  # the physical file path #
 BUN_FILE_PATH_KW = "bunFilePath"  # the physical bun file path # # JMC - backport 4768
-REPL_NUM_KW = "replNum"   # replica number #
-WRITE_FLAG_KW = "writeFlag"   # whether it is opened for write #
-REPL_STATUS_KW = "replStatus"   # status of the replica #
-ALL_REPL_STATUS_KW = "allReplStatus"   # update all replStatus #
-METADATA_INCLUDED_KW = "metadataIncluded" # for atomic puts of data / metadata
-ACL_INCLUDED_KW = "aclIncluded" # for atomic puts of data / access controls
-DATA_INCLUDED_KW = "dataIncluded"   # data included in the input buffer #
+REPL_NUM_KW = "replNum"  # replica number #
+WRITE_FLAG_KW = "writeFlag"  # whether it is opened for write #
+REPL_STATUS_KW = "replStatus"  # status of the replica #
+ALL_REPL_STATUS_KW = "allReplStatus"  # update all replStatus #
+METADATA_INCLUDED_KW = "metadataIncluded"  # for atomic puts of data / metadata
+ACL_INCLUDED_KW = "aclIncluded"  # for atomic puts of data / access controls
+DATA_INCLUDED_KW = "dataIncluded"  # data included in the input buffer #
 DATA_OWNER_KW = "dataOwner"
 DATA_OWNER_ZONE_KW = "dataOwnerZone"
 DATA_EXPIRY_KW = "dataExpiry"
@@ -95,24 +95,36 @@ STREAM_STDOUT_KW = "streamStdout"  # the stream stdout for execCmd #
 REG_REPL_KW = "regRepl"  # register replica #
 AGE_KW = "age"  # age of the file for itrim #
 DRYRUN_KW = "dryrun"  # do a dry run #
-ACL_COLLECTION_KW = "aclCollection"  # the collection from which the ACL should be used #
+ACL_COLLECTION_KW = (
+    "aclCollection"  # the collection from which the ACL should be used #
+)
 NO_CHK_COPY_LEN_KW = "noChkCopyLen"  # Don't check the len when transfering  #
-TICKET_KW = "ticket"       # for ticket-based-access #
-PURGE_CACHE_KW = "purgeCache"   # purge the cache copy right after the operation JMC - backport 4537
-EMPTY_BUNDLE_ONLY_KW = "emptyBundleOnly"  # delete emptyBundleOnly # # JMC - backport 4552
+TICKET_KW = "ticket"  # for ticket-based-access #
+PURGE_CACHE_KW = (
+    "purgeCache"  # purge the cache copy right after the operation JMC - backport 4537
+)
+EMPTY_BUNDLE_ONLY_KW = (
+    "emptyBundleOnly"  # delete emptyBundleOnly # # JMC - backport 4552
+)
 GET_RESOURCE_INFO_OP_TYPE_KW = "getResourceInfoOpType"
 
 # =-=-=-=-=-=-=-
 # JMC - backport 4599
-LOCK_TYPE_KW = "lockType"     # valid values are READ_LOCK_TYPE, WRITE_LOCK_TYPE and UNLOCK_TYPE #
-LOCK_CMD_KW = "lockCmd"      # valid values are SET_LOCK_WAIT_CMD, SET_LOCK_CMD and GET_LOCK_CMD #
-LOCK_FD_KW = "lockFd"       # Lock file desc for unlock #
+LOCK_TYPE_KW = (
+    "lockType"  # valid values are READ_LOCK_TYPE, WRITE_LOCK_TYPE and UNLOCK_TYPE #
+)
+LOCK_CMD_KW = (
+    "lockCmd"  # valid values are SET_LOCK_WAIT_CMD, SET_LOCK_CMD and GET_LOCK_CMD #
+)
+LOCK_FD_KW = "lockFd"  # Lock file desc for unlock #
 MAX_SUB_FILE_KW = "maxSubFile"  # max number of files for tar file bundles #
 MAX_BUNDLE_SIZE_KW = "maxBunSize"  # max size of a tar bundle in Gbs #
 NO_STAGING_KW = "noStaging"
 
 # =-=-=-=-=-=-=-
-MAX_SUB_FILE_KW = "maxSubFile"  # max number of files for tar file bundles # # JMC - backport 4771
+MAX_SUB_FILE_KW = (
+    "maxSubFile"  # max number of files for tar file bundles # # JMC - backport 4771
+)
 
 # OBJ_PATH_KW already defined #
 

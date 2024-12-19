@@ -5,10 +5,13 @@ from irods.models import Collection, DataObject
 from irods.data_object import iRODSDataObject, irods_basename
 from irods.meta import iRODSMetaCollection
 
-def _first_char( *Strings ):
+
+def _first_char(*Strings):
     for s in Strings:
-        if s: return s[0]
-    return ''
+        if s:
+            return s[0]
+    return ""
+
 
 class iRODSCollection:
 
@@ -19,6 +22,7 @@ class iRODSCollection:
         does not start with '/'.  The exception will not be raised, however, if enforce_absolute = False
         is passed to normalize_path as a keyword option.
         """
+
         pass
 
     def __init__(self, manager, result=None):
@@ -41,26 +45,29 @@ class iRODSCollection:
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(self.manager.sess.metadata,
-                                             Collection, self.path)
+            self._meta = iRODSMetaCollection(
+                self.manager.sess.metadata, Collection, self.path
+            )
         return self._meta
 
     @property
     def subcollections(self):
-        query = self.manager.sess.query(Collection)\
-            .filter(Collection.parent_name == self.path)
-        return [iRODSCollection(self.manager, row) for row in query if row[Collection.name] != '/']
+        query = self.manager.sess.query(Collection).filter(
+            Collection.parent_name == self.path
+        )
+        return [
+            iRODSCollection(self.manager, row)
+            for row in query
+            if row[Collection.name] != "/"
+        ]
 
     @property
     def data_objects(self):
-        query = self.manager.sess.query(DataObject)\
-            .filter(Collection.name == self.path)
+        query = self.manager.sess.query(DataObject).filter(Collection.name == self.path)
         results = query.get_results()
-        grouped = itertools.groupby(
-            results, operator.itemgetter(DataObject.id))
+        grouped = itertools.groupby(results, operator.itemgetter(DataObject.id))
         return [
-            iRODSDataObject(
-                self.manager.sess.data_objects, self, list(replicas))
+            iRODSDataObject(self.manager.sess.data_objects, self, list(replicas))
             for _, replicas in grouped
         ]
 
@@ -101,10 +108,11 @@ class iRODSCollection:
         should be '/'.
         """
         import irods.path
-        absolute = kw_.get('enforce_absolute',False)
-        if absolute and _first_char(*paths) != '/':
+
+        absolute = kw_.get("enforce_absolute", False)
+        if absolute and _first_char(*paths) != "/":
             raise iRODSCollection.AbsolutePathRequired
-        return irods.path.iRODSPath(*paths, absolute = absolute)
+        return irods.path.iRODSPath(*paths, absolute=absolute)
 
     def __repr__(self):
         return f"<iRODSCollection {self.id} {self.name}>"
