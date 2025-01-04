@@ -121,23 +121,29 @@ def call___del__if_exists(super_):
         next_finalizer_in_MRO()
 
 
-class ManagedBufferedRandom(io.BufferedRandom):
+def managed_class(cls):
 
-    def __init__(self, *a, **kwd):
-        # Help ensure proper teardown sequence by storing a reference to the session,
-        # if provided via keyword '_session'.
-        self._iRODS_session = kwd.pop("_session", None)
-        super(ManagedBufferedRandom, self).__init__(*a, **kwd)
-        import irods.session
+    class managed(cls):
 
-        with irods.session._fds_lock:
-            irods.session._fds[self] = None
+        def __init__(self, *a, **kwd):
+            # Help ensure proper teardown sequence by storing a reference to the session,
+            # if provided via keyword '_session'.
+            self._iRODS_session = kwd.pop("_session", None)
+            super(managed, self).__init__(*a, **kwd)
+            import irods.session
 
-    def __del__(self):
-        if not self.closed:
-            self.close()
-        call___del__if_exists(super(ManagedBufferedRandom, self))
+            with irods.session._fds_lock:
+                irods.session._fds[self] = None
 
+        def __del__(self):
+            if not self.closed:
+                self.close()
+            call___del__if_exists(super(managed, self))
+
+    return managed
+
+m_BufferedRandom = managed_class(io.BufferedRandom)
+m_iRODSDataObjectFileRaw = managed_class(iRODSDataObjectFileRaw)
 
 MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE = 32 * (1024**2)
 
@@ -515,6 +521,7 @@ class DataObjectManager(Manager):
         mode,
         create=True,  # (Dis-)allow object creation.
         finalize_on_close=True,  # For PRC internal use.
+        buffering = -1,
         auto_close=client_config.getter(
             "data_objects", "auto_close"
         ),  # The default value will be a lambda returning the
@@ -523,6 +530,8 @@ class DataObjectManager(Manager):
         allow_redirect=client_config.getter("data_objects", "allow_redirect"),
         **options
     ):
+        if buffering < 0:
+            buffering = io.DEFAULT_BUFFER_SIZE
         _raw_fd_holder = options.get("_raw_fd_holder", [])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
         # then use the default resource in the client configuration.
@@ -622,23 +631,33 @@ class DataObjectManager(Manager):
         conn.send(message)
         desc = conn.recv().int_info
 
-        raw = iRODSDataObjectFileRaw(
-            conn, desc, finalize_on_close=finalize_on_close, **options
-        )
-        raw.session = directed_sess
-
-        (_raw_fd_holder).append(raw)
-
         if callable(auto_close):
             # Use case: auto_close has defaulted to the irods.configuration getter.
             # access entry in irods.configuration
             auto_close = auto_close()
-        if auto_close:
-            ret_value = ManagedBufferedRandom(raw, _session=self.sess)
+
+        if buffering or not auto_close:
+            raw_constructor = iRODSDataObjectFileRaw
         else:
-            ret_value = io.BufferedRandom(raw)
+            options['_session'] = self.sess
+            raw_constructor = m_iRODSDataObjectFileRaw
+
+        raw = raw_constructor(conn, desc, finalize_on_close=finalize_on_close, **options)
+        raw.session = directed_sess
+
+        (_raw_fd_holder).append(raw)
+
+        if buffering:
+            if auto_close:
+                ret_value = m_BufferedRandom(raw, _session=self.sess)
+            else:
+                ret_value = io.BufferedRandom(raw)
+        else:
+            ret_value = raw
+        
         if "a" in mode:
             ret_value.seek(0, io.SEEK_END)
+
         return ret_value
 
     def replica_truncate(self, path, desired_size, **options):
