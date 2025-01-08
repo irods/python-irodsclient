@@ -639,9 +639,11 @@ class DataObjectManager(Manager):
 #           raw_constructor = iRODSDataObjectFileRaw
 #       else:
 #           # external-ish / memory managed
-        if 1:
+        if auto_close:
             options['_session'] = self.sess
             raw_constructor = m_iRODSDataObjectFileRaw
+        else:
+            raw_constructor = iRODSDataObjectFileRaw
 
         raw = raw_constructor(conn, desc, finalize_on_close=finalize_on_close, **options)
         raw.session = directed_sess
