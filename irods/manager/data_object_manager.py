@@ -530,8 +530,6 @@ class DataObjectManager(Manager):
         allow_redirect=client_config.getter("data_objects", "allow_redirect"),
         **options
     ):
-        if buffering < 0:
-            buffering = io.DEFAULT_BUFFER_SIZE
         _raw_fd_holder = options.get("_raw_fd_holder", [])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
         # then use the default resource in the client configuration.
@@ -636,9 +634,11 @@ class DataObjectManager(Manager):
             # access entry in irods.configuration
             auto_close = auto_close()
 
-        if buffering or not auto_close:
+        if not auto_close or buffering not in (0,1):
+            # internal-ish / not memory managed
             raw_constructor = iRODSDataObjectFileRaw
         else:
+            # external-ish / memory managed
             options['_session'] = self.sess
             raw_constructor = m_iRODSDataObjectFileRaw
 
@@ -647,11 +647,13 @@ class DataObjectManager(Manager):
 
         (_raw_fd_holder).append(raw)
 
-        if buffering:
+        if buffering not in (0,1):
+            buf_options = {}
+            if buffering > 1: buf_options['buffer_size'] = buffering
             if auto_close:
-                ret_value = m_BufferedRandom(raw, _session=self.sess)
+                ret_value = m_BufferedRandom(raw, _session=self.sess, **buf_options)
             else:
-                ret_value = io.BufferedRandom(raw)
+                ret_value = io.BufferedRandom(raw, **buf_options)
         else:
             ret_value = raw
         
