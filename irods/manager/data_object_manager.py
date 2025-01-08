@@ -634,11 +634,12 @@ class DataObjectManager(Manager):
             # access entry in irods.configuration
             auto_close = auto_close()
 
-        if not auto_close or buffering not in (0,1):
-            # internal-ish / not memory managed
-            raw_constructor = iRODSDataObjectFileRaw
-        else:
-            # external-ish / memory managed
+#       if not auto_close or buffering not in (0,1):
+#           # internal-ish / not memory managed
+#           raw_constructor = iRODSDataObjectFileRaw
+#       else:
+#           # external-ish / memory managed
+        if 1:
             options['_session'] = self.sess
             raw_constructor = m_iRODSDataObjectFileRaw
 
