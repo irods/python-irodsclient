@@ -634,11 +634,6 @@ class DataObjectManager(Manager):
             # access entry in irods.configuration
             auto_close = auto_close()
 
-#       if not auto_close or buffering not in (0,1):
-#           # internal-ish / not memory managed
-#           raw_constructor = iRODSDataObjectFileRaw
-#       else:
-#           # external-ish / memory managed
         if auto_close:
             options['_session'] = self.sess
             raw_constructor = m_iRODSDataObjectFileRaw
@@ -652,14 +647,15 @@ class DataObjectManager(Manager):
 
         if buffering not in (0,1):
             buf_options = {}
-            if buffering > 1: buf_options['buffer_size'] = buffering
+            if buffering > 1:
+                buf_options['buffer_size'] = buffering
             if auto_close:
                 ret_value = m_BufferedRandom(raw, _session=self.sess, **buf_options)
             else:
                 ret_value = io.BufferedRandom(raw, **buf_options)
         else:
             ret_value = raw
-        
+
         if "a" in mode:
             ret_value.seek(0, io.SEEK_END)
 
