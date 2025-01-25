@@ -376,7 +376,7 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.create(self.new_user_name, self.new_user_type)
 
         # make a really horrible password
-        new_password = """abc123!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~Z"""
+        new_password = r"""abc123!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~Z"""
         self.sess.users.modify(username, "password", new_password)
 
         # open a session as the new user
@@ -403,7 +403,7 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.create(self.new_user_name, self.new_user_type)
 
         # modify user comment
-        new_comment = """comment-abc123!"#$%&'()*+,-./:;<=>?@[\]^_{|}~Z"""  # omitting backtick due to #170
+        new_comment = r"""comment-abc123!"#$%&'()*+,-./:;<=>?@[\]^_{|}~Z"""  # omitting backtick due to #170
         self.sess.users.modify(self.new_user_name, "comment", new_comment)
 
         # check comment was modified
@@ -422,7 +422,7 @@ class TestAdmin(unittest.TestCase):
         self.sess.users.create(self.new_user_name, self.new_user_type)
 
         # modify user info
-        new_info = """info-abc123!"#$%&'()*+,-./:;<=>?@[\]^_{|}~Z"""  # omitting backtick due to #170
+        new_info = r"""info-abc123!"#$%&'()*+,-./:;<=>?@[\]^_{|}~Z"""  # omitting backtick due to #170
         self.sess.users.modify(self.new_user_name, "info", new_info)
 
         # check info was modified

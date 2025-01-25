@@ -34,7 +34,7 @@ except ImportError:
     progressbar = None
 
 ip_pattern = re.compile(r"(\d+)\.(\d+)\.(\d+)\.(\d+)$")
-localhost_with_optional_domain_pattern = re.compile("localhost(\.\S\S*)?$")
+localhost_with_optional_domain_pattern = re.compile(r"localhost(\.\S\S*)?$")
 
 
 def is_localhost_ip(s):
@@ -268,7 +268,7 @@ class TestDataObjOps(unittest.TestCase):
         required_num_replicas=1,
         seconds_to_wait_for_replicas=10,
     ):
-        """Helper function for testing irods/irods#5548 and irods/irods#5848.
+        r"""Helper function for testing irods/irods#5548 and irods/irods#5848.
 
         Writes the  string "books\n" to a replica, but not as a single write operation.
         It is done piecewise on two independent connections, essentially simulating parallel "put".
@@ -417,7 +417,7 @@ class TestDataObjOps(unittest.TestCase):
 
             PUT_LOG = io.StringIO()
             GET_LOG = io.StringIO()
-            NumThreadsRegex = re.compile("^num_threads\s*=\s*(\d+)", re.MULTILINE)
+            NumThreadsRegex = re.compile(r"^num_threads\s*=\s*(\d+)", re.MULTILINE)
 
             try:
                 logger = logging.getLogger("irods.parallel")
@@ -601,7 +601,7 @@ class TestDataObjOps(unittest.TestCase):
                 )
 
                 NO_CHECKSUM_MESSAGE_PATTERN = re.compile(
-                    "No\s+Checksum\s+Available.+\s+Replica\s\[(\d+)\]", re.IGNORECASE
+                    r"No\s+Checksum\s+Available.+\s+Replica\s\[(\d+)\]", re.IGNORECASE
                 )
 
                 Reported_repls_without_checksum = set(
@@ -1046,8 +1046,8 @@ class TestDataObjOps(unittest.TestCase):
                         nthr = 0
                         search_text = BUF.getvalue()
                         find_iterator = itertools.chain(
-                            re.finditer("redirect_to_host = (\S+)", search_text),
-                            re.finditer("target_host = (\S+)", search_text),
+                            re.finditer(r"redirect_to_host = (\S+)", search_text),
+                            re.finditer(r"target_host = (\S+)", search_text),
                         )
                         for match in find_iterator:
                             nthr += 1
