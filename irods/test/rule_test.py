@@ -420,7 +420,7 @@ class TestRule(unittest.TestCase):
         )
         output = r.execute()
         lines = self.lines_from_stdout_buf(output)
-        self.assertRegexpMatches(lines[0], ".*\[Hello world!\]")
+        self.assertRegexpMatches(lines[0], r".*\[Hello world!\]")
 
     def test_rulefile_in_file_like_object_2__336(self):
 
@@ -442,8 +442,8 @@ class TestRule(unittest.TestCase):
         r = Rule(self.sess, rule_file=io.BytesIO(rule_file_contents.encode("utf-8")))
         output = r.execute()
         lines = self.lines_from_stdout_buf(output)
-        self.assertRegexpMatches(lines[0], "\[STRING\]\[\]")
-        self.assertRegexpMatches(lines[1], "\[STRING\]\[\]")
+        self.assertRegexpMatches(lines[0], r"\[STRING\]\[\]")
+        self.assertRegexpMatches(lines[1], r"\[STRING\]\[\]")
 
         r = Rule(
             self.sess,
@@ -452,8 +452,8 @@ class TestRule(unittest.TestCase):
         )
         output = r.execute()
         lines = self.lines_from_stdout_buf(output)
-        self.assertRegexpMatches(lines[0], "\[INTEGER\]\[5\]")
-        self.assertRegexpMatches(lines[1], "\[STRING\]\[A String\]")
+        self.assertRegexpMatches(lines[0], r"\[INTEGER\]\[5\]")
+        self.assertRegexpMatches(lines[1], r"\[STRING\]\[A String\]")
 
 
 if __name__ == "__main__":
