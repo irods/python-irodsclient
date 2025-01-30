@@ -10,38 +10,24 @@ from . import (__NEXT_OPERATION__, __FLOW_COMPLETE__,
 
 from .native import authenticate_native
 
-def login(conn):
-    ## short-cut back to the 4.2 logic:
-    # conn._login_pam()
 
-    authenticate_pam_password(conn,
-        req = {'user_name': conn.account.proxy_user,
-               'zone_name': conn.account.proxy_zone} )
+def login(conn, **extra_opt):
+    context_opt =  {'user_name': conn.account.proxy_user,'zone_name': conn.account.proxy_zone}
+    context_opt.update(extra_opt)
+    authenticate_pam_password(conn, req = context_opt)
 
 
 _scheme = 'pam_password'
 
 
-def get_pam_password_from_stdin(file_like_object = None):
-    try:
-        if file_like_object:
-            sys.stdin = file_like_object
-        if sys.stdin.isatty():
-            return getpass.getpass('Please enter PAM Password: ')
-        else:
-            return sys.stdin.readline().strip()
-    finally:
-        sys.stdin = sys.__stdin__
+def authenticate_pam_password(conn):
+    logging.info('----------- %s (begin)', _scheme)
 
-
-def authenticate_pam_password( conn, req = None ):
-
-    logging.info('----------- pam_password (begin)')
-
-    if req is None:
-        req = {'user_name': conn.account.proxy_user,
-               'zone_name': conn.account.proxy_zone}
-
+    # By design, we persist this "depot" object over the whole of the authentication
+    # exchange with the iRODS server as a means of sending password information to the
+    # native phase of that process.  This has to be done in a way that preserves
+    # the current environment (i.e. not writing to .irodsA) in the event that we
+    # are authenticating without the help of iCommand-type client env/auth files.
     _ = AuthStorage.create_temp_pw_storage(conn)
 
     pam_password_ClientAuthState(
@@ -51,7 +37,22 @@ def authenticate_pam_password( conn, req = None ):
         initial_request = req
     )
 
-    logging.info('----------- pam_password (end)')
+    logging.info('----------- %s (end)', _scheme)
+
+
+def get_pam_password_from_stdin(file_like_object = None):
+    try:
+        if file_like_object:
+            if not getattr(file_like_object,'readline',None):
+                msg = "The file_like_object, if provided, must have a 'readline' method."
+                raise RuntimeError(msg)
+            sys.stdin = file_like_object
+        if sys.stdin.isatty():
+            return getpass.getpass('Please enter PAM Password: ')
+        else:
+            return sys.stdin.readline().strip()
+    finally:
+        sys.stdin = sys.__stdin__
 
 
 AUTH_PASSWORD_KEY = "a_pw"
@@ -59,24 +60,16 @@ AUTH_PASSWORD_KEY = "a_pw"
 
 class pam_password_ClientAuthState(authentication_base):
 
-    def __init__(self, *a, check_ssl = True, **kw):
-        super().__init__(*a,**kw)
-        # TODO: Remove. This is only for debug & testing; check_ssl=False lets us send
-        # password-related information in the clear (i.e. when SSL/TLS isn't active).
-        self.check_ssl =  check_ssl
-
     def auth_client_start(self, request):
-        if self.check_ssl:
-            if not isinstance(self.conn.socket, ssl.SSLSocket):
-                msg = 'Need to be connected via SSL.'
-                raise RuntimeError(msg)
-
+        if not isinstance(self.conn.socket, ssl.SSLSocket):
+            msg = 'Need to be connected via SSL.'
+            raise RuntimeError(msg)
         resp = request.copy()
 
         obj = resp.pop(FORCE_PASSWORD_PROMPT, None)
         if obj:
-            resp[AUTH_PASSWORD_KEY] = get_pam_password_from_stdin(file_like_object = obj if getattr(obj, 'readline', None)
-                else None)
+            obj = None if isinstance(obj,(int,bool)) else obj
+            resp[AUTH_PASSWORD_KEY] = get_pam_password_from_stdin(file_like_object = obj)
         else:
             pw = AuthStorage.get_env_password()
             if pw:
