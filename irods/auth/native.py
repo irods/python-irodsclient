@@ -11,10 +11,11 @@ from . import (__NEXT_OPERATION__, __FLOW_COMPLETE__,
     throw_if_request_message_is_missing_key)
 
 
-def login(conn):
-    authenticate_native(conn,
-        req = {'user_name': conn.account.proxy_user,
-               'zone_name': conn.account.proxy_zone} )
+def login(conn, **extra_opt):
+    opt = {'user_name': conn.account.proxy_user,
+           'zone_name': conn.account.proxy_zone}
+    opt.update(extra_opt)
+    authenticate_native(conn, req = opt)
 
 
 _scheme = 'native'

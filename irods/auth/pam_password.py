@@ -59,8 +59,14 @@ AUTH_PASSWORD_KEY = "a_pw"
 
 
 class pam_password_ClientAuthState(authentication_base):
+    def __init__(self,*_,**_kw):
+        super().__init__(*_,**_kw)
+        self._l = None
 
     def auth_client_start(self, request):
+
+        self._l = resp.pop(CLIENT_GET_REQUEST_RESULT,False)
+
         if not isinstance(self.conn.socket, ssl.SSLSocket):
             msg = 'Need to be connected via SSL.'
             raise RuntimeError(msg)
@@ -100,9 +106,8 @@ class pam_password_ClientAuthState(authentication_base):
             msg = "auth storage object was either not set, or allowed to expire prematurely."
             raise RuntimeError(msg)
 
-        l = resp.pop(CLIENT_GET_REQUEST_RESULT,None)
-        if isinstance(l,list):
-            l[:] = (resp["request_result"],)
+        if isinstance(self._l,list):
+            self._l[:] = (resp["request_result"],)
 
         resp[__NEXT_OPERATION__] = self.perform_native_auth
         return resp

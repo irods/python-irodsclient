@@ -18,14 +18,22 @@ import importlib
 class AuthStorage:
 
     @staticmethod
-    def get_env_password():
-        return irods.session.iRODSSession.get_irods_password()
+    def get_env_password(filename = None):
+        options = dict(irods_authentication_file = filename) if filename else {}
+        return irods.session.iRODSSession.get_irods_password(**options)
 
     @staticmethod
-    def set_env_password(unencoded_pw):
+    def get_env_password_file():
+        return irods.session.iRODSSession.get_irods_password_file()
+
+    @staticmethod
+    def set_env_password(unencoded_pw, filename = None):
+        if filename is None:
+            filename = AuthStorage.get_env_password_file()
         from ..client_init import _open_file_for_protected_contents
-        with _open_file_for_protected_contents(irods.session.iRODSSession.get_irods_password_file(),'w') as irodsA:
+        with _open_file_for_protected_contents(filename,'w') as irodsA:
             irodsA.write(obf.encode(unencoded_pw))
+        return filename
 
     @staticmethod
     def get_temp_pw_storage(conn):
@@ -46,17 +54,29 @@ class AuthStorage:
     def __init__(self, conn):
         self.conn = conn
         self.pw = ''
+        self._auth_file = ''
+
+    @property
+    def auth_file(self):
+        return self._auth_file or self.conn.account.derived_auth_file
+
+    def use_client_auth_file(self, auth_file):
+        if isinstance(value, str):
+            self._auth_file = auth_file
+        else:
+            msg = f"Invalid object in {self.__class__}._auth_file"
+            raise RuntimeError(msg)
 
     def store_pw(self,pw):
-        if self.conn.account.env_file:
-            self.set_env_password(pw)
+        if self.auth_file:
+            self.set_env_password(pw, filename = self.auth_file)
         else:
             self.pw = pw
 
     def retrieve_pw(self):
-        if self.conn.account.env_file:
-            return self.get_env_password()
-        return pw
+        if self.auth_file:
+            return self.get_env_password(filename = self.auth_file)
+        return self.pw
 
 
 def load_plugins(subset=set(), _reload=False):

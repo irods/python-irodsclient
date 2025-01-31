@@ -208,7 +208,10 @@ class iRODSSession:
             conn.auth_options[key] = value
 
     def set_auth_option_for_scheme(self, scheme, key, value_or_factory_function):
-        self.auth_options_by_scheme.setdefault(scheme, {})[key] = value_or_factory_function
+        entry = self.auth_options_by_scheme.setdefault(scheme, {})
+        old_key = entry.get(key)
+        entry[key] = value_or_factory_function
+        return old_key
 
     def clone(self, **kwargs):
         other = copy.copy(self)

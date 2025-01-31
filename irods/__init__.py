@@ -30,7 +30,8 @@ def derived_auth_filename(env_filename):
     if not env_filename:
         return ""
     default_irods_authentication_file = (
-        #os.path.join(os.path.dirname(env_filename), ".irodsA")# <-- Issue #XXX)
+        ##->https://github.com/irods/python-irodsclient/issues/686
+        #os.path.join(os.path.dirname(env_filename), ".irodsA")
         os.path.expanduser("~/.irods/.irodsA")
     )
     return os.environ.get(

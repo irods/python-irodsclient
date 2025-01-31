@@ -100,7 +100,7 @@ class Connection:
                 irods.auth.load_plugins(subset=[scheme])
                 auth_module = getattr(irods.auth, scheme, None)
                 if auth_module:
-                    auth_module.login(self)
+                    auth_module.login(self, **self.auth_options)
                     auth_type = auth_module.__name__
             else:
                 # use legacy (iRODS pre-4.3 style) authentication
