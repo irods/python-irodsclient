@@ -5,9 +5,10 @@ import sys
 from . import (__NEXT_OPERATION__, __FLOW_COMPLETE__,
     AuthStorage,
     authentication_base, _auth_api_request,
-    throw_if_request_message_is_missing_key)
-from .native import authenticate_native
+    throw_if_request_message_is_missing_key,
+    CLIENT_GET_REQUEST_RESULT, FORCE_PASSWORD_PROMPT)
 
+from .native import authenticate_native
 
 def login(conn):
     ## short-cut back to the 4.2 logic:
@@ -53,7 +54,6 @@ def authenticate_pam_password( conn, req = None ):
     logging.info('----------- pam_password (end)')
 
 
-FORCE_PASSWORD_PROMPT = "force_password_prompt"
 AUTH_PASSWORD_KEY = "a_pw"
 
 
@@ -105,6 +105,10 @@ class pam_password_ClientAuthState(authentication_base):
         else:
             msg = "auth storage object was either not set, or allowed to expire prematurely."
             raise RuntimeError(msg)
+
+        l = resp.pop(CLIENT_GET_REQUEST_RESULT,None)
+        if isinstance(l,list):
+            l[:] = (resp["request_result"],)
 
         resp[__NEXT_OPERATION__] = self.perform_native_auth
         return resp

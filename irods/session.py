@@ -8,6 +8,7 @@ from numbers import Number
 import os
 import threading
 import weakref
+import irods.auth 
 from irods.query import Query
 from irods.genquery2 import GenQuery2
 from irods.pool import Pool
@@ -178,6 +179,13 @@ class iRODSSession:
         self.ticket__ = ""
         # A mapping for each connection - holds whether the session's assigned ticket has been applied.
         self.ticket_applied = weakref.WeakKeyDictionary()
+
+        self.auth_options_by_scheme = {
+            'pam_password': {
+                irods.auth.CLIENT_GET_REQUEST_RESULT: (lambda sess,conn: [])
+            }
+        }
+
         if auto_cleanup:
             _weakly_reference(self)
 
@@ -193,6 +201,14 @@ class iRODSSession:
         #   raised during __init__), then try to clean up.
         if self.pool is not None:
             self.cleanup()
+
+    def resolve_auth_options(self, scheme, conn):
+        for key,value in self.auth_options_by_scheme.setdefault(scheme, {}).items():
+            if callable(value): value = value(self, conn)
+            conn.auth_options[key] = value
+
+    def set_auth_option_for_scheme(self, scheme, key, value_or_factory_function):
+        self.auth_options_by_scheme.setdefault(scheme, {})[key] = value_or_factory_function
 
     def clone(self, **kwargs):
         other = copy.copy(self)

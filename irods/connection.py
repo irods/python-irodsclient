@@ -77,6 +77,7 @@ class Connection:
         self.pool = pool
         self.socket = None
         self.account = account
+        self.auth_options = {}
         self._client_signature = None
         self._server_version = self._connect()
         self._disconnected = False
@@ -85,6 +86,10 @@ class Connection:
             if not connect: return
 
             scheme = self.account._original_authentication_scheme
+
+            ses = self.pool.session_ref()
+            if ses:
+                ses.resolve_auth_options(scheme, conn = self)
 
             # These variables are just useful diagnostics.  The login_XYZ() methods should fail by
             # raising exceptions if they encounter authentication errors.

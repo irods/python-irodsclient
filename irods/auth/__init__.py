@@ -94,6 +94,10 @@ __FLOW_COMPLETE__ = "authentication_flow_complete"
 __NEXT_OPERATION__ = "next_operation"
 
 
+CLIENT_GET_REQUEST_RESULT = 'client_get_request_result'
+FORCE_PASSWORD_PROMPT = "force_password_prompt"
+
+
 class authentication_base:
 
     def __init__(self, connection, scheme):
