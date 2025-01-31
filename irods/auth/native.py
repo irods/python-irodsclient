@@ -12,9 +12,6 @@ from . import (__NEXT_OPERATION__, __FLOW_COMPLETE__,
 
 
 def login(conn):
-    ## short-cut back to the 4.2 logic:
-    #conn._login_native()
-
     authenticate_native(conn,
         req = {'user_name': conn.account.proxy_user,
                'zone_name': conn.account.proxy_zone} )
@@ -25,7 +22,7 @@ _scheme = 'native'
 
 def authenticate_native( conn, req = None ):
 
-    logging.info('----------- native (begin)')
+    logging.info('----------- %s (begin)', _scheme)
 
     # Default request value (None) assumes the conn.account has been initialized with the normal authentication
     # params such as user, zone, host, port, password, etc., because in normal PRC operation this has all been
@@ -42,7 +39,7 @@ def authenticate_native( conn, req = None ):
         initial_request = req
     )
 
-    logging.info('----------- native (end)')
+    logging.info('----------- %s (end)', _scheme)
 
 
 class native_ClientAuthState(authentication_base):

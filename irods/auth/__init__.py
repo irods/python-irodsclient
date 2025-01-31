@@ -23,7 +23,8 @@ class AuthStorage:
 
     @staticmethod
     def set_env_password(unencoded_pw):
-        with open(irods.session.iRODSSession.get_irods_password_file(),'w') as irodsA:
+        from ..client_init import _open_file_for_protected_contents
+        with _open_file_for_protected_contents(irods.session.iRODSSession.get_irods_password_file(),'w') as irodsA:
             irodsA.write(obf.encode(unencoded_pw))
 
     @staticmethod

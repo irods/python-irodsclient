@@ -1,3 +1,4 @@
+import irods.auth
 import socket
 import logging
 import struct
@@ -72,7 +73,7 @@ class Connection:
 
     DISALLOWING_PAM_PLAINTEXT = True
 
-    def __init__(self, pool, account, connect = True):
+    def __init__(self, pool, account):
 
         self.pool = pool
         self.socket = None
@@ -83,8 +84,6 @@ class Connection:
         self._disconnected = False
 
         try:
-            if not connect: return
-
             scheme = self.account._original_authentication_scheme
 
             ses = self.pool.session_ref()
@@ -762,4 +761,3 @@ class Connection:
         msg = response.get_main_message(GetTempPasswordOut)
         return obf.create_temp_password(msg.stringToHashWith, self.account.password)
 
-import irods.auth

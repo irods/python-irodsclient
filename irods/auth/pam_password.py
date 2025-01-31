@@ -82,6 +82,7 @@ class pam_password_ClientAuthState(authentication_base):
 
     # Client define
     AUTH_CLIENT_AUTH_REQUEST = "pam_password_auth_client_request"
+
     # Server define
     AUTH_AGENT_AUTH_REQUEST = "auth_agent_auth_request"
 
