@@ -52,6 +52,14 @@ def write_native_credentials_to_secrets_file(password, overwrite=True, **kw):
     auth_file = derived_auth_filename(env_file)
     _write_encoded_auth_value(auth_file, password, overwrite)
 
+## TODO fully re-implement the free function to write a PAM .irodsA file to use new auth-framework machinery:
+## (Here's a start:)
+# def write_pam_irodsA_file(password, overwrite=True, **kw):
+#     import irods.auth.pam_password
+#     ses = h.make_session()
+#     pam_opt[ irods.auth.FORCE_PASSWORD_PROMPT ] = io.StringIO(password)
+#     pam_opt[ irods.auth.CLIENT_GET_REQUEST_RESULT ] = L = []
+
 
 def write_pam_credentials_to_secrets_file(password, overwrite=True, **kw):
     """Write the credentials to an .irodsA file that will enable logging in with PAM authentication
