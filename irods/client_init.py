@@ -55,7 +55,7 @@ def write_native_credentials_to_secrets_file(password, overwrite=True, **kw):
 ## TODO fully re-implement the free function to write a PAM .irodsA file to use new auth-framework machinery:
 ## (Here's a start:)
 def write_pam_irodsA_file(password, overwrite=True, **kw):
-    import irods.auth, irods.helpers
+    import irods.auth, irods.helpers, io
     env_file = env_filename_from_keyword_args(kw)
     auth_file = derived_auth_filename(env_file)
     if not auth_file:
