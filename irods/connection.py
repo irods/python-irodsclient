@@ -1,4 +1,3 @@
-import irods.auth
 import socket
 import logging
 import struct
@@ -95,6 +94,7 @@ class Connection:
             auth_module = auth_type = ''
 
             if self.server_version >= (4,3,0):
+                import irods.auth
                 auth_module = None
                 # use client side "plugin" module: irods.auth.<scheme>
                 irods.auth.load_plugins(subset=[scheme])
