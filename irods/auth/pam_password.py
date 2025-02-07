@@ -20,7 +20,7 @@ def login(conn, **extra_opt):
 _scheme = 'pam_password'
 
 
-def authenticate_pam_password(conn):
+def authenticate_pam_password(conn, req):
     logging.info('----------- %s (begin)', _scheme)
 
     # By design, we persist this "depot" object over the whole of the authentication
@@ -65,7 +65,7 @@ class pam_password_ClientAuthState(authentication_base):
 
     def auth_client_start(self, request):
 
-        self._l = resp.pop(CLIENT_GET_REQUEST_RESULT,False)
+        self._l = request.pop(CLIENT_GET_REQUEST_RESULT,False)
 
         if not isinstance(self.conn.socket, ssl.SSLSocket):
             msg = 'Need to be connected via SSL.'

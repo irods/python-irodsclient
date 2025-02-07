@@ -21,22 +21,15 @@ def login(conn, **extra_opt):
 _scheme = 'native'
 
 
-def authenticate_native( conn, req = None ):
+def authenticate_native(conn, req):
 
     logging.info('----------- %s (begin)', _scheme)
-
-    # Default request value (None) assumes the conn.account has been initialized with the normal authentication
-    # params such as user, zone, host, port, password, etc., because in normal PRC operation this has all been
-    # seen to by the iRODSSession constructor.
-    if req is None:
-        req = {'user_name': conn.account.proxy_user,
-               'zone_name': conn.account.proxy_zone}
 
     native_ClientAuthState(
         conn,
         scheme = _scheme
     ).authenticate_client(
-        # TODO - Q: should we rename 'initial_request' as 'context'?
+        # initial_request is called context (or ctx for short) in iRODS core library code.
         initial_request = req
     )
 

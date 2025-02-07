@@ -52,21 +52,18 @@ def write_native_credentials_to_secrets_file(password, overwrite=True, **kw):
     auth_file = derived_auth_filename(env_file)
     _write_encoded_auth_value(auth_file, password, overwrite)
 
-## TODO fully re-implement the free function to write a PAM .irodsA file to use new auth-framework machinery:
-## (Here's a start:)
 def write_pam_irodsA_file(password, overwrite=True, **kw):
-    import irods.auth, irods.helpers, io
+    import irods.session, irods.auth, irods.helpers, io
     env_file = env_filename_from_keyword_args(kw)
     auth_file = derived_auth_filename(env_file)
     if not auth_file:
         return
     ses = h.make_session(**kw)
     ses.set_auth_option_for_scheme('pam_password', irods.auth.FORCE_PASSWORD_PROMPT, io.StringIO(password))
-
     L = []
     ses.set_auth_option_for_scheme('pam_password', irods.auth.CLIENT_GET_REQUEST_RESULT, L)
-    ses.collections.get(irods.helpers.home_collection(ses))  # get a collection; more importantly, make a socket connection
-    _write_encoded_auth_value(auth_file, L[0], overwrite)
+    with ses.pool.get_connection() as conn:
+        _write_encoded_auth_value(auth_file, L[0], overwrite)
 
 
 def write_pam_credentials_to_secrets_file(password, overwrite=True, **kw):
