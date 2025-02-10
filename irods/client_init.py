@@ -52,13 +52,19 @@ def write_native_credentials_to_secrets_file(password, overwrite=True, **kw):
     auth_file = derived_auth_filename(env_file)
     _write_encoded_auth_value(auth_file, password, overwrite)
 
-def write_pam_irodsA_file(password, overwrite=True, **kw):
-    import irods.session, irods.auth, irods.helpers, io
-    env_file = env_filename_from_keyword_args(kw)
-    auth_file = derived_auth_filename(env_file)
+def write_pam_irodsA_file(password, overwrite=True, ttl = None, **kw):
+    import irods.auth.pam_password
+    import io
+
+    ses = h.make_session(**kw)
+#   if ses.server_version < (4,3):
+#       write_pam_credentials_to_secrets_file(password, overwrite, ttl, _session = ses, **kw)
+
+    auth_file = ses.pool.account.derived_auth_file
     if not auth_file:
         return
-    ses = h.make_session(**kw)
+    if ttl:
+        ses.set_auth_option_for_scheme('pam_password', irods.auth.pam_password.AUTH_TTL_KEY, ttl)
     ses.set_auth_option_for_scheme('pam_password', irods.auth.FORCE_PASSWORD_PROMPT, io.StringIO(password))
     L = []
     ses.set_auth_option_for_scheme('pam_password', irods.auth.CLIENT_GET_REQUEST_RESULT, L)
@@ -66,20 +72,22 @@ def write_pam_irodsA_file(password, overwrite=True, **kw):
         _write_encoded_auth_value(auth_file, L[0], overwrite)
 
 
-def write_pam_credentials_to_secrets_file(password, overwrite=True, **kw):
+def write_pam_credentials_to_secrets_file(password, overwrite=True, ttl = '', **kw):
     """Write the credentials to an .irodsA file that will enable logging in with PAM authentication
     using the given cleartext password.
 
     If overwrite is False, irodsA_already_exists will be raised if an .irodsA is found at the
     expected path.
     """
-    s = h.make_session()
+    s = kw.pop('_session', None) or h.make_session(**kw)
     s.pool.account.password = password
     to_encode = []
     with cfg.loadlines(
         [
             dict(setting="legacy_auth.pam.password_for_auto_renew", value=None),
             dict(setting="legacy_auth.pam.store_password_to_environment", value=False),
+            #TODO
+            #dict(setting="legacy_auth.pam.time_to_live_in_hours", value = ttl)
         ]
     ):
         to_encode = s.pam_pw_negotiated

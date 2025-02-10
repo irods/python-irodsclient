@@ -11,6 +11,9 @@ from . import (__NEXT_OPERATION__, __FLOW_COMPLETE__,
 from .native import authenticate_native
 
 
+AUTH_TTL_KEY = "a_ttl"
+
+
 def login(conn, **extra_opt):
     context_opt =  {'user_name': conn.account.proxy_user,'zone_name': conn.account.proxy_zone}
     context_opt.update(extra_opt)
