@@ -28,6 +28,7 @@ class iRODSAccount:
                 irods_host = v
 
         self.env_file = env_file
+        self._auth_file = "" # will be written into by iRODSSession on call to configure( )
         tuplify = lambda _: _ if isinstance(_, (list, tuple)) else (_,)
         schemes = [_.lower() for _ in tuplify(irods_authentication_scheme)]
 
