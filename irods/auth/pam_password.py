@@ -62,29 +62,37 @@ AUTH_PASSWORD_KEY = "a_pw"
 
 
 class pam_password_ClientAuthState(authentication_base):
-    def __init__(self,*_,**_kw):
+
+    def __init__(self,*_,check_ssl=True,**_kw):
         super().__init__(*_,**_kw)
+        self.check_ssl = check_ssl
         self._l = None
 
     def auth_client_start(self, request):
 
-        self._l = request.pop(CLIENT_GET_REQUEST_RESULT,False)
+        self._l = request.pop(CLIENT_GET_REQUEST_RESULT, False)
 
-        if not isinstance(self.conn.socket, ssl.SSLSocket):
-            msg = 'Need to be connected via SSL.'
-            raise RuntimeError(msg)
+        if self.check_ssl:
+            if not isinstance(self.conn.socket, ssl.SSLSocket):
+                msg = 'Need to be connected via SSL.'
+                raise RuntimeError(msg)
+
         resp = request.copy()
 
         obj = resp.pop(FORCE_PASSWORD_PROMPT, None)
+
         if obj:
             obj = None if isinstance(obj,(int,bool)) else obj
+            # Like with the C++ plugin, we offer the user a chance 
             resp[AUTH_PASSWORD_KEY] = get_pam_password_from_stdin(file_like_object = obj)
         else:
-            pw = AuthStorage.get_env_password()
-            if pw:
+            # Password from .irodsA in environment.
+            if self.conn.account._auth_file:
                 resp[__NEXT_OPERATION__] = self.perform_native_auth
                 return resp
-            resp[AUTH_PASSWORD_KEY] = get_pam_password_from_stdin()
+
+            # Password in cleartext form, fed in via iRODSSession constructor parameter.
+            resp[AUTH_PASSWORD_KEY] = self.conn.account.password or ""
 
         resp[__NEXT_OPERATION__] = self.AUTH_CLIENT_AUTH_REQUEST
         return resp
