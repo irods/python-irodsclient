@@ -172,6 +172,12 @@ def make_environment_and_auth_files(dir_, **params):
     return (config, auth)
 
 
+def get_server_version_for_test(session, curtail_length):
+    return session._server_version(session.GET_SERVER_VERSION_WITHOUT_AUTH)[
+        :curtail_length
+    ]
+
+
 # Create a connection for test, based on ~/.irods environment by default.
 
 
@@ -193,7 +199,7 @@ def make_session(test_server_version=True, **kwargs):
     env_file = env_filename_from_keyword_args(kwargs)
     session = iRODSSession(irods_env_file=env_file, **kwargs)
     if test_server_version:
-        connected_version = session.server_version[:3]
+        connected_version = get_server_version_for_test(session, curtail_length=3)
         advertised_version = IRODS_VERSION[:3]
         if connected_version > advertised_version:
             msg = (
@@ -428,26 +434,6 @@ def enableLogging(logger, handlerType, args, level_=logging.INFO):
         logger.setLevel(saveLevel)
         if h in logger.handlers:
             logger.removeHandler(h)
-
-
-class _unlikely_value:
-    pass
-
-
-@contextlib.contextmanager
-def temporarily_assign_attribute(
-    target, attr, value, not_set_indicator=_unlikely_value()
-):
-    save = not_set_indicator
-    try:
-        save = getattr(target, attr, not_set_indicator)
-        setattr(target, attr, value)
-        yield
-    finally:
-        if save != not_set_indicator:
-            setattr(target, attr, save)
-        else:
-            delattr(target, attr)
 
 
 # Implement a server-side wait that ensures no TCP communication from server end for a given interval.

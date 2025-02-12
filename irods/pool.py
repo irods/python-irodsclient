@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import logging
 import threading
@@ -57,6 +58,7 @@ class Pool:
             or application_name
             or DEFAULT_APPLICATION_NAME
         )
+        self._need_auth = True
 
         if connection_refresh_time > 0:
             self.refresh_connection = True
@@ -64,6 +66,16 @@ class Pool:
         else:
             self.refresh_connection = False
             self.connection_refresh_time = None
+
+    @contextlib.contextmanager
+    def no_auto_authenticate(self):
+        import irods.helpers
+
+        with irods.helpers.temporarily_assign_attribute(self, "_need_auth", False):
+            yield self
+
+    def set_session_ref(self, session):
+        self.session_ref = weakref.ref(session) if session is not None else lambda: None
 
     @property
     def _conn(self):
