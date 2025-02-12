@@ -36,3 +36,23 @@ def xml_mode(s):
         yield
     finally:
         ET(None)
+
+
+class _unlikely_value:
+    pass
+
+
+@contextlib.contextmanager
+def temporarily_assign_attribute(
+    target, attr, value, not_set_indicator=_unlikely_value()
+):
+    save = not_set_indicator
+    try:
+        save = getattr(target, attr, not_set_indicator)
+        setattr(target, attr, value)
+        yield
+    finally:
+        if save != not_set_indicator:
+            setattr(target, attr, save)
+        else:
+            delattr(target, attr)

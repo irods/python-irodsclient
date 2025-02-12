@@ -1,5 +1,4 @@
-"""From rodsKeyWdDef.hpp
-"""
+"""From rodsKeyWdDef.hpp"""
 
 ALL_KW = "all"  # operation done on all replicas #
 COPIES_KW = "copies"  # the number of copies #

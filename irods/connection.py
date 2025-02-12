@@ -83,6 +83,8 @@ class Connection:
         self._disconnected = False
 
         scheme = self.account._original_authentication_scheme
+        if self.pool and not self.pool._need_auth:
+            return
 
         # These variables are just useful diagnostics.  The login_XYZ() methods should fail by
         # raising exceptions if they encounter authentication errors.
