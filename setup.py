@@ -46,4 +46,5 @@ setup(
         "defusedxml",
     ],
     extras_require={"tests": ["unittest-xml-reporting"]},  # for xmlrunner
+    scripts=["irods/prc_write_irodsA.py"],
 )

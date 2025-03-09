@@ -20,7 +20,7 @@ teardown()
     test_specific_cleanup
 }
 
-@test f001 {
+@test main {
 
     # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
     # without an exception being raised.
@@ -44,9 +44,10 @@ print ('env_auth_scheme=%s' % ses.pool.account._original_authentication_scheme)
     OUTPUT=$($PYTHON -c "$SCRIPT" 2>&1 >/dev/null || true)
     grep 'CAT_PASSWORD_EXPIRED' <<<"$OUTPUT"
 
-    # Test that the $SCRIPT, when run with proper settings, can successfully reset the password.
+    # Test that the $SCRIPT, when run in legacy auth mode and with proper settings, can successfully reset the password.
 
     OUTPUT=$($PYTHON -c "import irods.client_configuration as cfg
+cfg.legacy_auth.force_legacy_auth = True
 cfg.legacy_auth.pam.password_for_auto_renew = '$ALICES_PAM_PASSWORD'
 cfg.legacy_auth.pam.time_to_live_in_hours = 1
 cfg.legacy_auth.pam.store_password_to_environment = True

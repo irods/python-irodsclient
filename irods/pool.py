@@ -46,7 +46,7 @@ class Pool:
         'application_name' specifies the application name as it should appear in an 'ips' listing.
         """
 
-        self.session_ref = weakref.ref(session) if session is not None else lambda: None
+        self.set_session_ref(session)
         self._thread_local = threading.local()
         self.account = account
         self._lock = threading.RLock()

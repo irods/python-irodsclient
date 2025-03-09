@@ -23,7 +23,11 @@ teardown()
     test_specific_cleanup
 }
 
-@test create_secrets_file {
+@test main {
+
+    echo legacy_auth.force_legacy_auth True > ~/.python_irodsclient
+    export PYTHON_IRODSCLIENT_CONFIGURATION_PATH=""
+
     # Old .irodsA is already created, so we delete it and alter the pam password.
     sudo chpasswd <<<"alice:$ALICES_NEW_PAM_PASSWD"
     local logfile i

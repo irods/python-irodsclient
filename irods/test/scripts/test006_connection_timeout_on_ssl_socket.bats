@@ -24,7 +24,7 @@ teardown()
     test_specific_cleanup
 }
 
-@test f001 {
+@test main {
 
     # Create and put into iRODS a large file which will take a significant fraction of a
     # second (>1e-5 on any CPU + Network combination) to checksum.

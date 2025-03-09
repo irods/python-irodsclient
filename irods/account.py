@@ -28,6 +28,11 @@ class iRODSAccount:
                 irods_host = v
 
         self.env_file = env_file
+
+        # The '_auth_file' attribute will be written in the call to iRODSSession.configure,
+        # if an .irodsA file from the client environment is used to load password information.
+        self._auth_file = ""
+
         tuplify = lambda _: _ if isinstance(_, (list, tuple)) else (_,)
         schemes = [_.lower() for _ in tuplify(irods_authentication_scheme)]
 

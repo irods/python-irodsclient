@@ -2,13 +2,12 @@ class PamLoginException(Exception):
     pass
 
 
-def login(conn):
-    if conn.server_version >= (4, 3):
-        raise PamLoginException(
-            'PAM logins in iRODS 4.3+ require a scheme of "pam_password"'
-        )
-    conn._login_pam()
-
-
-# Pattern for when you need to import from sibling plugins:
-from .native import login as native_login
+def login(conn, **opts):
+    msg = (
+        "In iRODS 4.3+, PAM logins use the new authentication plugin framework by default, which "
+        "requires the authentication scheme be set to 'pam_password' rather than simply 'pam'.  "
+        "Users may choose legacy authentication "
+        "by setting legacy_auth.force_legacy_auth to True in the client configuration; however, be advised "
+        "that the legacy code path will be removed in a future release of iRODS."
+    )
+    raise PamLoginException(msg)

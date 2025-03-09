@@ -179,4 +179,5 @@ api_number = {
     "REPLICA_CLOSE_APN": 20004,
     "TOUCH_APN": 20007,
     "AUTH_PLUG_REQ_AN": 1201,
+    "AUTHENTICATION_APN": 110000,
 }
