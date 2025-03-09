@@ -1,7 +1,10 @@
 #! /usr/bin/env python
 
+import io
+import logging
 import numbers
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -233,6 +236,22 @@ class TestConnections(unittest.TestCase):
         self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(
             sess, old_timeout
         )
+
+    def test_legacy_auth_used_with_force_legacy_auth_configuration__issue_499(self):
+        import irods.client_configuration as config
+
+        with config.loadlines(
+            entries=[dict(setting="legacy_auth.force_legacy_auth", value=True)]
+        ):
+            stream = io.StringIO()
+            logger = logging.getLogger("irods.connection")
+            with helpers.enableLogging(
+                logger, logging.StreamHandler, (stream,), level_=logging.INFO
+            ):
+                with temp_setter(logger, "propagate", False):
+                    helpers.make_session().collections.get("/")
+        regex = re.compile("^.*Native auth.*(in legacy auth).*$", re.MULTILINE)
+        self.assertTrue(regex.search(stream.getvalue()))
 
 
 if __name__ == "__main__":

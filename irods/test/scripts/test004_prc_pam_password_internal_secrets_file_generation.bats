@@ -26,7 +26,10 @@ teardown()
     test_specific_cleanup
 }
 
-@test f001 {
+@test main {
+
+    echo legacy_auth.force_legacy_auth True > ~/.python_irodsclient
+    export PYTHON_IRODSCLIENT_CONFIGURATION_PATH=""
 
     local AUTH_FILE=~/.irods/.irodsA
 

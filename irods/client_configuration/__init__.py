@@ -102,7 +102,7 @@ data_objects = DataObjects()
 
 
 class LegacyAuth(iRODSConfiguration):
-    __slots__ = ("pam",)
+    __slots__ = ("pam", "force_legacy_auth")
 
     class Pam(iRODSConfiguration):
         __slots__ = (
@@ -122,6 +122,7 @@ class LegacyAuth(iRODSConfiguration):
 
     def __init__(self):
         self.pam = self.Pam()
+        self.force_legacy_auth = False
 
 
 legacy_auth = LegacyAuth()

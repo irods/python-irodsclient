@@ -772,6 +772,7 @@ class MetadataRequest(Message):
     def __init__(self, *args, **metadata_opts):
         super(MetadataRequest, self).__init__()
 
+        # Python3 does not have types.NoneType
         NoneType = type(None)
 
         def field_name(i):

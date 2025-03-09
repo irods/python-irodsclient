@@ -129,51 +129,90 @@ the `encryption_*` and `ssl_*` options
 directly to the constructor as keyword arguments, even though it is
 required when they are placed in the environment file.
 
-Creating PAM or Native Credentials File (.irodsA)
--------------------------------------------------
+Creating a PAM or Native Authentication File
+--------------------------------------------
 
-Two free functions exist for creating encoded authentication files:
-```
-irods.client_init.write_native_credentials_to_secrets_file
-irods.client_init.write_pam_credentials_to_secrets_file
-```
+The following free functions may be used to create the authentication secrets files (called
+`.irodsA` per the convention of iRODS's iCommands):
+   - `irods.client_init.write_native_irodsA_file`
+   - `irods.client_init.write_pam_irodsA_file`
 
-Each takes a cleartext password and writes an appropriately processed version of it
-into an .irodsA (secrets) file in the login environment.
+These functions can roughly be described as duplicating the "authentication" functionality of `iinit`,
+provided that a valid `irods_environment.json` has already been created.
 
-Examples:
-For the `native` authentication scheme, we can use the currently set iRODS password to create the .irodsA file directly:
+Each of the above functions can take a cleartext password and write an appropriately encoded
+version of it into an authentication file in the appropriate location.  That location is
+`~/.irods/.irodsA` unless the environment variable IRODS_AUTHENTICATION_FILE has been set
+in the command shell to dictate an alternative file path.
 
-```python
-import irods.client_init as iinit
-iinit.write_native_credentials_to_secrets_file(irods_password)
-```
-
-Note, in the `pam_password` case, this involves sending the cleartext password
-to the server (SSL must be enabled!) and then writing the scrambled token that
-is returned from the transaction.
-
-If an .irodsA file exists already, it will be overwritten by default; however, if these functions'
-overwrite parameter is set to `False`, an exception of type `irods.client_init.irodsA_already_exists`
-will be raised to indicate the older .irodsA file is present.
-
-For the `pam_password` authentication scheme, we must first ensure an `irods_environment.json` file exists in the 
-client environment (necessary for establishing SSL/TLS connection parameters as well as obtaining a PAM token from the server after connecting)
-and then make the call to write .irodsA using the Bash commands:
+As an example, here we write a native `.irodsA` file using the first of the two functions.  We
+provide the one required argument, a password string which is entered interactively at the
+terminal.
 
 ```bash
-$ cat > ~/.irods/irods_environment.json << EOF
-{
-  "irods_user_name":"rods",
-  "irods_host":"server-hostname",
-  ...  [all other connection settings, including SSL parameters, needed for communication with iRODS] ...
-}
-EOF
-$ python -c "import irods.client_init as iinit; iinit.write_pam_credentials_to_secrets_file(pam_cleartext_password)"
+$ echo '{ "irods_user_name":"rods",
+          ... # other parameters as needed
+        }'> ~/.irods/irods_environment.json
+$ python -c "import irods.client_init, getpass
+irods.client_init.write_native_irodsA_file(getpass.getpass('Enter iRODS password -> '))"
 ```
 
-PAM logins
-----------
+By default, when an `.irodsA` file already exists, it will be overwritten. If however the
+`overwrite` parameter is set to `False`, an exception of type `irods.client_init.irodsA_already_exists`
+is raised to warn of any older `.irodsA` file that might otherwise have been overwritten.
+
+Equivalently to the above, we can issue the following command.
+
+```bash
+$ prc_write_irodsA.py native <<<"${MY_CURRENT_IRODS_PASSWORD}"
+```
+
+The redirect may of course be left off, in which case the user is prompted for the iRODS password
+and echo of the keyboard input will be suppressed, in the style of `iinit`.  Regardless of
+which technique is used, no password will be visible on the terminal during or after input.
+
+For the `pam_password` scheme, typically SSL/TLS must first be enabled to avoid sending data related
+to the password - or even sending the raw password itself - over a network connection in the clear.
+
+Thus, for `pam_password` authentication to work well, we should first ensure, when setting up the
+client environment, to include within `irods_environment.json` the appropriate SSL/TLS connection
+parameters.  In a pinch, `iinit` can be used to verify this prerequisite is fulfilled,
+as its invocation would then create a valid `.irodsA` from merely prompting the user for their PAM password.
+
+Once again, this can also be done using the free function directly:
+
+```python
+irods.client_init.write_pam_irodsA_file(getpass.getpass('Enter current PAM password -> '))
+```
+
+or from the Bash command shell:
+
+```bash
+$ prc_write_irodsA.py pam_password <<<"${MY_CURRENT_PAM_PASSWORD}"
+```
+
+As a final note, in the `pam_password` scheme, the default SSL requirement can be disabled.
+**Warning:** Disabling the SSL requirement may cause user passwords to be sent over the network
+in the clear. This should only be done for purposes of testing. Here's how to do it:
+
+```python
+from irods.auth.pam_password import ENSURE_SSL_IS_ACTIVE
+
+session = irods.session.iRODSSession(host = "localhost", port = 1247,
+                                     user = "alice", password = "test123", zone="tempZone",
+                                     authentication_scheme = "pam_password")
+
+session.set_auth_option_for_scheme('pam_password', ENSURE_SSL_IS_ACTIVE, False)
+
+# Do something with the session:
+home = session.collections.get('/tempZone/home/alice')
+```
+
+Note, however, in future releases of iRODS it is possible that extra SSL checking could be
+implemented server-side, at which point the above code could not be guaranteed to work.
+
+Legacy (iRODS 4.2-compatible) PAM authentication
+------------------------------------------------
 
 Since v2.0.0, the Python iRODS Client is able to authenticate via PAM using the same file-based client environment as the
 iCommands.

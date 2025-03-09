@@ -1,6 +1,5 @@
 import ast
 import atexit
-import contextlib
 import copy
 import errno
 import json
@@ -9,11 +8,13 @@ from numbers import Number
 import os
 import threading
 import weakref
+import irods.auth
 from irods.query import Query
 from irods.genquery2 import GenQuery2
 from irods.pool import Pool
 from irods.account import iRODSAccount
 from irods.api_number import api_number
+import irods.client_configuration as client_config
 from irods.manager.collection_manager import CollectionManager
 from irods.manager.data_object_manager import DataObjectManager
 from irods.manager.metadata_manager import MetadataManager
@@ -179,6 +180,13 @@ class iRODSSession:
         self.ticket__ = ""
         # A mapping for each connection - holds whether the session's assigned ticket has been applied.
         self.ticket_applied = weakref.WeakKeyDictionary()
+
+        self.auth_options_by_scheme = {
+            "pam_password": {
+                irods.auth.CLIENT_GET_REQUEST_RESULT: (lambda sess, conn: [])
+            }
+        }
+
         if auto_cleanup:
             _weakly_reference(self)
 
@@ -194,6 +202,18 @@ class iRODSSession:
         #   raised during __init__), then try to clean up.
         if self.pool is not None:
             self.cleanup()
+
+    def resolve_auth_options(self, scheme, conn):
+        for key, value in self.auth_options_by_scheme.setdefault(scheme, {}).items():
+            if callable(value):
+                value = value(self, conn)
+            conn.auth_options[key] = value
+
+    def set_auth_option_for_scheme(self, scheme, key, value_or_factory_function):
+        entry = self.auth_options_by_scheme.setdefault(scheme, {})
+        old_key = entry.get(key)
+        entry[key] = value_or_factory_function
+        return old_key
 
     def clone(self, **kwargs):
         other = copy.copy(self)
@@ -411,12 +431,26 @@ class iRODSSession:
 
     @property
     def pam_pw_negotiated(self):
-        self.pool.account.store_pw = []
-        conn = self.pool.get_connection()
-        pw = getattr(self.pool.account, "store_pw", [])
-        delattr(self.pool.account, "store_pw")
-        conn.release()
-        return pw
+        old_setting = _dummy = object()
+        try:
+            self.pool.account.store_pw = box = []
+            if (
+                self.server_version_without_auth() >= (4, 3)
+                and not client_config.legacy_auth.force_legacy_auth
+            ):
+                old_setting = self.set_auth_option_for_scheme(
+                    "pam_password", irods.auth.CLIENT_GET_REQUEST_RESULT, box
+                )
+            conn = self.pool.get_connection()
+            pw = getattr(self.pool.account, "store_pw", [])
+            delattr(self.pool.account, "store_pw")
+            conn.release()
+            return pw
+        finally:
+            if old_setting is not _dummy:
+                self.set_auth_option_for_scheme(
+                    "pam_password", irods.auth.CLIENT_GET_REQUEST_RESULT, old_setting
+                )
 
     @property
     def default_resource(self):

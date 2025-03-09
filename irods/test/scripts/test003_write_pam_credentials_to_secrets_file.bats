@@ -24,7 +24,7 @@ teardown()
     test_specific_cleanup
 }
 
-@test create_secrets_file {
+@test main {
     auth_file=~/.irods/.irodsA
 
     CONTENTS1=$(cat $auth_file)
@@ -33,7 +33,7 @@ teardown()
     sudo chpasswd <<<"alice:$ALICES_NEW_PAM_PASSWD"
     OUTPUT=$($PYTHON -c "import irods.client_init;
 try:
-    irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD', overwrite = False)
+    irods.client_init.write_pam_irodsA_file('$ALICES_NEW_PAM_PASSWD', overwrite = False)
 except irods.client_init.irodsA_already_exists:
     print ('CANNOT OVERWRITE')
 ")
@@ -43,7 +43,7 @@ except irods.client_init.irodsA_already_exists:
     [ -n "$CONTENTS1" -a "$CONTENTS1" = "$CONTENTS2" ]
 
     # Now delete the already existing irodsA and repeat without negating overwrite.
-    $PYTHON -c "import irods.client_init; irods.client_init.write_pam_credentials_to_secrets_file('$ALICES_NEW_PAM_PASSWD')"
+    $PYTHON -c "import irods.client_init; irods.client_init.write_pam_irodsA_file('$ALICES_NEW_PAM_PASSWD')"
     CONTENTS3=$(cat $auth_file)
     [ "$CONTENTS2" != "$CONTENTS3" ]
 
