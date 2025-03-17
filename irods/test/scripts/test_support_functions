@@ -1,3 +1,19 @@
+irods_server_version() {
+  python -c "import irods.helpers as h
+import operator,sys
+if len(sys.argv) == 1:
+    (comparison,relto)=('','')
+elif len(sys.argv) == 3:
+    (comparison,relto)=sys.argv[1:3]
+fm_tuple = lambda tup: '.'.join(str(_) for  _ in tup)
+to_tuple = lambda vstr: tuple(int(_) for _ in vstr.split('.'))
+svt = h.make_session().server_version_without_auth()
+if relto:
+  exit(0 if vars(operator)[comparison](svt,to_tuple(relto)) else 1)
+print(fm_tuple(svt))
+" $1 $2
+}
+
 SCRIPTDIR=${BASH_SOURCE[0]}
 up_from_script_dir() {
   local x incr=""
