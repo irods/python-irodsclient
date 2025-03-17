@@ -129,7 +129,10 @@ class Connection:
         return self._client_signature
 
     def __del__(self):
-        self.disconnect()
+        try:
+            self.disconnect()
+        except Exception as e:
+            logger.info("Exception in finalizer: [%r]", e)
         logger.debug(DESTRUCTOR_MSG)
 
     def send(self, message):
