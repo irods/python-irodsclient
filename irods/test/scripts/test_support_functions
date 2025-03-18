@@ -199,3 +199,9 @@ activate_virtual_env_with_prc_installed()
                   pip install '/prc-copy[tests]' && sudo rm -fr /prc-copy"
     source /py3/bin/activate
 }
+
+mtime_and_content()
+{
+    stat -c%y "$1"
+    cat "$1"
+}
