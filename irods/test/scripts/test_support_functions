@@ -114,7 +114,7 @@ _begin_pam_environment_and_password() {
     echo "$ENV" > ~/.irods/irods_environment.json
 
     # TODO: check: it seems /dev/tty won't work if docker exec is not invoked with -t
-    if [ -n "$1" ]; then
+    if [ -n "$1" -a -z "$SKIP_IINIT_FOR_PASSWORD" ]; then
         iinit <<<"$1" 2>/tmp/iinit_as_alice.log
     fi
 }
