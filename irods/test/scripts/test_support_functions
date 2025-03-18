@@ -154,10 +154,17 @@ test_specific_cleanup() {
 
 # PostgreSQL only
 age_out_pam_password() {
+  # sets create_ts and modify_ts (timestamps) to older values, decreasing them by an amount of (offset + 1) where offset
+  # is the number of seconds for expiry_ts stored in the ICAT for the given user and password.  In this way, we can
+  # artificially age out an existing pam password.
+  # Parameters:
+  #  $1 - The username
+  #  $2 - (optional) override the amount used for offsetting the create & modify timestamps.
   local id=$(iquest %s "select USER_ID where USER_NAME = '$1'")
   local offset=$(sudo su - postgres -c "psql -t ICAT -c 'select pass_expiry_ts from r_user_password where user_id = $id'")
   local mtime=$(sudo su - postgres -c "psql -t ICAT -c 'select modify_ts from r_user_password where user_id = $id'")
   mtime=$(sed 's/^\s*0//' <<<"$mtime")
+  [ -n "$2" ] && offset="$2"
   ((offset+=1))
   local new_time=$((mtime - offset))
   sudo su - postgres -c "psql ICAT -c 'update r_user_password set create_ts=$new_time, modify_ts=$new_time where user_id=$id'"
