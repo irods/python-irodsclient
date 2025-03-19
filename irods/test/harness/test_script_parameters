@@ -1,0 +1,50 @@
+# keys for Arglist refer to argument given, which could be a symlink.
+
+declare -A wrapper_arglist=(
+    [demo.sh]="arg1 arg2"
+    [demo_A.sh]="arg1-a arg2-a"
+    [login_auth_test.py]="TestLogins"
+    [login_auth_test_1.py]="-v TestAnonymousUser TestMiscellaneous"
+    [login_auth_test_2.py]="-v TestWithSSL"
+)
+
+# keys for Wrapper refer to argument after resolution of any symlinks
+
+declare -A wrappers=(
+    [login_auth_test_must_run_manually.py]=./login_auth_test.sh
+    [PRC_issue_362.bats]=./login_auth_test.sh
+    [demo.sh]=./demo_hook.sh
+    [test001_pam_password_expiration.bats]=../login_auth_test.sh
+    [test002_write_native_credentials_to_secrets_file.bats]=../login_auth_test.sh
+    [test003_write_pam_credentials_to_secrets_file.bats]=../login_auth_test.sh
+    [test004_prc_pam_password_internal_secrets_file_generation.bats]=../login_auth_test.sh
+    [test005_test_special_characters_in_pam_passwords.bats]=../login_auth_test.sh
+    [test006_connection_timeout_on_ssl_socket.bats]=../login_auth_test.sh
+    [test007_pam_features_in_new_auth_framework.bats]=../login_auth_test.sh
+    [test008_prc_write_irodsA_utility_in_native_mode.bats]=../login_auth_test.sh
+    [test009_test_special_characters_in_pam_passwords_auth_fmwk.bats]=../login_auth_test.sh
+)
+
+# keys for Image and User refer to the basename after resolution to a wrapper if one is used
+
+declare -A images=(
+    [login_auth_test.sh]=bats-python3
+    [test_1.sh]=install-irods
+    [test_2.sh]=bats-python3
+    [test_3.bats]=bats-python3
+    [experiment.sh]=ssl-and-pam
+    [fail.sh]=ssl-and-pam
+    [login_auth_test_must_run_manually.py]=ssl-and-pam
+    [demo_hook.sh]=ssl-and-pam
+)
+
+declare -A user=(
+)
+
+# keys for WorkDir refer to user
+
+declare -A workdirs=(
+    [testuser]=/home/testuser
+    [irods]=/var/lib/irods
+    [root]=/
+)
