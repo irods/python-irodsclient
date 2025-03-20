@@ -5,7 +5,7 @@ Python iRODS Client (PRC)
 
 Currently supported:
 
--   Python 3.6 or later
+-   Python 3.9 or later
 -   Establish a (secure) connection to iRODS
 -   Authenticate via password, GSI, PAM
 -   GenQuery and Specific Queries
