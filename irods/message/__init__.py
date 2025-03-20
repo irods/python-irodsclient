@@ -180,7 +180,7 @@ def ET(xml_type=(), server_version=None):
 
 logger = logging.getLogger(__name__)
 
-IRODS_VERSION = (4, 3, 3, "d")
+IRODS_VERSION = (4, 3, 4, "d")
 
 UNICODE = str
 
