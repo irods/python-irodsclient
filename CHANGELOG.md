@@ -25,7 +25,7 @@ It also removes support for Python versions earlier than 3.9.
 
 ### Removed
 
-- Remove support for Python 3.8 and earlier (#694).
+- Remove support for Python 3.8 and earlier (#553).
 
 ### Fixed
 
