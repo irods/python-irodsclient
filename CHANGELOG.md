@@ -11,6 +11,31 @@ and this project **only** adheres to the following _(as defined at [Semantic Ver
 > - MINOR version when you add functionality in a backward compatible manner
 > - PATCH version when you make backward compatible bug fixes
 
+## [v3.1.0] - 2025-03-21
+
+This release includes a full port of the iRODS 4.3 authentication framework with working implementations for the native and pam_password authentication schemes.
+
+It also removes support for Python versions earlier than 3.9.
+
+### Changed
+
+- Implement iRODS 4.3 authentication flow for native and pam_password authentication schemes (#499).
+- Replace deprecated use of hyphen in description file property name (#684).
+- Change server version compatibility to iRODS 4.3.4 (#694).
+
+### Removed
+
+- Remove support for Python 3.8 and earlier (#694).
+
+### Fixed
+
+- Make computation of .irodsA file path independent of irods_environment.json file path (#686).
+- Adjust strings in tests to avoid SyntaxWarning messages (#687).
+
+### Added
+
+- Allow retrieval of connected server version without having to authenticate first (#688).
+
 ## [v3.0.0] - 2024-12-19
 
 This major release primarily focuses on the removal of Python 2 compatibility. With that comes improvements for PAM authentication and facilities to help with cleaning up resources on program shutdown. 
