@@ -917,8 +917,7 @@ class TestDataObjOps(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # TODO: Skipping this will result in an interpreter seg fault for Py3.6 but not 3.11; why?
-        del cls.logins
+        pass
 
     def _data_object_and_associated_ticket(
         self,
