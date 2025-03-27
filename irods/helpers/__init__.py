@@ -1,11 +1,18 @@
 import contextlib
 import sys
 from irods import env_filename_from_keyword_args
+import irods.exception as ex
 from irods.message import ET, XML_Parser_Type, IRODS_VERSION
+from irods.path import iRODSPath
 from irods.session import iRODSSession
 
-
-__all__ = ["make_session", "home_collection", "xml_mode"]
+__all__ = [
+    "make_session",
+    "home_collection",
+    "xml_mode",
+    "get_collection",
+    "get_data_object",
+]
 
 
 class StopTestsException(Exception):
@@ -104,3 +111,33 @@ def temporarily_assign_attribute(
             setattr(target, attr, save)
         else:
             delattr(target, attr)
+
+
+def get_data_object(sess, logical_path):
+    """Get a reference to the data object (as an iRODSDataObject) at the given path, if one is found.
+    Else, return None.
+
+    Parameters:
+        sess: an authenticated session object.
+        logical_path: the full logical path where the data object is to be found.  Can be in unnormalized form.
+    """
+    try:
+        # Check for a data object at the normalized path.
+        return sess.data_objects.get(iRODSPath(logical_path))
+    except ex.DataObjectDoesNotExist:
+        return None
+
+
+def get_collection(sess, logical_path):
+    """Get a reference to the collection (as an iRODSCollection) at the given path, if one is found.
+    Else, return None.
+
+    Parameters:
+        sess: an authenticated session object.
+        logical_path: the full logical path where the collection is to be found.  Can be in unnormalized form.
+    """
+    try:
+        # Path normalization is internal to this call.
+        return sess.collections.get(logical_path)
+    except ex.CollectionDoesNotExist:
+        return None

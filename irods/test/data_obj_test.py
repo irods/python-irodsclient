@@ -2955,6 +2955,60 @@ class TestDataObjOps(unittest.TestCase):
                     if data_objs.exists(data_path):
                         data_objs.unlink(data_path, force=True)
 
+    def test_get_collection_returns_a_reference_exclusively_to_an_existing_collection__issue_734(
+        self,
+    ):
+        from irods.helpers import get_collection, get_data_object
+
+        sess = self.sess
+        logical_path = "{}/{}".format(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        sess.collections.create(logical_path)
+
+        self.assertIs(get_data_object(sess, logical_path), None)
+        self.assertTrue(get_collection(sess, logical_path))
+
+    def test_get_data_object_returns_a_reference_exclusively_to_an_existing_data_object__issue_734(
+        self,
+    ):
+        from irods.helpers import get_collection, get_data_object
+
+        sess = self.sess
+        logical_path = "{}/{}".format(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        sess.data_objects.create(logical_path)
+
+        self.assertIs(get_collection(sess, logical_path), None)
+        self.assertTrue(get_data_object(sess, logical_path))
+
+    def test_data_object_download_error_leaves_no_file_relic__issue_681(self):
+        from irods.helpers import get_collection, get_data_object
+
+        sess = self.sess
+
+        # Generate a test path.
+        data_path = "{}/{}".format(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+
+        # Test that neither a data object nor a collection exists at the data_path.
+        self.assertIs(None, get_data_object(sess, data_path))
+        self.assertIs(None, get_collection(sess, data_path))
+
+        # Make sure that no directory or file exists at the download target path in the local filesystem.
+        with NamedTemporaryFile(delete=True) as f:
+            local_path = f.name
+        self.assertFalse(os.path.exists(local_path))
+
+        # Attempt downloading the nonexisting object, expecting an error.
+        with self.assertRaises((ex.DataObjectDoesNotExist, ex.OBJ_PATH_DOES_NOT_EXIST)):
+            sess.data_objects.get(data_path, local_path)
+
+        # Assert no relic left at local_path.
+        self.assertFalse(os.path.exists(local_path))
+
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
