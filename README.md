@@ -286,6 +286,24 @@ iRODS PUT API directly.  This is transparent to the caller, but an administrator
 should take note as this affects which policy enforcement points (PEPs) are executed
 on the iRODS server.
 
+Release v3.1.1 introduces the optional behavior of preventing a call to data object manager's `put()` or `create()`
+method from succeeding if the requested data path already exists.  This will become the default in some future release,
+but for now the following code can be used to enable it for the duration of
+an application's run:
+
+```python
+import irods.client_configuration as config
+# Prevent accidental data object overwrites in put() and create().
+config.data_objects.force_create_by_default = False
+config.data_objects.force_put_by_default = False
+```
+
+A more ad-hoc solution to defeat the "True" defaults is by passing `**{irods.keywords.FORCE_FLAG_KW:False}` among
+the options in an individual call to `put`, or using force=False in a call to `create`.
+
+Both solutions will be unnecessary, but still remain effective, when True-defaulting "force flag" style data overwrites
+become non-default behavior and/or deprecated in a future release.
+
 Parallel Transfer
 -----------------
 

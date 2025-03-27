@@ -70,6 +70,8 @@ class DataObjects(iRODSConfiguration):
     __slots__ = (
         "auto_close",
         "allow_redirect",
+        "force_create_by_default",
+        "force_put_by_default",
     )
 
     def __init__(self):
@@ -85,6 +87,9 @@ class DataObjects(iRODSConfiguration):
 
         self.auto_close = False
         self.allow_redirect = False
+
+        self.force_create_by_default = True
+        self.force_put_by_default = True
 
 
 # #############################################################################
