@@ -237,24 +237,23 @@ class DataObjectManager(Manager):
             raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
 
         data_open_returned_values_ = {}
-        with open(local_file, "wb") as f:
-            with self.open(
-                obj, "r", returned_values=data_open_returned_values_, **options
-            ) as o:
-                if self.should_parallelize_transfer(
-                    num_threads, o, open_options=options.items()
+        with self.open(
+            obj, "r", returned_values=data_open_returned_values_, **options
+        ) as o:
+            if self.should_parallelize_transfer(
+                num_threads, o, open_options=options.items()
+            ):
+                if not self.parallel_get(
+                    (obj, o),
+                    local_file,
+                    num_threads=num_threads,
+                    target_resource_name=options.get(kw.RESC_NAME_KW, ""),
+                    data_open_returned_values=data_open_returned_values_,
+                    updatables=updatables,
                 ):
-                    f.close()
-                    if not self.parallel_get(
-                        (obj, o),
-                        local_file,
-                        num_threads=num_threads,
-                        target_resource_name=options.get(kw.RESC_NAME_KW, ""),
-                        data_open_returned_values=data_open_returned_values_,
-                        updatables=updatables,
-                    ):
-                        raise RuntimeError("parallel get failed")
-                else:
+                    raise RuntimeError("parallel get failed")
+            else:
+                with open(local_file, "wb") as f:
                     for chunk in chunks(o, self.READ_BUFFER_SIZE):
                         f.write(chunk)
                         do_progress_updates(updatables, len(chunk))
