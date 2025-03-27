@@ -24,6 +24,10 @@ class InvalidInputArgument(PycommandsException):
     pass
 
 
+class DataObjectExistsAtLogicalPath(PycommandsException):
+    pass
+
+
 class DataObjectDoesNotExist(DoesNotExist):
     pass
 

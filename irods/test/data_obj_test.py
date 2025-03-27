@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import base64
+import collections
 import concurrent.futures
 import contextlib
 import errno
@@ -51,6 +52,7 @@ def is_localhost_synonym(name):
 
 from irods.access import iRODSAccess
 from irods.models import Collection, DataObject
+from irods.path import iRODSPath
 from irods.test.helpers import iRODSUserLogins
 import irods.exception as ex
 from irods.column import Criterion
@@ -3008,6 +3010,295 @@ class TestDataObjOps(unittest.TestCase):
 
         # Assert no relic left at local_path.
         self.assertFalse(os.path.exists(local_path))
+
+    def test_data_create_and_put_with_force_options_on_and_force_defaults_False__issue_132(
+        self,
+    ):
+        with config.loadlines(
+            entries=[
+                dict(setting="data_objects.force_put_by_default", value=False),
+                dict(setting="data_objects.force_create_by_default", value=False),
+            ]
+        ):
+            self._use_data_create_and_put_with_force_options_on__issue_132()
+
+    def test_data_create_and_put_with_force_options_on_and_force_defaults_True__issue_132(
+        self,
+    ):
+        with config.loadlines(
+            entries=[
+                dict(setting="data_objects.force_put_by_default", value=True),
+                dict(setting="data_objects.force_create_by_default", value=True),
+            ]
+        ):
+            self._use_data_create_and_put_with_force_options_on__issue_132()
+
+    def _use_data_create_and_put_with_force_options_on__issue_132(self):
+        test_path = iRODSPath(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        original_contents = b"old"
+        expected_contents_after_create = b""
+        expected_contents_after_put = b"new"
+
+        # Set up by making a test data object, using open with mode "w" rather than create.
+        with self.sess.data_objects.open(test_path, "w") as f:
+            f.write(original_contents)
+
+        # Overwrite using create with force option on.  Assert success.
+        self.sess.data_objects.create(test_path, force=True)
+        with self.sess.data_objects.open(test_path, "r") as f:
+            self.assertEqual(f.read(), expected_contents_after_create)
+
+        # Overwrite using put with force flag.  Assert success.
+        local_file = NamedTemporaryFile()
+        local_file.write(expected_contents_after_put)
+        local_file.flush()
+        self.sess.data_objects.put(local_file.name, test_path, **{kw.FORCE_FLAG_KW: ""})
+        with self.sess.data_objects.open(test_path, "r") as f:
+            self.assertEqual(f.read(), expected_contents_after_put)
+
+    def test_data_create_and_put_with_no_force_options_and_default_force_off__issue_132(
+        self,
+    ):
+        # Some definitions to help with assertions.
+        Data_Object_Properties = collections.namedtuple(
+            "repl_properties", ["modify_times", "resource_names"]
+        )
+
+        def get_tested_properties(data_repls):
+            properties_dict = {_.resource_name: _.modify_time for _ in data_repls}
+            return Data_Object_Properties(
+                modify_times=list(properties_dict.values()),
+                resource_names=list(properties_dict.keys()),
+            )
+
+        def check_tested_properties(data_repls, baseline_value):
+            return get_tested_properties(data_repls) == baseline_value
+
+        original_contents = b"** CONTENTS **"
+
+        def check_data_object_contents_are_unchanged():
+            with self.sess.data_objects.open(test_data_object.path, "r") as f:
+                self.assertEqual(f.read(), original_contents)
+
+        # Use a unique name for the targeted data object path.
+        test_path = iRODSPath(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+
+        # Make a new data object at this path, with known content.
+        # Record a baseline state for later comparison.
+        with self.sess.data_objects.open(test_path, "w") as f:
+            f.write(original_contents)
+        test_data_object = self.sess.data_objects.get(test_path)
+        orig_repl_state = get_tested_properties(test_data_object.replicas)
+
+        # Turn off the forced overwrite defaults for the duration of the tests.
+        with config.loadlines(
+            entries=[
+                dict(setting="data_objects.force_put_by_default", value=False),
+                dict(setting="data_objects.force_create_by_default", value=False),
+            ]
+        ):
+            # Open should have made only a single replica.
+            self.assertEqual(1, len(orig_repl_state.resource_names))
+
+            # If using force=False, then an attempt to create an object at the same path should raise an exception.
+            with self.assertRaises(ex.DataObjectExistsAtLogicalPath):
+                self.sess.data_objects.create(test_path, force=False)
+
+            # Do the required checks: assert original contents and replica stats are unchanged.
+            check_data_object_contents_are_unchanged()
+
+            self.assertTrue(
+                check_tested_properties(
+                    self.sess.data_objects.get(test_path).replicas,
+                    baseline_value=orig_repl_state,
+                )
+            )
+
+            # Assert that a put without FORCE_FLAG_KW raises an Exception.
+            with NamedTemporaryFile() as t:
+                altered_contents = b"[[" + original_contents.lower() + b"]]"
+                t.write(altered_contents)
+                t.close()
+                with self.assertRaises(ex.OVERWRITE_WITHOUT_FORCE_FLAG):
+                    self.sess.data_objects.put(t.name, test_path)
+
+            # Again do the required checks.
+            check_data_object_contents_are_unchanged()
+
+            # Assert that the modify times and hosting resources haven't changed.
+            self.assertTrue(
+                check_tested_properties(
+                    self.sess.data_objects.get(test_path).replicas,
+                    baseline_value=orig_repl_state,
+                )
+            )
+
+    def test_force_put_options_resolve_correctly_observing_defaults__issue_132(self):
+        from irods.manager.data_object_manager import DataObjectManager
+
+        forceFlag = kw.FORCE_FLAG_KW
+        positive_option = ((forceFlag, ""),)
+        negative_option = ((forceFlag, False),)
+        absent_option = ()
+        positive_default = True
+        negative_default = False
+        test_vector = [
+            (positive_option, positive_default, ""),
+            (absent_option, positive_default, ""),
+            (negative_option, positive_default, None),
+            (positive_option, negative_default, ""),
+            (absent_option, negative_default, None),
+            (negative_option, negative_default, None),
+        ]
+        for opts, default, expected_force_flag_value in test_vector:
+            DataObjectManager._resolve_force_put_option(
+                options := dict(opts), default_setting=default
+            )
+            with self.subTest(
+                f"Undesired result with {opts = }, {default = }, {expected_force_flag_value = }"
+            ):
+                self.assertEqual(
+                    options.get(forceFlag),
+                    expected_force_flag_value,
+                )
+
+    def _dataobj_create_given_default_and_parameter_values__issue_132(self, param):
+        test_path = iRODSPath(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        Data = self.sess.data_objects
+        with self.sess.data_objects.open(test_path, "w") as f:
+            f.write(b"old")
+        try:
+            self.sess.data_objects.create(
+                test_path, **({} if param is None else {"force": param})
+            )
+        except ex.DataObjectExistsAtLogicalPath:
+            # no forcing of overwrite
+            self.assertEqual(
+                Data.open(test_path, "r").read(),
+                b"old",
+                "Data object contents do not match expectation.",
+            )
+            return False
+        else:
+            self.assertEqual(
+                Data.open(test_path, "r").read(), b"", "Data object is not empty"
+            )
+            return True
+
+    def test_create_and_put_forcing_based_on_truth_table__issue_132(self):
+        Data = self.sess.data_objects
+
+        def create_with_options(path, opt):
+            try:
+                Data.create(path, **({} if opt is None else {"force": opt}))
+            except ex.DataObjectExistsAtLogicalPath:
+                return False
+            else:
+                return True
+
+        def put_with_options(path, opt):
+            with NamedTemporaryFile() as f:
+                f.write(b"new")
+                f.flush()
+                try:
+                    Data.put(
+                        f.name, path, **({} if opt is None else {kw.FORCE_FLAG_KW: opt})
+                    )
+                except ex.OVERWRITE_WITHOUT_FORCE_FLAG:
+                    return False
+                else:
+                    return True
+
+        for default, option, expect_success in [
+            (
+                False,
+                False,
+                False,
+            ),  # row 1 in https://github.com/irods/python-irodsclient/pull/721#discussion_r2116598564
+            (False, True, True),  # row 2
+            (False, None, False),  # row 3
+            (True, False, False),  # row 4
+            (True, True, True),  # row 5
+            (True, None, True),  # row 6
+            # rows 7 thru 9 not needed since default settings are always False or True.
+        ]:
+            with self.subTest(
+                f"{default = }; {option = }; {expect_success = }"
+            ), config.loadlines(
+                entries=[
+                    dict(setting="data_objects.force_create_by_default", value=default),
+                    dict(setting="data_objects.force_put_by_default", value=default),
+                ]
+            ):
+                # Test put success against predicted value.
+                put_path = iRODSPath(
+                    self.coll_path, unique_name(my_function_name(), datetime.now())
+                )
+                Data.open(put_path, "w").write(b"")
+                self.assertEqual(expect_success, put_with_options(put_path, option))
+
+                # Test create success against predicted value.
+                create_path = iRODSPath(
+                    self.coll_path, unique_name(my_function_name(), datetime.now())
+                )
+                Data.open(create_path, "w").write(b"")
+                self.assertEqual(
+                    expect_success, create_with_options(create_path, option)
+                )
+
+    def test_force_create_options_resolve_correctly_observing_defaults__issue_132(self):
+        T = collections.namedtuple("T", ("force_default", "param"))
+        test_vec = {
+            T(force_default=True, param=False): False,
+            T(force_default=True, param=True): True,
+            T(force_default=True, param=None): True,
+            T(force_default=False, param=False): False,
+            T(force_default=False, param=True): True,
+            T(force_default=False, param=None): False,
+        }
+
+        forcedef = config.data_objects.force_create_by_default
+
+        for param in (False, True, None):
+            # given "original defaults", run tests with create()
+            with self.subTest(f"Original default = {forcedef}, force_param = {param}"):
+                self.assertEqual(
+                    self._dataobj_create_given_default_and_parameter_values__issue_132(
+                        param
+                    ),
+                    test_vec[forcedef, param],
+                )
+
+        with config.loadlines(
+            entries=[
+                dict(
+                    setting="data_objects.force_create_by_default", value=not forcedef
+                ),
+            ]
+        ):
+            self.assertNotEqual(
+                forcedef, new_default := config.data_objects.force_create_by_default
+            )
+            # given "changed defaults", repeat tests with create()
+            for param in (False, True, None):
+                with self.subTest(
+                    f"Negated default = {new_default}, force_param = {param}"
+                ):
+                    self.assertEqual(
+                        self._dataobj_create_given_default_and_parameter_values__issue_132(
+                            param
+                        ),
+                        test_vec[new_default, param],
+                    )
+
+        # Test that that the configuration setting was restored to previous value
+        self.assertEqual(forcedef, config.data_objects.force_create_by_default)
 
 
 if __name__ == "__main__":
