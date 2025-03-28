@@ -8,6 +8,7 @@ import datetime
 import errno
 import irods.password_obfuscation as obf
 from irods import MAX_NAME_LEN
+from irods.exception import PAM_AUTH_PASSWORD_INVALID_TTL
 from ast import literal_eval as safe_eval
 import re
 
@@ -598,11 +599,10 @@ class Connection:
         # Getting the new password
         try:
             output_message = self.recv()
-        except irods.exception.PAM_AUTH_PASSWORD_INVALID_TTL as exc:
-            # TODO (#480): In Python3 will be able to do: 'raise RuntimeError(...) from exc' for more succinct error messages
+        except PAM_AUTH_PASSWORD_INVALID_TTL as exc:
             raise RuntimeError(
                 "Client-configured TTL is outside server parameters (password min and max times)"
-            )
+            ) from exc
 
         Pam_Response_Class = (
             PamAuthRequestOut if use_dedicated_pam_api else AuthPluginOut
