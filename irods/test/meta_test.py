@@ -14,6 +14,7 @@ from irods.meta import (
     AVUOperation,
     BadAVUOperationValue,
     BadAVUOperationKeyword,
+    iRODSBinOrStringMeta,
 )
 from irods.models import DataObject, Collection, Resource, CollectionMeta
 import irods.test.helpers as helpers
@@ -797,6 +798,24 @@ class TestMeta(unittest.TestCase):
                 # This statement also would generate a ParseError if the STANDARD_XML parser
                 # in use, with the "odd" characters being present in the metadata value.
                 del obj.metadata[attr_str]
+
+    def test_binary_avu_fields__issue_707(self):
+        meta_coll = self.obj.metadata(iRODSMeta_type=iRODSBinOrStringMeta)
+        illegal_unicode_sequence = '\u1000'.encode('utf8')[:2]
+        avu_name = 'issue709'
+        meta_coll.set(
+            avu_name,
+            (value:=b'value_'+illegal_unicode_sequence),
+            (units:=b'units_'+illegal_unicode_sequence)
+        )
+
+        self.assertEqual(
+            meta_coll.get_one(avu_name),
+            (avu_name, value, units)
+        )
+        meta_coll.add(*(new_avu:=iRODSMeta(avu_name, '\u1000', '\u1001')))
+        relevant_avus = meta_coll.get_all(avu_name)
+        self.assertIn(new_avu, relevant_avus)
 
     def test_cascading_changes_of_metadata_manager_options__issue_709(self):
         d = None

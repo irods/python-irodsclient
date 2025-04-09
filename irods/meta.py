@@ -1,14 +1,41 @@
+import base64
+import copy
+
+
 class iRODSMeta:
 
+    def _to_column_triple(self):
+        return (self.name ,self.forward_translate(self.value)) + (('',) if not self.units else (self.forward_translate(self.units),))
+
+    def _from_column_triple(self, name, value, units, **kw):
+        self.__low_level_init(name,
+                              self.reverse_translate(value),
+                              units=None if not units else self.reverse_translate(units),
+                              **kw)
+        return self
+
+    reverse_translate = forward_translate = staticmethod(lambda _:_)
+
+    INIT_KW_ARGS = 'units avu_id create_time modify_time'.split()
+
     def __init__(
-        self, name, value, units=None, avu_id=None, create_time=None, modify_time=None
+        self, name, value, /, units=None, *, avu_id=None, create_time=None, modify_time=None,
     ):
-        self.avu_id = avu_id
+        # Defer initialization for iRODSMeta(attribute,value,...) if neither attribute nor value is True under
+        # a 'bool' transformation.  In so doing we streamline initialization for iRODSMeta (and any subclasses)
+        # for alternatively populating via _from_column_triple(...).
+        # This is the pathway for allowing user-defined encodings of the iRODSMeta (byte-)string AVU components.
+        if name or value:
+            # Note: calling locals() inside the dict comprehension would not access variables in this frame.
+            local_vars = locals()
+            kw = {name:local_vars.get(name) for name in self.INIT_KW_ARGS}
+            self.__low_level_init(name, value, **kw)
+
+    def __low_level_init(self, name, value, **kw):
         self.name = name
         self.value = value
-        self.units = units
-        self.create_time = create_time
-        self.modify_time = modify_time
+        for attr in self.INIT_KW_ARGS:
+            setattr(self, attr, kw.get(attr))
 
     def __eq__(self, other):
         return tuple(self) == tuple(other)
@@ -20,7 +47,22 @@ class iRODSMeta:
             yield self.units
 
     def __repr__(self):
-        return "<iRODSMeta {avu_id} {name} {value} {units}>".format(**vars(self))
+        return f"<{self.__class__.__name__} {self.avu_id} {self.name} {self.value} {self.units}>"
+
+    def __hash__(self):
+        return hash(tuple(self))
+
+class iRODSBinOrStringMeta(iRODSMeta):
+
+    @staticmethod
+    def reverse_translate(value):
+        """Translate an AVU field from its iRODS object-database form into the client representation of that field."""
+        return value if value[0] != '\\' else base64.decodebytes(value[1:].encode('utf8'))
+
+    @staticmethod
+    def forward_translate(value):
+        """Translate an AVU field from the form it takes in the client, into an iRODS object-database compatible form."""
+        return b'\\' + base64.encodebytes(value).strip() if isinstance(value,(bytes,bytearray)) else value
 
 
 class BadAVUOperationKeyword(Exception):
@@ -84,9 +126,6 @@ class AVUOperation(dict):
             setattr(self, atr, locals()[atr])
 
 
-import copy
-
-
 class iRODSMetaCollection:
 
     def __call__(self, **opts):
@@ -138,7 +177,7 @@ class iRODSMetaCollection:
     def _get_meta(self, *args):
         if not len(args):
             raise ValueError("Must specify an iRODSMeta object or key, value, units)")
-        return args[0] if len(args) == 1 else iRODSMeta(*args)
+        return args[0] if len(args) == 1 else self._manager._opts['iRODSMeta_type'](*args)
 
     def apply_atomic_operations(self, *avu_ops):
         self._manager.apply_atomic_operations(self._model_cls, self._path, *avu_ops)

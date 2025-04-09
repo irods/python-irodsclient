@@ -30,7 +30,11 @@ class InvalidAtomicAVURequest(Exception):
 class MetadataManager(Manager):
 
     def __init__(self, *_):
-        self._opts = {'admin':False, 'timestamps':False}
+        self._opts = {
+            'admin':False,
+            'timestamps':False,
+            'iRODSMeta_type':iRODSMeta
+        }
         super().__init__(*_)
 
     @property
@@ -38,6 +42,7 @@ class MetadataManager(Manager):
         return self._opts['timestamps']
 
     __kw : Dict[str, Any] = {}  # default (empty) keywords
+
 
     def _updated_keywords(self, opts):
         kw_ = self.__kw.copy()
@@ -115,9 +120,9 @@ class MetadataManager(Manager):
             return opts
 
         return [
-            iRODSMeta(
-                row[model.name], row[model.value], row[model.units], **meta_opts(row)
-            )
+            self._opts['iRODSMeta_type'](None,None,None)._from_column_triple(
+                row[model.name], row[model.value], row[model.units],
+                **meta_opts(row))
             for row in results
         ]
 
@@ -128,9 +133,7 @@ class MetadataManager(Manager):
             "add",
             "-" + resource_type,
             path,
-            meta.name,
-            meta.value,
-            meta.units,
+            *meta._to_column_triple(),
             **self._updated_keywords(opts)
         )
         request = iRODSMessage(
@@ -147,9 +150,7 @@ class MetadataManager(Manager):
             "rm",
             "-" + resource_type,
             path,
-            meta.name,
-            meta.value,
-            meta.units,
+            *meta._to_column_triple(),
             **self._updated_keywords(opts)
         )
         request = iRODSMessage(
@@ -186,9 +187,7 @@ class MetadataManager(Manager):
             "set",
             "-" + resource_type,
             path,
-            meta.name,
-            meta.value,
-            meta.units,
+            *meta._to_column_triple(),
             **self._updated_keywords(opts)
         )
         request = iRODSMessage(
