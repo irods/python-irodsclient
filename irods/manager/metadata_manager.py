@@ -33,18 +33,37 @@ class MetadataManager(Manager):
         return getattr(self, "_use_ts", False)
 
     __kw = {}  # default (empty) keywords
+    _admin = False
+    _use_ts = False
 
     def _updated_keywords(self, opts):
         kw_ = self.__kw.copy()
         kw_.update(opts)
         return kw_
 
-    def __call__(self, admin=False, timestamps=False, **irods_kw_opt):
-        if admin:
-            irods_kw_opt.update([(kw.ADMIN_KW, "")])
+    __generate_new_options = staticmethod(lambda obj, from_kw: { 'admin':obj._admin,
+                                                                 'timestamps':obj._use_ts,
+                                                                 **from_kw })
+
+    def get_api_keywords(self): return self.__kw.copy()
+
+    def __call__(self, **kw_opt):
+        # Make a new shallow copy of the manager object, but update options from parameter list.
         new_self = copy.copy(self)
-        new_self._use_ts = timestamps
-        new_self.__kw = irods_kw_opt
+        new_options = new_self.__kw = self.__generate_new_options(new_self, kw_opt)
+
+        # Update the flags that do bookkeeping in the returned(new) manager object.
+        if (timestamps:=new_options.pop('timestamps',None)) is not None:
+            new_self._use_ts = timestamps
+        if (admin:=new_options.pop('admin',None)) is not None:
+            new_self._admin = admin
+
+        # Update the ADMIN_KW flag in the returned(new) object.
+        if new_self._admin:
+            new_options[kw.ADMIN_KW] = ""
+        else:
+            new_options.pop(kw.ADMIN_KW, None)
+
         return new_self
 
     @staticmethod
