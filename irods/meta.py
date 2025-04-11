@@ -89,9 +89,14 @@ import copy
 
 class iRODSMetaCollection:
 
-    def __call__(self, admin=False, timestamps=False, **opts):
+    def __call__(self, **opts):
+        """Optional parameters in **opts are:
+
+        admin (default: False): apply ADMIN_KW to future metadata operations.
+        timestamps (default: False): attach (ctime,mtime) timestamp attributes to AVUs received from iRODS.
+        """
         x = copy.copy(self)
-        x._manager = (x._manager)(admin, timestamps, **opts)
+        x._manager = (x._manager)(**opts)
         x._reset_metadata()
         return x
 
