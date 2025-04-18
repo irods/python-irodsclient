@@ -1,3 +1,5 @@
+import os
+
 from collections import OrderedDict
 
 from irods import MAX_SQL_ROWS
@@ -34,7 +36,7 @@ query_number = {
     "SELECT_COUNT": 6,
 }
 
-
+IRODS_QUERY_LIMIT = os.getenv("IRODS_QUERY_LIMIT", 500)
 class Query:
 
     def __init__(self, sess, *args, **kwargs):
@@ -196,7 +198,7 @@ class Query:
         return StringStringMap(dct)
 
     def _message(self):
-        max_rows = 500 if self._limit == -1 else self._limit
+        max_rows = IRODS_QUERY_LIMIT if self._limit == -1 else self._limit
         args = {
             "maxRows": max_rows,
             "continueInx": self._continue_index,
