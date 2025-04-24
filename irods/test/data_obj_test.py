@@ -917,7 +917,11 @@ class TestDataObjOps(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        # As in Python 3.8 and previous, Python 3.9.19 will react badly to leaving out the following del statement during test runs, although
+        # whereas the segmentation fault no longer happens, we still get an unsuccessful destruct (__del__ call fails to do all of its work).
+        # within the iRODSUserLogins object (cls.logins).  This is because the object is being garbage collected at a point in time where
+        # some of the interpreter's infrastructure has already been dismantled.
+        del cls.logins
 
     def _data_object_and_associated_ticket(
         self,

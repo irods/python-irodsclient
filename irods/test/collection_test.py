@@ -35,7 +35,6 @@ class TestCollection(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # TODO(#553): Skipping this will result in an interpreter seg fault for Py3.6 but not 3.11; why?
         del cls.logins
 
     def setUp(self):
