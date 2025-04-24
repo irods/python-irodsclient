@@ -35,7 +35,10 @@ class TestCollection(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # TODO(#553): Skipping this will result in an interpreter seg fault for Py3.6 but not 3.11; why?
+        # As in Python 3.8 and previous, Python 3.9.19 will react badly to leaving out the following del statement during test runs. Although
+        # as of 3.9.19 the segmentation fault no longer occurs, we still get an unsuccessful destruct, so the __del__ call in cls.logins
+        # fails to do all of the work for proper test teardown. This happens because the object is being garbage collected at a point in time
+        # when the Python interpreter is finalizing.
         del cls.logins
 
     def setUp(self):
