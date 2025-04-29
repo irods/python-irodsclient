@@ -543,7 +543,19 @@ loading of the settings from the settings file, assuming it exists.
 (Failure to find the file at the indicated path will be logged as a
 warning.)
 
-Settings can also be saved and loaded manually using the `save()` and
+If the process of loading configuration settings generates an unhandled exception,
+the `irods` module will consult the value of the environment variable
+`PYTHON_IRODSCLIENT_CONFIGURATION_LOAD_ERRORS_FATAL` and either (if `True`) incur
+a fatal error or (if `False`) simply log it as a warning.  By default this
+environment variable is taken as `False` if not set, although that is likely to
+change to `True` in the future.
+This decision indicates a desire by the client library's designers to flag such
+errors as fatal by aborting the process if possible, rather than aquiescing silently
+to an unintended consequence.  It is recommended that all client library users
+set this environment variable to `True` if their applications load settings
+from the environment or configuration files.
+
+Settings can be saved and loaded manually using the `save()` and
 `load()` functions in the `irods.client_configuration`
 module. Each of these functions accepts an optional `file`
 parameter which, if set to a non-empty string, will override the
@@ -608,6 +620,12 @@ certain environment variables:
     - Type: `bool`
     - Default Value: `False`
     - Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__FORCE_USE_OF_DEDICATED_PAM_API`
+
+-   Setting: The maximum number of rows a Query iteration will retrieve.  Can be overridden using Query's `limit` method. This is synonymous with the variable `irods.query.IRODS_QUERY_LIMIT`, and a read (or write) of this configuration setting will read (or affect) that variable.
+    -   Dotted Name: `genquery1.irods_query_limit`
+    -   Type: `int`
+    -   Default Value: 500 (The library's traditional maximum batch row count, also stored as `irods.query._IRODS_QUERY_LIMIT`)
+    -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__GENQUERY1__IRODS_QUERY_LIMIT`
 
 -   Setting: Default choice of XML parser for all new threads.
     -   Dotted Name: `connections.xml_parser_default`
@@ -1176,8 +1194,8 @@ Also, core.py rules may only be run directly by a rodsadmin, currently.
 [See this issue for discussion](https://github.com/irods/irods_rule_engine_plugin_python/issues/105).
 
 
-General Queries
----------------
+GenQuery1 Queries
+-----------------
 
 A session object's `query` method accepts a list of columns and models to be included in any returned rows.
 
@@ -1284,6 +1302,25 @@ parameter to the query:
 | caseSENSITIVEobject |
 +---------------------+
 ```
+
+If the user desires a smaller paging size, this can be accomplished by changing
+the `genquery1.irods_query_limit` configuration setting.  This directly changes
+the `irods.query.IRODS_QUERY_LIMIT` value and therefore affects Query objects'
+`all` and `get_batches` methods.
+
+Note, however, that expressions such as `list(Query(...))` and `(row for row in
+Query)` are not affected by this setting.
+
+The setting may be given any positive integer value.  Attempting to set it to
+zero or a negative number will not affect the value of `IRODS_QUERY_LIMIT` but will
+raise a `ConfigurationValueError` if done in the course of a running iRODS
+client application.  Importantly, if the invalid setting is attempted by a loading
+configuration, the otherwise fatal error could be absorbed into a warning-level log action,
+depending on the value of the `PYTHON_IRODSCLIENT_CONFIGURATION_LOAD_ERRORS_FATAL`
+environment variable.  See: [Python iRODS Client Settings File](#python-irods-client-settings-file).
+
+A copy of the original value of `IRODS_QUERY_LIMIT` (before overriding values are loaded from the
+configuration) is stored within `irods.query.cached_values.IRODS_QUERY_LIMIT`.
 
 Specific Queries
 ----------------

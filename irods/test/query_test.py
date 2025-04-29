@@ -26,14 +26,15 @@ from irods.exception import (
     CAT_UNKNOWN_SPECIFIC_QUERY,
     CAT_INVALID_ARGUMENT,
 )
-from irods.query import SpecificQuery
-from irods.column import Like, NotLike, Between, In
-from irods.meta import iRODSMeta
-from irods.rule import Rule
 from irods import MAX_SQL_ROWS
-from irods.test.helpers import irods_shared_reg_resc_vault
-import irods.test.helpers as helpers
+import irods.client_configuration as config
+from irods.column import Like, NotLike, Between, In
 import irods.keywords as kw
+from irods.meta import iRODSMeta
+from irods.query import SpecificQuery
+from irods.rule import Rule
+import irods.test.helpers as helpers
+from irods.test.helpers import irods_shared_reg_resc_vault
 
 IRODS_STATEMENT_TABLE_SIZE = 50
 
@@ -1047,6 +1048,30 @@ class TestQuery(unittest.TestCase):
             q = self.sess.query(*requested).limit(1)
             row = list(q.all())[0]
             self.assertEqual(columns_to_negate & row.keys(), intersect)
+
+    def test_set_query_limit__issue_712(self):
+        # Test requires that 0 < num_limited_results < num_total_objects.
+        num_limited_results = 4
+        num_total_objects = num_limited_results + 6
+        data_objs = []
+        try:
+            # Create a number of data objects.
+            for name in range(num_total_objects):
+                data_objs.append(self.sess.data_objects.create(f'{self.coll_path}/issue_712_obj{name}'))
+
+            # Test a query limit via configuration.
+            with config.loadlines(
+                entries=[dict(setting="genquery1.irods_query_limit", value=num_limited_results)]
+            ):
+                limited_results = list(self.sess.query(DataObject.id).filter(Like(DataObject.name, '%issue_712_obj%')).all())
+                self.assertEqual(num_limited_results, len(limited_results))
+
+            # Test the query limit is no longer in effect.
+            non_limited_results = list(self.sess.query(DataObject.id).filter(Like(DataObject.name, '%issue_712_obj%')).all())
+            self.assertEqual(num_total_objects, len(non_limited_results))
+        finally:
+            for d in data_objs:
+                d.unlink(force=True)
 
 
 class TestSpecificQuery(unittest.TestCase):

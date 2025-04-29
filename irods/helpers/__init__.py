@@ -15,7 +15,6 @@ __all__ = [
     "get_data_object",
 ]
 
-
 class StopTestsException(Exception):
 
     def __init__(self, *args, **kwargs):
@@ -144,3 +143,16 @@ def get_collection(sess, logical_path):
         return sess.collections.get(logical_path)
     except ex.CollectionDoesNotExist:
         return None
+
+
+# Utility class and factory function for storing the original value of variables within the given namespace.
+def create_value_cache(namespace:dict):
+    class CachedValues:
+        __namespace = namespace
+
+        @classmethod
+        def make_entry(cls, name):
+            cached_value = cls.__namespace[name]
+            setattr(cls,name,property(lambda self: cached_value))
+
+    return CachedValues()

@@ -83,7 +83,7 @@ class MetadataManager(Manager):
         columns = (model.id, model.name, model.value, model.units)
         if self.use_timestamps:
             columns += (model.create_time, model.modify_time)
-        results = self.sess.query(*columns).filter(*conditions).all()
+        results = self.sess.query(*columns).filter(*conditions)._all()
 
         def meta_opts(row):
             opts = {"avu_id": row[model.id]}
