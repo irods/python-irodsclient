@@ -36,7 +36,8 @@ query_number = {
     "SELECT_COUNT": 6,
 }
 
-IRODS_QUERY_LIMIT = os.getenv("IRODS_QUERY_LIMIT", 500)
+IRODS_QUERY_LIMIT = 500
+
 class Query:
 
     def __init__(self, sess, *args, **kwargs):
