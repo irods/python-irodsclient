@@ -73,7 +73,7 @@ class AccessManager(Manager):
         results = (
             self.sess.query(user_type.name, user_type.zone, access_type.name)
             .filter(*conditions)
-            .all()
+            ._all()
         )
 
         def get_usertype(row):

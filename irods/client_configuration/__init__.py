@@ -12,7 +12,7 @@ import types
 # Duplicate here for convenience
 from .. import DEFAULT_CONFIG_PATH
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class iRODSConfiguration:
@@ -57,8 +57,30 @@ class ConnectionsProperties(iRODSConfiguration, metaclass=iRODSConfigAliasMetacl
 
         return set_default_XML_by_name(str_value)
 
-
 connections = ConnectionsProperties()
+
+class ConfigurationError(BaseException): pass
+class ConfigurationValueError(ValueError,ConfigurationError): pass
+
+class Genquery1_Properties(iRODSConfiguration, metaclass=iRODSConfigAliasMetaclass):
+
+    @property
+    def irods_query_limit(self):
+        import irods.query
+        return irods.query.IRODS_QUERY_LIMIT
+
+    @irods_query_limit.setter
+    def irods_query_limit(self, target_value):
+        import irods.query
+        requested = int(target_value)
+
+        if requested <= 0:
+            raise ConfigurationValueError(f'Error setting IRODS_QUERY_LIMIT to [{requested}]. Use positive values only.')
+
+        irods.query.IRODS_QUERY_LIMIT = requested
+
+genquery1 = Genquery1_Properties()
+
 
 # #############################################################################
 #
