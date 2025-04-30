@@ -2105,6 +2105,10 @@ class PHP_OPEN_SCRIPT_FILE_ERR(PHPException):
     code = -1602000
 
 
+class HIERARCHY_ERROR(iRODSException):
+    code = -1803000
+
+
 class DIRECT_CHILD_ACCESS(iRODSException):
     code = -1816000
 
