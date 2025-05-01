@@ -573,6 +573,12 @@ certain environment variables:
     - Default Value: `False`
     - Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__PAM__FORCE_USE_OF_DEDICATED_PAM_API`
 
+-   Setting: Default number of rows for a Query to retrieve by default.
+    -   Dotted Name: `connections.irods_query_limit`
+    -   Type: `int`
+    -   Default Value: 500
+    -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__IRODS_QUERY_LIMIT`
+
 -   Setting: Default choice of XML parser for all new threads.
     -   Dotted Name: `connections.xml_parser_default`
     -   Type: `str`
