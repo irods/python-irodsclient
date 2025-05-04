@@ -2,8 +2,8 @@
 
 from datetime import datetime, timezone
 import base64
-import concurrent.futures
 import collections
+import concurrent.futures
 import contextlib
 import errno
 import hashlib
@@ -2962,13 +2962,13 @@ class TestDataObjOps(unittest.TestCase):
             "repl_properties", ["modify_times", "resource_names"]
         )
 
-        def check_or_return_properties(data_repls, checked_value=None):
+        def check_or_return_properties(data_repls, reference_value=None):
             properties_dict = {_.resource_name: _.modify_time for _ in data_repls}
             properties = Data_Object_Properties(
                 modify_times=list(properties_dict.values()),
                 resource_names=list(properties_dict.keys()),
             )
-            if (sentinel := checked_value) is not None:
+            if (sentinel := reference_value) is not None:
                 return sentinel == properties
             else:
                 return properties
@@ -3001,7 +3001,7 @@ class TestDataObjOps(unittest.TestCase):
         # Assert that the modify times and hosting resources haven't changed.
         self.assertTrue(
             check_or_return_properties(
-                self.sess.data_objects.get(test_path).replicas, orig_repl_state
+                self.sess.data_objects.get(test_path).replicas, reference_value = orig_repl_state
             )
         )
 
