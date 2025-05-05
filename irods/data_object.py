@@ -59,21 +59,32 @@ class iRODSDataObject:
                         pass
             self.path = self.collection.path + "/" + self.name
             replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
-            self.replicas = [
-                iRODSReplica(
-                    r[DataObject.replica_number],
-                    r[DataObject.replica_status],
-                    r[DataObject.resource_name],
-                    r[DataObject.path],
-                    r[DataObject.resc_hier],
+
+            # The status quo before iRODS 5
+
+            replica_args = [(
+                (r[DataObject.replica_number],
+                r[DataObject.replica_status],
+                r[DataObject.resource_name],
+                r[DataObject.path],
+                r[DataObject.resc_hier],
+                       )
+                ,dict(
                     checksum=r[DataObject.checksum],
                     size=r[DataObject.size],
                     comments=r[DataObject.comments],
                     create_time=r[DataObject.create_time],
                     modify_time=r[DataObject.modify_time],
                 )
-                for r in replicas
-            ]
+            ) for r in replicas]
+
+            # Adjust for adding access_time in the iRODS 5 case.
+
+            if self.manager.sess.server_version >= (5,):
+                for n,r in enumerate(replicas):
+                    replica_args[n][1]['access_time'] = r[DataObject.access_time]
+            self.replicas = [iRODSReplica(*a,**k) for a,k in replica_args]
+
         self._meta = None
 
     def __repr__(self):

@@ -1106,49 +1106,61 @@ class STR_PI(Message):
     myStr = StringProperty()
 
 
-class DataObjInfo(Message):
-    _name = "DataObjInfo_PI"
-    objPath = StringProperty()
-    rescName = StringProperty()
-    rescHier = StringProperty()
-    dataType = StringProperty()
-    dataSize = LongProperty()
-    chksum = StringProperty()
-    version = StringProperty()
-    filePath = StringProperty()
-    dataOwnerName = StringProperty()
-    dataOwnerZone = StringProperty()
-    replNum = IntegerProperty()
-    replStatus = IntegerProperty()
-    statusString = StringProperty()
-    dataId = LongProperty()
-    collId = LongProperty()
-    dataMapId = IntegerProperty()
-    dataComments = StringProperty()
-    dataMode = StringProperty()
-    dataExpiry = StringProperty()
-    dataCreate = StringProperty()
-    dataModify = StringProperty()
-    dataAccess = StringProperty()
-    dataAccessInx = IntegerProperty()
-    writeFlag = IntegerProperty()
-    destRescName = StringProperty()
-    backupRescName = StringProperty()
-    subPath = StringProperty()
-    specColl = IntegerProperty()
-    regUid = IntegerProperty()
-    otherFlags = IntegerProperty()
-    KeyValPair_PI = SubmessageProperty(StringStringMap)
-    in_pdmo = StringProperty()
-    next = IntegerProperty()
-    rescId = LongProperty()
+def DataObjInfo_for_session(session):
+
+    class DataObjInfo(Message):
+        _name = "DataObjInfo_PI"
+        objPath = StringProperty()
+        rescName = StringProperty()
+        rescHier = StringProperty()
+        dataType = StringProperty()
+        dataSize = LongProperty()
+        chksum = StringProperty()
+        version = StringProperty()
+        filePath = StringProperty()
+        dataOwnerName = StringProperty()
+        dataOwnerZone = StringProperty()
+        replNum = IntegerProperty()
+        replStatus = IntegerProperty()
+        statusString = StringProperty()
+        dataId = LongProperty()
+        collId = LongProperty()
+        dataMapId = IntegerProperty()
+        dataComments = StringProperty()
+        dataMode = StringProperty()
+        dataExpiry = StringProperty()
+        dataCreate = StringProperty()
+        dataModify = StringProperty()
+        dataAccess = StringProperty()
+        dataAccessInx = IntegerProperty()
+        writeFlag = IntegerProperty()
+        destRescName = StringProperty()
+        backupRescName = StringProperty()
+        subPath = StringProperty()
+        specColl = IntegerProperty()
+        regUid = IntegerProperty()
+        otherFlags = IntegerProperty()
+        KeyValPair_PI = SubmessageProperty(StringStringMap)
+        in_pdmo = StringProperty()
+        next = IntegerProperty()
+        rescId = LongProperty()
+
+    class _DataObjInfo_for_iRODS_5(DataObjInfo):
+        dataAccessTime = StringProperty()
+
+    return DataObjInfo if session.server_version < (5,) else _DataObjInfo_for_iRODS_5
 
 
-class ModDataObjMeta(Message):
-    _name = "ModDataObjMeta_PI"
-    dataObjInfo = SubmessageProperty(DataObjInfo)
-    regParam = SubmessageProperty(StringStringMap)
+def ModDataObjMeta_for_session(session):
 
+    doi_class = DataObjInfo_for_session(session)
+
+    class ModDataObjMeta(Message):
+        _name = "ModDataObjMeta_PI"
+        dataObjInfo = SubmessageProperty(doi_class)
+        regParam = SubmessageProperty(StringStringMap)
+
+    return ModDataObjMeta
 
 #  -- A tuple-descended class which facilitates filling in a
 #     quasi-RError stack from a JSON formatted list.
