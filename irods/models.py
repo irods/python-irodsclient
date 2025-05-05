@@ -118,6 +118,7 @@ class DataObject(Model):
     modify_time = Column(DateTime, "D_MODIFY_TIME", 420)
     resc_hier = Column(String, "D_RESC_HIER", 422, min_version=(4, 0, 0))
     resc_id = Column(String, "D_RESC_ID", 423, min_version=(4, 2, 0))
+    access_time = Column(DateTime, "D_ACCESS_TIME", 424, min_version=(5, 0, 0))
 
 
 class Collection(Model):

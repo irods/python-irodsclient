@@ -3300,6 +3300,20 @@ class TestDataObjOps(unittest.TestCase):
         # Test that that the configuration setting was restored to previous value
         self.assertEqual(forcedef, config.data_objects.force_create_by_default)
 
+    def test_access_time__issue_700(self):
+        if self.sess.server_version < (5,):
+            self.skipTest("iRODS servers < 5.0.0 do not provide an access_time attribute for data objects.")
+
+        data_path= iRODSPath(self.coll.path,
+            unique_name(my_function_name(), datetime.now())
+            )
+        with self.sess.data_objects.open(data_path,"w") as f:
+            f.write(b'_')
+        with self.sess.data_objects.open(data_path,"r") as f:
+            f.read()
+
+        data = self.sess.data_objects.get(data_path)
+        self.assertGreaterEqual(data.access_time, data.modify_time)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
