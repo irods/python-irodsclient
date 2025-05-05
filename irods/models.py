@@ -12,9 +12,12 @@ class ModelBase(type):
         return cls.column_dict
 
     def __new__(cls, name, bases, attr):
-        column_objects = [y for (x, y) in attr.items() if isinstance(y, Column)]
+        column_objects = [] if not bases else getattr(bases[0],'_columns').copy()
+        column_objects += [y for (x, y) in attr.items() if isinstance(y, Column)]
         for col in column_objects:
             ModelBase.column_items.append((col.icat_id, col))
+        if bases:
+            attr.update( bases[0].__dict__ )
         attr["_columns"] = column_objects
         return type.__new__(cls, name, bases, attr)
 
@@ -122,6 +125,20 @@ class DataObject(Model):
     modify_time = Column(DateTime, "D_MODIFY_TIME", 420)
     resc_hier = Column(String, "D_RESC_HIER", 422, min_version=(4, 0, 0))
     resc_id = Column(String, "D_RESC_ID", 423, min_version=(4, 2, 0))
+
+
+class DataObject_v5(DataObject):
+    access_time = Column(DateTime, "D_ACCESS_TIME", 424)
+
+DataObject.for_iRODS_5 = DataObject_v5
+
+
+# Return the appropriate database row structure for the connected server's
+# particular version of iRODS.
+
+def DataObject_for_session(sess):
+    return (DataObject_v5 if sess.server_version >= (5,)
+        else DataObject)
 
 
 class Collection(Model):

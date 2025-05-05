@@ -59,6 +59,7 @@ class MetadataManager(Manager):
     @staticmethod
     def _model_class_to_resource_description(model_cls):
         return {
+            DataObject.for_iRODS_5: "data_object",
             DataObject: "data_object",
             Collection: "collection",
             Resource: "resource",
