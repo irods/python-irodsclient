@@ -1,18 +1,66 @@
 import contextlib
-import re
-from ..test.helpers import home_collection, make_session as make_test_session
-from irods.message import ET, XML_Parser_Type
+import sys
+from irods import env_filename_from_keyword_args
+from irods.message import ET, XML_Parser_Type, IRODS_VERSION
+from irods.session import iRODSSession
+
 
 __all__ = ["make_session", "home_collection", "xml_mode"]
 
 
+class StopTestsException(Exception):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "unittest" in sys.modules.keys():
+            print("Aborting tests [ Got : %r ]" % self, file=sys.stderr)
+            os.abort()
+
+class iRODS_Server_Too_Recent_For_Testing(StopTestsException):
+    pass
+
+
+def _get_server_version_for_test(session, curtail_length):
+    return session._server_version(session.GET_SERVER_VERSION_WITHOUT_AUTH)[
+        :curtail_length
+    ]
+
+
+# Create a connection for test, based on ~/.irods environment by default.
+
 def make_session(test_server_version=False, **kwargs):
-    return make_test_session(test_server_version=test_server_version, **kwargs)
+    """Connect to an iRODS server as determined by any client environment
+    file present at a standard location, and by any keyword arguments given.
+
+    Arguments:
+
+    test_server_version: Of type bool; in the `irods.test.helpers` version of this
+                         function, defaults to True.  A True value causes
+                         *iRODS_Server_Too_Recent* to be raised if the server
+                         connected to is more recent than the current Python iRODS
+                         client's advertised level of compatibility.
+
+    **kwargs:            Keyword arguments.  Fed directly to the iRODSSession
+                         constructor."""
+
+    env_file = env_filename_from_keyword_args(kwargs)
+    session = iRODSSession(irods_env_file=env_file, **kwargs)
+    if test_server_version:
+        connected_version = _get_server_version_for_test(session, curtail_length=3)
+        advertised_version = IRODS_VERSION[:3]
+        if connected_version > advertised_version:
+            msg = (
+                "Connected server is {connected_version}, "
+                "but this python-irodsclient advertises compatibility up to {advertised_version}."
+            ).format(**locals())
+            raise iRODS_Server_Too_Recent_For_Testing(msg)
+
+    return session
 
 
-make_session.__doc__ = re.sub(
-    r"(test_server_version\s*)=\s*\w+", r"\1 = False", make_test_session.__doc__
-)
+def home_collection(session):
+    """Return a string value for the given session's home collection."""
+    return "/{0.zone}/home/{0.username}".format(session)
 
 
 @contextlib.contextmanager
