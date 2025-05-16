@@ -459,7 +459,7 @@ In a small but illustrative example, the following Python session does
 not require an explicit call to `f.close()`:
 
 ```python
->>> import irods.client_configuration as config, irods.test.helpers as helpers
+>>> import irods.client_configuration as config, irods.helpers as helpers
 >>> config.data_objects.auto_close = True
 >>> session = helpers.make_session()
 >>> f = session.data_objects.open('/{0.zone}/home/{0.username}/new_object.txt'.format(session),'w')
@@ -850,7 +850,7 @@ the backquote character, have historically presented problems
 Consider this small, contrived application:
 
 ```python
-    from irods.test.helpers import make_session
+    from irods.helpers import make_session
 
     def create_notes( session, obj_name, content = u'' ):
         get_home_coll = lambda ses: "/{0.zone}/home/{0.username}".format(ses)
@@ -864,13 +864,14 @@ Consider this small, contrived application:
 
         # Example 1 : exception thrown when name has non-printable character
         try:
-            create_notes( session, "lucky\033.dat", content = u'test' )
+            create_notes( session, "lucky\1.dat", content = u'test' )
         except:
             pass
 
         # Example 2 (Ref. issue: irods/irods #4132, fixed for 4.2.9 release of iRODS)
         print(
-            create_notes( session, "Alice's diary").name  # note diff (' != ') in printed name
+            create_notes(session, "Alice`s diary").name  # The difference in the printed name is subtle, as
+                                                         # "`" is transformed to "'" in iRODS pre-4.2.9
         )
 ```
 
@@ -1941,12 +1942,13 @@ $ dd if=/dev/urandom of=largefile count=40k bs=1k # create 40-megabyte test file
 
 $ pip install 'python-irodsclient>=1.1.2'
 
-$ python -c"from irods.test.helpers import make_session
-            import irods.keywords as kw
-            with make_session() as sess:
-                sess.data_objects.put( 'largefile',
-                                       '/tempZone/home/rods/largeFile1',
-                                       **{kw.DEST_RESC_NAME_KW:'s3resc'} )
-                sess.data_objects.get( '/tempZone/home/rods/largeFile1',
-                                       '/tmp/largefile')
+$ python -c"\
+from irods.helpers import make_session
+import irods.keywords as kw
+with make_session() as sess:
+    sess.data_objects.put( 'largefile',
+                           '/tempZone/home/rods/largeFile1',
+                           **{kw.DEST_RESC_NAME_KW:'s3resc'} )
+    sess.data_objects.get( '/tempZone/home/rods/largeFile1',
+                           '/tmp/largefile')"
 ```
