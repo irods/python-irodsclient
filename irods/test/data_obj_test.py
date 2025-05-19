@@ -3320,6 +3320,21 @@ class TestDataObjOps(unittest.TestCase):
         # Test that access_time is there, and of the right type.
         self.assertIs(type(data.access_time), datetime)
 
+    def test_handling_of_termination_signals_during_multithread_get__issue_722(self):
+        from irods.test.modules.test_signal_handling_in_multithread_get import (
+            test as test_get__issue_722,
+        )
+
+        test_get__issue_722(self)
+
+    def test_handling_of_termination_signals_during_multithread_put__issue_722(self):
+        from irods.test.modules.test_signal_handling_in_multithread_put import (
+            test as test_put__issue_722,
+        )
+
+        test_put__issue_722(self)
+
+
 if __name__ == "__main__":
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath("../.."))
