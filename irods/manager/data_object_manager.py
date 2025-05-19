@@ -130,13 +130,16 @@ class ManagedBufferedRandom(io.BufferedRandom):
         # if provided via keyword '_session'.
         self._iRODS_session = kwd.pop("_session", None)
         super(ManagedBufferedRandom, self).__init__(*a, **kwd)
-        import irods.session
 
+        self.do_close = True
+
+        import irods.session
         with irods.session._fds_lock:
-            irods.session._fds[self] = None
+            if irods.session._fds is not None:
+                irods.session._fds[self] = None
 
     def __del__(self):
-        if not self.closed:
+        if self.do_close and not self.closed:
             self.close()
         call___del__if_exists(super(ManagedBufferedRandom, self))
 
@@ -245,15 +248,21 @@ class DataObjectManager(Manager):
             if self.should_parallelize_transfer(
                 num_threads, o, open_options=options.items()
             ):
-                if not self.parallel_get(
-                    (obj, o),
-                    local_file,
-                    num_threads=num_threads,
-                    target_resource_name=options.get(kw.RESC_NAME_KW, ""),
-                    data_open_returned_values=data_open_returned_values_,
-                    updatables=updatables,
-                ):
-                    raise RuntimeError("parallel get failed")
+                error = RuntimeError("parallel get failed")
+                try:
+                    if not self.parallel_get(
+                        (obj, o),
+                        local_file,
+                        num_threads=num_threads,
+                        target_resource_name=options.get(kw.RESC_NAME_KW, ""),
+                        data_open_returned_values=data_open_returned_values_,
+                        updatables=updatables,
+                    ):
+                        raise error
+                except ex.iRODSException as e:
+                    raise e
+                except BaseException as e:
+                    raise error from e
             else:
                 with open(local_file, "wb") as f:
                     for chunk in chunks(o, self.READ_BUFFER_SIZE):
@@ -353,17 +362,23 @@ class DataObjectManager(Manager):
             ):
                 o = deferred_call(self.open, (obj, "w"), options)
                 f.close()
-                if not self.parallel_put(
-                    local_path,
-                    (obj, o),
-                    total_bytes=sizelist[0],
-                    num_threads=num_threads,
-                    target_resource_name=options.get(kw.RESC_NAME_KW, "")
-                    or options.get(kw.DEST_RESC_NAME_KW, ""),
-                    open_options=options,
-                    updatables=updatables,
-                ):
-                    raise RuntimeError("parallel put failed")
+                error = RuntimeError("parallel put failed")
+                try:
+                    if not self.parallel_put(
+                        local_path,
+                        (obj, o),
+                        total_bytes=sizelist[0],
+                        num_threads=num_threads,
+                        target_resource_name=options.get(kw.RESC_NAME_KW, "")
+                        or options.get(kw.DEST_RESC_NAME_KW, ""),
+                        open_options=options,
+                        updatables=updatables,
+                    ):
+                        raise error
+                except ex.iRODSException as e:
+                    raise e
+                except BaseException as e:
+                    raise error from e
             else:
                 with self.open(obj, "w", **options) as o:
                     # Set operation type to trigger acPostProcForPut
