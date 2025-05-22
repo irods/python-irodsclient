@@ -2951,6 +2951,9 @@ class TestDataObjOps(unittest.TestCase):
                     if data_objs.exists(data_path):
                         data_objs.unlink(data_path, force=True)
 
+    def test_handling_of_termination_signals_during_multithread_get__issue_722(self):
+        from irods.test.modules.test_signal_handling_in_multithread_get import test as test__issue_722
+        test__issue_722(self)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
