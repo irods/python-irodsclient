@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import base64
+import collections
 import concurrent.futures
 import contextlib
 import errno
@@ -51,6 +52,7 @@ def is_localhost_synonym(name):
 
 from irods.access import iRODSAccess
 from irods.models import Collection, DataObject
+from irods.path import iRODSPath
 from irods.test.helpers import iRODSUserLogins
 import irods.exception as ex
 from irods.column import Criterion
@@ -2950,6 +2952,58 @@ class TestDataObjOps(unittest.TestCase):
                 finally:
                     if data_objs.exists(data_path):
                         data_objs.unlink(data_path, force=True)
+
+    def test_data_create_and_put_without_forcing__issue_132(self):
+        test_path = iRODSPath(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        contents = b"** CONTENTS **"
+        Data_Object_Properties = collections.namedtuple(
+            "repl_properties", ["modify_times", "resource_names"]
+        )
+
+        def check_or_return_properties(data_repls, reference_value=None):
+            properties_dict = {_.resource_name: _.modify_time for _ in data_repls}
+            properties = Data_Object_Properties(
+                modify_times=list(properties_dict.values()),
+                resource_names=list(properties_dict.keys()),
+            )
+            if (sentinel := reference_value) is not None:
+                return sentinel == properties
+            else:
+                return properties
+
+        # Create a data object with known content.  Record a reference state for later comparison.
+        test_data_object = self.sess.data_objects.create(test_path, force=True)
+        with test_data_object.open("w") as f:
+            f.write(contents)
+        orig_repl_state = check_or_return_properties(test_data_object.replicas)
+
+        # Create should have made only a single replica.
+        self.assertEqual(1, len(orig_repl_state.resource_names))
+
+        # If using force=False, then an attempt to create an object at the same path should raise an exception.
+        with self.assertRaises(ex.LogicalPathAlreadyExists):
+            d2 = self.sess.data_objects.create(test_path, force=False)
+
+        # Assert that a put without FORCE_FLAG_KW raises an Exception.
+        with NamedTemporaryFile() as t:
+            altered_contents = b"[[" + contents + b"]]"
+            t.write(altered_contents)
+            t.close()
+            with self.assertRaises(ex.OVERWRITE_WITHOUT_FORCE_FLAG):
+                self.sess.data_objects.put(t.name, test_path)
+
+        # Assert that the data object's contents are unchanged.
+        with test_data_object.open("r") as f:
+            self.assertEqual(f.read(), contents)
+
+        # Assert that the modify times and hosting resources haven't changed.
+        self.assertTrue(
+            check_or_return_properties(
+                self.sess.data_objects.get(test_path).replicas, reference_value = orig_repl_state
+            )
+        )
 
 
 if __name__ == "__main__":
