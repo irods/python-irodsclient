@@ -35,6 +35,8 @@ import irods.keywords as kw
 import irods.parallel as parallel
 from irods.parallel import deferred_call
 
+def call_thru(clbl): return c if not callable (c) else c()
+
 logger = logging.getLogger(__name__)
 
 _update_types = []
@@ -312,6 +314,10 @@ class DataObjectManager(Manager):
         updatables=(),
         **options
     ):
+        
+        options.setdefault(kw.FORCE_FLAG_KW, client_config.data_objects.force_put_by_default)
+        if not options[kw.FORCE_FLAG_KW]:
+            options.pop(kw.FORCE_FLAG_KW)
 
         if self.sess.collections.exists(irods_path):
             obj = iRODSCollection.normalize_path(
@@ -462,7 +468,11 @@ class DataObjectManager(Manager):
             updatables=updatables,
         )
 
-    def create(self, path, resource=None, force=None, **options):
+    @staticmethod
+    def _call_thru(c): return c() if callable(c) else c
+
+    def create(self, path, resource=None, force=client_config.getter("data_objects", "force_create_by_default"), **options):
+       
         """
         Create a new data object with the given logical path.
 
@@ -470,7 +480,7 @@ class DataObjectManager(Manager):
         'force', when False, raises an LogicalPathAlreadyExists if there is already a data object at the logical path specified.
         """
 
-        if not force and self.exists(path):
+        if not self._call_thru(force) and self.exists(path):
             raise ex.LogicalPathAlreadyExists
 
         options = {**options, kw.DATA_TYPE_KW: "generic"}
