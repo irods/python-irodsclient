@@ -315,9 +315,11 @@ class DataObjectManager(Manager):
         **options
     ):
         
-        options.setdefault(kw.FORCE_FLAG_KW, client_config.data_objects.force_put_by_default)
-        if not options[kw.FORCE_FLAG_KW]:
-            options.pop(kw.FORCE_FLAG_KW)
+        force = options.setdefault(kw.FORCE_FLAG_KW, client_config.data_objects.force_put_by_default)
+        if force or isinstance(force,str):
+            options[kw.FORCE_FLAG_KW] = ''
+        else:
+            del options[kw.FORCE_FLAG_KW]
 
         if self.sess.collections.exists(irods_path):
             obj = iRODSCollection.normalize_path(
