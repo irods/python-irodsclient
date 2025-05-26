@@ -477,11 +477,11 @@ class DataObjectManager(Manager):
         Create a new data object with the given logical path.
 
         'resource', if provided, is the root node of a storage resource hierarchy where the object is preferentially to be created.
-        'force', when False, raises an LogicalPathAlreadyExists if there is already a data object at the logical path specified.
+        'force', when False, raises an DataObjectExistsAtLogicalPath if there is already a data object at the logical path specified.
         """
 
         if not self._call_thru(force) and self.exists(path):
-            raise ex.LogicalPathAlreadyExists
+            raise ex.DataObjectExistsAtLogicalPath
 
         options = {**options, kw.DATA_TYPE_KW: "generic"}
 
