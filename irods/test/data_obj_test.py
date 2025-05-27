@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import base64
+import collections
 import concurrent.futures
 import contextlib
 import errno
@@ -51,6 +52,7 @@ def is_localhost_synonym(name):
 
 from irods.access import iRODSAccess
 from irods.models import Collection, DataObject
+from irods.path import iRODSPath
 from irods.test.helpers import iRODSUserLogins
 import irods.exception as ex
 from irods.column import Criterion
@@ -2950,6 +2952,102 @@ class TestDataObjOps(unittest.TestCase):
                 finally:
                     if data_objs.exists(data_path):
                         data_objs.unlink(data_path, force=True)
+
+    def test_data_create_and_put_with_force_options_on__issue_132(self):
+        test_path = iRODSPath(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        original_contents = b"old"
+        expected_contents_after_create = b""
+        expected_contents_after_put = b"new"
+
+        with self.sess.data_objects.open(test_path, "w") as f:
+            f.write(original_contents)
+
+        self.sess.data_objects.create(test_path, force=True)
+        with self.sess.data_objects.open(test_path, "w") as f:
+            self.assertEqual(f.read(), expected_contents_after_create)
+
+        with NamedTemporaryFile() as f:
+            f.write(expected_contents_after_put)
+        self.sess.data_objects.put(f.name, test_path, **{kw.FORCE_FLAG_KW})
+        with self.sess.data_objects.open(test_path, "w") as f:
+            self.assertEqual(f.read(), expected_contents_after_put)
+
+    def test_data_create_and_put_with_force_options_off__issue_132(self):
+        test_path = iRODSPath(
+            self.coll_path, unique_name(my_function_name(), datetime.now())
+        )
+        Data_Object_Properties = collections.namedtuple(
+            "repl_properties", ["modify_times", "resource_names"]
+        )
+
+        def check_or_return_properties(data_repls, reference_value=None):
+            properties_dict = {_.resource_name: _.modify_time for _ in data_repls}
+            properties = Data_Object_Properties(
+                modify_times=list(properties_dict.values()),
+                resource_names=list(properties_dict.keys()),
+            )
+            if (sentinel := reference_value) is not None:
+                return sentinel == properties
+            else:
+                return properties
+
+        original_contents = b"** CONTENTS **"
+        test_data_object = self.sess.data_objects.create(test_path, force=True)
+        # Create a data object with known content.  Record a reference state for later comparison.
+        with test_data_object.open("w") as f:
+            f.write(original_contents)
+        orig_repl_state = check_or_return_properties(test_data_object.replicas)
+
+        def check_data_object_contents_are_unchanged():
+            test_path = test_data_object.path
+            with self.sess.data_objects.open(test_path, "r") as f:
+                self.assertEqual(f.read(), original_contents)
+
+        # Temporarily turn off the forced overwrite defaults.
+        with loadlines(
+            entries=[
+                dict(setting="data_objects.force_put_by_default", value=False),
+                dict(setting="data_objects.force_create_by_default", value=False),
+            ]
+        ):
+
+            # Create should have made only a single replica.
+            self.assertEqual(1, len(orig_repl_state.resource_names))
+
+            # If using force=False, then an attempt to create an object at the same path should raise an exception.
+            with self.assertRaises(ex.DataObjectExistsAtLogicalPath):
+                d2 = self.sess.data_objects.create(test_path)
+
+            # Do the required checks: assert original contents and replica stats are unchanged.
+            check_data_object_contents_are_unchanged()
+
+            self.assertTrue(
+                check_or_return_properties(
+                    self.sess.data_objects.get(test_path).replicas,
+                    reference_value=orig_repl_state,
+                )
+            )
+
+            # Assert that a put without FORCE_FLAG_KW raises an Exception.
+            with NamedTemporaryFile() as t:
+                altered_contents = b"[[" + original_contents.lower() + b"]]"
+                t.write(altered_contents)
+                t.close()
+                with self.assertRaises(ex.OVERWRITE_WITHOUT_FORCE_FLAG):
+                    self.sess.data_objects.put(t.name, test_path)
+
+            # Again do the required checks.
+            check_data_object_contents_are_unchanged()
+
+            # Assert that the modify times and hosting resources haven't changed.
+            self.assertTrue(
+                check_or_return_properties(
+                    self.sess.data_objects.get(test_path).replicas,
+                    reference_value=orig_repl_state,
+                )
+            )
 
 
 if __name__ == "__main__":
