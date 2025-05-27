@@ -35,7 +35,10 @@ import irods.keywords as kw
 import irods.parallel as parallel
 from irods.parallel import deferred_call
 
-def call_thru(clbl): return c if not callable (c) else c()
+
+def call_thru(clbl):
+    return c if not callable(c) else c()
+
 
 logger = logging.getLogger(__name__)
 
@@ -314,9 +317,11 @@ class DataObjectManager(Manager):
         updatables=(),
         **options
     ):
-        force = options.setdefault(kw.FORCE_FLAG_KW, client_config.data_objects.force_put_by_default)
-        if force or isinstance(force,str):
-            options[kw.FORCE_FLAG_KW] = ''
+        force = options.setdefault(
+            kw.FORCE_FLAG_KW, client_config.data_objects.force_put_by_default
+        )
+        if force or isinstance(force, str):
+            options[kw.FORCE_FLAG_KW] = ""
         else:
             del options[kw.FORCE_FLAG_KW]
 
@@ -470,9 +475,16 @@ class DataObjectManager(Manager):
         )
 
     @staticmethod
-    def _call_thru(c): return c() if callable(c) else c
+    def _call_thru(c):
+        return c() if callable(c) else c
 
-    def create(self, path, resource=None, force=client_config.getter("data_objects", "force_create_by_default"), **options):
+    def create(
+        self,
+        path,
+        resource=None,
+        force=client_config.getter("data_objects", "force_create_by_default"),
+        **options
+    ):
         """
         Create a new data object with the given logical path.
 

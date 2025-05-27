@@ -71,7 +71,7 @@ class DataObjects(iRODSConfiguration):
         "auto_close",
         "allow_redirect",
         "force_create_by_default",
-        "force_put_by_default"
+        "force_put_by_default",
     )
 
     def __init__(self):
