@@ -2961,17 +2961,21 @@ class TestDataObjOps(unittest.TestCase):
         expected_contents_after_create = b""
         expected_contents_after_put = b"new"
 
+        # Set up by making a test data object, using open with mode "w" rather than create.
         with self.sess.data_objects.open(test_path, "w") as f:
             f.write(original_contents)
 
+        # Overwrite using create with force option on.  Assert success.
         self.sess.data_objects.create(test_path, force=True)
-        with self.sess.data_objects.open(test_path, "w") as f:
+        with self.sess.data_objects.open(test_path, "r") as f:
             self.assertEqual(f.read(), expected_contents_after_create)
 
-        with NamedTemporaryFile() as f:
-            f.write(expected_contents_after_put)
-        self.sess.data_objects.put(f.name, test_path, **{kw.FORCE_FLAG_KW})
-        with self.sess.data_objects.open(test_path, "w") as f:
+        # Overwrite using put with force flag.  Assert success.
+        local_file = NamedTemporaryFile()
+        local_file.write(expected_contents_after_put)
+        local_file.flush()
+        self.sess.data_objects.put(local_file.name, test_path, **{kw.FORCE_FLAG_KW: ""})
+        with self.sess.data_objects.open(test_path, "r") as f:
             self.assertEqual(f.read(), expected_contents_after_put)
 
     def test_data_create_and_put_with_force_options_off__issue_132(self):
@@ -3006,7 +3010,7 @@ class TestDataObjOps(unittest.TestCase):
                 self.assertEqual(f.read(), original_contents)
 
         # Temporarily turn off the forced overwrite defaults.
-        with loadlines(
+        with config.loadlines(
             entries=[
                 dict(setting="data_objects.force_put_by_default", value=False),
                 dict(setting="data_objects.force_create_by_default", value=False),
