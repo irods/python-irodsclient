@@ -36,10 +36,6 @@ import irods.parallel as parallel
 from irods.parallel import deferred_call
 
 
-def call_thru(clbl):
-    return c if not callable(c) else c()
-
-
 logger = logging.getLogger(__name__)
 
 _update_types = []
