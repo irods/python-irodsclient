@@ -7,7 +7,7 @@ import ssl
 import datetime
 import errno
 import irods.password_obfuscation as obf
-from irods import MAX_NAME_LEN
+from irods import LONG_NAME_LEN, MAX_NAME_LEN
 from irods.exception import PAM_AUTH_PASSWORD_INVALID_TTL
 from ast import literal_eval as safe_eval
 import re
@@ -305,6 +305,9 @@ class Connection:
         # No client-server negotiation
         if not self.requires_cs_negotiation():
 
+            if len(main_message.option) >= LONG_NAME_LEN:
+                message = "Application name too long."
+                raise ValueError(message)
             # Send startup pack without negotiation request
             msg = iRODSMessage(msg_type="RODS_CONNECT", msg=main_message)
             self.send(msg)
@@ -322,7 +325,10 @@ class Connection:
         validate_policy(client_policy)
 
         # Send startup pack with negotiation request
-        main_message.option = "{};{}".format(main_message.option, REQUEST_NEGOTIATION)
+        main_message.option = "{}{}".format(main_message.option, REQUEST_NEGOTIATION)
+        if len(main_message.option) >= LONG_NAME_LEN:
+            message = f"Application name too long when appended with string {REQUEST_NEGOTIATION!r}."
+            raise ValueError(message)
         msg = iRODSMessage(msg_type="RODS_CONNECT", msg=main_message)
         self.send(msg)
 
