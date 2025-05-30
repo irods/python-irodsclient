@@ -35,6 +35,7 @@ import irods.keywords as kw
 import irods.parallel as parallel
 from irods.parallel import deferred_call
 
+
 logger = logging.getLogger(__name__)
 
 _update_types = []
@@ -312,6 +313,13 @@ class DataObjectManager(Manager):
         updatables=(),
         **options
     ):
+        force = options.setdefault(
+            kw.FORCE_FLAG_KW, client_config.data_objects.force_put_by_default
+        )
+        if force or isinstance(force, str):
+            options[kw.FORCE_FLAG_KW] = ""
+        else:
+            del options[kw.FORCE_FLAG_KW]
 
         if self.sess.collections.exists(irods_path):
             obj = iRODSCollection.normalize_path(
@@ -319,6 +327,9 @@ class DataObjectManager(Manager):
             )
         else:
             obj = irods_path
+            if kw.FORCE_FLAG_KW not in options and self.exists(obj):
+                raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
+        options.pop(kw.FORCE_FLAG_KW, None)
 
         with open(local_path, "rb") as f:
             sizelist = []
@@ -459,8 +470,28 @@ class DataObjectManager(Manager):
             updatables=updatables,
         )
 
-    def create(self, path, resource=None, force=False, **options):
-        options[kw.DATA_TYPE_KW] = "generic"
+    @staticmethod
+    def _call_thru(c):
+        return c() if callable(c) else c
+
+    def create(
+        self,
+        path,
+        resource=None,
+        force=client_config.getter("data_objects", "force_create_by_default"),
+        **options
+    ):
+        """
+        Create a new data object with the given logical path.
+
+        'resource', if provided, is the root node of a storage resource hierarchy where the object is preferentially to be created.
+        'force', when False, raises an DataObjectExistsAtLogicalPath if there is already a data object at the logical path specified.
+        """
+
+        if not self._call_thru(force) and self.exists(path):
+            raise ex.DataObjectExistsAtLogicalPath
+
+        options = {**options, kw.DATA_TYPE_KW: "generic"}
 
         if resource:
             options[kw.DEST_RESC_NAME_KW] = resource
@@ -470,9 +501,6 @@ class DataObjectManager(Manager):
                 options[kw.DEST_RESC_NAME_KW] = self.sess.default_resource
             except AttributeError:
                 pass
-
-        if force:
-            options[kw.FORCE_FLAG_KW] = ""
 
         message_body = FileOpenRequest(
             objPath=path,
