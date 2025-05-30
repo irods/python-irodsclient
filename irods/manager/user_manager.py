@@ -259,6 +259,13 @@ class UserManager(Manager):
         logger.debug(response.int_info)
 
 
+CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD = (4,3,4)
+
+def get__group_create__user_type__default(session):
+    if session.server_version < CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD:
+        return "rodsgroup"
+    return ""
+
 class GroupManager(UserManager):
 
     def get(self, name, user_zone=""):
@@ -290,14 +297,27 @@ class GroupManager(UserManager):
     def create(
         self,
         name,
+        user_type=get__group_create__user_type__default,
+        user_zone="",
+        auth_str="",
         group_admin=None,
         **options,
     ):
-        user_zone = options.pop("user_zone", "")
-        auth_str = options.pop("auth_str", "")
-        user_type = options.pop("user_type", "rodsgroup")
+        """Create and return a new iRODSGroup.
 
-        if user_zone != "" or auth_str != "" or user_type != "rodsgroup":
+           Input parameters:
+           -----------------
+               name: This is the name to be given to the new group.
+               user_type: (deprecated parameter) This parameter should remain unused and will effectively resolve as "rodsgroup".
+               user_zone: (deprecated parameter) In iRODS 4.3+, do not use this parameter as groups may not be made for a remote zone.
+               auth_type: (deprecated parameter) This parameter should be left to default to "" as groups do not need authentication.
+               group_admin: If left to its default value of None, seamlessly allows a groupadmin to create new groups.
+        """
+
+        if callable(user_type):
+            user_type = user_type(self.sess)
+
+        if user_zone != "" or auth_str != "" or user_type not in ("", "rodsgroup"):
             warnings.warn(
                 "Use of non-default value for auth_str, user_type or user_zone in GroupManager.create is deprecated",
                 DeprecationWarning,
@@ -308,9 +328,15 @@ class GroupManager(UserManager):
         api_to_use = api_number[api_key]
 
         if MessageClass is UserAdminRequest:
-            message_body = MessageClass("mkgroup", name, user_type, user_zone)
+            message_body = MessageClass("mkgroup", name, "rodsgroup")
         else:
-            message_body = MessageClass("add", "user", name, user_type, "", "")
+            message_body = MessageClass(
+                "add",
+                ("user" if self.sess.server_version < CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD else "group"),
+                name,
+                user_type,
+                "",
+                "")
         request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_to_use)
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
