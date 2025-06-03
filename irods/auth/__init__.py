@@ -18,7 +18,7 @@ _NoneType = type(None)
 
 
 class AuthStorage:
-    """A class that facilitates flexible means password storage.
+    """A class that facilitates flexible means of password storage.
 
     Using an instance of this class, passwords may either be one of the following:
 
@@ -166,7 +166,7 @@ class authentication_base:
         self.scheme = scheme
 
     def call(self, next_operation, request):
-        logging.info("next operation = %r", next_operation)
+        logging.debug("next operation = %r", next_operation)
         old_func = func = next_operation
         # One level of indirection should be sufficient to get a callable method.
         if not callable(func):
@@ -175,7 +175,7 @@ class authentication_base:
         if not callable(func):
             raise RuntimeError("client request contains no callable 'next_operation'")
         resp = func(request)
-        logging.info("resp = %r", resp)
+        logging.debug("resp = %r", resp)
         return resp
 
     def authenticate_client(
@@ -202,4 +202,4 @@ class authentication_base:
                 )
             to_send = resp
 
-        logging.info("fully authenticated")
+        logging.debug("fully authenticated")
