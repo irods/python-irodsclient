@@ -9,11 +9,20 @@ import contextlib
 import concurrent.futures
 import threading
 import multiprocessing
+import weakref
 
 from irods.data_object import iRODSDataObject
 from irods.exception import DataObjectDoesNotExist
 import irods.keywords as kw
 from queue import Queue, Full, Empty
+
+
+transfer_managers = weakref.WeakKeyDictionary()
+
+
+def abort_asynchronous_transfers():
+    for mgr in transfer_managers:
+        mgr.quit()
 
 
 logger = logging.getLogger(__name__)
@@ -90,9 +99,11 @@ class AsyncNotify:
             for future in self._futures:
                 future.add_done_callback(self)
         else:
-            self.__invoke_done_callback()
+            self.__invoke_futures_done_logic()
+            return
 
         self.progress = [0, 0]
+
         if (progress_Queue) and (total is not None):
             self.progress[1] = total
 
@@ -111,7 +122,7 @@ class AsyncNotify:
 
             self._progress_fn = _progress
             self._progress_thread = threading.Thread(
-                target=self._progress_fn, args=(progress_Queue, self)
+                target=self._progress_fn, args=(progress_Queue, self), daemon=True
             )
             self._progress_thread.start()
 
@@ -152,11 +163,13 @@ class AsyncNotify:
         with self._lock:
             self._futures_done[future] = future.result()
             if len(self._futures) == len(self._futures_done):
-                self.__invoke_done_callback()
+                self.__invoke_futures_done_logic(
+                    skip_user_callback=(None in self._futures_done.values())
+                )
 
-    def __invoke_done_callback(self):
+    def __invoke_futures_done_logic(self, skip_user_callback=False):
         try:
-            if callable(self.done_callback):
+            if not skip_user_callback and callable(self.done_callback):
                 self.done_callback(self)
         finally:
             self.keep.pop("mgr", None)
@@ -239,6 +252,9 @@ def _copy_part(src, dst, length, queueObject, debug_info, mgr, updatables=()):
     bytecount = 0
     accum = 0
     while True and bytecount < length:
+        if mgr._quit:
+            bytecount = None
+            break
         buf = src.read(min(COPY_BUF_SIZE, length - bytecount))
         buf_len = len(buf)
         if 0 == buf_len:
@@ -274,10 +290,15 @@ class _Multipart_close_manager:
     """
 
     def __init__(self, initial_io_, exit_barrier_):
+        self._quit = False
         self.exit_barrier = exit_barrier_
         self.initial_io = initial_io_
         self.__lock = threading.Lock()
         self.aux = []
+
+    def quit(self):
+        self._quit = True
+        self.exit_barrier.abort()
 
     def __contains__(self, Io):
         with self.__lock:
@@ -303,8 +324,12 @@ class _Multipart_close_manager:
                 Io.close()
                 self.aux.remove(Io)
                 is_initial = False
-        self.exit_barrier.wait()
-        if is_initial:
+        broken = False
+        try:
+            self.exit_barrier.wait()
+        except threading.BrokenBarrierError:
+            broken = True
+        if is_initial and not (broken or self._quit):
             self.finalize()
 
     def finalize(self):
@@ -439,13 +464,19 @@ def _io_multipart_threaded(
         Io = File = None
 
     if Operation.isNonBlocking():
-        if queueLength:
-            return futures, queueObject, mgr
-        else:
-            return futures
+        return futures, queueObject, mgr
     else:
-        bytecounts = [f.result() for f in futures]
-        return sum(bytecounts), total_size
+        bytes_transferred = 0
+        try:
+            bytecounts = [f.result() for f in futures]
+            if None not in bytecounts:
+                bytes_transferred = sum(bytecounts)
+        except KeyboardInterrupt:
+            if any(not f.done() for f in futures):
+                # Induce any threads still alive to quit the transfer and exit.
+                mgr.quit()
+            raise
+        return bytes_transferred, total_size
 
 
 def io_main(session, Data, opr_, fname, R="", **kwopt):
@@ -558,10 +589,10 @@ def io_main(session, Data, opr_, fname, R="", **kwopt):
 
     if Operation.isNonBlocking():
 
-        if queueLength > 0:
-            (futures, chunk_notify_queue, mgr) = retval
-        else:
-            futures = retval
+        (futures, chunk_notify_queue, mgr) = retval
+        transfer_managers[mgr] = None
+
+        if queueLength <= 0:
             chunk_notify_queue = total_bytes = None
 
         return AsyncNotify(
