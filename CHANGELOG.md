@@ -11,6 +11,29 @@ and this project **only** adheres to the following _(as defined at [Semantic Ver
 > - MINOR version when you add functionality in a backward compatible manner
 > - PATCH version when you make backward compatible bug fixes
 
+## [v3.1.1] - 2025-06-09
+
+This patch release resolves bugs related to connections, `ips` tracking, and dependencies.
+
+### Changed
+
+- Log authentication messages at DEBUG level (#706).
+- Remove dependency on test module (#735).
+
+### Fixed
+
+- Add missing import to connection.py (#5).
+- Allow `put` and `create` of data object to raise an error on overwrite (#132, #322).
+- Do not create local file when download of nonexistent data object fails (#681, #714).
+- Trap exception in connection finalizer (#691).
+- Fix imports for `make_session` in README examples (#710).
+- Remove semicolon from `<option>` tag in `StartupPack` (#730).
+
+### Added
+
+- Add exception class for `HIERARCHY_ERROR` (#717).
+- Add exception class for `SYS_SOCK_READ_TIMEDOUT` (#718).
+
 ## [v3.1.0] - 2025-03-21
 
 This release includes a full port of the iRODS 4.3 authentication framework with working implementations for the native and pam_password authentication schemes.
