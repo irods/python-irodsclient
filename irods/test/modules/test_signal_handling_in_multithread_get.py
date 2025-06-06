@@ -38,6 +38,9 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
     program = os.path.join(test_modules.__path__[0], os.path.basename(__file__))
 
     for signal_name in signal_names:
+
+        test_case.subTest(f"Testing with signal {signal_name}")
+
         # Call into this same module as a command.  This will initiate another Python process that
         # performs a lengthy data object "get" operation (see the main body of the script, below.)
         process = subprocess.Popen(
@@ -59,7 +62,6 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
             "Parallel download from data_objects.get() probably experienced a fatal error before spawning auxiliary data transfer threads.",
         )
 
-        signal_message_info = f"While testing signal {signal_name}"
         sig = getattr(signal, signal_name)
 
         # Interrupt the subprocess with the given signal.
@@ -70,18 +72,18 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
             test_case.assertEqual(
                 process.wait(timeout=15),
                 -sig,
-                "{signal_message_info}: unexpected subprocess return code.",
+                "Unexpected subprocess return code.",
             )
         except subprocess.TimeoutExpired as timeout_exc:
             test_case.fail(
-                f"{signal_message_info}:  subprocess timed out before terminating.  "
+                f"Subprocess timed out before terminating.  "
                 "Non-daemon thread(s) probably prevented subprocess's main thread from exiting."
             )
         # Assert that in the case of SIGINT, the process registered a KeyboardInterrupt.
         if sig == signal.SIGINT:
             test_case.assertTrue(
                 re.search("KeyboardInterrupt", process.stderr.read()),
-                "{signal_message_info}: Expected 'KeyboardInterrupt' in log output.",
+                "Did not find expected string 'KeyboardInterrupt' in log output.",
             )
 
 
