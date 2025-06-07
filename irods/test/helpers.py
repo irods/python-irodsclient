@@ -17,9 +17,7 @@ import tempfile
 import threading
 
 import irods.client_configuration as config
-from irods.helpers import (
-    home_collection,
-    make_session as _irods_helpers_make_session)
+from irods.helpers import home_collection, make_session as _irods_helpers_make_session
 from irods.message import iRODSMessage, IRODS_VERSION
 from irods.password_obfuscation import encode
 import irods.rule
@@ -164,11 +162,15 @@ def make_environment_and_auth_files(dir_, **params):
 
 
 def make_session(test_server_version=True, **kwargs):
-    return _irods_helpers_make_session(test_server_version=test_server_version, **kwargs)
+    return _irods_helpers_make_session(
+        test_server_version=test_server_version, **kwargs
+    )
 
 
 make_session.__doc__ = re.sub(
-    r"(test_server_version\s*)=\s*\w+", r"\1 = True", _irods_helpers_make_session.__doc__
+    r"(test_server_version\s*)=\s*\w+",
+    r"\1 = True",
+    _irods_helpers_make_session.__doc__,
 )
 
 
