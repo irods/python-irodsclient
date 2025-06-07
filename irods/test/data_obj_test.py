@@ -294,7 +294,7 @@ class TestDataObjOps(unittest.TestCase):
                 data_object_path,
                 "a",
                 finalize_on_close=False,
-                **{kw.RESC_HIER_STR_KW: hier_str, kw.REPLICA_TOKEN_KW: replica_token}
+                **{kw.RESC_HIER_STR_KW: hier_str, kw.REPLICA_TOKEN_KW: replica_token},
             )
             fd2.seek(4)
             fd2.write(b"s\n")
@@ -646,7 +646,7 @@ class TestDataObjOps(unittest.TestCase):
                 Data.put(
                     f.name,
                     dobj_path,
-                    **{kw.DEST_RESC_NAME_KW: R, kw.FORCE_FLAG_KW: "1"}
+                    **{kw.DEST_RESC_NAME_KW: R, kw.FORCE_FLAG_KW: "1"},
                 )
                 # compare checksums
                 my_object = Data.get(dobj_path)
@@ -2092,7 +2092,7 @@ class TestDataObjOps(unittest.TestCase):
                 self.sess.data_objects.open(
                     "{home}/disallowed_243".format(**locals()),
                     "w",
-                    **{kw.RESC_NAME_KW: Leaf}
+                    **{kw.RESC_NAME_KW: Leaf},
                 )
 
     def test_data_open_on_named_resource__243(self):
