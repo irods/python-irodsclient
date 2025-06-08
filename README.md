@@ -566,6 +566,24 @@ certain environment variables:
     -   Default Value: `False`
     -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__ALLOW_REDIRECT`
 
+-   Setting: Allow `put()` to overwrite an already existing data object by default.
+    -   Dotted Name: `data_objects.force_put_by_default`
+    -   Type: `bool`
+    -   Default Value: `True` (as of v3.1.1, but not into perpetuity.)
+    -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__FORCE_PUT_BY_DEFAULT`
+
+-   Setting: Allow `create()` to overwrite an already existing data object by default.
+    -   Dotted Name: `data_objects.force_create_by_default`
+    -   Type: `bool`
+    -   Default Value: `True` (as of v3.1.1, but not into perpetuity.)
+    -   Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__DATA_OBJECTS__FORCE_CREATE_BY_DEFAULT`
+
+-   Setting: Whether to use legacy authentication despite the iRODS server supporting the 4.3 authentication plugin framework.
+    - Dotted Name: `legacy_auth.force_legacy_auth`
+    - Type: `bool`
+    - Default Value: `False` (Meaning: allow the version of the connected server to determine the type of authentication used.)
+    - Environment Variable Override: `PYTHON_IRODSCLIENT_CONFIG__LEGACY_AUTH__FORCE_LEGACY_AUTH`
+
 -   Setting: Number of hours to request for the new password entry's TTL (Time To Live) when auto-renewing PAM-authenticated sessions.
     - Dotted Name: `legacy_auth.pam.time_to_live_in_hours`
     - Type: `int`
