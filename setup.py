@@ -41,6 +41,8 @@ setup(
     install_requires=[
         "PrettyTable>=0.7.2",
         "defusedxml",
+        "jsonpointer",
+        "jsonpatch",
     ],
     extras_require={"tests": ["unittest-xml-reporting"]},  # for xmlrunner
     scripts=["irods/prc_write_irodsA.py"],
