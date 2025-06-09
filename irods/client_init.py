@@ -115,3 +115,35 @@ def write_pam_credentials_to_secrets_file(password, overwrite=True, ttl="", **kw
         raise RuntimeError(f"Password token was not passed from server.")
     auth_file = s.pool.account.derived_auth_file
     _write_encoded_auth_value(auth_file, to_encode[0], overwrite)
+
+def write_pam_interactive_irodsA_file(overwrite=True, ttl="", **kw):
+    """Write credentials to an .irodsA file for PAM interactive authentication."""
+    import irods.auth
+
+    ses = kw.pop("_session", None) or h.make_session(**kw)
+
+    auth_file = ses.pool.account.derived_auth_file
+    if not auth_file:
+        msg = "Auth file could not be written because no iRODS client environment was found."
+        raise RuntimeError(msg)
+
+    ses.set_auth_option_for_scheme(
+        "pam_interactive", irods.auth.FORCE_PASSWORD_PROMPT, True
+    )
+
+    if ttl:
+        ses.set_auth_option_for_scheme(
+            "pam_interactive", "time_to_live_in_hours", ttl
+        )
+
+    ses.set_auth_option_for_scheme(
+        "pam_interactive", irods.auth.STORE_PASSWORD_IN_MEMORY, True
+    )
+
+    L = []
+    ses.set_auth_option_for_scheme(
+        "pam_interactive", irods.auth.CLIENT_GET_REQUEST_RESULT, L
+    )
+
+    with ses.pool.get_connection() as _:
+        _write_encoded_auth_value(auth_file, L[0], overwrite)
