@@ -48,10 +48,6 @@ class GroupDoesNotExist(DoesNotExist):
     pass
 
 
-# NOTE: Everything of the form *UserGroup* is deprecated.
-UserGroupDoesNotExist = GroupDoesNotExist
-
-
 class ResourceDoesNotExist(DoesNotExist):
     pass
 
