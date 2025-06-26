@@ -76,10 +76,6 @@ class Group(Model):
     name = Column(String, "USER_GROUP_NAME", 901)
 
 
-# The UserGroup model-class is now renamed Group, but we'll keep the deprecated name around for now.
-UserGroup = Group
-
-
 class Resource(Model):
     id = Column(Integer, "R_RESC_ID", 301)
     name = Column(String, "R_RESC_NAME", 302)

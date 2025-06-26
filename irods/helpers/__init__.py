@@ -24,6 +24,7 @@ class StopTestsException(Exception):
             print("Aborting tests [ Got : %r ]" % self, file=sys.stderr)
             os.abort()
 
+
 class iRODS_Server_Too_Recent_For_Testing(StopTestsException):
     pass
 
@@ -35,6 +36,7 @@ def _get_server_version_for_test(session, curtail_length):
 
 
 # Create a connection for test, based on ~/.irods environment by default.
+
 
 def make_session(test_server_version=False, **kwargs):
     """Connect to an iRODS server as determined by any client environment

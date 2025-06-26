@@ -290,16 +290,16 @@ class GroupManager(UserManager):
     def create(
         self,
         name,
-        user_type="rodsgroup",
-        user_zone="",
-        auth_str="",
-        group_admin=False,
+        group_admin=None,
         **options,
     ):
+        user_zone = options.pop("user_zone", "")
+        auth_str = options.pop("auth_str", "")
+        user_type = options.pop("user_type", "rodsgroup")
 
-        if not options.pop("suppress_deprecation_warning", False):
+        if user_zone != "" or auth_str != "" or user_type != "rodsgroup":
             warnings.warn(
-                "Use of session.user_groups is deprecated in v1.1.7 - prefer session.groups",
+                "Use of non-default value for auth_str, user_type or user_zone in GroupManager.create is deprecated",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -325,16 +325,8 @@ class GroupManager(UserManager):
         return [iRODSUser(self, row) for row in results]
 
     def addmember(
-        self, group_name, user_name, user_zone="", group_admin=False, **options
+        self, group_name, user_name, user_zone="", group_admin=None, **options
     ):
-
-        if not options.pop("suppress_deprecation_warning", False):
-            warnings.warn(
-                "Use of session.user_groups is deprecated in v1.1.7 - prefer session.groups",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         (MessageClass, api_key) = self._api_info(group_admin)
 
         message_body = MessageClass(
@@ -349,16 +341,8 @@ class GroupManager(UserManager):
         logger.debug(response.int_info)
 
     def removemember(
-        self, group_name, user_name, user_zone="", group_admin=False, **options
+        self, group_name, user_name, user_zone="", group_admin=None, **options
     ):
-
-        if not options.pop("suppress_deprecation_warning", False):
-            warnings.warn(
-                "Use of session.user_groups is deprecated in v1.1.7 - prefer session.groups",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         (MessageClass, api_key) = self._api_info(group_admin)
 
         message_body = MessageClass(
@@ -386,7 +370,3 @@ class GroupManager(UserManager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
-
-
-# NOTE: Everything of the form *UserGroup* is deprecated.
-UserGroupManager = GroupManager
