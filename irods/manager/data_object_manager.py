@@ -273,6 +273,7 @@ class DataObjectManager(Manager):
         a path in the local filesystem to use as a destination file).
         """
         parent = self.sess.collections.get(irods_dirname(path))
+        _results_sort_key = options.pop('results_sort_key', None)
 
         # TODO: optimize
         if local_path:
@@ -300,7 +301,7 @@ class DataObjectManager(Manager):
         results = query.all()  # get up to max_rows replicas
         if len(results) <= 0:
             raise ex.DataObjectDoesNotExist()
-        return iRODSDataObject(self, parent, results)
+        return iRODSDataObject(self, parent, results, results_sort_key = _results_sort_key)
 
     def put(
         self,
