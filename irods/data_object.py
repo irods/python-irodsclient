@@ -83,7 +83,7 @@ class iRODSDataObject:
 
             if self.manager.sess.server_version >= (5,):
                 for n,r in enumerate(replicas):
-                    replica_args[n][1]['access_time'] = r[DataObject.for_iRODS_5.access_time],
+                    replica_args[n][1]['access_time'] = r[DataObject.for_iRODS_5.access_time]
             self.replicas = [iRODSReplica(*a,**k) for a,k in replica_args]
 
         self._meta = None
