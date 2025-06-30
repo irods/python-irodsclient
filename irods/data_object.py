@@ -46,10 +46,13 @@ class iRODSReplica:
 
 class iRODSDataObject:
 
-    def __init__(self, manager, parent=None, results=None):
+    def __init__(self, manager, /, parent=None, results=None, *, results_sort_key = None):
         self.manager = manager
         if parent and results:
             self.collection = parent
+            if results_sort_key is None:
+                results_sort_key = lambda r: r[DataObject.replica_number]
+            results = sorted(results, key=results_sort_key)
             for attr, value in DataObject.__dict__.items():
                 if not attr.startswith("_"):
                     try:
@@ -58,7 +61,6 @@ class iRODSDataObject:
                         # backward compatibility with older schema versions
                         pass
             self.path = self.collection.path + "/" + self.name
-            replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
             self.replicas = [
                 iRODSReplica(
                     r[DataObject.replica_number],
@@ -72,7 +74,7 @@ class iRODSDataObject:
                     create_time=r[DataObject.create_time],
                     modify_time=r[DataObject.modify_time],
                 )
-                for r in replicas
+                for r in results
             ]
         self._meta = None
 
