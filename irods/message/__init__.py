@@ -1142,6 +1142,7 @@ class DataObjInfo(Message):
     in_pdmo = StringProperty()
     next = IntegerProperty()
     rescId = LongProperty()
+    dataAccessTime = StringProperty()
 
 
 class ModDataObjMeta(Message):
