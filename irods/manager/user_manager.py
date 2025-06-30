@@ -310,7 +310,7 @@ class GroupManager(UserManager):
         if MessageClass is UserAdminRequest:
             message_body = MessageClass("mkgroup", name, user_type, user_zone)
         else:
-            message_body = MessageClass("add", "user", name, user_type, "", "")
+            message_body = MessageClass("add", ("user" if self.sess.server_version < (5,) else "group"), name, user_type, "", "")
         request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_to_use)
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
