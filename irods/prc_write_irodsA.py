@@ -3,6 +3,7 @@
 import getopt
 import textwrap
 import sys
+from typing import Callable, Dict
 
 from irods.auth.pam_password import _get_pam_password_from_stdin as get_password
 from irods.client_init import write_pam_irodsA_file, write_native_irodsA_file
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     """
     )
 
-    vector = {"pam_password": write_pam_irodsA_file, "native": write_native_irodsA_file}
+    vector : Dict[str, Callable] = {"pam_password": write_pam_irodsA_file, "native": write_native_irodsA_file}
     opts, args = getopt.getopt(sys.argv[1:], "hi:", ["ttl=", "help"])
     optD = dict(opts)
     help_selected = {*optD} & {"-h", "--help"}
@@ -45,10 +46,12 @@ if __name__ == "__main__":
         inp_stream = optD.get("-i", None)
         if "--ttl" in optD:
             options["ttl"] = optD["--ttl"]
-        pw = get_password(
-            sys.stdin if inp_stream in ("-", None) else open(inp_stream, "r"),
-            prompt=f"Enter current password for scheme {scheme!r}: ",
-        )
+        if inp_stream is None or inp_stream == "-":
+            pw = get_password(sys.stdin,
+                              prompt=f"Enter current password for scheme {scheme!r}: ",)
+        else:
+            pw = get_password(open(inp_stream, "r", encoding='utf-8'),
+                              prompt=f"Enter current password for scheme {scheme!r}: ",)
         vector[scheme](pw, **options)
     else:
         print("did not recognize authentication scheme argument", file=sys.stderr)

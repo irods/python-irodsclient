@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import weakref
+from typing import Any, List, Type
 from irods.models import DataObject, Collection
 from irods.manager import Manager
 from irods.manager._internal import _api_impl, _logical_path
@@ -38,8 +39,8 @@ from irods.parallel import deferred_call
 
 logger = logging.getLogger(__name__)
 
-_update_types = []
-_update_functions = weakref.WeakKeyDictionary()
+_update_types: List[Type] = []
+_update_functions: weakref.WeakKeyDictionary[Type, Any] = weakref.WeakKeyDictionary()
 
 
 def register_update_instance(object_, updater):  # updater
@@ -414,10 +415,10 @@ class DataObjectManager(Manager):
                         "[",
                         "{",
                     ):  # in iRODS 4.2.11 and later, myStr is in JSON format.
-                        exc = Server_Checksum_Warning(checksum)
+                        exception = Server_Checksum_Warning(checksum)
                         if not r_error_stack:
-                            r_error_stack.fill(exc.response)
-                        raise exc
+                            r_error_stack.fill(exception.response)
+                        raise exception
                 except iRODSMessage.ResponseNotParseable:
                     # response.msg is None when VERIFY_CHKSUM_KW is used
                     pass

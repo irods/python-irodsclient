@@ -9,6 +9,7 @@ import contextlib
 import concurrent.futures
 import threading
 import multiprocessing
+from typing import List, Union
 
 from irods.data_object import iRODSDataObject
 from irods.exception import DataObjectDoesNotExist
@@ -603,7 +604,8 @@ if __name__ == "__main__":
     sess = iRODSSession(irods_env_file=env_file, **ssl_settings)
     atexit.register(lambda: sess.cleanup())
 
-    opt, arg = getopt.getopt(sys.argv[1:], "vL:l:aR:N:")
+    opt, arg_ = getopt.getopt(sys.argv[1:], "vL:l:aR:N:")
+    arg: List[Union[str, int]] = list(arg_)
 
     opts = dict(opt)
 
@@ -622,8 +624,9 @@ if __name__ == "__main__":
 
     kwarg = {k.lstrip("-"): v for k, v in opts.items()}
 
-    arg[1] = Oper.PUT if arg[1].lower() in ("w", "put", "a") else Oper.GET
-    if async_xfer is not None:
+    # The purpose of the isinstance calls in the lines below is to allow mypy to infer the current type
+    arg[1] = Oper.PUT if isinstance(arg[1], str) and arg[1].lower() in ("w", "put", "a") else Oper.GET
+    if isinstance(arg[1], int) and async_xfer is not None:
         arg[1] |= Oper.NONBLOCKING
 
     ret = io_main(sess, *arg, **kwarg)  # arg[0] = data object or path

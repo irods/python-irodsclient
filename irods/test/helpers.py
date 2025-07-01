@@ -167,9 +167,10 @@ def make_session(test_server_version=True, **kwargs):
     return _irods_helpers_make_session(test_server_version=test_server_version, **kwargs)
 
 
-make_session.__doc__ = re.sub(
-    r"(test_server_version\s*)=\s*\w+", r"\1 = True", _irods_helpers_make_session.__doc__
-)
+if _irods_helpers_make_session.__doc__ is not None:
+    make_session.__doc__ = re.sub(
+        r"(test_server_version\s*)=\s*\w+", r"\1 = True", _irods_helpers_make_session.__doc__
+    )
 
 
 def make_object(session, path, content=None, **options):

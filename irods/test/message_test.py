@@ -21,6 +21,7 @@ from irods.message import (
     GenQueryResponseColumn,
     GenQueryResponse,
 )
+from irods.message.ordered import OrderedProperty
 
 
 class TestMessages(unittest.TestCase):
@@ -206,6 +207,10 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(gqo2.rowCnt, 2)
         self.assertEqual(gqo2.pack(), expected)
 
+    def test_ordered_properties_have_unique_ids(self):
+        property1 = OrderedProperty()
+        property2 = OrderedProperty()
+        self.assertNotEqual(property1._creation_counter, property2._creation_counter)  # pylint: disable=protected-access
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,11 +2,7 @@
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
 from itertools import count
 
-try:
-    next_counter = count().__next__
-except AttributeError:
-    next_counter = count().next
-
+next_counter = count().__next__
 
 class OrderedProperty:
 

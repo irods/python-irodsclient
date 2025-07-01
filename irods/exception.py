@@ -6,6 +6,7 @@ import errno
 import numbers
 import os
 import sys
+from typing import Dict
 
 
 class PycommandsException(Exception):
@@ -87,7 +88,7 @@ class NotImplementedInIRODSServer(PycommandsException):
 
 
 class iRODSExceptionMeta(type):
-    codes = {}
+    codes: "Dict[int, iRODSException]" = {}
     positive_code_error_message = (
         "For {name}, a positive code of {attrs[code]} was declared."
     )
