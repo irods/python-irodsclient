@@ -133,7 +133,8 @@ class TestMeta(unittest.TestCase):
         helpers.remove_unused_metadata(self.sess)
         self.sess.cleanup()
 
-    from irods.test.helpers import create_simple_resc, create_simple_resc_hierarchy
+    create_simple_resc_hierarchy = helpers.create_simple_resc_hierarchy
+    create_simple_resc = helpers.create_simple_resc
 
     def test_replica_truncate_json_error__issue_606(self):
         path = self.coll_path + "/atomic_meta_issue_606"

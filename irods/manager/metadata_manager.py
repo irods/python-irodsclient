@@ -1,6 +1,7 @@
 import logging
 import copy
 from os.path import dirname, basename
+from typing import Any, Dict
 
 from irods.manager import Manager
 from irods.message import MetadataRequest, iRODSMessage, JSON_Message
@@ -32,7 +33,7 @@ class MetadataManager(Manager):
     def use_timestamps(self):
         return getattr(self, "_use_ts", False)
 
-    __kw = {}  # default (empty) keywords
+    __kw : Dict[str, Any] = {}  # default (empty) keywords
 
     def _updated_keywords(self, opts):
         kw_ = self.__kw.copy()

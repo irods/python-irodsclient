@@ -12,6 +12,7 @@ import time
 import json
 import unittest
 import socket
+from typing import Any, Dict
 import irods.test.helpers as helpers
 from irods.connection import DESTRUCTOR_MSG
 
@@ -28,7 +29,7 @@ class TestPool(unittest.TestCase):
 
     config_extension = ".json"
     test_extension = ""
-    preferred_parameters = {}
+    preferred_parameters : Dict[str, Any] = {}
 
     @classmethod
     def setUpClass(
