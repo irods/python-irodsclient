@@ -57,6 +57,16 @@ class ConnectionsProperties(iRODSConfiguration, metaclass=iRODSConfigAliasMetacl
 
         return set_default_XML_by_name(str_value)
 
+    @property
+    def irods_query_limit(self):
+        import irods.query
+        return irods.query.IRODS_QUERY_LIMIT
+
+    @irods_query_limit.setter
+    def irods_query_limit(self, int_value):
+        import irods.query
+        irods.query.IRODS_QUERY_LIMIT = int(int_value)
+
 
 connections = ConnectionsProperties()
 
