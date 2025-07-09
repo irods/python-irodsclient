@@ -743,6 +743,8 @@ class TestQuery(unittest.TestCase):
             helpers.remove_unused_metadata(self.sess)
 
     def test_multiple_criteria_on_one_column_name(self):
+        # Remove the column skips when irods/irods #8574 is resolved.
+        skipped_columns = {DataObject.map_id, Collection.map_id, DataObject.status, DataObject.type, DataObject.collection_id}
         collection = self.coll_path
         filename = "test_multiple_AVU_joins"
         file_path = "{collection}/{filename}".format(**locals())
@@ -754,7 +756,7 @@ class TestQuery(unittest.TestCase):
             obj2 = helpers.make_object(self.sess, file_path + "-dummy{}".format(x))
             objects.extend([obj1, obj2])
         self.assertTrue(nobj > 0 and len(objects) == nobj)
-        q = self.sess.query(Collection, DataObject)
+        q = self.sess.query(Collection, DataObject, *{-col for col in skipped_columns})
         dummy_test = [
             d
             for d in q
@@ -1018,6 +1020,33 @@ class TestQuery(unittest.TestCase):
             DataObject.collection_id == self.coll.id,
         )
         self.assertEqual(3, len(list(query)))
+
+    def test_negating_columns_in_genquery1_results__issue_755(self):
+        columns_to_negate = {Collection.map_id, DataObject.map_id, DataObject.status, DataObject.type, DataObject.collection_id}
+        columns_to_negate_D = columns_to_negate & set(DataObject._columns)
+        columns_to_negate_C = columns_to_negate & set(Collection._columns)
+        cases = { (Collection, DataObject): columns_to_negate,
+                  (Collection,): columns_to_negate_C,
+                  (DataObject,): columns_to_negate_D, }
+
+        for requested,intersect in cases.items():
+            q = self.sess.query(*requested, *{-col for col in columns_to_negate}).limit(1)
+            row = list(q.all())[0]
+
+            # assert that columns_to_negate members don't appear in result
+            self.assertFalse(columns_to_negate & row.keys())
+
+            # Remove the if/continue when irods/irods #8574 is resolved.
+            if self.sess.server_version > (5,0,0) and len(requested) > 1:
+                continue
+
+            # Re-assert the positive space: that the sets of negated columns are in fact both
+            # (1) nonzero length, and
+            # (2) present in the results when not explicitly negated.
+            self.assertTrue(intersect)
+            q = self.sess.query(*requested).limit(1)
+            row = list(q.all())[0]
+            self.assertEqual(columns_to_negate & row.keys(), intersect)
 
 
 class TestSpecificQuery(unittest.TestCase):

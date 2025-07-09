@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 from calendar import timegm
 
+class Column_remover:
+    def __init__(self, column):
+        self.column = column
 
 class QueryKey:
 
@@ -88,6 +91,9 @@ class Column(QueryKey):
         self.min_version = min_version
         super(Column, self).__init__(column_type)
 
+    def __neg__(self):
+        return Column_remover(self)
+
     def __repr__(self):
         return "<{}.{} {} {}>".format(
             self.__class__.__module__,
@@ -96,9 +102,17 @@ class Column(QueryKey):
             self.icat_key,
         )
 
-    def __hash__(self):
-        return hash((self.column_type, self.icat_key, self.icat_id))
+    @property
+    def id_tuple(self):
+        return self.column_type, self.icat_key, self.icat_id
 
+    def __hash__(self):
+        return hash(self.id_tuple)
+
+    def __eq__(self, other):
+        if isinstance(other, Column):
+            return self.id_tuple == other.id_tuple
+        return super().__eq__(other)
 
 class Keyword(QueryKey):
 
