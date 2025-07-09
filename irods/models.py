@@ -1,6 +1,5 @@
 from irods.column import Column, Integer, String, DateTime, Keyword
 
-
 class ModelBase(type):
     column_items = []
     column_dict = {}

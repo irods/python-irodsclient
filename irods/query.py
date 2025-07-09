@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from irods import MAX_SQL_ROWS
 from irods.models import Model
-from irods.column import Column, Keyword
+from irods.column import Column, Column_remover, Keyword
 from irods.message import (
     IntegerIntegerMap,
     IntegerStringMap,
@@ -54,6 +54,8 @@ class Query:
                         self.columns[col] = 1
             elif isinstance(arg, Column):
                 self.columns[arg] = 1
+            elif isinstance(arg, Column_remover):
+                self.columns.pop(arg.column, None)
             else:
                 raise TypeError("Arguments must be models or columns")
 
