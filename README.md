@@ -1179,6 +1179,12 @@ Also, core.py rules may only be run directly by a rodsadmin, currently.
 General Queries
 ---------------
 
+A session object's `query` method accepts a list of columns and models to be included in any returned rows.
+
+Below, as an example, the DataObject and Collection tables are joined for the purposes of executing an
+iRODS general query (or "GenQuery") for data objects, with the results containing all available columns from 
+the Collection model and a limited set of DataObject columns.
+
 ```python
 >>> import os
 >>> from irods.session import iRODSSession
@@ -1186,7 +1192,7 @@ General Queries
 >>>
 >>> env_file = os.path.expanduser('~/.irods/irods_environment.json')
 >>> with iRODSSession(irods_env_file=env_file) as session:
-...     query = session.query(Collection.name, DataObject.id, DataObject.name, DataObject.size)
+...     query = session.query(Collection, DataObject.id, DataObject.name, DataObject.size)
 ...
 ...     for result in query:
 ...             print('{}/{} id={} size={}'.format(result[Collection.name], result[DataObject.name], result[DataObject.id], result[DataObject.size]))
@@ -1205,6 +1211,12 @@ General Queries
 /tempZone/home/rods/manager/resource_manager.pyc id=212661 size=4570
 /tempZone/home/rods/manager/user_manager.py id=212669 size=5509
 /tempZone/home/rods/manager/user_manager.pyc id=212658 size=5233
+```
+
+Columns can be excluded from the results by negating them.  Order is significant:
+
+```python
+>>> query = session.query(Collection, DataObject, -DataObject.map_id, -DataObject.status, -Collection.map_id)
 ```
 
 Query using other models:
