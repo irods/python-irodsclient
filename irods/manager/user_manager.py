@@ -99,15 +99,24 @@ class UserManager(Manager):
         logger.debug(response.int_info)
         return self.get(user_name, user_zone)
 
-    def create(self, user_name, user_type, user_zone="", auth_str="", group_admin_flag = None):
+    def create(
+        self, user_name, user_type, user_zone="", auth_str="", group_admin_flag=None
+    ):
         cls, api_str = self._api_info(group_admin_flag)
         if cls is UserAdminRequest and user_type not in ("", "rodsuser"):
             warnings.warn(
                 "New user will be restricted to type 'rodsuser', the maximum privilege that can be granted by a group admin.",
                 DeprecationWarning,
                 stacklevel=2,
+            )
+        cmd = (
+            (
+                "add",
+                "user",
+            )
+            if cls is GeneralAdminRequest
+            else ("mkuser",)
         )
-        cmd=(('add','user',) if cls is GeneralAdminRequest else ('mkuser',))
         message_body = cls(
             *cmd,
             (
