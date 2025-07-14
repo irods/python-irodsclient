@@ -21,6 +21,7 @@ import irods.exception as ex
 import contextlib
 import socket
 from re import compile as regex
+from typing import Dict, Optional
 import gc
 from irods.test.setupssl import create_ssl_dir
 
@@ -34,10 +35,7 @@ TEST_IRODS_PW = "apass"
 TEST_RODS_USER = "alissa"
 
 
-try:
-    from re import _pattern_type as regex_type
-except ImportError:
-    from re import Pattern as regex_type  # Python 3.7+
+from re import Pattern as regex_type  # Python 3.7+
 
 
 def json_file_update(fname, keys_to_delete=(), **kw):
@@ -180,7 +178,7 @@ class TestLogins(unittest.TestCase):
         },
     }
 
-    env_save = {}
+    env_save: Dict[str,Optional[str]] = {}
 
     @contextlib.contextmanager
     def setenv(self, var, newvalue):

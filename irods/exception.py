@@ -6,6 +6,7 @@ import errno
 import numbers
 import os
 import sys
+from typing import Any, Dict
 
 
 class PycommandsException(Exception):
@@ -87,7 +88,8 @@ class NotImplementedInIRODSServer(PycommandsException):
 
 
 class iRODSExceptionMeta(type):
-    codes = {}
+    # Use "Any" type for values because Codacity fails when using a more specific type.
+    codes: Dict[int, Any] = {}
     positive_code_error_message = (
         "For {name}, a positive code of {attrs[code]} was declared."
     )

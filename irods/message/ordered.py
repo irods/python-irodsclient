@@ -2,16 +2,10 @@
 # http://askawizard.blogspot.com/2008/10/ordered-properties-python-saga-part-5.html
 from itertools import count
 
-try:
-    next_counter = count().__next__
-except AttributeError:
-    next_counter = count().next
-
-
 class OrderedProperty:
 
     def __init__(self, *args, **kws):
-        self._creation_counter = next_counter()
+        self._creation_counter = count().__next__()
         super(OrderedProperty, self).__init__(*args, **kws)
 
 
@@ -19,7 +13,7 @@ class OrderedMetaclass(type):
 
     def __init__(self, name, bases, attys):
         super(OrderedMetaclass, self).__init__(name, bases, attys)
-        self._creation_counter = next_counter()
+        self._creation_counter = count().__next__()
         self._ordered_properties = sorted(
             (
                 (name, value)

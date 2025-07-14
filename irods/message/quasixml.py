@@ -176,14 +176,8 @@ def fromtokens(tokens):
     return elem
 
 
-try:
-    unicode  # Python 2
-except NameError:
-    unicode = str
-
-
 def fromstring(s):
-    if type(s) is unicode:
+    if type(s) is str:
         s = s.encode("utf-8")
     if type(s) is not bytes:
         raise TypeError("expected a bytes-object, got {}".format(type(s).__name__))

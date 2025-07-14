@@ -1,9 +1,10 @@
+from typing import Dict, List, Tuple
 from irods.column import Column, Integer, String, DateTime, Keyword
 
 
 class ModelBase(type):
-    column_items = []
-    column_dict = {}
+    column_items : List[Tuple[int, Column]] = []
+    column_dict : Dict[int, Column] = {}
 
     @classmethod
     def columns(cls):

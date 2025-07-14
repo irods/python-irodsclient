@@ -5,6 +5,7 @@ import logging
 import socket
 import json
 import irods.exception as ex
+from typing import Optional
 import xml.etree.ElementTree as ET_xml
 import defusedxml.ElementTree as ET_secure_xml
 from . import quasixml as ET_quasi_xml
@@ -85,15 +86,15 @@ if (
 
 _XML_strings = {k: v for k, v in vars(XML_Parser_Type).items() if k.endswith("_XML")}
 
-_default_XML = os.environ.get(
+_default_XML_env = os.environ.get(
     "PYTHON_IRODSCLIENT_DEFAULT_XML", globals().get("_default_XML")
 )
 
-if not _default_XML:
+if not _default_XML_env:
     _default_XML = XML_Parser_Type.STANDARD_XML
 else:
     try:
-        _default_XML = _XML_strings[_default_XML]
+        _default_XML = _XML_strings[_default_XML_env]
     except KeyError:
         raise BadXMLSpec("XML parser type not recognized")
 
@@ -866,7 +867,7 @@ class VersionResponse(Message):
 
 class _admin_request_base(Message):
 
-    _name = None
+    _name : Optional[str] = None
 
     def __init__(self, *args):
         if self.__class__._name is None:
@@ -1153,7 +1154,7 @@ class ModDataObjMeta(Message):
 #  -- A tuple-descended class which facilitates filling in a
 #     quasi-RError stack from a JSON formatted list.
 
-_Server_Status_Message = namedtuple("server_status_msg", ("msg", "status"))
+_Server_Status_Message = namedtuple("_Server_Status_Message", ("msg", "status"))
 
 
 class RErrorStack(list):

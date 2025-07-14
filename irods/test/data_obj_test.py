@@ -23,11 +23,12 @@ import threading
 import time
 import unittest
 import xml.etree.ElementTree
+import irods.test.helpers as helpers
 
 try:
     import tqdm
 except ImportError:
-    tqdm = None
+    tqdm = None  # type: ignore
 
 try:
     import progressbar
@@ -109,7 +110,7 @@ def make_ufs_resc_in_tmpdir(
 
 class TestDataObjOps(unittest.TestCase):
 
-    from irods.test.helpers import create_simple_resc
+    create_simple_resc = helpers.create_simple_resc
 
     def setUp(self):
         # Create test collection

@@ -42,6 +42,10 @@ setup(
         "PrettyTable>=0.7.2",
         "defusedxml",
     ],
-    extras_require={"tests": ["unittest-xml-reporting"]},  # for xmlrunner
+    extras_require={"tests": ["unittest-xml-reporting",  # for xmlrunner
+                              "types-defusedxml",        # for type checking
+                              "progressbar",             # for type checking
+                              "types-tqdm"]              # for type checking
+                   },
     scripts=["irods/prc_write_irodsA.py"],
 )
