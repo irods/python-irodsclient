@@ -28,6 +28,23 @@ logger = logging.getLogger(__name__)
 
 class UserManager(Manager):
 
+    def _api_info(self, group_admin_flag):
+        """
+        If group_admin_flag is:         then use UserAdminRequest API:
+        ---------------------------     ------------------------------
+        True                            always
+        False (user_groups default)     never
+        None  (groups default)          when user type is groupadmin
+        """
+
+        sess = self.sess
+        if group_admin_flag or (
+            group_admin_flag is not False
+            and sess.users.get(sess.username).type == "groupadmin"
+        ):
+            return (UserAdminRequest, "USER_ADMIN_AN")
+        return (GeneralAdminRequest, "GENERAL_ADMIN_AN")
+
     def _get_session(self):
         return self.sess
 
@@ -82,10 +99,17 @@ class UserManager(Manager):
         logger.debug(response.int_info)
         return self.get(user_name, user_zone)
 
-    def create(self, user_name, user_type, user_zone="", auth_str=""):
-        message_body = GeneralAdminRequest(
-            "add",
-            "user",
+    def create(self, user_name, user_type, user_zone="", auth_str="", group_admin_flag = None):
+        cls, api_str = self._api_info(group_admin_flag)
+        if cls is UserAdminRequest and user_type not in ("", "rodsuser"):
+            warnings.warn(
+                "New user will be restricted to type 'rodsuser', the maximum privilege that can be granted by a group admin.",
+                DeprecationWarning,
+                stacklevel=2,
+        )
+        cmd=(('add','user',) if cls is GeneralAdminRequest else ('mkuser',))
+        message_body = cls(
+            *cmd,
             (
                 user_name
                 if not user_zone or user_zone == self.sess.zone
@@ -96,7 +120,7 @@ class UserManager(Manager):
             auth_str,
         )
         request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
+            "RODS_API_REQ", msg=message_body, int_info=api_number[api_str]
         )
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
@@ -269,23 +293,6 @@ class GroupManager(UserManager):
         except NoResultFound:
             raise GroupDoesNotExist()
         return iRODSGroup(self, result)
-
-    def _api_info(self, group_admin_flag):
-        """
-        If group_admin_flag is:         then use UserAdminRequest API:
-        ---------------------------     ------------------------------
-        True                            always
-        False (user_groups default)     never
-        None  (groups default)          when user type is groupadmin
-        """
-
-        sess = self.sess
-        if group_admin_flag or (
-            group_admin_flag is not False
-            and sess.users.get(sess.username).type == "groupadmin"
-        ):
-            return (UserAdminRequest, "USER_ADMIN_AN")
-        return (GeneralAdminRequest, "GENERAL_ADMIN_AN")
 
     def create(
         self,
