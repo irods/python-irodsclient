@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 from calendar import timegm
 
+class Column_remover:
+    def __init__(self, column):
+        self.column = column
 
 class QueryKey:
 
@@ -88,6 +91,9 @@ class Column(QueryKey):
         self.min_version = min_version
         super(Column, self).__init__(column_type)
 
+    def __neg__(self):
+        return Column_remover(self)
+    
     def __repr__(self):
         return "<{}.{} {} {}>".format(
             self.__class__.__module__,
