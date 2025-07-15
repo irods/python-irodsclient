@@ -7,7 +7,7 @@ import irods.password_obfuscation as obf
 import irods.session
 
 
-__all__ = ["pam_password", "native"]
+__all__ = ["pam_interactive", "pam_password", "native"]
 
 
 AUTH_PLUGIN_PACKAGE = "irods.auth"
