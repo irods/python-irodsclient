@@ -19,6 +19,7 @@ from irods.exception import (
     CAT_SQL_ERR,
 )
 from irods.api_number import api_number
+from irods.exception import UserCreationError
 from irods.user import iRODSUser, iRODSGroup, Bad_password_change_parameter
 import irods.password_obfuscation as obf
 from .. import MAX_PASSWORD_LENGTH
@@ -28,22 +29,32 @@ logger = logging.getLogger(__name__)
 
 class UserManager(Manager):
 
-    def _api_info(self, group_admin_flag):
-        """
+    def _api_info(self, group_admin_flag, return_zone=False):
+        """The 'group_admin_flag' parameter together with the invoking user type decides whether to use UserAdminRequest
+        or GeneralAdminRequest.
+
         If group_admin_flag is:         then use UserAdminRequest API:
         ---------------------------     ------------------------------
         True                            always
         False (user_groups default)     never
         None  (groups default)          when user type is groupadmin
+
+        Normally the value returned from this function is a tuple of 2 values:
+            the admin request class,
+            the accompanying api string to be used in the call.
+
+        if 'return_zone' if True, the zone of the requesting user will be appended to that return value.
         """
 
         sess = self.sess
+        admin = sess.users.get(sess.username)
+        zone_result = () if not return_zone else (admin.zone,)
         if group_admin_flag or (
             group_admin_flag is not False
-            and sess.users.get(sess.username).type == "groupadmin"
+            and admin.type == "groupadmin"
         ):
-            return (UserAdminRequest, "USER_ADMIN_AN")
-        return (GeneralAdminRequest, "GENERAL_ADMIN_AN")
+            return (UserAdminRequest, "USER_ADMIN_AN") + zone_result
+        return (GeneralAdminRequest, "GENERAL_ADMIN_AN") + zone_result
 
     def _get_session(self):
         return self.sess
@@ -102,32 +113,45 @@ class UserManager(Manager):
     def create(
         self, user_name, user_type, user_zone="", auth_str="", group_admin_flag=None
     ):
-        cls, api_str = self._api_info(group_admin_flag)
-        if cls is UserAdminRequest and user_type not in ("", "rodsuser"):
-            warnings.warn(
-                "New user will be restricted to type 'rodsuser', the maximum privilege that can be granted by a group admin.",
-                DeprecationWarning,
-                stacklevel=2,
+
+        cls, api_str, admin_zone = self._api_info(group_admin_flag, return_zone = True)
+        encoded_auth_str = lambda: (
+            ""
+            if not auth_str
+            else obf.obfuscate_new_password_with_key(
+                auth_str, self.sess.pool.account.password
             )
-        cmd = (
-            (
-                "add",
-                "user",
+        )
+        if cls is UserAdminRequest:
+            if user_type not in ("", "rodsuser"):
+                logger.warning(
+                    "groupadmin '%s' attempted to create user '%s#%s'",
+                    self.sess.username, user_name, user_zone
+                )
+            allowed_zone_parameters = ("", admin_zone)
+            if user_zone not in allowed_zone_parameters:
+                raise UserCreationError(
+                    f"groupadmin '{self.sess.username}' cannot create users in remote zone. "
+                    f"Must restrict {user_zone=} to {allowed_zone_parameters}"
+                )
+            message_body = UserAdminRequest(
+                "mkuser",
+                user_name,
+                encoded_auth_str(),
             )
-            if cls is GeneralAdminRequest
-            else ("mkuser",)
-        )
-        message_body = cls(
-            *cmd,
-            (
-                user_name
-                if not user_zone or user_zone == self.sess.zone
-                else f"{user_name}#{user_zone}"
-            ),
-            user_type,
-            user_zone,
-            auth_str,
-        )
+        else:
+            message_body = GeneralAdminRequest(
+                "add", "user",
+                (
+                    user_name
+                    if not user_zone or user_zone == self.sess.zone
+                    else f"{user_name}#{user_zone}"
+                ),
+                user_type,
+                user_zone,
+                encoded_auth_str(),
+            )
+
         request = iRODSMessage(
             "RODS_API_REQ", msg=message_body, int_info=api_number[api_str]
         )

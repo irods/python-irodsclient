@@ -16,6 +16,10 @@ class NetworkException(PycommandsException):
     pass
 
 
+class UserCreationError(PycommandsException):
+    pass
+
+
 class DoesNotExist(PycommandsException):
     pass
 
