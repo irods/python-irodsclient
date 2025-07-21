@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import weakref
-from irods.models import DataObject, DataObject_for_session, Collection
+from irods.models import DataObject, Collection
 from irods.manager import Manager
 from irods.manager._internal import _api_impl, _logical_path
 from irods.message import (
@@ -285,11 +285,10 @@ class DataObjectManager(Manager):
                 **options
             )
 
-        _DataObject = DataObject_for_session(self.sess)
         query = (
-            self.sess.query(_DataObject)
-            .filter(_DataObject.name == irods_basename(path))
-            .filter(_DataObject.collection_id == parent.id)
+            self.sess.query(DataObject)
+            .filter(DataObject.name == irods_basename(path))
+            .filter(DataObject.collection_id == parent.id)
             .add_keyword(kw.ZONE_KW, path.split("/")[1])
         )
 

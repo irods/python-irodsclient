@@ -1,7 +1,7 @@
 import itertools
 import operator
 
-from irods.models import Collection, DataObject, DataObject_for_session
+from irods.models import Collection, DataObject
 from irods.data_object import iRODSDataObject, irods_basename
 from irods.meta import iRODSMetaCollection
 
@@ -63,10 +63,9 @@ class iRODSCollection:
 
     @property
     def data_objects(self):
-        _DataObject = DataObject_for_session(self.manager.sess)
-        query = self.manager.sess.query(_DataObject).filter(Collection.name == self.path)
+        query = self.manager.sess.query(DataObject).filter(Collection.name == self.path)
         results = query.get_results()
-        grouped = itertools.groupby(results, operator.itemgetter(_DataObject.id))
+        grouped = itertools.groupby(results, operator.itemgetter(DataObject.id))
         return [
             iRODSDataObject(self.manager.sess.data_objects, self, list(replicas))
             for _, replicas in grouped

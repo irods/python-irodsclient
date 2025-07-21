@@ -4,7 +4,7 @@ import logging
 import os
 import ast
 
-from irods.models import DataObject, DataObject_for_session
+from irods.models import DataObject
 from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
 from irods.api_number import api_number
@@ -48,10 +48,9 @@ class iRODSDataObject:
 
     def __init__(self, manager, parent=None, results=None):
         self.manager = manager
-        _DataObject = DataObject_for_session(manager.sess)
         if parent and results:
             self.collection = parent
-            for attr, value in _DataObject.__dict__.items():
+            for attr, value in DataObject.__dict__.items():
                 if not attr.startswith("_"):
                     try:
                         setattr(self, attr, results[0][value])
@@ -59,31 +58,31 @@ class iRODSDataObject:
                         # backward compatibility with older schema versions
                         pass
             self.path = self.collection.path + "/" + self.name
-            replicas = sorted(results, key=lambda r: r[_DataObject.replica_number])
+            replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
 
             # The status quo before iRODS 5
 
             replica_args = [(
-                (r[_DataObject.replica_number],
-                r[_DataObject.replica_status],
-                r[_DataObject.resource_name],
-                r[_DataObject.path],
-                r[_DataObject.resc_hier],
+                (r[DataObject.replica_number],
+                r[DataObject.replica_status],
+                r[DataObject.resource_name],
+                r[DataObject.path],
+                r[DataObject.resc_hier],
                        )
                 ,dict(
-                    checksum=r[_DataObject.checksum],
-                    size=r[_DataObject.size],
-                    comments=r[_DataObject.comments],
-                    create_time=r[_DataObject.create_time],
-                    modify_time=r[_DataObject.modify_time],
+                    checksum=r[DataObject.checksum],
+                    size=r[DataObject.size],
+                    comments=r[DataObject.comments],
+                    create_time=r[DataObject.create_time],
+                    modify_time=r[DataObject.modify_time],
                 )
-            )for r in replicas]
+            ) for r in replicas]
 
             # Adjust for adding access_time in the iRODS 5 case.
 
             if self.manager.sess.server_version >= (5,):
                 for n,r in enumerate(replicas):
-                    replica_args[n][1]['access_time'] = r[DataObject.for_iRODS_5.access_time]
+                    replica_args[n][1]['access_time'] = r[DataObject.access_time]
             self.replicas = [iRODSReplica(*a,**k) for a,k in replica_args]
 
         self._meta = None

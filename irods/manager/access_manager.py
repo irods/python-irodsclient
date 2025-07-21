@@ -7,7 +7,6 @@ from irods.data_object import iRODSDataObject, irods_dirname, irods_basename
 from irods.collection import iRODSCollection
 from irods.models import (
     DataObject,
-    DataObject_for_session,
     Collection,
     User,
     CollectionUser,
@@ -97,11 +96,10 @@ class AccessManager(Manager):
         )
 
     def data_access_query(self, path):
-        _DataObject = DataObject_for_session(self.sess)
         cn = irods_dirname(path)
         dn = irods_basename(path)
-        return self.sess.query(_DataObject, DataAccess).filter(
-            Collection.name == cn, _DataObject.name == dn
+        return self.sess.query(DataObject, DataAccess).filter(
+            Collection.name == cn, DataObject.name == dn
         )
 
     def __get_raw(self, target, **kw):
