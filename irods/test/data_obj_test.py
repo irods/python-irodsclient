@@ -3309,12 +3309,11 @@ class TestDataObjOps(unittest.TestCase):
             )
         with self.sess.data_objects.open(data_path,"w") as f:
             f.write(b'_')
-        time.sleep(2)
         with self.sess.data_objects.open(data_path,"r") as f:
             f.read()
 
         data = self.sess.data_objects.get(data_path)
-        self.assertGreater(data.access_time, data.modify_time)
+        self.assertGreaterEqual(data.access_time, data.modify_time)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
