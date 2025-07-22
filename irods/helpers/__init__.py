@@ -1,4 +1,5 @@
 import contextlib
+import os
 import sys
 from irods import env_filename_from_keyword_args
 import irods.exception as ex
