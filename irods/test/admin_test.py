@@ -1,10 +1,15 @@
 #! /usr/bin/env python
 
+import datetime
 import os
 import sys
 import unittest
-from irods.models import User
-from irods.exception import UserDoesNotExist, ResourceDoesNotExist, SYS_NO_API_PRIV
+from irods.models import User, Group
+from irods.exception import (
+    UserDoesNotExist,
+    ResourceDoesNotExist,
+    SYS_NO_API_PRIV,
+)
 from irods.session import iRODSSession
 from irods.resource import iRODSResource
 import irods.test.helpers as helpers
@@ -67,6 +72,96 @@ class TestAdmin(unittest.TestCase):
         # user should be gone
         with self.assertRaises(UserDoesNotExist):
             self.sess.users.get(self.new_user_name, self.sess.zone)
+
+    def test_create_with_user_options__issue_759(self):
+        gpadmin_user = remote_zone = None
+        try:
+            gpadmin_user = self.sess.users.create(self.new_user_name, "groupadmin")
+            gpadmin_user.modify("password", gpadmin_password:='my-gpadmin-passw')
+            remote_zone = self.sess.zones.create('other_zone', 'remote')
+            with iRODSSession(
+                port=self.sess.port,
+                zone=self.sess.zone,
+                host=self.sess.host,
+                user=self.new_user_name,
+                password=gpadmin_password,
+            ) as gpadmin:
+                for expected_exception,args,kwargs in (
+                    (None, ("newUser","newPassword"), {}), # no zone supplied
+                    (None, ("newUser","newPassword"), {"user_zone":gpadmin.zone}), # local zone supplied
+                    (ValueError, ("newUser","newPassword"), {"user_zone":remote_zone.name}), # remote zone supplied
+                    (ValueError, ("newUser","newPassword"), {"user_zone":"fictionZone"}), # nonexistent zone supplied
+                    (ValueError, ("newUser#tempZone","newPassword"), {}),
+                    (ValueError, (f"newUser#{remote_zone.name}","newPassword"), {}),
+                    (ValueError, ("newUser#fictionZone","newPassword"), {}),
+                    (ValueError, (f"newUser#{gpadmin.zone}","newPassword"), {"user_zone":gpadmin.zone}),
+                    (ValueError, (f"newUser#{gpadmin.zone}","newPassword"), {"user_zone":remote_zone.name}),
+                    (ValueError, (f"newUser#{gpadmin.zone}","newPassword"), {"user_zone":"fictionZone"}),
+                ):
+                    with self.subTest(args = args, kwargs = kwargs):
+                        user = None
+                        try:
+                            test_function = lambda:gpadmin.users.create_with_password(*args, **kwargs)
+                            if expected_exception:
+                                with self.assertRaises(expected_exception):
+                                    user = test_function()
+                            else:
+                                user = test_function()
+                            self.assertEqual(user is None, expected_exception is not None, "In case of error, and only then, user should not exist.")
+                        finally:
+                            if user:
+                                self.sess.users.get(user.name,user.zone).remove()
+        finally:
+            if remote_zone:
+                remote_zone.remove()
+            if gpadmin_user:
+                gpadmin_user.remove()
+
+    def test_groupadmin_can_create_entry_for_remote_user_and_add_to_group__issue_759(self):
+        gpadmin_user = remote_zone = test_group = test_user = None
+        gpadmin_user = self.sess.users.create(self.new_user_name, "groupadmin")
+        gpadmin_user.modify("password", gpadmin_password:='my-gpadmin-passw')
+        try:
+            remote_zone = self.sess.zones.create('other_zone', 'remote')
+            with iRODSSession(
+                port=self.sess.port,
+                zone=self.sess.zone,
+                host=self.sess.host,
+                user=self.new_user_name,
+                password=gpadmin_password,
+            ) as gpadmin:
+                # Create a group as group admin and add own name to it to get group modification privileges.
+                test_group = gpadmin.groups.create('test_group')
+                test_group.addmember(gpadmin_user.name)
+
+                # TODO(#763): remove randomization of user name
+                random = helpers.unique_name(helpers.my_function_name(), datetime.datetime.now())
+                # Create a test user, effectively a local entry for a user in a remote-zone.
+                test_user = gpadmin.users.create_remote(f'remote_user_{random}', user_zone=remote_zone.name)
+
+                # Add the remote test user to the group we created, then assert membership.
+                test_group.addmember(test_user.name, user_zone = remote_zone.name)
+                self.assertIn(
+                    (test_user.name, test_user.zone),
+                    [(_[User.name],_[User.zone]) for _ in self.sess.query(User,Group).filter(Group.name == test_group.name)]
+                )
+        finally:
+            if test_group:
+                # Iterate through members from group (with groupadmin as the last), removing each one.
+                for member in sorted(test_group.members, key=lambda _:_.name == gpadmin_user.name):
+                    test_group.removemember(member.name, user_zone=member.zone)
+                # Use rodadmin-enabled session to remove the group
+                self.sess.groups.get(test_group.name).remove()
+
+            # Clean up other objects created for test.
+            if test_user:
+                self.sess.users.get(test_user.name, user_zone=test_user.zone).remove()
+
+            if gpadmin_user:
+                gpadmin_user.remove()
+
+            if remote_zone:
+                remote_zone.remove()
 
     def test_groupadmin_creates_group_and_unable_to_delete_group__374(self):
         # Have user with groupadmin

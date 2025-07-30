@@ -1748,7 +1748,16 @@ A groupadmin may also create accounts for new users and
 enable their logins by initializing a native password for them:
 
 ```python
->>> session.users.create_with_password('alice', 'change_me')
+>>> session.users.create_with_password('alice', password='change_me')
+```
+
+However, note that passwords may only be created for local users.
+
+When an entry for some remote user must be made into the local zone's catalog, a
+groupadmin may do the following:
+
+```
+>>> session.users.create_remote('alice', user_zone='other_zone')
 ```
 
 iRODS Permissions (ACLs)
