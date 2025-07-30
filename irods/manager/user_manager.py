@@ -57,14 +57,28 @@ class UserManager(Manager):
             raise UserDoesNotExist()
         return iRODSUser(self, result)
 
-    def create_with_password(self, user_name, password, user_zone=""):
+    def create_remote(self, user_name:str, user_zone:str):
+        """
+        Create an entry in the local catalog for a remote user.  The user_type will be 'rodsuser'.
+        """
+        if user_zone in (self.sess.zone,""):
+            raise ValueError(f"Parameter [{user_zone = }] must be a remote zone.")
+        return self.create_with_password(user_name, password='', user_zone=user_zone)
+
+    def create_with_password(self, user_name:str, password:str, user_zone:str=""):
         """This method can be used by a groupadmin to initialize the password field while creating the new user.
         (This is necessary since group administrators may not change the password of an existing user.)
         """
 
+        if '#' in user_name:
+            raise ValueError("A zone name must be specified in the user_zone parameter, not within the user_name.")
+
+        if password and (user_zone not in ("", self.sess.zone)):
+            raise ValueError("A password cannot be specified for remote zone users.")
+
         message_body = UserAdminRequest(
             "mkuser",
-            user_name,
+            user_name + ("" if not user_zone else f"#{user_zone}"),
             (
                 ""
                 if not password

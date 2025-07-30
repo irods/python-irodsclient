@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from datetime import datetime as _datetime
 import os
 import sys
 import unittest
@@ -55,6 +56,26 @@ class TestRemoteZone(unittest.TestCase):
                 session.acls.set(perm, admin=True)
                 p.remove(force=True)
 
+    def test_create_common_username_remote_then_local__issue_764(self):
+        zone = None
+        users= []
+        test_zone = "remote_zone"
+        # TODO(#763): remove user name randomization.
+        test_user = "user_issue_764_" + helpers.unique_name(helpers.my_function_name(), _datetime.now())
+        try:
+            zone = self.sess.zones.create(test_zone, "remote")
+            users.append(
+                self.sess.users.create(test_user, "rodsuser", user_zone=test_zone)
+            )
+            users.append(
+                self.sess.users.create(test_user, "rodsuser", user_zone="")
+            )
+            self.assertEqual(2, len(list(self.sess.query(User).filter(User.name == test_user))))
+        finally:
+            for user in users:
+                user.remove()
+            if zone:
+                zone.remove()
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
