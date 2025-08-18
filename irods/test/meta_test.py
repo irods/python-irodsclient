@@ -796,6 +796,28 @@ class TestMeta(unittest.TestCase):
                 # in use, with the "odd" characters being present in the metadata value.
                 del obj.metadata[attr_str]
 
+    def test_cascading_changes_of_metadata_manager_options__issue_709(self):
+        d = None
+        try:
+            d = self.sess.data_objects.create(f'{self.coll.path}/issue_709_test_1')
+            m = d.metadata
+            self.assertEqual(m._manager._admin,False)
+
+            m2 = m(admin = True)
+            self.assertEqual(m2._manager._use_ts,False)
+            self.assertEqual(m2._manager._admin,True)
+
+            m3 = m2(timestamps = True)
+            self.assertEqual(m3._manager._use_ts, True)
+            self.assertEqual(m3._manager._admin, True)
+            self.assertEqual(m3._manager.get_api_keywords().get(kw.ADMIN_KW), "")
+
+            m4 = m3(admin = False)
+            self.assertEqual(m4._manager._use_ts, True)
+            self.assertEqual(m4._manager.get_api_keywords().get(kw.ADMIN_KW), None)
+        finally:
+            if d:
+                d.unlink(force=True)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
