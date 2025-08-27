@@ -11,6 +11,37 @@ and this project **only** adheres to the following _(as defined at [Semantic Ver
 > - MINOR version when you add functionality in a backward compatible manner
 > - PATCH version when you make backward compatible bug fixes
 
+## [v3.2.0] - 2025-08-27
+
+This release makes the library compatible with iRODS 5, adds support for the PAM Interactive authentication scheme, improves support for groupadmins, and adds new features for GenQuery1.
+
+With this release, users can override the global default number of rows to return for GenQuery1 queries. See [GenQuery1 Queries](https://github.com/irods/python-irodsclient/tree/v3.2.0#genquery1-queries) to learn more.
+
+The Consortium recommends that users enable `PYTHON_IRODSCLIENT_CONFIGURATION_LOAD_ERRORS_FATAL` to aid in detecting invalid configuration values on program startup. This option will be enabled by default in a future release. See [Python iRODS Client Settings File](https://github.com/irods/python-irodsclient/tree/v3.2.0#python-irods-client-settings-file) for more information.
+
+### Changed
+
+- Use `group` keyword to create groups in iRODS 4.3.4 and later (#742).
+- Bump iRODS compatibility to iRODS 5.0.1 (#743).
+
+### Removed
+
+- Remove deprecated user-group symbols (#440).
+
+### Fixed
+
+- Apply `user_zone` property appropriately when creating users as a groupadmin (#759).
+- Qualify username when retrieving user via `session.users.get('<username>')` (#764).
+
+### Added
+
+- Implement support for PAM Interactive authentication scheme (#653).
+- Add support for iRODS 5 access time (#700).
+- Allow developers to override the global default number of rows to return for GenQuery1 queries (#712).
+- Add mypy type checking (#744).
+- Allow the exclusion of GenQuery1 columns through negation (#755).
+- Add convenience function for creating remote users as a groupadmin (#759).
+
 ## [v3.1.1] - 2025-06-09
 
 This patch release resolves bugs related to connections, `ips` tracking, and dependencies.
