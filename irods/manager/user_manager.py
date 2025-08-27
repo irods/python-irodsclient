@@ -46,10 +46,10 @@ class UserManager(Manager):
         )
 
     def get(self, user_name, user_zone=""):
-        query = self.sess.query(User).filter(User.name == user_name)
+        if not user_zone:
+            user_zone = self.sess.zone
 
-        if len(user_zone) > 0:
-            query = query.filter(User.zone == user_zone)
+        query = self.sess.query(User).filter(User.name == user_name, User.zone == user_zone)
 
         try:
             result = query.one()
