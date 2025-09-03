@@ -8,7 +8,7 @@ DIR=$(dirname "$0")
 cd "$DIR"
 $PYTHON ./recv_oneshot -h irods-catalog-provider -p 8888 -t 360
 REPO="$(./print_repo_root_location)"
-$PYTHON -m pip install "$REPO[tests]"
+#$PYTHON -m pip install "$REPO[tests]"
 
 if [ -d /irods_shared ]; then
     groupadd -o -g $(stat -c%g /irods_shared) irods      # Appropriate the integer codes for irods group ...
@@ -18,6 +18,9 @@ if [ -d /irods_shared ]; then
     chmod 777 /irods_shared/reg_resc
     chmod g+ws /irods_shared/tmp
     useradd -G irods -m -s/bin/bash user
+    cp -rp /$REPO{,.copy}
+    REPO+=.copy
+    $PYTHON -m pip install "$REPO[tests]"
 fi
 
 su - user -c "\
