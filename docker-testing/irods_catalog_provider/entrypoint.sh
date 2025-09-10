@@ -56,5 +56,8 @@ echo "Starting server"
 } &
 
 cd /usr/sbin
-su irods -c 'bash -c "./irodsServer -u"'
+#irods 4
+#su irods -c 'bash -c "./irodsServer -u"'
+#irods 5
+su irods -c 'bash -c "./irodsServer -p /tmp/irods.pid"'
 
