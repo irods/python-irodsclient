@@ -4,7 +4,7 @@ IRODS_VERSION=$1
 PYTHON_VERSION=$2
 shift 2
 [ -n "$PYTHON_VERSION" -a -n "$IRODS_VERSION" ] || {
-  echo >&2 "usage: $0 irods_version python_version"; exit 1; 
+  echo >&2 "usage: $0 irods_version python_version"; exit 1;
 }
 IRODS_MAJOR=$(sed -e 's/\..*//' <<<"$IRODS_VERSION")
 
