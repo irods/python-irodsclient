@@ -1,13 +1,19 @@
 #!/bin/bash
-PYTHON_VERSION=$1
-shift
-[ -n "$PYTHON_VERSION" ] || { echo >&2 "requires python_version as argument"; exit 1; }
 set -e
+IRODS_VERSION=$1
+PYTHON_VERSION=$2
+shift 2
+[ -n "$PYTHON_VERSION" -a -n "$IRODS_VERSION" ] || {
+  echo >&2 "usage: $0 irods_version python_version"; exit 1; 
+}
+IRODS_MAJOR=$(sed -e 's/\..*//' <<<"$IRODS_VERSION")
+
 DIR=$(dirname "$0")
 cd "${DIR}"
-echo "python_version=${PYTHON_VERSION}" >.env
-echo "repo_external=$(./print_repo_root_location)" >>.env
-echo "parent_pid=$$" >>.env
 
-docker compose -f harness-docker-compose.yml build $*
-docker compose -f harness-docker-compose.yml up -d
+echo "\
+python_version=${PYTHON_VERSION}
+irods_version=${IRODS_VERSION}" >.env
+
+docker compose -f harness-docker-compose-irods-${IRODS_MAJOR}.yml build $*
+docker compose -f harness-docker-compose-irods-${IRODS_MAJOR}.yml up -d
