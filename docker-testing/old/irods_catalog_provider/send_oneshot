@@ -1,0 +1,6 @@
+#!/usr/bin/gawk -f
+BEGIN {
+  SERVER = "/inet/tcp/"ENVIRON["PORT"]"/0/0"
+  print ARGV[1] " - " strftime() |& SERVER
+  close(SERVER)
+}
