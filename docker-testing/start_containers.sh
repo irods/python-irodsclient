@@ -4,16 +4,22 @@ set -e
 # This script is launched on the docker host.
 
 usage() {
-  echo >&2 "usage: $0 [-b "<docker compose build args>"] irods_version python_version"; exit 1;
+  echo >&2 "usage: $0 [-n] [-b "<docker compose build args>"] irods_version python_version"; exit 1;
 }
 
 SHELL_DOCKER_COMPOSE_BUILD_ARGS=""
+DO_NOT_RUN=""
 
-if [ $1 = "-b" ]
-then
-    SHELL_DOCKER_COMPOSE_BUILD_ARGS=$2
-    shift 2
-fi
+while [[ $1 = -* ]]; do
+  if [ $1 = "-b" ]; then
+      SHELL_DOCKER_COMPOSE_BUILD_ARGS=$2
+      shift 2
+  fi
+  if [ $1 = "-n" ]; then
+      DO_NOT_RUN=1
+      shift
+  fi
+done
 
 if [ $# -eq 2 ]; then
     IRODS_VERSION=$1
@@ -44,5 +50,7 @@ irods_version=\"${IRODS_VERSION}\"
 irods_major=\"${IRODS_MAJOR}\"" >.env
 
 docker compose -f harness-docker-compose-irods-${IRODS_MAJOR}.yml build $SHELL_DOCKER_COMPOSE_BUILD_ARGS
-##dwm
-#docker compose -f harness-docker-compose-irods-${IRODS_MAJOR}.yml up -d
+
+if [ -z "$DO_NOT_RUN" ]; then
+    docker compose -f harness-docker-compose-irods-${IRODS_MAJOR}.yml up -d
+fi

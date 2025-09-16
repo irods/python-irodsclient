@@ -36,13 +36,15 @@ ARG irods_package_version_suffix=-0~focal
 ARG irods_package_version=${irods_version}${irods_package_version_suffix}
 ARG irods_resource_plugin_version=${irods_version}.0${irods_package_version_suffix}
 
+## TODO : examine.  the below command also installed:
+#irods-resource-plugin-s3=${irods_resource_plugin_version} 
+
 RUN apt-get update && \
     apt-get install -y \
         irods-database-plugin-postgres=${irods_package_version} \
         irods-runtime=${irods_package_version} \
         irods-server=${irods_package_version} \
         irods-icommands=${irods_package_version} \
-        irods-resource-plugin-s3=${irods_resource_plugin_version} \
     && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/*
