@@ -18,8 +18,9 @@ if [ -d /irods_shared ]; then
     chmod 777 /irods_shared/reg_resc
     chmod g+ws /irods_shared/tmp
     useradd -G irods -m -s/bin/bash user
-    cp -rp /$REPO{,.copy}
+    cp -r /"$REPO"{,.copy}
     REPO+=.copy
+    chmod u+w "$REPO"/irods/test/test-data
     $PYTHON -m pip install "$REPO[tests]"
 fi
 
