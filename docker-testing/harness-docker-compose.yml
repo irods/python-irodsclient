@@ -3,7 +3,7 @@ version: '3'
 services:
     irods-catalog:
         build:
-            context: irods_catalog-4
+            context: irods_catalog_${irods_major}
         # 5432 is exposed by default and can conflict with other postgres containers.
         # When the metalnx-db service is no longer needed, this stanza can be removed.
         ports:
@@ -15,18 +15,18 @@ services:
         build:
             context: python_client
             args:
-                - python_version
+                python_version: ${python_version}
         command:
             tail -f /dev/null
         volumes:
             - ${repo_external}:/repo_root:ro
-            - /tmp/irods-client-share.py-${python_version}-${parent_pid}:/irods_shared
+            - /tmp/irods-client-share.py-${python_version}:/irods_shared
 
     irods-catalog-provider:
         volumes:
-            - /tmp/irods-client-share.py-${python_version}-${parent_pid}:/irods_shared
+            - /tmp/irods-client-share.py-${python_version}:/irods_shared
         build:
-            context: irods_catalog_provider
+            context: irods_catalog_provider_${irods_major}
         shm_size: 500mb
 #       healthcheck:
 #           test: ["CMD", "su", "-", "irods", "-c", "ils || exit 1"]
