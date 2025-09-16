@@ -20,6 +20,7 @@ if [ -d /irods_shared ]; then
     useradd -G irods -m -s/bin/bash user
     cp -r /"$REPO"{,.copy}
     REPO+=.copy
+    chown -R user "$REPO"
     chmod u+w "$REPO"/irods/test/test-data
     $PYTHON -m pip install "$REPO[tests]"
 fi
