@@ -27,6 +27,8 @@ services:
             - /tmp/irods-client-share.py-${python_version}:/irods_shared
         build:
             context: irods_catalog_provider_${irods_major}
+            args:
+                irods_version: ${irods_version}
         shm_size: 500mb
 #       healthcheck:
 #           test: ["CMD", "su", "-", "irods", "-c", "ils || exit 1"]
