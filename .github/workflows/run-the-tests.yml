@@ -36,4 +36,4 @@ jobs:
 
       - name: Stop containers
         if: always()
-        run: ./stop_containers "${{ matrix.irods_server }}" "${{ matrix.python }}"
+        run: ./stop_containers.sh "${{ matrix.irods_server }}" "${{ matrix.python }}"
