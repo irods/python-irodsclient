@@ -6,8 +6,13 @@
 BASE=$(basename "$0")
 DIR=$(realpath "$(dirname "$0")")
 cd "$DIR"
-DOCKER=docker
-for dockerfile in [0-9]*.Dockerfile; do 
+: ${DOCKER:=docker}
+if [ $# -gt 0 ]; then
+    ARGS=("$@")
+else
+    ARGS=([0-9]*.Dockerfile)
+fi
+for dockerfile in "${ARGS[@]}"; do 
     image_name=${dockerfile#[0-9]*_}
     image_name=${image_name%.Dockerfile}
     if [ "$image_name" = "install-irods" ];then
