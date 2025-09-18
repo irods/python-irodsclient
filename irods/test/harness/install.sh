@@ -16,9 +16,24 @@ add_package_repo()
       sudo apt update
 }
 
-DIST_NAME=$(lsb_release -sc)
-
+DIST_NAME=$(grep '^VERSION_CODENAME=' /etc/os-release|sed 's/.*=//')
 : ${IRODS_VSN:=4.3.1-0~$DIST_NAME}
+
+# Expand a spec of the leading version tuple eg. 4.3.4 out  to the full name of
+# the most recent matching version of the package
+
+irods_package_vsn() {
+  apt list -a irods-server 2>/dev/null|awk '{print $2}'|grep '\w'|sort|\
+      grep "$(perl -e 'print quotemeta($ARGV[0])' "$IRODS_PACKAGE_VERSION")"|tail -1
+}
+
+# Report irods server version installed, or failing that, the requested version.
+
+irods_vsn() {
+  local V=$(dpkg -l irods-server 2>/dev/null|grep '^ii\s'|awk '{print $3}')
+  V=
+  echo "${V:-$IRODS_VSN}"
+}
 
 while [[ "$1" = -* ]]; do
   ARG="$1"
@@ -101,14 +116,15 @@ ________"
     ;;
 
  4)
-   sudo apt install -y irods-{dev,runtime}${IRODS_PACKAGE_VERSION:+"=$IRODS_PACKAGE_VERSION"}
+   IRODS_TO_INSTALL=`irods_package_version`
+   sudo apt install -y irods-{dev,runtime}${IRODS_TO_INSTALL=:+"=$IRODS_TO_INSTALL="}
    if [[ $with_opts != *\ basic\ * ]]; then
-     sudo apt install -y irods-{icommands,server,database-plugin-postgres}${IRODS_PACKAGE_VERSION:+"=$IRODS_PACKAGE_VERSION"}
+     sudo apt install -y irods-{icommands,server,database-plugin-postgres}${IRODS_TO_INSTALL=:+"=$IRODS_TO_INSTALL="}
    fi
  ;;
 
  5)
- if [ ! "$IRODS_VSN" '<' "4.3" ]; then
+ if [ ! `irods_vsn` '<' "4.3" ]; then
     PYTHON=python3
  else
     PYTHON=python2

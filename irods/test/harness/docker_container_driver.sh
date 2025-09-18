@@ -79,30 +79,32 @@ ORIGINAL_SCRIPT_RELATIVE_TO_ROOT=$(realpath --relative-to $reporoot "$original_t
 echo "ORIGINAL_SCRIPT_RELATIVE_TO_ROOT=[$ORIGINAL_SCRIPT_RELATIVE_TO_ROOT]" 
 INNER_MOUNT=/prc
 
+: ${DOCKER:=docker}
+
 # Start the container.
 echo image="[$image]"
-CONTAINER=$(docker run -d -v $reporoot:$INNER_MOUNT:ro --rm $image)
+CONTAINER=$($DOCKER run -d -v $reporoot:$INNER_MOUNT:ro --rm $image)
 
 # Wait for iRODS and database to start up.
 TIME0=$(date +%s)
 while :; do
     [ `date +%s` -gt $((TIME0 + 30)) ] && { echo >&2 "Waited too long for DB and iRODS to start"; exit 124; }
     sleep 1 
-    docker exec $CONTAINER grep '(0)' /tmp/irods_status 2>/dev/null >/dev/null
+    $DOCKER exec $CONTAINER grep '(0)' /tmp/irods_status 2>/dev/null >/dev/null
     [ $? -ne 0 ] && { echo -n . >&2; continue; }
     break
 done
 
-docker exec ${RUN_AS_USER:+"-u$RUN_AS_USER"} \
-            ${WORKDIR:+"-w$WORKDIR"} \
-	    -e "ORIGINAL_SCRIPT_RELATIVE_TO_ROOT=$ORIGINAL_SCRIPT_RELATIVE_TO_ROOT" \
-            $CONTAINER \
-            $INNER_MOUNT/$(realpath --relative-to $reporoot "$testscript_abspath") \
-            $arglist
+$DOCKER exec ${RUN_AS_USER:+"-u$RUN_AS_USER"} \
+             ${WORKDIR:+"-w$WORKDIR"} \
+	     -e "ORIGINAL_SCRIPT_RELATIVE_TO_ROOT=$ORIGINAL_SCRIPT_RELATIVE_TO_ROOT" \
+             $CONTAINER \
+             $INNER_MOUNT/$(realpath --relative-to $reporoot "$testscript_abspath") \
+             $arglist
 STATUS=$?
 
 if [ $((0+KILL_TEST_CONTAINER)) -ne 0 ]; then
-    echo >&2 'Killed:' $(docker stop --time=0 $CONTAINER)
+    echo >&2 'Killed:' $($DOCKER stop --time=0 $CONTAINER)
 fi
 
 [ -n "$ECHO_CONTAINER" ] && echo $CONTAINER

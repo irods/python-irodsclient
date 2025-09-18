@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 COPY install.sh /
 ARG irods_package_version
 ENV IRODS_PACKAGE_VERSION "$irods_package_version"
