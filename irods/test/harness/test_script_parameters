@@ -22,7 +22,7 @@ declare -A wrappers=(
     [test006_connection_timeout_on_ssl_socket.bats]=../login_auth_test.sh
     [test007_pam_features_in_new_auth_framework.bats]=../login_auth_test.sh
     [test008_prc_write_irodsA_utility_in_native_mode.bats]=../login_auth_test.sh
-    [test009_test_special_characters_in_pam_passwords_auth_fmwk.bats]=../login_auth_test.sh
+    [test009_test_special_characters_in_pam_passwords_auth_framework.bats]=../login_auth_test.sh
 )
 
 # keys for Image and User refer to the basename after resolution to a wrapper if one is used
