@@ -3,7 +3,7 @@
 declare -A wrapper_arglist=(
     [demo.sh]="arg1 arg2"
     [demo_A.sh]="arg1-a arg2-a"
-    [login_auth_test.py]="TestLogins"
+    [login_auth_test_must_run_manually.py]="-v TestLogins"
     [login_auth_test_1.py]="-v TestAnonymousUser TestMiscellaneous"
     [login_auth_test_2.py]="-v TestWithSSL"
 )

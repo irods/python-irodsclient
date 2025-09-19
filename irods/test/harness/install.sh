@@ -116,10 +116,10 @@ ________"
     ;;
 
  4)
-   IRODS_TO_INSTALL=`irods_package_version`
-   sudo apt install -y irods-{dev,runtime}${IRODS_TO_INSTALL=:+"=$IRODS_TO_INSTALL="}
+   IRODS_TO_INSTALL=`irods_package_vsn`
+   sudo apt install -y irods-{dev,runtime}${IRODS_TO_INSTALL:+"=$IRODS_TO_INSTALL"}
    if [[ $with_opts != *\ basic\ * ]]; then
-     sudo apt install -y irods-{icommands,server,database-plugin-postgres}${IRODS_TO_INSTALL=:+"=$IRODS_TO_INSTALL="}
+     sudo apt install -y irods-{icommands,server,database-plugin-postgres}${IRODS_TO_INSTALL:+"=$IRODS_TO_INSTALL"}
    fi
  ;;
 
