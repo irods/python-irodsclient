@@ -4,16 +4,16 @@ To build required images
 ------------------------
 Examples
 
-    1) ./build-docker.sh 
+    1) ./build-docker.sh
        DEFAULT: build  single-node system based on latest iRODS release
 
-    2) IRODS_PACKAGE_VERSION="4.2.12-1~bionic" NO_CACHE='1' ./build-docker.sh 
+    2) IRODS_PACKAGE_VERSION=4.2.12 NO_CACHE='1' ./build-docker.sh [ ... optional in-directory dockerfiles in sequence ... ]
        Build (ignoring docker cache) single-node system based on specified package version string.
 
 simple examples
 ---------------
-./docker_container_driver.sh  tests/test_1.sh 
-./docker_container_driver.sh  tests/test_2.sh 
+./docker_container_driver.sh  tests/test_1.sh
+./docker_container_driver.sh  tests/test_2.sh
 
 Any script in a subdirectory of the repo (mounted at /prc within the container) can be
 executed and will be able to find other scripts and source include files within the tree.
@@ -26,13 +26,14 @@ Examples of options in driver script
      C=$(  ./docker_container_driver.sh -c -L -u testuser  ../scripts/experiment.sh )
 
   2. To manually examine results afterward:
-     docker exec -it $C bash 
+     docker exec -it $C bash
 
+For both scripts, the environment variable DOCKER may be set to "podman" to run the alternative virtualizer.
 
 Demo / Demo hook  / args
 ------------------------
 
-$ ~/python-irodsclient/irods/test/harness$ ./docker_container_driver.sh  ../demo.sh 
+$ ~/python-irodsclient/irods/test/harness$ ./docker_container_driver.sh  ../demo.sh
 ORIGINAL_SCRIPT_RELATIVE_TO_ROOT=[irods/test/demo.sh]
 image=[ssl-and-pam]
 .......-- HOOK RUNNING --
