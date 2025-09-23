@@ -404,7 +404,7 @@ class DataObjectManager(Manager):
                 # We'll get a response in the client to help qualify or elaborate on the error thrown.
                 if msg_retn:
                     response = msg_retn[0]
-                logging.warning("Exception checksumming data object %r - %r", path, exc)
+                logger.warning("Exception checksumming data object %r - %r", path, exc)
             if "response" in locals():
                 try:
                     results = response.get_main_message(

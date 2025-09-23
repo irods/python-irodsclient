@@ -7,6 +7,9 @@ import logging
 import os
 
 
+_logger = logging.getLogger(__name__)
+
+
 class iRODSPath(str):
     """A subclass of the Python string that normalizes iRODS logical paths."""
 
@@ -49,7 +52,7 @@ class iRODSPath(str):
         """
         absolute_ = kw.pop("absolute", True)
         if kw:
-            logging.warning("These iRODSPath options have no effect: %r", kw.items())
+            _logger.warning("These iRODSPath options have no effect: %r", kw.items())
         normalized = _normalize_iRODS_logical_path(elem_list, absolute_)
         obj = str.__new__(cls, normalized)
         return obj
