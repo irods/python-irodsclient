@@ -21,6 +21,9 @@ services:
         volumes:
             - ${repo_external}:/repo_root:ro
             - /tmp/irods-client-share.py-${python_version}:/irods_shared
+        depends_on:
+            irods-catalog-provider:
+                condition: service_healthy
 
     irods-catalog-provider:
         volumes:
@@ -30,13 +33,13 @@ services:
             args:
                 irods_version: ${irods_version}
         shm_size: 500mb
-#       healthcheck:
-#           test: ["CMD", "su", "-", "irods", "-c", "ils || exit 1"]
-#           interval: 10s
-#           timeout: 10s
-#           retries: 3
-#           start_period: 20s
-#           start_interval: 2s
+        healthcheck:
+            test: ["CMD", "su", "-", "irods", "-c", "ils || exit 1"]
+            interval: 10s
+            timeout: 10s
+            retries: 3
+            start_period: 20s
+            start_interval: 2s
         ports:
             - "1247:1247"
         depends_on:
