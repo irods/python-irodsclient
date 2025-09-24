@@ -11,5 +11,6 @@ run make -j
 run mkdir /root/python
 run make install
 workdir /
-run /root/python/bin/python3 -m pip install python-irodsclient
+#run /root/python/bin/python3 -m pip install python-irodsclient
+run /root/python/bin/python3 -m pip install virtualenv
 run chmod a+rx /root
