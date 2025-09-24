@@ -27,12 +27,11 @@ irods_package_vsn() {
       grep "$(perl -e 'print quotemeta($ARGV[0])' "$IRODS_PACKAGE_VERSION")"|tail -1
 }
 
-# Report irods server version installed, or failing that, the requested version.
+# Report irods server version installed
 
 irods_vsn() {
   local V=$(dpkg -l irods-server 2>/dev/null|grep '^ii\s'|awk '{print $3}')
-  V=
-  echo "${V:-$IRODS_VSN}"
+  echo "${V}"
 }
 
 while [[ "$1" = -* ]]; do

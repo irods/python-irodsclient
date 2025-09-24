@@ -15,6 +15,9 @@ if [ $# -gt 0 ]; then
 else
     ARGS=([0-9]*.Dockerfile)
 fi
+
+: ${PYTHON_VERSION:=3.13} export PYTHON_VERSION
+
 for dockerfile in "${ARGS[@]}"; do 
     image_name=${dockerfile#[0-9]*_}
     image_name=${image_name%.Dockerfile}
