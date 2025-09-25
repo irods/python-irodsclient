@@ -683,16 +683,16 @@ class TestMeta(unittest.TestCase):
 
     def test_nonstring_as_AVU_value_raises_an_error__issue_434(self):
         args = ("an_attribute", 0)
-        with self.assertRaisesRegexp(Bad_AVU_Field, "incorrect type"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "incorrect type"):
             self.coll.metadata.set(*args)
-        with self.assertRaisesRegexp(Bad_AVU_Field, "incorrect type"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "incorrect type"):
             self.coll.metadata.add(*args)
 
     def test_empty_string_as_AVU_value_raises_an_error__issue_434(self):
         args = ("an_attribute", "")
-        with self.assertRaisesRegexp(Bad_AVU_Field, "zero-length"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "zero-length"):
             self.coll.metadata.set(*args)
-        with self.assertRaisesRegexp(Bad_AVU_Field, "zero-length"):
+        with self.assertRaisesRegex(Bad_AVU_Field, "zero-length"):
             self.coll.metadata.add(*args)
 
     @unittest.skipUnless(

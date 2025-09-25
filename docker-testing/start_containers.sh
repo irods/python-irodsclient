@@ -4,7 +4,7 @@ set -e
 # This script is launched on the docker host.
 
 usage() {
-  echo >&2 "usage: $0 [-n] [-b "<docker compose build args>"] [irods_version] python_version"; exit 1;
+  echo >&2 "usage: $0 [-n] [-b "<docker compose build args>"] [irods_version] python_version"; exit 2;
 }
 
 SHELL_DOCKER_COMPOSE_BUILD_ARGS=""
