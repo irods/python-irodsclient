@@ -6,7 +6,7 @@ jobs:
   tests:
     timeout-minutes: 20
 
-    name: ${{ matrix.python }}
+    name: Python ${{ matrix.python }}, iRODS ${{ matrix.irods_server }}
     runs-on: ubuntu-latest
     defaults:
       run:
