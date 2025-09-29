@@ -191,13 +191,28 @@ setup_preconnect_preference() {
     sudo su irods -c "sed -i.orig 's/\(^\s*acPreConnect.*CS_NEG\)\([A-Z_]*\)/\1_$1/' /etc/irods/core.re"
 }
 
+setup_pyN() {
+  if [ ! -d /pyN ]; then
+    mkdir /pyN ; chown testuser /pyN
+    su - testuser -c "/root/python/bin/python3 -m virtualenv /pyN"
+
+    # TODO, REMOVE: Verbose to check proper version is being installed
+    echo "/pyN venv is python version => [$(. /pyN/bin/activate ; python -V)]"
+
+    cp -r /prc{,.rw}
+    chown -R testuser /prc.rw
+  fi
+}
+
 # requires image to descend from bats-python3
 activate_virtual_env_with_prc_installed()
 {
+    local py_venv=${1:-pyN}
+    [ "$py_venv" = pyN ] && sudo bash -c "$(declare -f setup_pyN); setup_pyN"
     # install python client using copy of /prc so that bdist doesn't build in the readonly mount
-    sudo su - -c "source /py3/bin/activate && cp -rp /prc /prc-copy && \
+    sudo su - -c "source /${py_venv}/bin/activate && cp -rp /prc /prc-copy && \
                   pip install '/prc-copy[tests]' && sudo rm -fr /prc-copy"
-    source /py3/bin/activate
+    source /${py_venv}/bin/activate
 }
 
 mtime_and_content()

@@ -1,17 +1,10 @@
 #!/usr/bin/env bash
+set -e
 
-setup() {
-  set -e
-  if [ ! -d  /pyN ]; then
-    mkdir /pyN ; chown testuser /pyN
-    su - testuser -c "/root/python/bin/python3 -m virtualenv /pyN"
-    cp -r /prc{,.rw}
-    chown -R testuser /prc.rw
-  fi
-}
+. "$(dirname "$0")"/test_support_functions
 
 test() {
-  setup
+  setup_pyN
   su - testuser -c "
   set -e
   source /pyN/bin/activate
