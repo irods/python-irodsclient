@@ -724,10 +724,11 @@ class TestMeta(unittest.TestCase):
         prepend_col_prefix_if_needed = lambda s: (
             "COL_" + s if not s.startswith("COL_") else s
         )
+        current_server_version = self.sess.server_version
         prc_column_defs = sorted(
             [
                 (prepend_col_prefix_if_needed(i[1].icat_key), i[1].icat_id)
-                for i in ModelBase.column_items
+                for i in ModelBase.column_items if current_server_version >= i[1].min_version
             ]
         )
 
