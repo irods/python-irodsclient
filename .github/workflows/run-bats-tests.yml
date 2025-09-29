@@ -1,4 +1,4 @@
-name: run-the-tests
+name: run-bats-tests
 
 on: [push, pull_request]
 
