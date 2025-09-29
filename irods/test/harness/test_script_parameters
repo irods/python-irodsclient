@@ -36,10 +36,12 @@ declare -A images=(
     [fail.sh]=ssl-and-pam
     [login_auth_test_must_run_manually.py]=ssl-and-pam
     [demo_hook.sh]=ssl-and-pam
-[test000.bats]=bats-python3
+    [run_suite_locally.sh]=compile-specific-python
+    [test000.bats]=compile-specific-python
 )
 
 declare -A user=(
+    [run_suite_locally.sh]=root
 )
 
 # keys for WorkDir refer to user
