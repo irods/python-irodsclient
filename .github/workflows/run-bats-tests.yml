@@ -15,7 +15,7 @@ jobs:
       matrix:
         python: ['3.9','3.13']
         #irods_server: ['4.3.4']
-        irods_server: ['5.0.1']
+        irods_server: ['4.3.4','5.0.1']
 
     steps:
       - name: Checkout
@@ -26,6 +26,6 @@ jobs:
 
       - name: run tests
         run: |
-          for script in repo_root/irods/test/scripts/test[0-9]*; do
-              /repo_root/irods/test/harness/docker_container_driver.sh $script
+          for script in ../scripts/test[0-9]*; do
+              ./docker_container_driver.sh $script
           done
