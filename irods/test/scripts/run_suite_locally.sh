@@ -23,6 +23,7 @@ test() {
     user rods \
     zone tempZone \
     password rods
+  echo ; echo 'PRC under test: === iRODS [$IRODS_PACKAGE_VERSION] ; Python [$PYTHON_VERSION]'
   python runner.py
   "
 }
