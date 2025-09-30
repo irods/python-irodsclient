@@ -3,7 +3,7 @@
 KILL_TEST_CONTAINER=1
 RUN_AS_USER=""
 ECHO_CONTAINER=""
-
+REMOVE_OPTION="--rm"
 EXPLICIT_WORKDIR=""
 while [[ $1  = -* ]]; do
     if [ "$1" = -c ]; then
@@ -18,11 +18,18 @@ while [[ $1  = -* ]]; do
         RUN_AS_USER="$2"
         shift 2
     fi
+    if [ "$1" = -r ]; then
+        REMOVE_OPTION="$2"
+        shift 2
+    fi
     if [ "$1" = -w ]; then
         EXPLICIT_WORKDIR="$2"
         shift 2
     fi
 done
+
+#TODO delete
+        echo >&2 "REMOVE=${REMOVE_OPTION}"
 
 if [ "$1" = "" ]; then
     echo >&2 "Usage: $0 [options] /path/to/script"
@@ -83,7 +90,7 @@ INNER_MOUNT=/prc
 
 # Start the container.
 echo image="[$image]"
-CONTAINER=$($DOCKER run -d -v $reporoot:$INNER_MOUNT:ro --rm $image)
+CONTAINER=$($DOCKER run -d -v $reporoot:$INNER_MOUNT:ro $REMOVE_OPTION $image)
 
 # Wait for iRODS and database to start up.
 TIME0=$(date +%s)
