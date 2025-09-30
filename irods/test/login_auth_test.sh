@@ -2,6 +2,7 @@
 . $(dirname $0)/scripts/test_support_functions
 . $(dirname $0)/scripts/update_json_for_test
 
+IRODS_SERVER_CONFIG=/etc/irods/server_config.json
 IRODS_SERVICE_ACCOUNT_ENV_FILE=~irods/.irods/irods_environment.json 
 LOCAL_ACCOUNT_ENV_FILE=~/.irods/irods_environment.json 
 
@@ -10,7 +11,7 @@ setup_preconnect_preference DONT_CARE
 add_irods_to_system_pam_configuration
 
 # set up /etc/irods/ssl directory and files
-set_up_ssl sudo -q
+set_up_ssl sudo
 
 sudo useradd -ms/bin/bash alissa 
 sudo chpasswd <<<"alissa:test123"
@@ -23,6 +24,18 @@ activate_virtual_env_with_prc_installed >/dev/null 2>&1 || { echo >&2 "couldn't 
 
 # Set up testuser with rods+SSL so we never have to run login_auth_tests.py as the service account.
 iinit_as_rods >/dev/null 2>&1 || { echo >&2 "couldn't iinit as rods"; exit 2; }
+
+# Configure clients with admin user but no TLS yet because that requires a rebounce (or rescan-config) in >= iRODS 5.0
+
+if irods_server_version ge 5.0.0; then
+  update_json_file $IRODS_SERVER_CONFIG \
+                   "$(newcontent $IRODS_SERVER_CONFIG tls_server_items tls_client_items)"
+  #sudo su - irods -c "/manage_irods5_procs restart"
+  sudo su - irods -c "/manage_irods5_procs rescan-config"
+fi
+
+# Configure clients with admin user + TLS
+
 update_json_file $LOCAL_ACCOUNT_ENV_FILE \
                  "$(newcontent $LOCAL_ACCOUNT_ENV_FILE ssl_keys encrypt_keys)"
 

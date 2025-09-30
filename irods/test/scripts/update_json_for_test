@@ -1,4 +1,17 @@
 #!/bin/bash
+
+declare -A tls_server_items=(
+    [tls_server]='{"certificate_chain_file":"/etc/irods/ssl/irods.crt",
+    "certificate_key_file":"/etc/irods/ssl/irods.key",
+    "dh_params_file":"/etc/irods/ssl/dhparams.pem"}'
+)
+
+declare -A tls_client_items=(
+    [tls_client]='{"ca_certificate_file":"/etc/irods/ssl/irods.crt",
+    "ca_certificate_path":"/etc/ssl/certs",
+    "verify_server":"cert"}'
+)
+
 declare -A ssl_keys=(
     [irods_client_server_negotiation]='"request_server_negotiation"'
     [irods_client_server_policy]='"CS_NEG_REQUIRE"'
@@ -12,6 +25,7 @@ declare -A ssl_keys=(
 declare -A pam_keys=(
     [irods_authentication_scheme]="\"$(pam_auth_string)\""
 )
+
 declare -A encrypt_keys=(
     [irods_encryption_key_size]=16
     [irods_encryption_salt_size]=8
