@@ -208,6 +208,8 @@ setup_pyN() {
 activate_virtual_env_with_prc_installed()
 {
     local py_venv=${1:-pyN}
+    echo "i am $(whoami);"
+    echo "ls -->" $(ls -ld /)
     [ "$py_venv" = pyN ] && sudo bash -c "$(declare -f setup_pyN); setup_pyN"
     # install python client using copy of /prc so that bdist doesn't build in the readonly mount
     sudo su - -c "source /${py_venv}/bin/activate && cp -rp /prc /prc-copy && \
