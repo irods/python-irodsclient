@@ -23,7 +23,8 @@ update_json_file $IRODS_SERVICE_ACCOUNT_ENV_FILE \
 activate_virtual_env_with_prc_installed >/dev/null 2>&1 || { echo >&2 "couldn't set up virtual environment"; exit 1; }
 
 # Set up testuser with rods+SSL so we never have to run login_auth_tests.py as the service account.
-iinit_as_rods >/dev/null 2>&1 || { echo >&2 "couldn't iinit as rods"; exit 2; }
+echo "calling --> iinit_as_rods"
+iinit_as_rods || { echo >&2 "couldn't iinit as rods"; exit 2; }
 
 # Configure clients with admin user but no TLS yet because that requires a rebounce (or rescan-config) in >= iRODS 5.0
 
