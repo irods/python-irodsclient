@@ -38,8 +38,8 @@ services:
             interval: 10s
             timeout: 10s
             retries: 3
-            start_period: 20s
-            start_interval: 2s
+            #start_period: 20s
+            #start_interval: 2s
         ports:
             - "1247:1247"
         depends_on:

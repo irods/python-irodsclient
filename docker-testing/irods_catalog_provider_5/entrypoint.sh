@@ -23,6 +23,7 @@ ORIG_SERVER_CONFIG=/etc/irods/server_config.json
 MOD_SERVER_CONFIG=/tmp/server_config.json.$$
 
 chown -R irods:irods /irods_shared
+chmod 0777 /irods_shared
 
 #TODO ensure this is done for 4.3+ only. 4.2 doesn't have this server config key
 {
