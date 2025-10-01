@@ -43,7 +43,7 @@ declare -A images=(
 )
 
 declare -A user=(
-    [test000.sh]=root
+    [test000_run_suite_locally.sh]=root
 )
 
 # keys for WorkDir refer to user
