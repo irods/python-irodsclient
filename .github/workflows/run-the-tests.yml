@@ -21,6 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: who am i
+        run: echo $(id -u) $(id -un)
+
       - name: Start containers
         run: ./start_containers.sh "${{ matrix.irods_server }}" "${{ matrix.python }}"
 
