@@ -108,7 +108,7 @@ $DOCKER exec ${RUN_AS_USER:+"-u$RUN_AS_USER"} \
 STATUS=$?
 
 if [ $((0+KILL_TEST_CONTAINER)) -ne 0 ]; then
-    echo >&2 'Killed:' $($DOCKER stop --time=0 $CONTAINER)
+    echo >&2 'Killed:' $($DOCKER stop --timeout=0 $CONTAINER)
 fi
 
 [ -n "$ECHO_CONTAINER" ] && echo $CONTAINER
