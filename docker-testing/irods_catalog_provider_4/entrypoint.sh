@@ -22,6 +22,8 @@ fi
 ORIG_SERVER_CONFIG=/etc/irods/server_config.json
 MOD_SERVER_CONFIG=/tmp/server_config.json.$$
 
+chown -R irods:irods /irods_shared
+
 #TODO ensure this is done for 4.3+ only. 4.2 doesn't have this server config key
 {
     [ -f ~/provider-address.do_not_remove ] || {
@@ -50,7 +52,6 @@ echo "Starting server"
         #echo "** waiting on server before send_oneshot" |tee -a /tmp/debug.dan 
         sleep 1
     done
-    chown -R irods:irods /irods_shared
     echo "**** got this far - about to execute send_oneshot" |tee -a /tmp/debug.dan 
     env PORT=8888 "$(dirname "$0")"/send_oneshot
 } &
