@@ -27,10 +27,12 @@ iinit_as_rods >/dev/null 2>&1 || { echo >&2 "couldn't iinit as rods"; exit 2; }
 
 # Configure clients with admin user but no TLS yet because that requires a rebounce (or rescan-config) in >= iRODS 5.0
 
+server_hup=
 if irods_server_version ge 5.0.0; then
+  server_hup="y"
   update_json_file $IRODS_SERVER_CONFIG \
                    "$(newcontent $IRODS_SERVER_CONFIG tls_server_items tls_client_items)"
-  #sudo su - irods -c "/manage_irods5_procs restart"
+
   sudo su - irods -c "/manage_irods5_procs rescan-config"
 fi
 
@@ -39,7 +41,22 @@ fi
 update_json_file $LOCAL_ACCOUNT_ENV_FILE \
                  "$(newcontent $LOCAL_ACCOUNT_ENV_FILE ssl_keys encrypt_keys)"
 
+if [ $server_hup = y ]; then
+  # wait for server to be ready after configuration reload
+  while true; do
+    sleep 2 
+    if ils >/dev/null 2>&1; then
+      break
+    else
+      # Allow 16 secs of wait time for server.
+      [ $((++server_check)) -gt 8 ] && {
+        echo >&2 "Timed out on server reload"; exit 3; }
+    fi
+  done
+fi
+
 original_script=/prc/$ORIGINAL_SCRIPT_RELATIVE_TO_ROOT
+
 # Run tests.
 if [ -x "$original_script" ]; then 
   command "$original_script" $*

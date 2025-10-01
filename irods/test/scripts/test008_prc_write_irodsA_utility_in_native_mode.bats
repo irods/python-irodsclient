@@ -48,6 +48,9 @@ print ('env_auth_scheme=%s' % ses.pool.account._original_authentication_scheme)
     # Write another .irodsA
     prc_write_irodsA.py native <<<"rods"
 
+    CLIENT_JSON=~/.irods/irods_environment.json
+    jq '.["irods_client_server_policy"]="CS_NEG_REFUSE"' <$CLIENT_JSON >/tmp/client_json_test008.$$
+    mv /tmp/client_json_test008.$$ $CLIENT_JSON
     # Verify new .irodsA for both iCommands and PRC use.
     ils >/tmp/stdout
     OUTPUT=$($PYTHON -c "$SCRIPT")

@@ -60,7 +60,7 @@ def create_ssl_dir(
                     # https://www.openssl.org/docs/man1.0.2/man1/dhparam.html#:~:text=DH%20parameter%20generation%20with%20the,that%20may%20be%20possible%20otherwise.
                     if use_strong_primes_for_dh_generation:
                         dhparam_generation_command = (
-                            "openssl dhparam -2 -out dhparams.pem"
+                            "openssl dhparam -2 -out dhparams.pem 2048"
                         )
                     else:
                         dhparam_generation_command = (

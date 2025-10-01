@@ -28,9 +28,6 @@ while [[ $1  = -* ]]; do
     fi
 done
 
-#TODO delete
-        echo >&2 "REMOVE=${REMOVE_OPTION}"
-
 if [ "$1" = "" ]; then
     echo >&2 "Usage: $0 [options] /path/to/script"
     echo >&2 "With options: [-L] to leak, [-u username] to run as non-root user"

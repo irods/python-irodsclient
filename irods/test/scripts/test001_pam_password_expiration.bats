@@ -12,14 +12,12 @@ ALICES_PAM_PASSWORD=test123
 setup()
 {
     setup_pam_login_for_alice $ALICES_PAM_PASSWORD
-echo "setup..."
 }
 
 teardown()
 {
-echo "teardown..."
-: # finalize_pam_login_for_alice
-  # test_specific_cleanup
+  finalize_pam_login_for_alice
+  test_specific_cleanup
 }
 
 @test main {
@@ -27,7 +25,6 @@ echo "teardown..."
     # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
     # without an exception being raised.
 
-#cat<<EOF >/dev/null
     local SCRIPT="
 import irods.test.helpers as h
 ses = h.make_session()
@@ -61,5 +58,4 @@ $SCRIPT")
     # Test that iCommands can authenticate with the newly written .irodsA file
 
     iquest "%s" "select COLL_NAME where COLL_NAME like '%/home/alice%'"| grep "^$HOME_COLLECTION\$"
-#EOF
 }

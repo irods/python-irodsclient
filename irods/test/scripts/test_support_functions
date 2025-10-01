@@ -129,14 +129,7 @@ setup_pam_login_for_user() {
     sudo useradd $user --create-home
     local PASSWD=${1:-test123}
     sudo chpasswd <<<"$user:$PASSWD"
-    echo "user = [$user] `date`" >/tmp/dwm-debug
-
-sleep 5; { echo -n ===; date; } >>/tmp/dwm-debug
-
     iadmin mkuser $user rodsuser
-
-         { echo; echo after === "$(date +%s)"; } >>/tmp/dwm-debug
-
     _begin_pam_environment_and_password "$PASSWD" $user
 }
 
