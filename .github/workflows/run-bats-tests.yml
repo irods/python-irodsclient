@@ -17,7 +17,7 @@ jobs:
         #irods_server: ['4.3.4']
         ##irods_server: ['4.3.4','5.0.1']
         python: ['3.9']
-        irods_server: ['5.0.1']
+        irods_server: ['4.3.4','5.0.1']
 
     steps:
       - name: Checkout
