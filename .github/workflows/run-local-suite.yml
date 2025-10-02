@@ -1,4 +1,4 @@
-name: run-bats-tests
+name: run-local-suite
 
 on: [push, pull_request]
 
@@ -28,6 +28,6 @@ jobs:
 
       - name: run tests
         run: |
-          for script in ../scripts/test00[1-9]*; do
+          for script in ../scripts/test000*; do
               ./docker_container_driver.sh $script
           done
