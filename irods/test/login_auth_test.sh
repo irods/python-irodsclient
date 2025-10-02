@@ -10,9 +10,13 @@ setup_preconnect_preference DONT_CARE
 
 add_irods_to_system_pam_configuration
 
+# Configure clients with admin user but no TLS yet because that requires rescan of config in >= iRODS 5.0
+iinit_as_rods || { echo >&2 "couldn't iinit as rods"; exit 2; }
+
 # set up /etc/irods/ssl directory and files
 set_up_ssl sudo
 
+exit 121
 sudo useradd -ms/bin/bash alissa 
 sudo chpasswd <<<"alissa:test123"
 
@@ -21,12 +25,6 @@ update_json_file $IRODS_SERVICE_ACCOUNT_ENV_FILE \
 
 # This is mostly so we can call python3 as just "python"
 activate_virtual_env_with_prc_installed >/dev/null 2>&1 || { echo >&2 "couldn't set up virtual environment"; exit 1; }
-
-# Set up testuser with rods+SSL so we never have to run login_auth_tests.py as the service account.
-echo "calling --> iinit_as_rods"
-iinit_as_rods || { echo >&2 "couldn't iinit as rods"; exit 2; }
-
-# Configure clients with admin user but no TLS yet because that requires a rebounce (or rescan-config) in >= iRODS 5.0
 
 server_hup=
 if irods_server_version ge 5.0.0; then
