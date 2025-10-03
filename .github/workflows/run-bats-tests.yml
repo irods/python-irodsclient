@@ -29,5 +29,5 @@ jobs:
       - name: run tests
         run: |
           for script in ../scripts/test00[1-9]*; do
-              ./docker_container_driver.sh $script
+              ./docker_container_driver.sh -V $script
           done

@@ -28,6 +28,4 @@ jobs:
 
       - name: run tests
         run: |
-          for script in ../scripts/test000*; do
-              ./docker_container_driver.sh $script
-          done
+          ./docker_container_driver.sh -V ../scripts/run_suite_locally.sh

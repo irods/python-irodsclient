@@ -5,7 +5,12 @@ RUN_AS_USER=""
 ECHO_CONTAINER=""
 REMOVE_OPTION="--rm"
 EXPLICIT_WORKDIR=""
+VERBOSITY=0
 while [[ $1  = -* ]]; do
+    if [ "$1" = -V ]; then
+        VERBOSITY=1
+        shift
+    fi
     if [ "$1" = -c ]; then
         ECHO_CONTAINER=1
         shift
@@ -98,6 +103,13 @@ while :; do
     [ $? -ne 0 ] && { echo -n . >&2; continue; }
     break
 done
+
+if [ $VERBOSITY -gt 0 ]; then
+    echo $'\n'"==> Running script [$testscript_abspath]"
+    echo      "in container [$CONTAINER]"
+    echo      "with these *_VERSION variables in environment: "
+    $DOCKER exec $CONTAINER bash -c 'env|grep _VERSION' | sed $'s/^/\t/'
+fi
 
 $DOCKER exec ${RUN_AS_USER:+"-u$RUN_AS_USER"} \
              ${WORKDIR:+"-w$WORKDIR"} \
