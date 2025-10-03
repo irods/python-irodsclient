@@ -6,12 +6,19 @@ IRODS_SERVER_CONFIG=/etc/irods/server_config.json
 IRODS_SERVICE_ACCOUNT_ENV_FILE=~irods/.irods/irods_environment.json 
 LOCAL_ACCOUNT_ENV_FILE=~/.irods/irods_environment.json 
 
+cannot_iinit=''
+tries=8
+while true; do
+  iinit_as_rods && break
+  [ $((--tries)) -le 0 ] && { cannot_iinit=1; break; }
+  sleep 5
+done
+[ -n "$cannot_iinit" ] && { echo >&2 "Could not iinit as rods after repeated attempts."; exit 2; }
+
 setup_preconnect_preference DONT_CARE
 
 add_irods_to_system_pam_configuration
 
-# Configure clients with admin user but no TLS yet because that requires rescan of config in >= iRODS 5.0
-iinit_as_rods  || { echo >&2 "couldn't iinit as rods"; exit 2; }
 
 # set up /etc/irods/ssl directory and files
 set_up_ssl sudo
