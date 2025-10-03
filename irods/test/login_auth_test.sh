@@ -9,11 +9,11 @@ LOCAL_ACCOUNT_ENV_FILE=~/.irods/irods_environment.json
 cannot_iinit=''
 tries=8
 while true; do
-  iinit_as_rods && break
+  iinit_as_rods >/dev/null 2>&1 && break
   [ $((--tries)) -le 0 ] && { cannot_iinit=1; break; }
   sleep 5
 done
-[ -n "$cannot_iinit" ] && { echo >&2 "Could not iinit as rods after repeated attempts."; exit 2; }
+[ -n "$cannot_iinit" ] && { echo >&2 "Could not iinit as rods."; exit 2; }
 
 setup_preconnect_preference DONT_CARE
 
@@ -53,7 +53,7 @@ if [ $server_hup = y ]; then
     if ils >/dev/null 2>&1; then
       break
     else
-      # Allow 16 secs of wait time for server.
+      # Allow ~16 secs of total wait time.
       [ $((++server_check)) -gt 8 ] && {
         echo >&2 "Timed out on server reload"; exit 3; }
     fi
