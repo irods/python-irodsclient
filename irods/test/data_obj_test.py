@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import base64
 import collections
 import concurrent.futures
@@ -3308,11 +3308,16 @@ class TestDataObjOps(unittest.TestCase):
         data_path= iRODSPath(self.coll.path,
             unique_name(my_function_name(), datetime.now())
             )
+
+        time.sleep(2)
+
         with self.sess.data_objects.open(data_path,"w") as f:
             f.write(b'_')
+
+        # At this point, the access_time should be earlier than the modify_time; next we will
+        # test that a read() will the update the access timestamp to be equal or greater.
         with self.sess.data_objects.open(data_path,"r") as f:
             f.read()
-
         data = self.sess.data_objects.get(data_path)
         self.assertGreaterEqual(data.access_time, data.modify_time)
 
