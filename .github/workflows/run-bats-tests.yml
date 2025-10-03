@@ -13,11 +13,8 @@ jobs:
           working-directory: ./irods/test/harness
     strategy:
       matrix:
-        ##python: ['3.9','3.13']
-        #irods_server: ['4.3.4']
-        ##irods_server: ['4.3.4','5.0.1']
         python: ['3.9','3.13']
-        irods_server: ['4.3.4','5.0.1']
+        irods_server: ['4.3.4','5.0.2']
 
     steps:
       - name: Checkout
