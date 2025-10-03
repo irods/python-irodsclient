@@ -8,7 +8,7 @@ EXPLICIT_WORKDIR=""
 VERBOSITY=0
 while [[ $1  = -* ]]; do
     if [ "$1" = -V ]; then
-        VERBOSITY=1
+        VERBOSITY=2
         shift
     fi
     if [ "$1" = -c ]; then
