@@ -56,7 +56,5 @@ RUN mv /setup-${irods_version}.input /irods_setup.input
 
 WORKDIR /
 COPY entrypoint.sh .
-COPY send_oneshot .
 RUN chmod u+x ./entrypoint.sh
-RUN chmod u+x ./send_oneshot
 ENTRYPOINT ["./entrypoint.sh"]

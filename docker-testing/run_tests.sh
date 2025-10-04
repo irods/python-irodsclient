@@ -7,9 +7,6 @@ fi
 DIR=$(dirname "$0")
 cd "$DIR"
 
-## Replacing server ready notify mechanism with Docker healthcheck
-#$PYTHON ./recv_oneshot -h irods-catalog-provider -p 8888 -t 360
-
 REPO="$(./print_repo_root_location)"
 #$PYTHON -m pip install "$REPO[tests]"
 
