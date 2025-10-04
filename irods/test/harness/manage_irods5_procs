@@ -1,0 +1,10 @@
+if [ "$1" = "start" ]; then
+  sudo su - irods -c 'irodsServer -d -p /tmp/irods.pid'
+elif [ "$1" = "status" ]; then
+  pgrep -afl "irods(Delay|Agent|Server)"
+elif [ "$1" = "stop" ]; then
+  sudo su - irods -c 'kill -QUIT $(cat /tmp/irods.pid)'
+else
+  echo >&2 "usage: $0 [start|status|stop]"
+  exit 2
+fi
