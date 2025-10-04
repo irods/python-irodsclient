@@ -16,8 +16,8 @@ setup()
 
 teardown()
 {
-    finalize_pam_login_for_alice
-    test_specific_cleanup
+  finalize_pam_login_for_alice
+  test_specific_cleanup
 }
 
 @test main {

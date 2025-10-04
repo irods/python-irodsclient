@@ -22,16 +22,27 @@ f = logging.Formatter(
 h.setFormatter(f)
 logger.addHandler(h)
 
+def abs_path(initial_dir, levels_up = 0):
+    directory = initial_dir
+    while levels_up > 0:
+        levels_up -= 1
+        directory = os.path.join(directory,'..')
+    return os.path.abspath(directory)
 
-# Load all tests in the current directory and run them
+# Load all tests in the current directory and run them.
 if __name__ == "__main__":
-    # must set the path for the imported tests
-    sys.path.insert(0, os.path.abspath("../.."))
+
+    # Get path to script directory for test import and/or discovery.
+    script_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+
+    # Must set the path for the imported tests.
+    sys.path.insert(0, abs_path(script_dir, levels_up = 2))
 
     loader = TestLoader()
-    suite = TestSuite(
-        loader.discover(start_dir=".", pattern="*_test.py", top_level_dir=".")
-    )
+    if sys.argv[1:]:
+        suite = TestSuite(loader.loadTestsFromNames(sys.argv[1:]))
+    else:
+        suite = TestSuite(loader.discover(start_dir = script_dir, pattern = '*_test.py', top_level_dir = script_dir))
 
     result = xmlrunner.XMLTestRunner(
         verbosity=2, output="/tmp/python-irodsclient/test-reports"

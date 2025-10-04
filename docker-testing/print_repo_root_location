@@ -1,0 +1,5 @@
+#!/bin/bash
+# The following line needs be kept updated to reflect true position relative to repository root,
+# in the event this script or any of its chain of containing directories (up to but not including the repo root) are moved.
+REPO_ROOT_RELATIVE_TO_THIS_SCRIPT=..
+realpath "$(dirname "$0")/$REPO_ROOT_RELATIVE_TO_THIS_SCRIPT"

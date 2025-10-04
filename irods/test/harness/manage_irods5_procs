@@ -1,0 +1,34 @@
+if [ `id -un` = irods ]; then
+  LAUNCH='bash -c'
+else
+  LAUNCH='sudo su - irods -c'
+fi
+
+start() {
+  $LAUNCH 'irodsServer -d -p /tmp/irods.pid'
+}
+
+stop() { 
+  $LAUNCH 'kill -QUIT $(cat /tmp/irods.pid) && rm -f /tmp/irods.pid'
+}
+
+if [ "$1" = "start" ]; then
+  start
+elif [ "$1" = "start-bg" ]; then
+  $LAUNCH 'irodsServer --stdout -p /tmp/irods.pid >/tmp/irods.log &'
+elif [ "$1" = "rescan-config" ]; then
+  $LAUNCH 'pkill -HUP irodsServer'
+elif [ "$1" = "status" ]; then
+  pgrep -afl "irods(Delay|Agent|Server)"
+elif [ "$1" = "stop" ]; then
+  stop
+elif [ "$1" = "restart" ]; then
+  stop && start
+elif [ "$1" = "wait" ]; then
+  $LAUNCH '
+      pid=`cat /tmp/irods.pid 2>/dev/null`;
+      [ -n "$pid" ] && { while ps -eo pid |grep $pid >/dev/null 2>&1; do sleep 1; done; }'
+else
+  echo >&2 "usage: $0 [start|status|stop]"
+  exit 2
+fi
