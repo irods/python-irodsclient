@@ -1,15 +1,26 @@
+#!/usr/bin/env bats
+
 # The tests in this BATS module must be run as a (passwordless) sudo-enabled user.
 # It is also required that the python irodsclient be installed under irods' ~/.local environment.
 
-. $BATS_TEST_DIRNAME/scripts/test_support_functions
+. $BATS_TEST_DIRNAME/test_support_functions
 
 setup() {
+  [ -f /tmp/once ] || {
+      rm -fr ~/.irods
+      $BATS_TEST_DIRNAME/iinit.py host localhost \
+          port 1247     \
+          zone tempZone \
+          user rods     \
+          password rods \
+      ## Because iRODS 5+ negotiates for SSL automatically:
+      CLIENT_JSON=~/.irods/irods_environment.json
+      jq '.["irods_client_server_policy"]="CS_NEG_REFUSE"' >$CLIENT_JSON.$$ <$CLIENT_JSON
+      mv  $CLIENT_JSON.$$ $CLIENT_JSON
 
-  iinit_as_rods
+      setup_pam_login_for_user "test123" alice
 
-  setup_pam_login_for_user "test123" alice
-
-  cat >~/test_get_home_coll.py <<-EOF
+      cat >~/test_get_home_coll.py <<-EOF
 	import irods.test.helpers as h
 	ses = h.make_session()
 	home_coll = h.home_collection(ses)
@@ -17,11 +28,8 @@ setup() {
 	       and ses.pool.account._original_authentication_scheme.lower() in ('pam','pam_password')
 	     else 1)
 	EOF
-}
-
-teardown() {
-  iinit_as_rods
-  finalize_pam_login_for_user alice
+  }
+  touch /tmp/once
 }
 
 prc_test()

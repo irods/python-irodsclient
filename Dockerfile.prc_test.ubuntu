@@ -31,6 +31,5 @@ SHELL ["/bin/bash","-c"]
 #  3. run python tests as the new group
 
 CMD  echo "Waiting on iRODS server... " ; \
-     python${PY_N} repo/docker_build/recv_oneshot -h irods-provider -p 8888 -t 360 && \
      sudo groupadd -o -g $(stat -c%g /irods_shared) irods && sudo usermod -aG irods user && \
      newgrp irods < repo/run_python_tests.sh

@@ -1,0 +1,33 @@
+# Run a set of tests, each in its own container and with a potentially customized setup.
+# (Documentation and implementation for the test harness may be found in `irods/test/harness`.)
+
+name: run-bats-tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    timeout-minutes: 20
+
+    name: Python ${{ matrix.python }}, iRODS ${{ matrix.irods_server }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ./irods/test/harness
+    strategy:
+      matrix:
+        python: ['3.9','3.13']
+        irods_server: ['4.3.4','5.0.2']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build images
+        run: ./create_docker_images.sh "${{ matrix.irods_server }}" "${{ matrix.python }}"
+
+      - name: run tests
+        run: |
+          for script in ../scripts/test[0-9]*; do
+              ./docker_container_driver.sh -V $script
+          done

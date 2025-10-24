@@ -1,0 +1,23 @@
+#!/bin/bash
+
+python_rule_plugin_package_spec() {
+  local PKG=irods-rule-engine-plugin-python
+  local search_str="+$IRODS_PACKAGE_VERSION"
+  if [ "$1" = "all" ]; then
+    search_str=""
+  fi
+  local VERSIONS=$(apt list -a $PKG 2>/dev/null|\
+                   awk '{print $2}'|\
+                   grep '\w'|\
+                   grep "$(
+                      perl -e 'print quotemeta($ARGV[0])' "$search_str")"
+                  )
+  local LATEST_VERSION=$(sort -V <<<"$VERSIONS" | tail -1)
+  if [ "$1" = "latest" ]; then
+      echo "$PKG=$LATEST_VERSION"
+  else
+      echo "$VERSIONS"
+ fi
+}
+
+apt install -y "$(python_rule_plugin_package_spec latest)"
