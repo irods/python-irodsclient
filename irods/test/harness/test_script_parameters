@@ -21,6 +21,7 @@ declare -A wrappers=(
     [test008_prc_write_irodsA_utility_in_native_mode.bats]=../login_auth_test.sh
     [test009_test_special_characters_in_pam_passwords_auth_framework.bats]=../login_auth_test.sh
     [test010_issue_362_rogue_chars_in_pam_password.bats]=../login_auth_test.sh
+    [test011_write_pam_password_secrets_file.bats]=../login_auth_test.sh
 )
 
 # keys for Image and User refer to the basename after resolution to a wrapper if one is used
