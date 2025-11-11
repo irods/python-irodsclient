@@ -65,7 +65,7 @@ import irods.client_configuration as config
 from irods.manager import data_object_manager
 from irods.message import RErrorStack
 from irods.message import ET, XML_Parser_Type, default_XML_parser, current_XML_parser
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from tempfile import NamedTemporaryFile, gettempdir, mktemp
 from irods.test.helpers import unique_name, my_function_name
 from irods.ticket import Ticket
@@ -3305,16 +3305,20 @@ class TestDataObjOps(unittest.TestCase):
         if self.sess.server_version < (5,):
             self.skipTest("iRODS servers < 5.0.0 do not provide an access_time attribute for data objects.")
 
-        data_path= iRODSPath(self.coll.path,
-            unique_name(my_function_name(), datetime.now())
-            )
-        with self.sess.data_objects.open(data_path,"w") as f:
-            f.write(b'_')
-        with self.sess.data_objects.open(data_path,"r") as f:
-            f.read()
+        prior_ts = datetime.now(timezone.utc) - timedelta(seconds=2)
 
-        data = self.sess.data_objects.get(data_path)
-        self.assertGreaterEqual(data.access_time, data.modify_time)
+        # Create a new, uniquely named test data object.
+        data = self.sess.data_objects.create(
+            logical_path:=f'{helpers.home_collection(self.sess)}/{unique_name(my_function_name(), datetime.now())}'
+        )
+
+        with data.open('w') as f:
+            data = self.sess.data_objects.get(logical_path)
+            self.assertEqual(data.access_time, data.modify_time)
+            self.assertGreaterEqual(data.access_time, prior_ts)
+
+        # Test that access_time is there, and of the right type.
+        self.assertIs(type(data.access_time), datetime)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
