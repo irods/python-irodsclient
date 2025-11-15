@@ -23,7 +23,7 @@ import socket
 from re import compile as regex
 from typing import Dict, Optional
 import gc
-from irods.test.setupssl import create_ssl_dir
+from irods.test.setup_ssl import create_ssl_dir
 
 #
 # Allow override to specify the PAM password in effect for the test rodsuser.
@@ -160,7 +160,7 @@ class TestLogins(unittest.TestCase):
          single-node iRODS system, by the service account user. This ensures
          the /etc/irods directory is local and writable.
 
-      2. ./setupssl.py (sets up SSL keys etc. in /etc/irods/ssl) should be run
+      2. ./setup_ssl.py (sets up SSL keys etc. in /etc/irods/ssl) should be run
          first to create (or overwrite, if appropriate) the /etc/irods/ssl directory
          and its contents.
 
@@ -207,6 +207,9 @@ class TestLogins(unittest.TestCase):
                         authentication_scheme=lookup["AUTH"],
                         password=lookup["PASSWORD"],
                         port=1247,
+                        **(
+                            {**SERVER_ENV_SSL_SETTINGS, **CLIENT_OPTIONS_FOR_SSL} if self.admin.server_version >= (5,) else {}
+                        )
                     )
                     try:
                         pam_hashes = ses.pam_pw_negotiated
@@ -295,6 +298,7 @@ class TestLogins(unittest.TestCase):
     def tst0(
         self, ssl_opt, auth_opt, env_opt, name=TEST_RODS_USER, make_irods_pw=False
     ):
+        session = None
         _auth_opt = auth_opt
         if auth_opt in ("pam", "pam_password"):
             auth_opt = self.PAM_SCHEME_STRING
@@ -377,7 +381,10 @@ class TestLogins(unittest.TestCase):
                 )
                 print("---")
 
-            return session
+        if session:
+            session.cleanup()
+        return session
+       
 
     # == test defaulting to 'native'
 
@@ -413,14 +420,16 @@ class TestLogins(unittest.TestCase):
         self.tst0(ssl_opt=True, auth_opt="pam", env_opt=False)
 
     def test_6(self):
+        if self.admin.server_version >= (5,):
+            self.skipTest("iRODS 5 does not permit sending the raw PAM password on an unencrypted connection.")
         try:
-            ses = self.tst0(ssl_opt=False, auth_opt="pam", env_opt=False)
+            session = self.tst0(ssl_opt=False, auth_opt="pam", env_opt=False)
         except PlainTextPAMPasswordError:
             pass
         else:
             # -- no exception raised (this is expected behavior in 4.3+ with the new authentication framework,
             #    but for 4.2 and previous, we expect the PlainTextPAMPasswordError to be raised.
-            if ses.server_version_without_auth() < (4, 3):
+            if session.server_version_without_auth() < (4, 3):
                 self.fail("PlainTextPAMPasswordError should have been raised")
 
     def test_7(self):
@@ -534,7 +543,7 @@ class TestMiscellaneous(unittest.TestCase):
                 s.users.get("bob")
             os.unlink(bob_auth)
             # -- Check that we raise an appropriate exception pointing to the missing auth file path --
-            with self.assertRaisesRegexp(NonAnonymousLoginWithoutPassword, bob_auth):
+            with self.assertRaisesRegex(NonAnonymousLoginWithoutPassword, bob_auth):
                 with helpers.make_session(**login_options) as s:
                     s.users.get("bob")
         finally:
@@ -610,7 +619,7 @@ class TestWithSSL(unittest.TestCase):
             self.skipTest("TestWithSSL may not be run by user irods")
         if not os.path.exists("/etc/irods/ssl"):
             self.skipTest(
-                "Running setupssl.py as irods user is prerequisite for this test."
+                "Running setup_ssl.py as irods user is prerequisite for this test."
             )
         with helpers.make_session() as session:
             if not session.host in ("localhost", socket.gethostname()):

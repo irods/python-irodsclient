@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# This script should be run as the service account user.
+
+wait=""
+if [ $1 = --wait ]; then
+    wait=1
+    shift
+fi
+
+DIR=$(dirname "$0")
+
+server_ctl() {
+    # This script takes one argument.
+    # Valid arguments: start, stop, or restart.  The appropriate action is then taken for the resident iRODS server.
+    if "$DIR"/irods_version_greater_or_equal_to --use_env_var=IRODS_PACKAGE_VERSION 5.0; then
+        # Make our ps-based script wait for process shutdown like 'irodsctl stop' does.
+        W=""
+        if [ "$1" = stop ]; then
+            W=wait
+        fi
+        "$IRODS_CONTROL_PATH"/manage_irods5_procs $1 $W
+    else
+        ~/irodsctl $1
+    fi
+}
+
+jq_process_in_place() {
+    local filename=$1
+    shift
+    local basenm=$(basename "$filename")
+    local tempname=/tmp/.$$.$basenm
+
+    jq "$@" <"$filename" >"$tempname" &&
+        cp "$tempname" "$filename"
+    STATUS=$?
+    rm -f "$tempname"
+    [ $STATUS = 0 ] || echo "**** jq process error" >&2
+}
+
+# -- Main part of script --
+
+server_ctl stop
+
+jq_process_in_place /etc/irods/server_config.json \
+    '.plugin_configuration.rule_engines[1:1]=[ { "instance_name": "irods_rule_engine_plugin-python-instance",
+                                                "plugin_name": "irods_rule_engine_plugin-python",
+                                                "plugin_specific_configuration": {}
+                                              }
+                                            ]'
+echo '
+defined_in_both {
+    writeLine("stdout", "native rule")
+}
+
+generic_failing_rule {
+    fail
+}
+
+failing_with_message {
+    failmsg(-2, "error with code of minus 2")
+}
+
+' >>/etc/irods/core.re
+
+echo '
+def defined_in_both(rule_args,callback,rei):
+    callback.writeLine("stdout", "python rule")
+
+def generic_failing_rule(*_):
+    raise RuntimeError
+
+def failing_with_message_py(rule_args,callback,rei):
+    callback.failing_with_message()
+
+' >/etc/irods/core.py
+
+server_ctl start
+
+# Wait until 'irule -a' shows Python Rule Engine Plugin among the choices
+if [ -n "$wait" ]; then
+    times=0
+    OUTFILE=/tmp/irule_output.stderr
+    while :; do
+        irule -a 2>/dev/null | grep irods_rule_engine_plugin-python-instance >/dev/null
+        [ ${PIPESTATUS[1]} -eq 0 ] && break
+        sleep 1
+        if [ $((++times)) -ge 10 ]; then
+            echo >&2 "Failed to configure Python rule engine."
+            exit 2
+        fi
+    done
+fi

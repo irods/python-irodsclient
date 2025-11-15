@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+import getopt
+import glob
+import json
+import os
+import sys
+
+def version_to_tuple(dot_str):
+    return tuple(int(_) for _ in dot_str.split('.'))
+
+# Fail unless iRODS version is greater than or equal to a version string given on the command line.
+# With -e, we determine the installed iRODS version from the specified environment variable.
+# Else use ~irods/version.json
+
+if __name__ == '__main__':
+    opts,arg = getopt.getopt (sys.argv[1:],'e:',['use_env_var='])
+
+    env_var = ''
+
+    for opt,val in opts:
+        if opt in {'-e','--use_env_var'}:
+            env_var = val
+
+    pattern = os.path.join(os.path.expanduser('~irods'), "*.json")
+
+    # get full path of version.json
+
+    if env_var:
+        version_to_test = os.environ[env_var]
+    else:
+        version_files = list(
+            filter(
+                (lambda name: name.lower().endswith('version.json')),
+                glob.glob(pattern)
+            )
+        )
+        # Load JSON struct containing iRODS version.
+        j = json.load(open(version_files[0]))
+        version_to_test = j["irods_version"]
+
+    if version_to_tuple(version_to_test) < version_to_tuple(arg[0]):
+        exit(1)
