@@ -43,9 +43,14 @@ except irods.client_init.irodsA_already_exists:
     [ -n "$CONTENTS1" -a "$CONTENTS1" = "$CONTENTS2" ]
 
     # Now delete the already existing irodsA and repeat without negating overwrite.
+    TIMESTAMP_0=$(stat -c%Y $auth_file)
+    # The sleep ensures the mtime of $auth_file will change if/when it is rewritten.
+    sleep 2
     $PYTHON -c "import irods.client_init; irods.client_init.write_pam_irodsA_file('$ALICES_NEW_PAM_PASSWD')"
-    CONTENTS3=$(cat $auth_file)
-    [ "$CONTENTS2" != "$CONTENTS3" ]
+    TIMESTAMP=$(stat -c%Y $auth_file)
+
+    # Test only the timestamp of the new auth_file, not the content, since that is implicitly asserted by the next step.
+    [ $(($TIMESTAMP-TIMESTAMP_0)) -ge 1 ]
 
     # Define the core Python to be run, basically a minimal code block ensuring that we can authenticate to iRODS
     # without an exception being raised.

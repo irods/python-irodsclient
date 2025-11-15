@@ -1,0 +1,59 @@
+#!/bin/bash
+
+if [ $(id -un) = irods ]; then
+    LAUNCH='bash -c'
+else
+    LAUNCH='sudo su - irods -c'
+fi
+
+STDOUT=""
+PID=""
+
+start() {
+    if [ -z "$STDOUT" ]; then
+        $LAUNCH 'irodsServer -d -p /tmp/irods.pid'
+    else
+        $LAUNCH 'irodsServer --stdout -p /tmp/irods.pid >/tmp/irods.log &'
+    fi
+}
+
+rm_pid_file() {
+    if [ -z "$PID" ]; then
+        PID=$($LAUNCH 'cat /tmp/irods.pid')
+    fi
+    $LAUNCH 'rm -f /tmp/irods.pid >/dev/null 2>&1'
+}
+
+stop() {
+    $LAUNCH 'kill -QUIT $(cat /tmp/irods.pid)'
+    rm_pid_file
+}
+
+wait() {
+    $LAUNCH "
+      [ -z '$PID' ] && { echo >&2 'nothing to wait for.' ; exit 2; }
+      while ps -eo pid |grep $PID >/dev/null 2>&1; do sleep 1; done;"
+}
+
+# -----------------------------------
+while [ -n "$1" ]; do
+    if [ "$1" = "stdout" ]; then
+        STDOUT=1
+    elif [ "$1" = "start" ]; then
+        start
+    elif [ "$1" = "rescan-config" ]; then
+        $LAUNCH 'pkill -HUP irodsServer'
+    elif [ "$1" = "status" ]; then
+        pgrep -afl "irods(Delay|Agent|Server)"
+    elif [ "$1" = "stop" ]; then
+        stop
+    elif [ "$1" = "restart" ]; then
+        stop && start
+    elif [ "$1" = "wait" ]; then
+        wait
+    else
+        echo >&2 "usage: $0 [start|status|stop]"
+        exit 2
+    fi
+    shift
+done

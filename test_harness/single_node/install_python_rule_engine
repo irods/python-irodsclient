@@ -1,0 +1,34 @@
+#!/bin/bash
+
+python_rule_plugin_package_spec() {
+    local PKG=irods-rule-engine-plugin-python
+
+    # Grep pattern to filter plugin package names for those compatible with the target version of iRODS.
+    local search_str="+$IRODS_PACKAGE_VERSION"
+    if [ "$1" = "all" ]; then
+        search_str=""
+    fi
+
+    # Collect available version strings for the plugin for our iRODS server version.
+    local VERSIONS=$(
+        apt list -a $PKG 2>/dev/null |
+            awk '{print $2}' |
+            grep '\w' |
+            grep "$(
+                perl -e 'print quotemeta($ARGV[0])' "$search_str"
+            )"
+    )
+
+    # Get the highest version number among the list in $VERSIONS
+    local LATEST_VERSION=$(sort -V <<<"$VERSIONS" | tail -1)
+
+    if [ "$1" = "latest" ]; then
+        # Output the appropriate format for apt install targets
+        echo "$PKG=$LATEST_VERSION"
+    else
+        echo "$VERSIONS"
+    fi
+}
+
+# Download/install the latest Python Rule Engine plugin appropriate for the iRODS server we have installed.
+apt install -y "$(python_rule_plugin_package_spec latest)"

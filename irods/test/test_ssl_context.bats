@@ -82,10 +82,10 @@ if [ "`cat /tmp/run`" != "$RUN" ]; then
     sudo $REPO_SCRIPTS/json_config --clear-store ${ABBREVIATIONS[*]}
 
     # Set up the basic server cert, key, and DH params file.
-    [ -e /etc/irods/ssl ] || sudo su irods -c "$REPO_SCRIPTS/setupssl.py -f"
+    [ -e /etc/irods/ssl ] || sudo su irods -c "$REPO_SCRIPTS/setup_ssl.py -f"
 
     # Set up another cert with non-matching hostname.
-    sudo su irods -c "$REPO_SCRIPTS/setupssl.py -kf -x.localhost -hlocalhost"
+    sudo su irods -c "$REPO_SCRIPTS/setup_ssl.py -kf -x.localhost -hlocalhost"
     sudo su irods -c "c_rehash /etc/irods/ssl"
 
     # Change the iRODS svc account user's (and current user's) iRODS environment file for SSL.
