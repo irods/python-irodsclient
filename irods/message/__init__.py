@@ -181,7 +181,7 @@ def ET(xml_type=(), server_version=None):
 
 logger = logging.getLogger(__name__)
 
-IRODS_VERSION = (5, 0, 2, "d")
+from .. import maximum_compatible_server_api as IRODS_VERSION
 
 UNICODE = str
 
