@@ -107,7 +107,11 @@ class iRODSMetaCollection:
         self._reset_metadata()
 
     def _reset_metadata(self):
-        self._meta = self._manager.get(self._model_cls, self._path)
+        m = self._manager
+        if not hasattr(self,"_meta"):
+            self._meta = m.get(None, "")
+        if m._opts.setdefault('reload',True):
+            self._meta = m.get(self._model_cls, self._path)
 
     def get_all(self, key):
         """

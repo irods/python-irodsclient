@@ -83,6 +83,9 @@ class MetadataManager(Manager):
         }[model_cls]
 
     def get(self, model_cls, path):
+        if not path:
+            # Short circuit.  This should be of the same type as the object returned at the function's end.
+            return []
         resource_type = self._model_class_to_resource_type(model_cls)
         model = {
             "d": DataObjectMeta,

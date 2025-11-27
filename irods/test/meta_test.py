@@ -822,6 +822,26 @@ class TestMeta(unittest.TestCase):
             if d:
                 d.unlink(force=True)
 
+    def test_reload_can_be_deactivated__issue_768(self):
+        # Set an initial AVU
+        metacoll = self.obj.metadata
+        metacoll.set(item_1:=iRODSMeta('aa','bb','cc'))
+
+        # Initial defaults will always reload the AVU list from the server, so new AVU should be seen.
+        self.assertIn(item_1, metacoll.items())
+
+        # Setting reload option to False will prevent reload of object AVUs, so an AVU just set should not be seen.
+        metacoll_2 = metacoll(reload=False)
+        metacoll_2.set(item_2:=iRODSMeta('xx','yy','zz'))
+        items = metacoll_2.items()
+        self.assertIn(item_1, items)
+        self.assertNotIn(item_2, items)
+
+        # Restore old setting.  Check that both AVUs are seen as present.
+        items_reloaded = metacoll_2(reload=True).items()
+        self.assertIn(item_1, items_reloaded)
+        self.assertIn(item_2, items_reloaded)
+
 if __name__ == "__main__":
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath("../.."))
