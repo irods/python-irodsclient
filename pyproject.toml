@@ -1,3 +1,51 @@
+[project]
+name = "python-irodsclient"
+authors = [
+	{name = "iRODS Consortium", email = "support@irods.org"},
+]
+description = "A Python API for iRODS"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">= 3.9"
+keywords = ["irods"]
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
+classifiers = [
+	"Development Status :: 5 - Production/Stable",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
+	"Operating System :: POSIX :: Linux",
+]
+dependencies = [
+	"PrettyTable>=0.7.2",
+	"defusedxml",
+	"jsonpointer",
+	"jsonpatch",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/irods/python-irodsclient"
+Issues = "https://github.com/irods/python-irodsclient/issues"
+
+[project.optional-dependencies]
+tests = [
+	"unittest-xml-reporting", # for xmlrunner
+	"types-defusedxml",       # for type checking
+	"progressbar",            # for type checking
+	"types-tqdm",             # for type checking
+]
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["irods"]
+script-files = ["irods/prc_write_irodsA.py"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["test_harness*", "dist*"]
