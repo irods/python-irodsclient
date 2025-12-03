@@ -49,3 +49,474 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 exclude = ["test_harness*", "dist*"]
+
+[tool.ruff]
+exclude = [
+	".bzr",
+	".direnv",
+	".eggs",
+	".git",
+	".git-rewrite",
+	".hg",
+	".ipynb_checkpoints",
+	".mypy_cache",
+	".nox",
+	".pants.d",
+	".pyenv",
+	".pytest_cache",
+	".pytype",
+	".ruff_cache",
+	".svn",
+	".tox",
+	".venv",
+	".vscode",
+	"__pypackages__",
+	"_build",
+	"buck-out",
+	"build",
+	"dist",
+	"node_modules",
+	"site-packages",
+	"venv",
+]
+
+# Ensure this matches tool.ruff.lint.pycodestyle.max-doc-length
+line-length = 120
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"
+line-ending = "auto"
+
+# Enable reformatting of code snippets in docstrings.
+docstring-code-format = true
+
+# Respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+# Enable preview rules, but require them to be explicitly enabled
+preview = true
+explicit-preview-rules = true
+# Enable rules
+select = [
+	# eradicate
+	"ERA",
+	# flake8-2020
+	"YTT",
+	# flake8-annotations, uncomment if we ever add type annotations
+	#"ANN",
+	# flake8-executable
+	"EXE",
+	# flake8-async
+	"ASYNC",
+	# flake8-blind-except
+	"BLE",
+	# flake8-bugbear
+	"B",
+	# flake8-builtins
+	"A",
+	# flake8-comprehensions
+	"C4",
+	# flake8-datetimez
+	"DTZ",
+	# flake8-executable
+	"EXE",
+	# flake8-future-annotations
+	"FA",
+	# flake8-implicit-str-concat
+	"ISC",
+	# flake8-import-conventions
+	"ICN",
+	# flake8-logging
+	"LOG",
+	# flake8-logging-format
+	"G",
+	# flake8-no-pep420
+	"INP",
+	# flake8-pie
+	"PIE",
+	# flake8-pyi
+	"PYI",
+	# flake8-raise
+	"RSE",
+	# flake8-return
+	"RET",
+	# flake8-self
+	"SLF",
+	# flake8-simplify
+	"SIM",
+	# flake8-slots
+	"SLOT",
+	# flake8-tidy-imports
+	"TID",
+	# flake8-todos
+	"TD",
+	# flake8-type-checking
+	"TC",
+	# flake8-unused-arguments
+	"ARG",
+	# flake8-use-pathlib
+	"PTH",
+	# flynt
+	"FLY",
+	# isort
+	"I",
+	# pep8-naming
+	"N",
+	# Perflint
+	"PERF",
+	# pycodestyle
+	"E", "W",
+	# pydoclint
+	"DOC",
+	# pydocstyle, flake8-docstrings
+	"D",
+	# Pyflakes
+	"F",
+	# pygrep-hooks
+	"PGH",
+	# Pylint
+	"PL",
+	# pyupgrade
+	"UP",
+	# refurb
+	"FURB",
+	# Ruff-specific rules
+	"RUF",
+	# tryceratops
+	"TRY",
+
+	## flake8-bandit
+	## We want a subset and it's easier to handle some here than in ignore
+	# S1??: general tests
+	"S1",
+	# S2??: misconfiguration
+	"S2",
+	# S301: suspicious pickle usage
+	"S301",
+	# S306: usage of insecure and deprecated mktemp
+	"S306",
+	# S307: usage of insecure eval
+	"S307",
+	# S311: usage of bad rand
+	"S311",
+	# S313-S319: usage of insecure XML parsing
+	"S313", "S314", "S315", "S316", "S317", "S318", "S319",
+	# S5??: cryptography
+	"S5",
+	# shell usage
+	"S602", "S604", "S605",
+	# S612: 
+	## flake8-commas
+	## We only want one rule from this one
+	# COM818: trailing comman on bare tuple prohibited
+	"COM818",
+	## flake8-quotes
+	## We don't want most rules from this one, as quotes are mostly handled by the formatter
+	# Q004: Unnecessary escape on inner quote character
+	"Q004",
+	## pydocstyle
+	## Certain rules are disabled by tool.ruff.lint.pydocstyle.convention, but we still want some of them
+	# D213: Multi-line docstring summary should start at the second line
+	"D213",
+	# D214: Overindented section
+	"D214",
+	# D215: Overindented section underline
+	"D215",
+	# D404: First word of the docstring should not be "This"
+	"D404",
+	# D405: Section name should be properly capitalized
+	"D405",
+	# D406: Missing newline after section name
+	"D406",
+	# D409: Mismatched section underline length
+	"D409",
+	# D416: Missing colon after section name
+	"D416",
+	# D417: Missing parameter documentation
+	"D417",
+
+	### preview rules
+	## pydoclint
+	# DOC102: uocumented parameter missing from signature
+	"DOC102",
+	# DOC201: undocumented return value
+	"DOC201",
+	# DOC202: docstring has returns section, but function/method does not return anything
+	"DOC202",
+	# DOC402: undocumented yield value
+	"DOC402",
+	# DOC403: docstring has yields section, but function/method does not yield anything
+	"DOC403",
+	# DOC501: undocumented raised exception
+	"DOC501",
+]
+# Disable rules
+ignore = [
+	## flake8-datetimez
+	# DTZ003: datetime.datetime.utcnow() used
+	"DTZ003",
+
+	## flake8-tidy-imports
+	# TID252: Prefer absolute imports over relative imports
+	# This can introduce difficulties
+	"TID252",
+
+	## flake8-todos
+	# TD002: Missing author in TODO
+	"TD002",
+
+	## pycodestyle
+	# E402: Module level import not at top of file
+	# We often need to do some checking before importing stuff
+	"E402",
+	# Indentation/alignment/spacing stuff
+	# E128: continuation line under-indented for visual indent
+	# Don't hate me cuz I'm pretty.
+	# Uncomment if ruff ever supports this
+	#"E128",
+	# Most indentation handled by formatter
+	"E101", # indentation contains mixed spaces and tabs
+	"E111", # wrong indentation multiple
+	"E114", # wrong indentation multiple (for comments)
+	"E117", # over-indentation
+	"W191", # indentation includes tabs
+
+	## pydoclint
+	# DOC502: docstring specifies potential exception that is not actually raised in the fucntion/method body
+	# Does not account for exceptions from other sources
+	"DOC502",
+
+	## pylint
+	# PLC0415: import should be at top-level
+	# plenty of reasons to put it in a block
+	"PLC0415",
+	# PLC1901: comparison to empty string
+	# Does not account for types
+	"PLC1901",
+	# PLE0116: continue in finally block
+	# Supported since Python 3.8
+	"PLE0116",
+	# Design complexity stuff
+	# These judgements should always be made by humans
+	#"PLC0302", # too many lines in module (uncomment if ruff ever supports this)
+	#"PLR0901", # too many class ancestors (uncomment if ruff ever supports this)
+	#"PLR0902", # too many instance attributes (uncomment if ruff ever supports this)
+	#"PLR0903", # too few public methods (uncomment if ruff ever supports this)
+	"PLR0904", # too many public methods
+	"PLR0911", # too many return statements
+	"PLR0912", # too many branches
+	"PLR0913", # too many arguments
+	"PLR0914", # too many locals
+	"PLR0915", # too many statements
+	"PLR0916", # too many boolean expressions in a single statement
+	"PLR0917", # too many positional arguments
+	"PLR1702", # too many nested blocks
+
+	## tryceratops
+	# TRY003: Avoid specifying long messages outside the exception class
+	# Way, way too many false positives
+	"TRY003",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Don't whine about codes in noqa that ruff doesn't (yet) support
+external = [
+	# openstack's hacking flake8 plugin
+	"V",
+	# flake8-multiline-containers
+	"JS",
+	# flake8-typing-imports
+	"TYP"
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Allow suggesting `from __future__ import annotations`
+future-annotations = true
+
+# TODO and TODO-like tags to recognize
+task-tags = [
+	'FIXME',
+	'TODO',
+	'HACK',
+	'KLUDGE',
+	'BUG',
+	'OPTIMIZE',
+	'XXX',
+	'JANK',
+	'AWFUL',
+	'BAD',
+	'CRIME',
+	'CRIMES',
+]
+
+# Recognize `typing_extensions` imports
+typing-extensions = true
+# Speciy additional typing extension modules
+typing-modules = []
+
+[tool.ruff.lint.per-file-ignores]
+"setup.py" = [
+	# pydocstyle, flake8-docstrings
+	# Ignore missing module docstring in setup.py
+	"D100",
+]
+"irods/test/*_test.py" = [
+	# flake8-bandit
+	# S106: Possible hardcoded password assigned to argument
+	# Ignore passwords in tests
+	"S106",
+	# pydocstyle, flake8-docstrings
+	# Ignore missing docstrings in tests
+	"D1",
+]
+
+[tool.ruff.lint.flake8-annotations]
+# Suppress ANN401 for dynamically typed *args and **kwargs arguments.
+allow-star-arg-any = true
+# Allow omission of __init__ return type hint if at least one argument is annotated
+#mypy-init-return = true
+# Suppress violations for dummy argument variables
+#suppress-dummy-args = true
+
+[tool.ruff.lint.flake8-bugbear]
+# function calls to allow as default arguments
+extend-immutable-calls = []
+
+[tool.ruff.lint.flake8-builtins]
+#allowed-modules = []
+#ignorelist = []
+
+[lint.flake8-implicit-str-concat]
+# Allow multiline implicit string concatenation
+allow-multiline = true
+
+[tool.ruff.lint.flake8-import-conventions]
+# Disallow using the `from ... import ...` syntax for individual modules
+banned-from = []
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+# To enforce an aliasing convention, follow this pattern:
+#"module1" = "alias1"
+#"module2" = "alias2"
+
+[tool.ruff.lint.flake8-import-conventions.banned-aliases]
+# To disallow specific aliases, follow this pattern:
+#"module1" = ["alias1", "alias2"]
+#"module2" = ["alias3", "alias4"]
+
+[tool.ruff.lint.flake8-self]
+# names to ignore when flagging private member access
+extend-ignore-names = ["test_*"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Disallow specific module-level imports (allow only in functions and blocks)
+banned-module-level-imports = []
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# Disallow specific modules from being imported at all
+"optparse".msg = "Use argparse instead of optparse"
+"getopt".msg = "Use argparse instead of getopt"
+"distutils".msg = "distutils has been removed from the stdlib"
+"imp".msg = "imp has been removed from the stdlib"
+"pycrypto".msg = "pycrypto is no longer maintained; use pyca/cryptography instead"
+
+[tool.ruff.lint.flake8-type-checking]
+# Exempt specific modules from needing to be moved into type-checking blocks
+exempt-modules = ["typing"]
+# Exempt classes that list any of the enumerated classes as a base class from needing to be moved
+# into type-checking blocks
+runtime-evaluated-base-classes = []
+# Exempt classes and functions decorated with any of the enumerated decorators from being moved
+# into type-checking blocks
+runtime-evaluated-decorators = []
+# Quote type annotations if doing so would allow an import to be moved into a type-checking block
+#quote-annotations = true
+
+[tool.ruff.lint.flake8-unused-arguments]
+# Do not ignore unused *args/**kwargs
+ignore-variadic-names = false
+
+[tool.ruff.lint.isort]
+# Order imports by type
+order-by-type = true
+# ordering of relative imports
+relative-imports-order = "closest-to-furthest"
+# force specific imports to the top of their section
+force-to-top = []
+# Combine aliased imports
+combine-as-imports = true
+# Combine aliased imports as multi-line compount imports
+force-wrap-aliases = true
+# modules to separate into auxiliary block(s), in the order specified
+forced-separate = []
+# modules to consider as part of the stdlib
+extra-standard-library = []
+# modules to consider as being third-party
+known-third-party = [
+	# distro_distil is first-party, but is an iRODS-independent package
+	"distro_distil",
+]
+# modules to consider as first-party
+known-first-party = []
+# modules to consider as being a local folder
+known-local-folder = []
+# ensure certain imports are in all files
+required-imports = []
+# single-line rule exceptions
+single-line-exclusions = []
+# Do not fold mult-line imports if there is a trailing comma
+split-on-trailing-comma = true
+# tokesn to always recognize as CONSTANTs
+constants = [
+	#"GSI_AUTH_SCHEME",
+	#"PAM_AUTH_SCHEME",
+	#"DEFAULT_CONFIG_PATH"
+]
+# tokens to always recognise as variables
+variables = []
+
+[tool.ruff.lint.pep8-naming]
+# treat methos with these decorators as class methods
+classmethod-decorators = []
+# treat methos with these decorators as static methods
+staticmethod-decorators = []
+# names to ignore when considering naming violations
+extend-ignore-names = []
+
+[tool.ruff.lint.pycodestyle]
+# Ensure this matches toll.ruff.line-length
+#max-doc-length = 120
+
+[tool.ruff.lint.pydocstyle]
+# Adhere to PEP257
+convention = "pep257"
+# Ignore docstrings for functions/methods with these fully-qualified decorators
+ignore-decorators = ["typing.overload"]
+# Do not ignore undocumented *args/**kwargs
+ignore-var-parameters = false
+# Treat methods with these decorators as properties
+property-decorators = []
+
+[tool.ruff.lint.pyflakes]
+# functions/classes to consider generic
+extend-generics = []
+
+[tool.ruff.lint.pylint]
+# dunder method names to allow
+allow-dunder-method-names = []
+# types to ignore when flagging magic values
+allow-magic-value-types = [
+	"str",
+	"bytes",
+	#"complex",
+	#"float",
+	#"int",
+]
