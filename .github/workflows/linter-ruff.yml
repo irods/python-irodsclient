@@ -1,0 +1,11 @@
+name: linter-ruff
+
+on: pull_request
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    ruff-lint:
+        uses: irods/irods_reusable_github_workflows/.github/workflows/linter-irods-ruff.yml@main
