@@ -1,0 +1,13 @@
+name: linter-ruff
+
+on: pull_request
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    ruff-format:
+        uses: SwooshyCueb/irods_reusable_github_workflows/.github/workflows/linter-irods-ruff-format.yml@ruff
+    ruff-check:
+        uses: SwooshyCueb/irods_reusable_github_workflows/.github/workflows/linter-irods-ruff-check.yml@ruff
