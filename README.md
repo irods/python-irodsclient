@@ -835,10 +835,10 @@ datetime.datetime(2022, 9, 19, 15, 26, 7)
 Disabling AVU reloads from the iRODS server
 -------------------------------------------
 
-With the default setting of reload = True, an iRODSMetaCollection will
+With the default setting of `reload = True`, an `iRODSMetaCollection` will
 proactively read all current AVUs back from the iRODS server after any
-metadata write done by the client.  This helps methods such as items()
-to return an up-to-date result.   Changing that default can, however, greatly
+metadata write done by the client.  This helps methods such as `items()`
+to return an up-to-date result.   Setting `reload = False` can, however, greatly
 increase code efficiency if for example a lot of AVUs must be added or deleted
 at once without reading any back again.
 
@@ -850,13 +850,12 @@ for i in range(10):
 
 # Force reload of AVUs and display:
 current_metadata = obj.metadata().items()
-from pprint import pp
 print(f"{current_metadata = }")
 ```
 
 Subclassing iRODSMeta
 ---------------------
-The keyword option `iRODSMeta_type` can be used to set up any iRODSMeta
+The keyword option `iRODSMeta_type` can be used to set up any `iRODSMeta`
 subclass as the translator between native iRODS metadata APIs
 and the way in which the AVUs thus conveyed should be represented to the
 client.
@@ -865,12 +864,12 @@ An example is the `irods.meta.iRODSBinOrStringMeta` class which uses the
 `base64` module to "hide" arbitrary bytestrings within the `value` and
 `units` attributes of an iRODS metadata AVU:
 
-```
+```py
 from irods.meta import iRODSBinOrStringMeta as MyMeta
 d = session.data_objects.get('/path/to/object')
 unencodable_octets = '\u1000'.encode('utf8')[:-1]
 
-# Use our custom client-metadata type to store arbitrary octet strings
+# Use our custom client-metadata type to store arbitrary octet strings.
 meta_view = d.metadata(iRODSMeta_type = MyMeta)
 meta_view.set(m1 := MyMeta('mybinary', unencodable_octets, b'\x02'))
 
@@ -879,7 +878,7 @@ irods.client_configuration.connections.xml_parser_default = 'QUASI_XML'
 meta_view.set(m2 := MyMeta('mytext', '\1', '\2'))
 
 try:
-    # These two lines are equivalent:
+    # These two lines are equivalent.
     assert {m1,m2} <= (all_avus := set(meta_view.items()))
     assert {tuple(m1),tuple(m2)} <= all_avus
 finally:
@@ -887,7 +886,7 @@ finally:
 ```
 
 Whereas the content of native iRODS AVUs must obey some valid text encoding as
-determined by the resident ICAT DB, the above is a possible alternative - albeit
+determined by the resident iRODS catalog, the above is a possible alternative - albeit
 one semantically bound to the local application that defines the needed
 translations.  Still, this can be a valid usage for users who need a guarantee
 that any given octet string they might generate can be placed into metadata without
