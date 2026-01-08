@@ -20,7 +20,7 @@ import irods.client_configuration as config
 from irods.helpers import (
     home_collection,
     make_session as _irods_helpers_make_session)
-from irods.message import iRODSMessage, IRODS_VERSION
+from irods.message import iRODSMessage
 from irods.password_obfuscation import encode
 import irods.rule
 from irods.session import iRODSSession

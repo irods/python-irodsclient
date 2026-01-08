@@ -3,7 +3,7 @@ import os
 import sys
 from irods import env_filename_from_keyword_args
 import irods.exception as ex
-from irods.message import ET, XML_Parser_Type, IRODS_VERSION
+from irods.message import ET, XML_Parser_Type, _IRODS_VERSION
 from irods.path import iRODSPath
 from irods.session import iRODSSession
 
@@ -56,7 +56,7 @@ def make_session(test_server_version=False, **kwargs):
     session = iRODSSession(irods_env_file=env_file, **kwargs)
     if test_server_version:
         connected_version = _get_server_version_for_test(session, curtail_length=3)
-        advertised_version = IRODS_VERSION[:3]
+        advertised_version = _IRODS_VERSION[:3]
         if connected_version > advertised_version:
             msg = (
                 "Connected server is {connected_version}, "

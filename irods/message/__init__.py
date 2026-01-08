@@ -181,7 +181,7 @@ def ET(xml_type=(), server_version=None):
 
 logger = logging.getLogger(__name__)
 
-IRODS_VERSION = (5, 0, 2, "d")
+_IRODS_VERSION = (5, 0, 2, "d")
 
 UNICODE = str
 
@@ -473,8 +473,8 @@ class StartupPack(Message):
             self.connectCnt = 0
             self.proxyUser, self.proxyRcatZone = proxy_user
             self.clientUser, self.clientRcatZone = client_user
-            self.relVersion = "rods{}.{}.{}".format(*IRODS_VERSION)
-            self.apiVersion = "{3}".format(*IRODS_VERSION)
+            self.relVersion = "rods{}.{}.{}".format(*_IRODS_VERSION)
+            self.apiVersion = "{3}".format(*_IRODS_VERSION)
             self.option = application_name
 
     irodsProt = IntegerProperty()
