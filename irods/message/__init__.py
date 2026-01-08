@@ -181,6 +181,10 @@ def ET(xml_type=(), server_version=None):
 
 logger = logging.getLogger(__name__)
 
+# Advertised server version compatibility.  More recent servers are not guaranteed to work.
+# We avail ourselves of this macro in running tests to abort if the session has connected 
+# to a server that is too new.
+
 _IRODS_VERSION = (5, 0, 2, "d")
 
 UNICODE = str
