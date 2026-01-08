@@ -1,7 +1,6 @@
 import sys
 
 minimum_compatible_python = (3, 6)
-maximum_compatible_server_api = (5, 0, 2, 'd')
 
 if sys.version_info < minimum_compatible_python:
     to_dotted_string = lambda version_tuple: ".".join(str(_) for _ in version_tuple)
