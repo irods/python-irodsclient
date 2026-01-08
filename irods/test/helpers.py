@@ -1,28 +1,29 @@
 import base64
 import contextlib
-import io
 import datetime
 import hashlib
 import inspect
+import io
 import json
 import logging
 import math
 import os
-import shutil
-import socket
 import random
 import re
+import shutil
+import socket
 import sys
 import tempfile
 import threading
 
 import irods.client_configuration as config
+import irods.rule
 from irods.helpers import (
     home_collection,
-    make_session as _irods_helpers_make_session)
-from irods.message import iRODSMessage, IRODS_VERSION
+    make_session as _irods_helpers_make_session,
+)
+from irods.message import iRODSMessage
 from irods.password_obfuscation import encode
-import irods.rule
 from irods.session import iRODSSession
 
 
