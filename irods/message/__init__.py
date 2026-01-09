@@ -181,7 +181,15 @@ def ET(xml_type=(), server_version=None):
 
 logger = logging.getLogger(__name__)
 
+# Advertised server version compatibility.  More recent servers are not guaranteed to work.
+# We avail ourselves of this macro in running tests to abort if the session has connected 
+# to a server that is too new.
+
+# Deprecated.  Not for use external to the library.
 IRODS_VERSION = (5, 0, 2, "d")
+
+def _IRODS_VERSION():
+    return IRODS_VERSION
 
 UNICODE = str
 
@@ -473,8 +481,8 @@ class StartupPack(Message):
             self.connectCnt = 0
             self.proxyUser, self.proxyRcatZone = proxy_user
             self.clientUser, self.clientRcatZone = client_user
-            self.relVersion = "rods{}.{}.{}".format(*IRODS_VERSION)
-            self.apiVersion = "{3}".format(*IRODS_VERSION)
+            self.relVersion = "rods{}.{}.{}".format(*_IRODS_VERSION())
+            self.apiVersion = "{3}".format(*_IRODS_VERSION())
             self.option = application_name
 
     irodsProt = IntegerProperty()

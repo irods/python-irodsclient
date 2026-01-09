@@ -3,7 +3,7 @@ import os
 import sys
 from irods import env_filename_from_keyword_args
 import irods.exception as ex
-from irods.message import ET, XML_Parser_Type, IRODS_VERSION
+from irods.message import ET, XML_Parser_Type, _IRODS_VERSION
 from irods.path import iRODSPath
 from irods.session import iRODSSession
 
@@ -54,9 +54,12 @@ def make_session(test_server_version=False, **kwargs):
 
     env_file = env_filename_from_keyword_args(kwargs)
     session = iRODSSession(irods_env_file=env_file, **kwargs)
+    # irods.test.helpers version of this function sets test_server_version True by default, so
+    # that sessions generated for the test methods will abort on connecting with a server that
+    # is too recent.  This is a way to ensure that tests don't fail due to a server mismatch.
     if test_server_version:
         connected_version = _get_server_version_for_test(session, curtail_length=3)
-        advertised_version = IRODS_VERSION[:3]
+        advertised_version = _IRODS_VERSION()[:3]
         if connected_version > advertised_version:
             msg = (
                 "Connected server is {connected_version}, "
