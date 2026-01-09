@@ -59,7 +59,7 @@ def make_session(test_server_version=False, **kwargs):
     # is too recent.  This is a way to ensure that tests don't fail due to a server mismatch.
     if test_server_version:
         connected_version = _get_server_version_for_test(session, curtail_length=3)
-        advertised_version = _IRODS_VERSION[:3]
+        advertised_version = _IRODS_VERSION()[:3]
         if connected_version > advertised_version:
             msg = (
                 "Connected server is {connected_version}, "
