@@ -842,7 +842,7 @@ to return an up-to-date result.   Setting `reload = False` can, however, greatly
 increase code efficiency if for example a lot of AVUs must be added or deleted
 at once without reading any back again.
 
-```
+```py
 # Make a metadata view in which AVUs are not reloaded, for quick update:
 non_current_metadata_view = obj.metadata(reload = False)
 for i in range(10):
