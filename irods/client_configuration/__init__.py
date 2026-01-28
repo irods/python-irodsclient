@@ -45,6 +45,9 @@ class iRODSConfigAliasMetaclass(type):
 
 
 class ConnectionsProperties(iRODSConfiguration, metaclass=iRODSConfigAliasMetaclass):
+
+    __slots__=()
+
     @property
     def xml_parser_default(self):
         from irods.message import get_default_XML_by_name
@@ -59,10 +62,14 @@ class ConnectionsProperties(iRODSConfiguration, metaclass=iRODSConfigAliasMetacl
 
 connections = ConnectionsProperties()
 
+
 class ConfigurationError(BaseException): pass
 class ConfigurationValueError(ValueError,ConfigurationError): pass
 
+
 class Genquery1_Properties(iRODSConfiguration, metaclass=iRODSConfigAliasMetaclass):
+
+    __slots__ = ()
 
     @property
     def irods_query_limit(self):
@@ -89,6 +96,7 @@ genquery1 = Genquery1_Properties()
 
 
 class DataObjects(iRODSConfiguration):
+
     __slots__ = (
         "auto_close",
         "allow_redirect",
