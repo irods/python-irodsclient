@@ -3305,23 +3305,20 @@ class TestDataObjOps(unittest.TestCase):
         if self.sess.server_version < (5,):
             self.skipTest("iRODS servers < 5.0.0 do not provide an access_time attribute for data objects.")
 
-        data = None
         prior_ts = datetime.now(timezone.utc) - timedelta(seconds=2)
 
         # Create a new, uniquely named test data object.
-        logical_path = f'{helpers.home_collection(self.sess)}/{unique_name(my_function_name(), datetime.now())}'
+        data = self.sess.data_objects.create(
+            logical_path:=f'{helpers.home_collection(self.sess)}/{unique_name(my_function_name(), datetime.now())}'
+        )
 
-        try:
-            with self.sess.data_objects.open(logical_path,'w') as f:
-                data = self.sess.data_objects.get(logical_path)
-                self.assertEqual(data.access_time, data.modify_time)
-                self.assertGreaterEqual(data.access_time, prior_ts)
+        with data.open('w') as f:
+            data = self.sess.data_objects.get(logical_path)
+            self.assertEqual(data.access_time, data.modify_time)
+            self.assertGreaterEqual(data.access_time, prior_ts)
 
-            # Test that access_time is there, and of the right type.
-            self.assertIs(type(data.access_time), datetime)
-        finally:
-            if data:
-                self.sess.data_objects.unlink(data.path, force = True)
+        # Test that access_time is there, and of the right type.
+        self.assertIs(type(data.access_time), datetime)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
