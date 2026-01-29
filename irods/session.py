@@ -2,12 +2,15 @@ import ast
 import atexit
 import copy
 import errno
+from io import BufferedRandom
 import json
 import logging
 from numbers import Number
 import os
 import threading
+from typing import Iterable, Any, Optional
 import weakref
+
 import irods.auth
 from irods.query import Query
 from irods.genquery2 import GenQuery2
@@ -29,10 +32,22 @@ from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import at_client_exit
 from . import DEFAULT_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT
 
-_fds = None
+_fds : Optional[dict[BufferedRandom, Any]] = None
 _fds_lock = threading.Lock()
 _sessions = None
 _sessions_lock = threading.Lock()
+
+
+def _exclude_fds_from_auto_close(descriptors: Iterable):
+    """Remove all descriptors from consideration for auto_close."""
+    from irods.manager.data_object_manager import ManagedBufferedRandom
+
+    with _fds_lock:
+        fds : dict[BufferedRandom, Any] = _fds or {}
+        for fd in descriptors:
+            fds.pop(fd, None)
+            if isinstance(fd, ManagedBufferedRandom):
+                fd.do_close = False
 
 
 def _cleanup_remaining_sessions():
