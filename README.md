@@ -853,7 +853,7 @@ current_metadata = obj.metadata().items()
 print(f"{current_metadata = }")
 ```
 
-Subclassing iRODSMeta
+Subclassing `iRODSMeta`
 ---------------------
 The keyword option `iRODSMeta_type` can be used to set up any `iRODSMeta`
 subclass as the translator between native iRODS metadata APIs
