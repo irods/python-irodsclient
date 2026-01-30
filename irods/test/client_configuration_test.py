@@ -2,7 +2,6 @@ import unittest
 import irods
 import irods.client_configuration as cfg
 
-cfg.connections.xml_parser_default = 'QUASI_XML'
 # Test assignments on the negative and positive space of the
 # client configuration.
 
