@@ -14,6 +14,7 @@ from irods.meta import (
     AVUOperation,
     BadAVUOperationValue,
     BadAVUOperationKeyword,
+    iRODSBinOrStringMeta,
 )
 from irods.models import DataObject, Collection, Resource, CollectionMeta
 import irods.test.helpers as helpers
@@ -798,6 +799,67 @@ class TestMeta(unittest.TestCase):
                 # in use, with the "odd" characters being present in the metadata value.
                 del obj.metadata[attr_str]
 
+    def test_binary_avu_fields__issue_707(self):
+        meta_coll = self.obj.metadata(iRODSMeta_type=iRODSBinOrStringMeta)
+        illegal_unicode_sequence = '\u1000'.encode('utf8')[:2]
+        avu_name = 'issue709'
+        meta_coll.set(
+            avu_name,
+            (value:=b'value_'+illegal_unicode_sequence),
+            (units:=b'units_'+illegal_unicode_sequence)
+        )
+
+        self.assertEqual(
+            meta_coll.get_one(avu_name),
+            (avu_name, value, units)
+        )
+        meta_coll.add(*(new_avu:=iRODSMeta(avu_name, '\u1000', '\u1001')))
+        relevant_avus = meta_coll.get_all(avu_name)
+        self.assertIn(new_avu, relevant_avus)
+
+    def test_cascading_changes_of_metadata_manager_options__issue_709(self):
+        d = None
+        get_option = lambda metacoll, key: metacoll._manager._opts[key]
+        try:
+            d = self.sess.data_objects.create(f'{self.coll.path}/issue_709_test_1')
+            m = d.metadata
+            self.assertEqual(get_option(m,'admin'),False)
+
+            m2 = m(admin = True)
+            self.assertEqual(get_option(m2,'timestamps'),False)
+            self.assertEqual(get_option(m2,'admin'),True)
+
+            m3 = m2(timestamps = True)
+            self.assertEqual(get_option(m3,'timestamps'), True)
+            self.assertEqual(get_option(m3,'admin'), True)
+            self.assertEqual(m3._manager.get_api_keywords().get(kw.ADMIN_KW), "")
+
+            m4 = m3(admin = False)
+            self.assertEqual(get_option(m4,'admin'), False)
+            self.assertEqual(m4._manager.get_api_keywords().get(kw.ADMIN_KW), None)
+        finally:
+            if d:
+                d.unlink(force=True)
+
+    def test_reload_can_be_deactivated__issue_768(self):
+        # Set an initial AVU
+        metacoll = self.obj.metadata
+        metacoll.set(item_1:=iRODSMeta('aa','bb','cc'))
+
+        # Initial defaults will always reload the AVU list from the server, so new AVU should be seen.
+        self.assertIn(item_1, metacoll.items())
+
+        # Setting reload option to False will prevent reload of object AVUs, so an AVU just set should not be seen.
+        metacoll_2 = metacoll(reload=False)
+        metacoll_2.set(item_2:=iRODSMeta('xx','yy','zz'))
+        items = metacoll_2.items()
+        self.assertIn(item_1, items)
+        self.assertNotIn(item_2, items)
+
+        # Restore old setting.  Check that both AVUs are seen as present.
+        items_reloaded = metacoll_2(reload=True).items()
+        self.assertIn(item_1, items_reloaded)
+        self.assertIn(item_2, items_reloaded)
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
