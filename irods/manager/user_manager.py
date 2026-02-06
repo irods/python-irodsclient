@@ -141,12 +141,10 @@ class UserManager(Manager):
         if _object is None:
             _object = self.get(user_name, user_zone)
 
-#       if os.environ.get("GENADM_REMOVE_USER_FMT","") != "":
-#           uz_args = ( f"{_object.name}#{_object.zone}", )
-#       else:
-#           uz_args = ( _object.name, _object.zone )
-
-        uz_args = ( f"{_object.name}#{_object.zone}", )
+        if _object.type == "rodsgroup":
+            uz_args = ( f"{_object.name}", )
+        else:
+            uz_args = ( f"{_object.name}#{_object.zone}", )
 
         message_body = GeneralAdminRequest(
             "rm",
