@@ -143,6 +143,7 @@ class TestUserAndGroup(unittest.TestCase):
             shutil.rmtree(ENV_DIR)
             ses.users.remove("alice")
 
+
     def test_modifying_password_at_various_lengths__issue_328(self):
         ses = self.sess
         try:
