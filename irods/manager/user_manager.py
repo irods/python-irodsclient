@@ -45,7 +45,38 @@ class UserManager(Manager):
             self._get_session, "set-quota", "user", user_name, resource, "0"
         )
 
+    @staticmethod
+    def _parse_user_and_zone(user_param, zone_param):
+        """
+        Parse out user and zone components from the arguments given.
+
+        Args:
+            user_param: either a simple user name, or a combination of both
+                user and zone names joined with "#".
+            zone_param: a simple zone name,
+
+        Returns:
+            The resulting parsed user and zone.
+
+        Raises:
+            RuntimeError: in the case of formatting errors or conflicting zone names.
+        """
+        if '#' in user_param:
+            u_parsed_user, u_parsed_zone = user_param.split('#', 1)
+            if not u_parsed_zone:
+                raise RuntimeError("The compound user#zone specification may not contain a zero-length zone")
+            if '#' in u_parsed_zone:
+                raise RuntimeError(f"{u_parsed_zone = } is wrongly formatted")
+            if zone_param and (u_parsed_zone != zone_param):
+                raise RuntimeError(
+                    f"Two nonzero-length zone names ({u_parsed_zone}, {zone_param})  were given, but they do not agree."
+                )
+            return u_parsed_user, u_parsed_zone
+        return user_param, zone_param
+
     def get(self, user_name, user_zone=""):
+        user_name, user_zone = self._parse_user_and_zone(user_name, user_zone)
+
         if not user_zone:
             user_zone = self.sess.zone
 
@@ -121,6 +152,12 @@ class UserManager(Manager):
     def remove(self, user_name, user_zone="", _object=None):
         if _object is None:
             _object = self.get(user_name, user_zone)
+
+        if _object.type == "rodsgroup":  # noqa: SIM108
+            uz_args = (f"{_object.name}",)
+        else:
+            uz_args = (f"{_object.name}#{_object.zone}",)
+
         message_body = GeneralAdminRequest(
             "rm",
             (
@@ -128,8 +165,7 @@ class UserManager(Manager):
                 if (_object.type != "rodsgroup" or self.sess.server_version < (4, 3, 2))
                 else "group"
             ),
-            user_name,
-            user_zone,
+            *uz_args,
         )
         request = iRODSMessage(
             "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
