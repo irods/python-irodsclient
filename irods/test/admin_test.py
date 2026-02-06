@@ -4,7 +4,8 @@ import datetime
 import os
 import sys
 import unittest
-from irods.models import User, Group
+from irods.column import Like
+from irods.models import Collection, Group, User
 from irods.exception import (
     UserDoesNotExist,
     ResourceDoesNotExist,
@@ -72,6 +73,20 @@ class TestAdmin(unittest.TestCase):
         # user should be gone
         with self.assertRaises(UserDoesNotExist):
             self.sess.users.get(self.new_user_name, self.sess.zone)
+
+    def testissue_763(self):
+        remote_zone = remote_user = None
+        try:
+            remote_zone = (sess := self.sess).zones.create('other_zone', 'remote')
+            remote_user = sess.users.create(user_name='myuser',user_type='rodsuser',user_zone=remote_zone.name)
+            remote_user.remove()
+            remaining_collections = list(
+                sess.query(Collection).filter(Like(Collection.name, f'%/{remote_user}#{remote_zone}'))
+            )
+            self.assertEqual(len(remaining_collections), 0)
+        finally:
+            if remote_zone:
+                remote_zone.remove()
 
     def test_create_with_user_options__issue_759(self):
         gpadmin_user = remote_zone = None
