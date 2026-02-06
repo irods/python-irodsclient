@@ -4,16 +4,18 @@ import datetime
 import os
 import sys
 import unittest
-from irods.models import User, Group
-from irods.exception import (
-    UserDoesNotExist,
-    ResourceDoesNotExist,
-    SYS_NO_API_PRIV,
-)
-from irods.session import iRODSSession
-from irods.resource import iRODSResource
-import irods.test.helpers as helpers
+
 import irods.keywords as kw
+from irods.column import Like
+from irods.exception import (
+    SYS_NO_API_PRIV,
+    ResourceDoesNotExist,
+    UserDoesNotExist,
+)
+from irods.models import Collection, Group, User
+from irods.resource import iRODSResource
+from irods.session import iRODSSession
+from irods.test import helpers
 
 
 class TestAdmin(unittest.TestCase):
@@ -530,6 +532,34 @@ class TestAdmin(unittest.TestCase):
         # user should be gone
         with self.assertRaises(UserDoesNotExist):
             self.sess.users.get(self.new_user_name)
+
+    def test_deleting_remote_user_including_home_collection_and_trash_artifact__issue_763(self):
+        # Test and confirm that, when passing user and zone parameters separately in calls to
+        # remove remote users, that both /tempZone/home/user#zone and /tempZone/trash/home/user#zone
+        # are deleted.
+        remote_zone = remote_user = None
+        try:
+            remote_zone = (sess := self.sess).zones.create('other_zone', 'remote')
+            remote_user = sess.users.create(user_name='myuser', user_type='rodsuser', user_zone=remote_zone.name)
+
+            def get_collection_artifacts():
+                return list(
+                    sess.query(Collection).filter(Like(Collection.name, f'%/{remote_user.name}#{remote_zone.name}'))
+                )
+
+            # Two collection artifacts should be present, with names:
+            #     /<local_zone>/home/remote_user#remote_zone
+            #     /<local_zone>/trash/home/remote_user#remote_zone
+            self.assertEqual(len(get_collection_artifacts()), 2)
+
+            remote_user.remove()
+
+            # The above-mentioned artifacts should have been deleted along with the remote user.
+            self.assertEqual(len(get_collection_artifacts()), 0)
+
+        finally:
+            if remote_zone:
+                remote_zone.remove()
 
 
 if __name__ == "__main__":
