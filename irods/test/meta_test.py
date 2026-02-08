@@ -820,24 +820,24 @@ class TestMeta(unittest.TestCase):
     def test_cascading_changes_of_metadata_manager_options__issue_709(self):
         d = None
 
-        def get_option(metacoll, key):
-            return metacoll._manager._opts[key]
+#       def get_option(metacoll, key):
+#           return metacoll._manager._opts[key]
         try:
             d = self.sess.data_objects.create(f'{self.coll.path}/issue_709_test_1')
             m = d.metadata
-            self.assertEqual(get_option(m, 'admin'), False)
+            self.assertEqual(m.admin, False)
 
             m2 = m(admin=True)
-            self.assertEqual(get_option(m2, 'timestamps'), False)
-            self.assertEqual(get_option(m2, 'admin'), True)
+            self.assertEqual(m2.timestamps, False)
+            self.assertEqual(m2.admin, True)
 
             m3 = m2(timestamps=True)
-            self.assertEqual(get_option(m3, 'timestamps'), True)
-            self.assertEqual(get_option(m3, 'admin'), True)
+            self.assertEqual(m3.timestamps, True)
+            self.assertEqual(m3.admin, True)
             self.assertEqual(m3._manager.get_api_keywords().get(kw.ADMIN_KW), "")
 
             m4 = m3(admin=False)
-            self.assertEqual(get_option(m4, 'admin'), False)
+            self.assertEqual(m4.admin, False)
             self.assertEqual(m4._manager.get_api_keywords().get(kw.ADMIN_KW), None)
         finally:
             if d:
