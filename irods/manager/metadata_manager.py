@@ -27,14 +27,17 @@ class InvalidAtomicAVURequest(Exception):
     pass
 
 
+_default_MetadataManager_opts = {
+    'admin':False,
+    'timestamps':False,
+    'iRODSMeta_type':iRODSMeta,
+    'reload':True
+}
+
 class MetadataManager(Manager):
 
     def __init__(self, *_):
-        self._opts = {
-            'admin':False,
-            'timestamps':False,
-            'iRODSMeta_type':iRODSMeta
-        }
+        self._opts = _default_MetadataManager_opts.copy()
         super().__init__(*_)
 
     @property

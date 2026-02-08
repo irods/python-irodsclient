@@ -936,7 +936,7 @@ Disabling AVU reloads from the iRODS server
 
 With the default setting of `reload = True`, an `iRODSMetaCollection` will
 proactively read all current AVUs back from the iRODS server after any
-metadata write done by the client.  This helps methods such as `items()`
+metadata write done by the client.  This helps methods such as `keys()` and `items()` 
 to return an up-to-date result.   Setting `reload = False` can, however, greatly
 increase code efficiency if for example a lot of AVUs must be added or deleted
 at once without reading any back again.
@@ -951,6 +951,22 @@ for i in range(10):
 current_metadata = obj.metadata().items()
 print(f"{current_metadata = }")
 ```
+
+By way of explanation, please note that calls of the form 
+`obj.metadata([opt1=value1[,opt2=value2...]])` will always
+produce new `iRODSMetaCollection` objects - which nevertheless share the same
+session object as the original, as the copy is shallow in most respects.
+This avoids always mutating the current instance and thus prevents any need to
+implement context manager semantics when temporarily altering options such
+as `reload` and `admin`.
+
+Additionally note that the call `obj.metadata()` without option parameters 
+always syncs the AVU list within the resulting `iRODSMetaCollection` object to
+what is currently in the catalog, because the original object is unmutated with
+respect to all options (meaning `obj.metadata.reload` is always `True`) -- that
+is, absent any low-level meddling within reserved fields by the application.
+Thus, `obj.metadata().items()` will always agree with the in-catalog AVU list
+whereas `obj.metadata.items()` might not.
 
 Subclassing `iRODSMeta`
 ---------------------

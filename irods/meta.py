@@ -131,6 +131,12 @@ class AVUOperation(dict):
 
 
 class iRODSMetaCollection:
+    def __getattr__(self,n):
+        from irods.manager.metadata_manager import _default_MetadataManager_opts
+        if n in _default_MetadataManager_opts:
+            return self._manager._opts[n]
+        raise AttributeError
+
     def __call__(self, **opts):
         """
         Optional parameters in **opts are:
