@@ -21,6 +21,7 @@ from irods.meta import (
     iRODSMeta,
 )
 from irods.models import Collection, CollectionMeta, DataObject, ModelBase, Resource
+from irods.path import iRODSPath
 from irods.session import iRODSSession
 from irods.test import helpers
 
@@ -820,24 +821,22 @@ class TestMeta(unittest.TestCase):
     def test_cascading_changes_of_metadata_manager_options__issue_709(self):
         d = None
 
-        def get_option(metacoll, key):
-            return metacoll._manager._opts[key]
         try:
             d = self.sess.data_objects.create(f'{self.coll.path}/issue_709_test_1')
             m = d.metadata
-            self.assertEqual(get_option(m, 'admin'), False)
+            self.assertEqual(m.admin, False)
 
             m2 = m(admin=True)
-            self.assertEqual(get_option(m2, 'timestamps'), False)
-            self.assertEqual(get_option(m2, 'admin'), True)
+            self.assertEqual(m2.timestamps, False)
+            self.assertEqual(m2.admin, True)
 
             m3 = m2(timestamps=True)
-            self.assertEqual(get_option(m3, 'timestamps'), True)
-            self.assertEqual(get_option(m3, 'admin'), True)
+            self.assertEqual(m3.timestamps, True)
+            self.assertEqual(m3.admin, True)
             self.assertEqual(m3._manager.get_api_keywords().get(kw.ADMIN_KW), "")
 
             m4 = m3(admin=False)
-            self.assertEqual(get_option(m4, 'admin'), False)
+            self.assertEqual(m4.admin, False)
             self.assertEqual(m4._manager.get_api_keywords().get(kw.ADMIN_KW), None)
         finally:
             if d:
@@ -862,6 +861,15 @@ class TestMeta(unittest.TestCase):
         items_reloaded = metacoll_2(reload=True).items()
         self.assertIn(item_1, items_reloaded)
         self.assertIn(item_2, items_reloaded)
+
+    def test_prevention_of_attribute_creation__issue_795(self):
+        data_path = iRODSPath(self.coll_path, helpers.unique_name(datetime.datetime.now()))  # noqa: DTZ005
+        data = self.sess.data_objects.create(data_path)
+        with self.assertRaises(AttributeError):
+            # This should cause an error since "admin" is considered as a read-only attribute; whereas
+            # data.metadata(admin = True) generates a cloned object but for the one change to "admin".
+            data.metadata.admin = True
+
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib

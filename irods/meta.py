@@ -131,6 +131,64 @@ class AVUOperation(dict):
 
 
 class iRODSMetaCollection:
+    def __setattr__(self, name, value):
+        """
+        Override __setattr__.
+
+        Protect the virtual, read-only attributes such as 'admin', 'timestamps', etc.,
+        from being written or created as concrete attributes, which would interfere with
+        __getattr__'s intended operation for these cases.
+
+        Args:
+            name: the name of the attribute to be written.
+            value: the value to be written to the attribute.
+
+        Raises:
+            AttributeError: on any attempt to write to these special attributes.
+        """
+        from irods.manager.metadata_manager import _MetadataManager_opts_initializer
+
+        if name in _MetadataManager_opts_initializer:
+            msg = (
+                f"""The "{name}" attribute is a special one, settable only via a """
+                f"""call on the object.  For example: admin_view = data_obj.metadata({name}=<value>)"""
+            )
+            raise AttributeError(msg)
+
+        super().__setattr__(name, value)
+
+    def __getattr__(self, name):
+        """
+        Override __getattr__.
+
+        Expose certain settable flags (e.g. "admin", "timestamps") as virtual, read-only
+        "attributes."  The names of these special attributes appear as the keys of the
+        _MetadataManager_opts_initializer dictionary.
+
+        Args:
+            name: the name of the attribute to be fetched.
+
+        Returns:
+            the value of the named attribute.
+
+        Raises:
+            AttributeError: because this is the protocol for deferring to __getattr__'s
+            default behavior for the case in which none of the special attribute keys are
+            a match for 'name'.
+        """
+        from irods.manager.metadata_manager import _MetadataManager_opts_initializer
+
+        # Separating _MetadataManager_opts_initializer from the MetadataManager class
+        # prevents the possibility of arbitrary access by copy.copy() to parts of
+        # our object's state before they have been initialized, as it is known to do
+        # by calling hasattr on the "__setstate__" attribute. The result of such
+        # unfettered access is infinite recursion.  See:
+        # https://nedbatchelder.com/blog/201010/surprising_getattr_recursion
+
+        if name in _MetadataManager_opts_initializer:
+            return self._manager._opts[name]  # noqa: SLF001
+        raise AttributeError
+
     def __call__(self, **opts):
         """
         Optional parameters in **opts are:
