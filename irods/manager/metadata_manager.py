@@ -27,14 +27,15 @@ class InvalidAtomicAVURequest(Exception):
     pass
 
 
+# This was necessarily made separate from the MetadataManager definition
+# in order to avoid infinite recursion in iRODSMetaCollection.__getattr__
+_MetadataManager_opts_initializer = {'admin': False, 'timestamps': False, 'iRODSMeta_type': iRODSMeta, 'reload': True}
+
+
 class MetadataManager(Manager):
 
     def __init__(self, *_):
-        self._opts = {
-            'admin':False,
-            'timestamps':False,
-            'iRODSMeta_type':iRODSMeta
-        }
+        self._opts = _MetadataManager_opts_initializer.copy()
         super().__init__(*_)
 
     @property
