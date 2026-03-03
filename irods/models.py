@@ -244,8 +244,8 @@ class TicketQuery:
         write_byte_limit = Column(Integer, "TICKET_WRITE_BYTE_LIMIT", 2214)
 
     ## For now, use of these columns raises CAT_SQL_ERR in both PRC and iquest: (irods/irods#5929)
-    #       create_time = Column(String, 'TICKET_CREATE_TIME', 2209)
-    #       modify_time = Column(String, 'TICKET_MODIFY_TIME', 2210)
+        create_time = Column(DateTime, 'TICKET_CREATE_TIME', 2209)
+        modify_time = Column(DateTime, 'TICKET_MODIFY_TIME', 2210)
 
     class DataObject(Model):
         """For queries of R_DATA_MAIN when joining to R_TICKET_MAIN.
