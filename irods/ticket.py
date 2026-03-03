@@ -28,6 +28,26 @@ def get_epoch_seconds(utc_timestamp):
         raise  # final try at conversion, so a failure is an error
 
 
+def list_tickets(session, all=True):
+    """
+    Enumerates (via GenQuery1) all tickets visible by, or owned by, the current user.
+
+    Args:
+        session: An iRODSSession object for use in the query.
+        all: True if a comprehensive list is desired; otherwise only those
+            tickets owned by the calling user.
+
+    Returns:
+        An iterator over a range of ticket objects.
+    """
+    query = session.query(TicketQuery.Ticket)
+    if not all:
+        query = query.filter(
+            TicketQuery.Ticket.user_id == session.users.get(session.username).id
+        )
+    yield from query
+
+
 class Ticket:
     def __init__(self, session, ticket="", result=None, allow_punctuation=False):
         self._session = session
