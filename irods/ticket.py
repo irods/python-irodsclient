@@ -32,11 +32,29 @@ class Ticket:
     def __init__(self, session, ticket="", result=None, allow_punctuation=False):
         self._session = session
         try:
-            if result is not None:
+            if hasattr(result,'__getitem__') and result.get(TicketQuery.Ticket.string,''):
+                pass
+            elif ticket and hasattr(result,'__iter__'):
+                result = [_ for _ in result if _[TicketQuery.Ticket.string] == ticket][0]
+            if result:
                 ticket = result[TicketQuery.Ticket.string]
+                for attr, value in TicketQuery.Ticket.__dict__.items():
+                    if value is TicketQuery.Ticket.string: continue
+                    #print ('copying',attr)
+                    if not attr.startswith("_"):
+                        try:
+                            setattr(self, attr, result[value])
+                        except KeyError:
+                            # backward compatibility with older schema versions
+                            pass
         except TypeError:
+                        
             raise RuntimeError(
                 "If specified, 'result' parameter must be a TicketQuery.Ticket search result"
+            )
+        except IndexError:
+            raise RuntimeError(
+                "If both result and string are specified, at least one 'result' must match the ticket string"
             )
         self._ticket = (
             ticket if ticket else self._generate(allow_punctuation=allow_punctuation)
