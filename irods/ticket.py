@@ -1,6 +1,8 @@
 from irods.api_number import api_number
 from irods.message import iRODSMessage, TicketAdminRequest
 from irods.models import TicketQuery
+from irods.column import Like
+from collections.abc import Mapping, Sequence
 
 import random
 import string
@@ -28,12 +30,13 @@ def get_epoch_seconds(utc_timestamp):
         raise  # final try at conversion, so a failure is an error
 
 
-def list_tickets(session, all=True):
+def list_tickets(session, *, raw=False, all=True):
     """
     Enumerates (via GenQuery1) all tickets visible by, or owned by, the current user.
 
     Args:
         session: An iRODSSession object for use in the query.
+        raw: True if only the queried rows are to be returned; False to construct Ticket objects for each row.
         all: True if a comprehensive list is desired; otherwise only those
             tickets owned by the calling user.
 
@@ -45,22 +48,40 @@ def list_tickets(session, all=True):
         query = query.filter(
             TicketQuery.Ticket.user_id == session.users.get(session.username).id
         )
-    yield from query
+    if raw:
+        yield from query
+    else:
+        yield from (Ticket(session, result=_) for _ in query)
 
 
 class Ticket:
     def __init__(self, session, ticket="", result=None, allow_punctuation=False):
         self._session = session
         try:
-            if hasattr(result,'__getitem__') and result.get(TicketQuery.Ticket.string,''):
-                pass
-            elif ticket and hasattr(result,'__iter__'):
-                result = [_ for _ in result if _[TicketQuery.Ticket.string] == ticket][0]
+            if isinstance(result, Mapping):
+                if (single_string:=result.get(TicketQuery.Ticket.string, '')):
+                    if ticket and (ticket != single_string):
+                        raise RuntimeError(
+                            f"The specified result contained a ticket string mismatched to the provided identifier ({ticket = })"
+                        )
+
+            # Allow limited query for the purpose of populating id and other attributes
+            if result == [] and ticket:
+                result[:] = list(session.query(TicketQuery.Ticket).filter(TicketQuery.Ticket.string == ticket))
+
+            if isinstance(result, Sequence):
+                if ticket:
+                    result = [_ for _ in result if _[TicketQuery.Ticket.string] == ticket][:1]
+
+                if not result:
+                    result = None
+                else:
+                    result = result[0]
+
             if result:
                 ticket = result[TicketQuery.Ticket.string]
                 for attr, value in TicketQuery.Ticket.__dict__.items():
                     if value is TicketQuery.Ticket.string: continue
-                    #print ('copying',attr)
                     if not attr.startswith("_"):
                         try:
                             setattr(self, attr, result[value])
@@ -68,9 +89,8 @@ class Ticket:
                             # backward compatibility with older schema versions
                             pass
         except TypeError:
-                        
             raise RuntimeError(
-                "If specified, 'result' parameter must be a TicketQuery.Ticket search result"
+                "If specified, 'result' parameter must be a TicketQuery.Ticket search result or iterable of same"
             )
         except IndexError:
             raise RuntimeError(

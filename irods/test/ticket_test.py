@@ -1,18 +1,23 @@
 #! /usr/bin/env python
 
+import calendar
+import datetime
+import logging
 import os
 import sys
-import unittest
 import time
-import calendar
+import unittest
 
 import irods.test.helpers as helpers
 import tempfile
 from irods.session import iRODSSession
 import irods.exception as ex
 import irods.keywords as kw
-from irods.ticket import Ticket
+from irods.ticket import list_tickets, Ticket
 from irods.models import TicketQuery, DataObject, Collection
+
+
+logger = logging.getLogger(__name__)
 
 
 # As with most of the modules in this test suite, session objects created via
@@ -27,6 +32,17 @@ def gmtime_to_timestamp(gmt_struct):
         "{0.tm_year:04d}-{0.tm_mon:02d}-{0.tm_mday:02d}."
         "{0.tm_hour:02d}:{0.tm_min:02d}:{0.tm_sec:02d}".format(gmt_struct)
     )
+
+
+def delete_tickets(session, dry_run = False):
+    for res in session.query(TicketQuery.Ticket):
+        t = Ticket(session, result=res)
+        if dry_run in (False, None):
+            t.delete(**{kw.ADMIN_KW: ""})
+        elif isinstance(dry_run, list):
+            dry_run.append(t)
+        else:
+            logger.info('Found ticket: %s',t.string)
 
 
 def delete_my_tickets(session):
@@ -358,6 +374,27 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 os.unlink(file_.name)
             alice.cleanup()
 
+    def test_new_attributes_in_tickets__issue_801(self):
+
+        if (admin:=helpers.make_session()).server_version < (4, 3, 0):
+            self.skipTest('"create_time" and "modify_time" not supported for Ticket')
+
+        try:
+            with self.login(self.bob) as bob:
+                bobs_ticket = Ticket(bob)
+                bobs_ticket.issue('write', helpers.home_collection(bob))
+                time.sleep(2)
+                bobs_ticket.modify('add', 'user', admin.username)
+                bobs_ticket = Ticket(bob, result=[], ticket=bobs_ticket.string)
+                self.assertGreaterEqual(
+                    bobs_ticket.modify_time, 
+                    bobs_ticket.create_time + datetime.timedelta(seconds=1)
+                )
+
+            admin_ticket_for_bob = Ticket(admin, result=[], ticket=bobs_ticket.string)
+            self.assertEqual(admin_ticket_for_bob.id, bobs_ticket.id)
+        finally:
+            admin_ticket_for_bob.delete(**{kw.ADMIN_KW:''})
 
 class TestTicketOps(unittest.TestCase):
 
@@ -454,6 +491,21 @@ class TestTicketOps(unittest.TestCase):
 
     def test_coll_ticket_write(self):
         self._ticket_write_helper(obj_type="coll")
+
+
+    def test_list_tickets__issue_120(self):
+
+        ses = self.sess
+
+        # t first assigned as a "utility" Ticket object
+        t = Ticket(ses).issue('read', helpers.home_collection(ses))
+        self.assertGreater(len(t.string) , 5)
+
+        # This time, t receives attributes from the GenQuery row result
+        t = Ticket(ses, result=[], ticket=t.string)
+
+        # Check an id attribute is present and listed in the results from list_tickets
+        self.assertIn(t.id, (_.id for _ in list_tickets(ses)))
 
 
 if __name__ == "__main__":
