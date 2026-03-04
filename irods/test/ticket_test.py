@@ -387,7 +387,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 bobs_ticket.modify('add', 'user', admin.username)
                 bobs_ticket = Ticket(bob, result=[], ticket=bobs_ticket.string)
                 self.assertGreaterEqual(
-                    bobs_ticket.modify_time, 
+                    bobs_ticket.modify_time,
                     bobs_ticket.create_time + datetime.timedelta(seconds=1)
                 )
 
