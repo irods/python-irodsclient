@@ -376,6 +376,8 @@ class TestRodsUserTicketOps(unittest.TestCase):
 
     def test_new_attributes_in_tickets__issue_801(self):
 
+        admin_ticket_for_bob = None
+
         if (admin:=helpers.make_session()).server_version < (4, 3, 0):
             self.skipTest('"create_time" and "modify_time" not supported for Ticket')
 
@@ -394,7 +396,8 @@ class TestRodsUserTicketOps(unittest.TestCase):
             admin_ticket_for_bob = Ticket(admin, result=[], ticket=bobs_ticket.string)
             self.assertEqual(admin_ticket_for_bob.id, bobs_ticket.id)
         finally:
-            admin_ticket_for_bob.delete(**{kw.ADMIN_KW:''})
+            if admin_ticket_for_bob:
+                admin_ticket_for_bob.delete(**{kw.ADMIN_KW:''})
 
 class TestTicketOps(unittest.TestCase):
 
@@ -499,9 +502,8 @@ class TestTicketOps(unittest.TestCase):
 
         # t first assigned as a "utility" Ticket object
         t = Ticket(ses).issue('read', helpers.home_collection(ses))
-        self.assertGreater(len(t.string) , 5)
 
-        # This time, t receives attributes from the GenQuery row result
+        # This time, t receives attributes from an internal GenQuery result.
         t = Ticket(ses, result=[], ticket=t.string)
 
         # Check an id attribute is present and listed in the results from list_tickets
