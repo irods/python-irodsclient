@@ -1,8 +1,10 @@
 from irods.api_number import api_number
 from irods.message import iRODSMessage, TicketAdminRequest
 from irods.models import TicketQuery
-from irods.column import Like
+from irods.column import Like, Column
+
 from collections.abc import Mapping, Sequence
+from typing import Any, Iterable, Optional, Type, Union
 
 import random
 import string
@@ -29,21 +31,27 @@ def get_epoch_seconds(utc_timestamp):
     except ValueError:
         raise  # final try at conversion, so a failure is an error
 
-
-class _default_ticket_query_factory:
-
-    callable = staticmethod(lambda session: session.query(TicketQuery.Ticket))
-
+class default_ticket_query_factory:
+    _callable = staticmethod(lambda session: session.query(TicketQuery.Ticket))
     def __call__(self, session):
-        return self.callable(session)
+        return self._callable(session)
 
-def enumerate_tickets(session, *, query_factory = _default_ticket_query_factory(), raw=False):
+class myf(default_ticket_query_factory):
+    def __init__(self, initargs):
+        self._callable = lambda ses: default_ticket_query_factory._callable(ses).filter(*initargs)
+
+def etk(s):
+    import functools
+    myfc = functools.partial(myf, initargs=[TicketQuery.Ticket.id > 11000])
+    return enumerate_tickets(s, query_factory = myfc)
+
+def enumerate_tickets(session, *, query_factory = default_ticket_query_factory, raw=False):
     """
     Enumerates (via GenQuery1) all tickets visible by, or owned by, the current user.
 
     Args:
         session: An iRODSSession object for use in the query.
-        query_factory: A callable which returns a generic query or other iterable
+        query_factory: A class capable of generating a generic query or other iterable
             over TicketQuery.Ticket row results.
         raw: If false, transform each row returned into a Ticket object; else return
             the result rows unaltered.
@@ -51,16 +59,23 @@ def enumerate_tickets(session, *, query_factory = _default_ticket_query_factory(
     Returns:
         An iterator over a range of ticket objects.
     """
-    query = query_factory(session)
+    query = query_factory()(session)
 
     if raw:
         yield from query
     else:
         yield from (Ticket(session, result=row) for row in query)
 
+_column_lookup = dict[Type[Column], Any]
 
 class Ticket:
-    def __init__(self, session, ticket="", result=None, allow_punctuation=False):
+
+    def __init__(self, 
+                 session,
+                 ticket="",
+                 result: Optional[Union[_column_lookup, Iterable[_column_lookup]]] =None, # Optional (vs. '|') is Python 3.9 syntax
+                 allow_punctuation=False):
+
         self._session = session
 
         try:
