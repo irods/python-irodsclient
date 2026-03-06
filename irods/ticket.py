@@ -79,7 +79,7 @@ class Ticket:
 
             elif hasattr(result, '__iter__'):
                 if ticket:
-                    result = [_ for _ in result if _[TicketQuery.Ticket.string] == ticket][:1]
+                    result = [row for row in result if row[TicketQuery.Ticket.string] == ticket][:1]
 
                 if not result:
                     result = None

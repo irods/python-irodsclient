@@ -375,7 +375,8 @@ class TestRodsUserTicketOps(unittest.TestCase):
             alice.cleanup()
 
     def test_new_attributes_in_tickets__issue_801(self):
-
+        # Specifically we are testing that 'modify_time' and 'create_time' attributes function as expected,
+        # and that other attributes such as 'id' are also present.
         admin_ticket_for_bob = None
 
         if (admin:=helpers.make_session()).server_version < (4, 3, 0):
