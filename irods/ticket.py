@@ -36,7 +36,7 @@ class default_ticket_query_factory:
     def __call__(self, session):
         return self._callable(session)
 
-def enumerate_tickets(session, *, query_factory = default_ticket_query_factory, raw=False):
+def enumerate_tickets(session, *, query_factory=default_ticket_query_factory, raw=False):
     """
     Enumerates (via GenQuery1) all tickets visible by, or owned by, the current user.
 
