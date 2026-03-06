@@ -13,7 +13,7 @@ import tempfile
 from irods.session import iRODSSession
 import irods.exception as ex
 import irods.keywords as kw
-from irods.ticket import list_tickets, Ticket
+from irods.ticket import enumerate_tickets, Ticket
 from irods.models import TicketQuery, DataObject, Collection
 
 
@@ -387,13 +387,13 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 bobs_ticket.issue('write', helpers.home_collection(bob))
                 time.sleep(2)
                 bobs_ticket.modify('add', 'user', admin.username)
-                bobs_ticket = Ticket(bob, result=[], ticket=bobs_ticket.string)
+                bobs_ticket = Ticket(bob, result=enumerate_tickets(bob, raw=True), ticket=bobs_ticket.string)
                 self.assertGreaterEqual(
                     bobs_ticket.modify_time,
                     bobs_ticket.create_time + datetime.timedelta(seconds=1)
                 )
 
-            admin_ticket_for_bob = Ticket(admin, result=[], ticket=bobs_ticket.string)
+            admin_ticket_for_bob = Ticket(admin, result=enumerate_tickets(admin, raw=True), ticket=bobs_ticket.string)
             self.assertEqual(admin_ticket_for_bob.id, bobs_ticket.id)
         finally:
             if admin_ticket_for_bob:
@@ -496,7 +496,7 @@ class TestTicketOps(unittest.TestCase):
         self._ticket_write_helper(obj_type="coll")
 
 
-    def test_list_tickets__issue_120(self):
+    def test_enumerate_tickets__issue_120(self):
 
         ses = self.sess
 
@@ -504,10 +504,14 @@ class TestTicketOps(unittest.TestCase):
         t = Ticket(ses).issue('read', helpers.home_collection(ses))
 
         # This time, t receives attributes from an internal GenQuery result.
-        t = Ticket(ses, result=[], ticket=t.string)
+        t = Ticket(
+            ses,
+            result=enumerate_tickets(ses, raw=True),
+            ticket=t.string
+        )
 
         # Check an id attribute is present and listed in the results from list_tickets
-        self.assertIn(t.id, (_.id for _ in list_tickets(ses)))
+        self.assertIn(t.id, (_.id for _ in enumerate_tickets(ses)))
 
 
 if __name__ == "__main__":

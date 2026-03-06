@@ -30,33 +30,39 @@ def get_epoch_seconds(utc_timestamp):
         raise  # final try at conversion, so a failure is an error
 
 
-def list_tickets(session, *, raw=False, all=True):
+class _default_ticket_query_factory:
+    
+    callable = staticmethod(lambda session: session.query(TicketQuery.Ticket))
+
+    def __call__(self, session):
+        return self.callable(session)
+
+def enumerate_tickets(session, *, query_factory = _default_ticket_query_factory(), raw=False):
     """
     Enumerates (via GenQuery1) all tickets visible by, or owned by, the current user.
 
     Args:
         session: An iRODSSession object for use in the query.
-        raw: True if only the queried rows are to be returned; False to construct Ticket objects for each row.
-        all: True if a comprehensive list is desired; otherwise only those
-            tickets owned by the calling user.
+        query_factory: A callable which returns a generic query or other iterable
+            over TicketQuery.Ticket row results.
+        raw: If false, transform each row returned into a Ticket object; else return
+            the result rows unaltered.
 
     Returns:
         An iterator over a range of ticket objects.
     """
-    query = session.query(TicketQuery.Ticket)
-    if not all:
-        query = query.filter(
-            TicketQuery.Ticket.user_id == session.users.get(session.username).id
-        )
+    query = query_factory(session)
+
     if raw:
         yield from query
     else:
-        yield from (Ticket(session, result=_) for _ in query)
+        yield from (Ticket(session, result=row) for row in query)
 
 
 class Ticket:
     def __init__(self, session, ticket="", result=None, allow_punctuation=False):
         self._session = session
+
         try:
             if isinstance(result, Mapping):
                 if (single_string:=result.get(TicketQuery.Ticket.string, '')):
@@ -65,18 +71,14 @@ class Ticket:
                             f"The specified result contained a ticket string mismatched to the provided identifier ({ticket = })"
                         )
 
-            # Allow limited query for the purpose of populating id and other attributes
-            if result == [] and ticket:
-                result[:] = list(session.query(TicketQuery.Ticket).filter(TicketQuery.Ticket.string == ticket))
-
-            if isinstance(result, Sequence):
+            elif hasattr(result, '__iter__'):
                 if ticket:
                     result = [_ for _ in result if _[TicketQuery.Ticket.string] == ticket][:1]
 
                 if not result:
                     result = None
                 else:
-                    result = result[0]
+                    result = next(iter(result)) # result[0]
 
             if result:
                 ticket = result[TicketQuery.Ticket.string]
@@ -88,17 +90,21 @@ class Ticket:
                         except KeyError:
                             # backward compatibility with older schema versions
                             pass
+
+            self._ticket = ticket
+
         except TypeError:
             raise RuntimeError(
                 "If specified, 'result' parameter must be a TicketQuery.Ticket search result or iterable of same"
             )
+
         except IndexError:
             raise RuntimeError(
                 "If both result and string are specified, at least one 'result' must match the ticket string"
             )
-        self._ticket = (
-            ticket if ticket else self._generate(allow_punctuation=allow_punctuation)
-        )
+
+        if not self._ticket:
+            self._ticket = self._generate(allow_punctuation=allow_punctuation)
 
     @property
     def session(self):
