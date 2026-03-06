@@ -36,15 +36,6 @@ class default_ticket_query_factory:
     def __call__(self, session):
         return self._callable(session)
 
-class myf(default_ticket_query_factory):
-    def __init__(self, initargs):
-        self._callable = lambda ses: default_ticket_query_factory._callable(ses).filter(*initargs)
-
-def etk(s):
-    import functools
-    myfc = functools.partial(myf, initargs=[TicketQuery.Ticket.id > 11000])
-    return enumerate_tickets(s, query_factory = myfc)
-
 def enumerate_tickets(session, *, query_factory = default_ticket_query_factory, raw=False):
     """
     Enumerates (via GenQuery1) all tickets visible by, or owned by, the current user.
