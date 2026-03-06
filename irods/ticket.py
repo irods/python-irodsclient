@@ -31,7 +31,7 @@ def get_epoch_seconds(utc_timestamp):
 
 
 class _default_ticket_query_factory:
-    
+
     callable = staticmethod(lambda session: session.query(TicketQuery.Ticket))
 
     def __call__(self, session):
