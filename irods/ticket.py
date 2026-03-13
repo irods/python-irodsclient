@@ -1,15 +1,14 @@
-from irods.api_number import api_number
-from irods.message import iRODSMessage, TicketAdminRequest
-from irods.models import TicketQuery
-
+import calendar
+import contextlib
+import datetime
 import random
 import string
-import logging
-import datetime
-import calendar
+from typing import Any, Optional, Type, Union  #  noqa: UP035
 
-
-logger = logging.getLogger(__name__)
+from irods.api_number import api_number
+from irods.column import Column
+from irods.message import TicketAdminRequest, iRODSMessage
+from irods.models import TicketQuery
 
 
 def get_epoch_seconds(utc_timestamp):
@@ -28,16 +27,61 @@ def get_epoch_seconds(utc_timestamp):
         raise  # final try at conversion, so a failure is an error
 
 
+def ticket_iterator(session, filter_args=()):
+    """
+    Enumerate the Tickets visible to the user.
+
+    Args:
+        session: an iRODSSession object with which to perform a query.
+        filter_args: optional arguments for filtering the query.
+
+    Returns:
+        An iterator over a range of Ticket objects.
+    """
+    return (Ticket(session, result=row) for row in session.query(TicketQuery.Ticket).filter(*filter_args))
+
+
+_COLUMN_KEY = Union[Column, Type[Column]]  # noqa: UP006
+
+
 class Ticket:
-    def __init__(self, session, ticket="", result=None, allow_punctuation=False):
+    def __init__(self, session, ticket="", result: Optional[dict[_COLUMN_KEY, Any]] = None, allow_punctuation=False):  #  noqa: FA100
+        """
+        Initialize a Ticket object.  If no 'result' or 'ticket' string is provided, then generate a new
+        Ticket string automatically.
+
+        Args:
+            session: an iRODSSession object through which API endpoints shall be called.
+            ticket: an optional ticket string, if a particular one is desired for ticket creation or deletion.
+            result: a row result from a query, containing at least the columns of irods.models.TicketQuery.Ticket.
+            allow_punctuation: True if punctuation characters are to be allowed in generating a Ticket string.
+                (By default, all characters will be digits or letters of the latin alphabet.)
+
+        Raises:
+            RuntimeError: if the given ticket parameter mismatches the result, or if result is of the wrong type.
+        """
         self._session = session
+
+        # Do an initial error and sanity check on result.
         try:
             if result is not None:
-                ticket = result[TicketQuery.Ticket.string]
-        except TypeError:
-            raise RuntimeError(
-                "If specified, 'result' parameter must be a TicketQuery.Ticket search result"
-            )
+                _ticket = result[TicketQuery.Ticket.string]
+        except (TypeError, KeyError) as exc:
+            raise RuntimeError("If specified, 'result' parameter must be a TicketQuery.Ticket query result.") from exc
+
+        # Process query result if given, and set object attributes from it.
+        if result is not None:
+            if _ticket != ticket != "":
+                raise RuntimeError("A ticket name was specified but does not match the query result.")
+            ticket = _ticket
+            for attr, value in TicketQuery.Ticket.__dict__.items():
+                if value is TicketQuery.Ticket.string:
+                    continue
+                if not attr.startswith("_"):
+                    # backward compatibility with older schema versions
+                    with contextlib.suppress(KeyError):
+                        setattr(self, attr, result[value])
+
         self._ticket = (
             ticket if ticket else self._generate(allow_punctuation=allow_punctuation)
         )
