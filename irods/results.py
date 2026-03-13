@@ -1,4 +1,3 @@
-from prettytable import PrettyTable
 from irods.models import ModelBase
 
 
@@ -15,6 +14,7 @@ class ResultSet:
             self.continue_index = 0
 
     def __str__(self):
+        from prettytable import PrettyTable
         table = PrettyTable()
         for col in self.cols:
             table.add_column(ModelBase.columns()[col.attriInx].icat_key, col.value)
@@ -22,6 +22,7 @@ class ResultSet:
         return table.get_string()
 
     def get_html_string(self, *args, **kwargs):
+        from prettytable import PrettyTable
         table = PrettyTable()
         for col in self.cols:
             table.add_column(ModelBase.columns()[col.attriInx].icat_key, col.value)

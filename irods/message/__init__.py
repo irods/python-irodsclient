@@ -12,8 +12,6 @@ from collections import namedtuple
 from typing import Optional
 from warnings import warn
 
-import defusedxml.ElementTree as ET_secure_xml
-
 import irods.exception as ex
 
 from . import quasixml as ET_quasi_xml
@@ -105,23 +103,17 @@ else:
 
 def current_XML_parser(get_module=False):
     d = getattr(_thrlocal, "xml_type", _default_XML)
-    return d if not get_module else _XML_parsers[d]
+    return d if not get_module else _XML_parser_for(d)
 
 
 def default_XML_parser(get_module=False):
     d = _default_XML
-    return d if not get_module else _XML_parsers[d]
+    return d if not get_module else _XML_parser_for(d)
 
 
 def string_for_XML_parser(parser_enum):
     return PARSER_TYPE_STRINGS[parser_enum]
 
-
-_XML_parsers = {
-    XML_Parser_Type.STANDARD_XML: ET_xml,
-    XML_Parser_Type.QUASI_XML: ET_quasi_xml,
-    XML_Parser_Type.SECURE_XML: ET_secure_xml,
-}
 
 _reversed_XML_strings_lookup = {v: k for k, v in _XML_strings.items()}
 
@@ -178,9 +170,9 @@ def ET(xml_type=(), server_version=None):
         _thrlocal.irods_server_version = tuple(
             server_version
         )  #  A default server version for Quasi-XML parsing is set (from the environment) and
-    return _XML_parsers[
+    return _XML_parser_for(
         current_XML_parser()
-    ]  #  applies to all threads in which ET() has not been called to update the value.
+    )  #  applies to all threads in which ET() has not been called to update the value.
 
 
 logger = logging.getLogger(__name__)
@@ -1286,3 +1278,13 @@ def empty_gen_query_out(cols):
     ]
     gqo = GenQueryResponse(rowCnt=0, attriCnt=len(cols), SqlResult_PI=sql_results)
     return gqo
+
+
+def _XML_parser_for(d: XML_Parser_Type):
+    import defusedxml.ElementTree as ET_secure_xml
+    return {
+        XML_Parser_Type.STANDARD_XML: ET_xml,
+        XML_Parser_Type.QUASI_XML: ET_quasi_xml,
+        XML_Parser_Type.SECURE_XML: ET_secure_xml,
+    }[d]
+
