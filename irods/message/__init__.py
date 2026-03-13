@@ -6,13 +6,12 @@ import logging
 import os
 import socket
 import struct
+import sys
 import threading
 import xml.etree.ElementTree as ET_xml
 from collections import namedtuple
 from typing import Optional
 from warnings import warn
-
-import defusedxml.ElementTree as ET_secure_xml
 
 import irods.exception as ex
 
@@ -97,23 +96,21 @@ else:
 
 def current_XML_parser(get_module=False):
     d = getattr(_thrlocal, "xml_type", _default_XML)
-    return d if not get_module else _XML_parsers[d]
+    return d if not get_module else _get_XML_parser_for(d)
 
 
 def default_XML_parser(get_module=False):
     d = _default_XML
-    return d if not get_module else _XML_parsers[d]
+    return d if not get_module else _get_XML_parser_for(d)
+
+
+def _get_XML_parser_for(d):
+    return sys.modules[__name__]._XML_parser[d]
 
 
 def string_for_XML_parser(parser_enum):
     return PARSER_TYPE_STRINGS[parser_enum]
 
-
-_XML_parsers = {
-    XML_Parser_Type.STANDARD_XML: ET_xml,
-    XML_Parser_Type.QUASI_XML: ET_quasi_xml,
-    XML_Parser_Type.SECURE_XML: ET_secure_xml,
-}
 
 _reversed_XML_strings_lookup = {v: k for k, v in _XML_strings.items()}
 
@@ -168,9 +165,9 @@ def ET(xml_type=(), server_version=None):
         _thrlocal.irods_server_version = tuple(
             server_version
         )  #  A default server version for Quasi-XML parsing is set (from the environment) and
-    return _XML_parsers[
+    return _get_XML_parser_for(
         current_XML_parser()
-    ]  #  applies to all threads in which ET() has not been called to update the value.
+    )  #  applies to all threads in which ET() has not been called to update the value.
 
 
 logger = logging.getLogger(__name__)
@@ -188,7 +185,23 @@ def __getattr__(name):
     if name in _deprecated_names:
         warn(f"{name} is deprecated", DeprecationWarning, stacklevel=2)
         return _deprecated_names[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    global __XML_parser
+    # Define the _XML_parser module variable only when accessed (#802).
+    if name == '_XML_parser':
+        impl = globals().get('__XML_parser')
+        if not impl:
+            import defusedxml.ElementTree as ET_secure_xml
+
+            impl = __XML_parser = {
+                XML_Parser_Type.STANDARD_XML: ET_xml,
+                XML_Parser_Type.QUASI_XML: ET_quasi_xml,
+                XML_Parser_Type.SECURE_XML: ET_secure_xml,
+            }
+        return impl
+
+    message = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(message)
 
 
 UNICODE = str
