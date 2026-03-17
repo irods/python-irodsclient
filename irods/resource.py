@@ -3,7 +3,6 @@ from irods.meta import iRODSMetaCollection
 
 
 class iRODSResource:
-
     def __init__(self, manager, result=None):
         self._hierarchy_string = ""
         self._parent_name = ""
@@ -53,11 +52,7 @@ class iRODSResource:
             if sess.server_version >= (4, 2, 0):
                 self._parent_id = self.parent
             else:
-                self._parent_id = (
-                    sess.query(Resource)
-                    .filter(Resource.name == self.parent)
-                    .one()[Resource.id]
-                )
+                self._parent_id = sess.query(Resource).filter(Resource.name == self.parent).one()[Resource.id]
         return int(self._parent_id)
 
     @property
@@ -69,11 +64,7 @@ class iRODSResource:
             if sess.server_version < (4, 2, 0):
                 self._parent_name = self.parent
             else:
-                self._parent_name = (
-                    sess.query(Resource)
-                    .filter(Resource.id == self.parent)
-                    .one()[Resource.name]
-                )
+                self._parent_name = sess.query(Resource).filter(Resource.id == self.parent).one()[Resource.name]
         return self._parent_name
 
     ## Cached property to expose resource hierarchy string
@@ -81,9 +72,7 @@ class iRODSResource:
     @property
     def hierarchy_string(self):
         if self._hierarchy_string == "":
-            self._hierarchy_string = ";".join(
-                r.name for r in self.hierarchy_as_list_of_resource_objects()
-            )
+            self._hierarchy_string = ";".join(r.name for r in self.hierarchy_as_list_of_resource_objects())
         return self._hierarchy_string
 
     ## Retrieve chain of parent objects to top level parent
@@ -101,9 +90,7 @@ class iRODSResource:
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(
-                self.manager.sess.metadata, Resource, self.name
-            )
+            self._meta = iRODSMetaCollection(self.manager.sess.metadata, Resource, self.name)
         return self._meta
 
     @property
@@ -129,9 +116,7 @@ class iRODSResource:
                 raise RuntimeError("Resource composition not supported")
 
             # query for children and cache results
-            query = session.query(Resource).filter(
-                Resource.parent == "{}".format(parent)
-            )
+            query = session.query(Resource).filter(Resource.parent == "{}".format(parent))
             self._children = [self.__class__(self.manager, res) for res in query]
 
             return self._children

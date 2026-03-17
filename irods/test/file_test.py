@@ -13,9 +13,7 @@ class TestFiles(unittest.TestCase):
         self.sess = helpers.make_session()
 
         # Create test collection
-        self.coll_path = "/{}/home/{}/test_dir".format(
-            self.sess.zone, self.sess.username
-        )
+        self.coll_path = "/{}/home/{}/test_dir".format(self.sess.zone, self.sess.username)
         self.collection = self.sess.collections.create(self.coll_path)
 
         self.obj_name = "test1"

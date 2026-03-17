@@ -56,9 +56,7 @@ class XML_Parser_Type(enum.Enum):
 
 # This creates a mapping from the "valid" (nonzero) XML_Parser_Type enums -- those which represent the actual parser
 # choices -- to their corresponding names as strings (e.g. XML_Parser_Type.STANDARD_XML is mapped to 'STANDARD_XML'):
-PARSER_TYPE_STRINGS = {
-    v: k for k, v in XML_Parser_Type.__members__.items() if v.value != 0
-}
+PARSER_TYPE_STRINGS = {v: k for k, v in XML_Parser_Type.__members__.items() if v.value != 0}
 
 # We maintain values on a per-thread basis of:
 #   - the server version with which we're communicating
@@ -80,19 +78,13 @@ class BadXMLSpec(RuntimeError):
     pass
 
 
-_Quasi_Xml_Server_Version = _qxml_server_version(
-    "PYTHON_IRODSCLIENT_QUASI_XML_SERVER_VERSION"
-)
-if (
-    _Quasi_Xml_Server_Version is None
-):  # unspecified in environment yields empty tuple ()
+_Quasi_Xml_Server_Version = _qxml_server_version("PYTHON_IRODSCLIENT_QUASI_XML_SERVER_VERSION")
+if _Quasi_Xml_Server_Version is None:  # unspecified in environment yields empty tuple ()
     raise BadXMLSpec("Must properly specify a server version to use QUASI_XML")
 
 _XML_strings = {k: v for k, v in vars(XML_Parser_Type).items() if k.endswith("_XML")}
 
-_default_XML_env = os.environ.get(
-    "PYTHON_IRODSCLIENT_DEFAULT_XML", globals().get("_default_XML")
-)
+_default_XML_env = os.environ.get("PYTHON_IRODSCLIENT_DEFAULT_XML", globals().get("_default_XML"))
 
 if not _default_XML_env:
     _default_XML = XML_Parser_Type.STANDARD_XML
@@ -170,9 +162,7 @@ def ET(xml_type=(), server_version=None):
     """
     if xml_type != ():
         _thrlocal.xml_type = (
-            default_XML_parser()
-            if xml_type in (None, XML_Parser_Type(0))
-            else XML_Parser_Type(xml_type)
+            default_XML_parser() if xml_type in (None, XML_Parser_Type(0)) else XML_Parser_Type(xml_type)
         )
     if isinstance(server_version, _TUPLE_LIKE_TYPES):
         _thrlocal.irods_server_version = tuple(
@@ -199,6 +189,7 @@ def __getattr__(name):
         warn(f"{name} is deprecated", DeprecationWarning, stacklevel=2)
         return _deprecated_names[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 UNICODE = str
 
@@ -256,9 +247,7 @@ def _recv_message_in_len(sock, size):
     # than 'size', throw a socket.error exception
     if retbuf is None or len(retbuf) != size:
         retbuf_size = len(retbuf) if retbuf is not None else 0
-        msg = "Read {} bytes from socket instead of expected {} bytes".format(
-            retbuf_size, size
-        )
+        msg = "Read {} bytes from socket instead of expected {} bytes".format(retbuf_size, size)
         raise socket.error(msg)
 
     return retbuf
@@ -301,7 +290,6 @@ class XMLMessageNotConvertibleToJSON(Exception):
 
 
 class iRODSMessage:
-
     class ResponseNotParseable(Exception):
         """
         Raised by get_main_message(ResponseClass) to indicate a server response
@@ -439,17 +427,13 @@ class iRODSMessage:
         self.bs = self.encode_unicode(self.bs)
 
         # pack header
-        packed_header = self.pack_header(
-            self.msg_type, len(main_msg), len(self.error), len(self.bs), self.int_info
-        )
+        packed_header = self.pack_header(self.msg_type, len(main_msg), len(self.error), len(self.bs), self.int_info)
 
         return packed_header + main_msg + self.error + self.bs
 
     def get_main_message(self, cls, r_error=None):
         msg = cls()
-        logger.debug(
-            "Attempt to parse server response [%r] as class [%r].", self.msg, cls
-        )
+        logger.debug("Attempt to parse server response [%r] as class [%r].", self.msg, cls)
         if self.error and isinstance(r_error, RErrorStack):
             r_error.fill(iRODSMessage(msg=self.error).get_main_message(Error))
         if self.msg is None:
@@ -457,11 +441,7 @@ class iRODSMessage:
                 # - For dedicated API response classes being built from server response, allow catching
                 #   of the exception.  However, let iRODS errors such as CAT_NO_ROWS_FOUND to filter
                 #   through as usual for express reporting by instances of irods.connection.Connection .
-                message = (
-                    "Server response was {self.msg} while parsing as [{cls}]".format(
-                        **locals()
-                    )
-                )
+                message = "Server response was {self.msg} while parsing as [{cls}]".format(**locals())
                 raise self.ResponseNotParseable(message)
         msg.unpack(ET().fromstring(self.msg))
         return msg
@@ -817,9 +797,7 @@ class MetadataRequest(Message):
                         % (field_name(i), arg)
                     )
                 elif i < 5 and not (arg):
-                    error = Bad_AVU_Field(
-                        "AVU %s (%r) is zero-length." % (field_name(i), arg)
-                    )
+                    error = Bad_AVU_Field("AVU %s (%r) is zero-length." % (field_name(i), arg))
             if error is not None:
                 raise error
 
@@ -883,8 +861,7 @@ class VersionResponse(Message):
 
 
 class _admin_request_base(Message):
-
-    _name : Optional[str] = None
+    _name: Optional[str] = None
 
     def __init__(self, *args):
         if self.__class__._name is None:
@@ -921,9 +898,7 @@ def _do_GeneralAdminRequest(_session_or_accessor, *args):
     if callable(sess):
         sess = sess()
     message_body = GeneralAdminRequest(*args)
-    request = iRODSMessage(
-        "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-    )
+    request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
     with sess.pool.get_connection() as conn:
         conn.send(request)
         response = conn.recv()
@@ -1045,12 +1020,9 @@ class MsParam(Message):
             # type tells us what type of data structure we are unpacking
             # e.g: <type>ExecCmdOut_PI</type>
             if name == "type":
-
                 # unpack struct accordingly
                 message_class = globals()[unpacked_value]
-                self._values["inOutStruct"] = SubmessageProperty(message_class).unpack(
-                    root.findall(unpacked_value)
-                )
+                self._values["inOutStruct"] = SubmessageProperty(message_class).unpack(root.findall(unpacked_value))
 
 
 # define MsParamArray_PI "int paramLen; int oprType; struct
@@ -1180,6 +1152,7 @@ def ModDataObjMeta_for_session(session):
 
     return ModDataObjMeta
 
+
 #  -- A tuple-descended class which facilitates filling in a
 #     quasi-RError stack from a JSON formatted list.
 
@@ -1198,14 +1171,7 @@ class RErrorStack(list):
 
         # first, we try to parse from a JSON list, as this is how message and status return the Data.chksum call.
         if isinstance(Err, (tuple, list)):
-            self[:] = [
-                RError(
-                    _Server_Status_Message(
-                        msg=elem["message"], status=elem["error_code"]
-                    )
-                )
-                for elem in Err
-            ]
+            self[:] = [RError(_Server_Status_Message(msg=elem["message"], status=elem["error_code"])) for elem in Err]
             return
 
         # next, we try to parse from a a response message - eg. as returned by the Rule.execute API call when a rule fails.
@@ -1254,11 +1220,8 @@ class RError:
 
     def __repr__(self):
         """Show both the message and iRODS error type (both integer and human-readable)."""
-        return (
-            "{self.__class__.__name__}"
-            "<message = {self.message!r}, status = {self.status} {self.status_str}>".format(
-                **locals()
-            )
+        return "{self.__class__.__name__}<message = {self.message!r}, status = {self.status} {self.status_str}>".format(
+            **locals()
         )
 
 
@@ -1281,8 +1244,6 @@ class Error(Message):
 
 
 def empty_gen_query_out(cols):
-    sql_results = [
-        GenQueryResponseColumn(attriInx=col.icat_id, value=[]) for col in cols
-    ]
+    sql_results = [GenQueryResponseColumn(attriInx=col.icat_id, value=[]) for col in cols]
     gqo = GenQueryResponse(rowCnt=0, attriCnt=len(cols), SqlResult_PI=sql_results)
     return gqo

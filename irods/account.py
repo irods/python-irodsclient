@@ -2,7 +2,6 @@ from irods import derived_auth_filename
 
 
 class iRODSAccount:
-
     @property
     def derived_auth_file(self):
         return derived_auth_filename(self.env_file)
@@ -19,7 +18,7 @@ class iRODSAccount:
         server_dn=None,
         client_zone=None,
         env_file="",
-        **kwargs
+        **kwargs,
     ):
 
         # Allowed overrides when cloning sessions. (Currently hostname only.)

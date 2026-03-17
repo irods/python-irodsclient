@@ -16,8 +16,8 @@ __all__ = [
     "get_data_object",
 ]
 
-class StopTestsException(Exception):
 
+class StopTestsException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if "unittest" in sys.modules.keys():
@@ -30,9 +30,7 @@ class iRODS_Server_Too_Recent_For_Testing(StopTestsException):
 
 
 def _get_server_version_for_test(session, curtail_length):
-    return session._server_version(session.GET_SERVER_VERSION_WITHOUT_AUTH)[
-        :curtail_length
-    ]
+    return session._server_version(session.GET_SERVER_VERSION_WITHOUT_AUTH)[:curtail_length]
 
 
 # Create a connection for test, based on ~/.irods environment by default.
@@ -104,9 +102,7 @@ class _unlikely_value:
 
 
 @contextlib.contextmanager
-def temporarily_assign_attribute(
-    target, attr, value, not_set_indicator=_unlikely_value()
-):
+def temporarily_assign_attribute(target, attr, value, not_set_indicator=_unlikely_value()):
     save = not_set_indicator
     try:
         save = getattr(target, attr, not_set_indicator)
@@ -150,13 +146,13 @@ def get_collection(sess, logical_path):
 
 
 # Utility class and factory function for storing the original value of variables within the given namespace.
-def create_value_cache(namespace:dict):
+def create_value_cache(namespace: dict):
     class CachedValues:
         __namespace = namespace
 
         @classmethod
         def make_entry(cls, name):
             cached_value = cls.__namespace[name]
-            setattr(cls,name,property(lambda self: cached_value))
+            setattr(cls, name, property(lambda self: cached_value))
 
     return CachedValues()

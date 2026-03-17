@@ -28,7 +28,6 @@ def irods_basename(path):
 
 
 class iRODSReplica:
-
     def __init__(self, number, status, resource_name, path, resc_hier, **kwargs):
         self.number = number
         self.status = status
@@ -39,13 +38,10 @@ class iRODSReplica:
             setattr(self, key, value)
 
     def __repr__(self):
-        return "<{}.{} {}>".format(
-            self.__class__.__module__, self.__class__.__name__, self.resource_name
-        )
+        return "<{}.{} {}>".format(self.__class__.__module__, self.__class__.__name__, self.resource_name)
 
 
 class iRODSDataObject:
-
     def __init__(self, manager, parent=None, results=None):
         self.manager = manager
         if parent and results:
@@ -62,28 +58,32 @@ class iRODSDataObject:
 
             # The status quo before iRODS 5
 
-            replica_args = [(
-                (r[DataObject.replica_number],
-                r[DataObject.replica_status],
-                r[DataObject.resource_name],
-                r[DataObject.path],
-                r[DataObject.resc_hier],
-                       )
-                ,dict(
-                    checksum=r[DataObject.checksum],
-                    size=r[DataObject.size],
-                    comments=r[DataObject.comments],
-                    create_time=r[DataObject.create_time],
-                    modify_time=r[DataObject.modify_time],
+            replica_args = [
+                (
+                    (
+                        r[DataObject.replica_number],
+                        r[DataObject.replica_status],
+                        r[DataObject.resource_name],
+                        r[DataObject.path],
+                        r[DataObject.resc_hier],
+                    ),
+                    dict(
+                        checksum=r[DataObject.checksum],
+                        size=r[DataObject.size],
+                        comments=r[DataObject.comments],
+                        create_time=r[DataObject.create_time],
+                        modify_time=r[DataObject.modify_time],
+                    ),
                 )
-            ) for r in replicas]
+                for r in replicas
+            ]
 
             # Adjust for adding access_time in the iRODS 5 case.
 
             if self.manager.sess.server_version >= (5,):
-                for n,r in enumerate(replicas):
+                for n, r in enumerate(replicas):
                     replica_args[n][1]['access_time'] = r[DataObject.access_time]
-            self.replicas = [iRODSReplica(*a,**k) for a,k in replica_args]
+            self.replicas = [iRODSReplica(*a, **k) for a, k in replica_args]
 
         self._meta = None
 
@@ -93,15 +93,11 @@ class iRODSDataObject:
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(
-                self.manager.sess.metadata, DataObject, self.path
-            )
+            self._meta = iRODSMetaCollection(self.manager.sess.metadata, DataObject, self.path)
         return self._meta
 
     def open(self, mode="r", finalize_on_close=True, **options):
-        return self.manager.open(
-            self.path, mode, finalize_on_close=finalize_on_close, **options
-        )
+        return self.manager.open(self.path, mode, finalize_on_close=finalize_on_close, **options)
 
     def chksum(self, **options):
         """
@@ -153,9 +149,7 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
         self.finalize_on_close = finalize_on_close
 
     def replica_access_info(self):
-        message_body = JSON_Message(
-            {"fd": self.desc}, server_version=self.conn.server_version
-        )
+        message_body = JSON_Message({"fd": self.desc}, server_version=self.conn.server_version)
         message = iRODSMessage(
             "RODS_API_REQ",
             msg=message_body,
@@ -174,18 +168,12 @@ class iRODSDataObjectFileRaw(io.RawIOBase):
             raise
         dobj_info = result.get_json_encoded_struct()
         replica_token = dobj_info.get("replica_token", "")
-        resc_hier = (dobj_info.get("data_object_info") or {}).get(
-            "resource_hierarchy", ""
-        )
+        resc_hier = (dobj_info.get("data_object_info") or {}).get("resource_hierarchy", "")
         return (replica_token, resc_hier)
 
     def _close_replica(self):
-        server_version = ast.literal_eval(
-            os.environ.get("IRODS_VERSION_OVERRIDE", "()")
-        )
-        if (
-            server_version or self.conn.server_version
-        ) < IRODS_SERVER_WITH_CLOSE_REPLICA_API:
+        server_version = ast.literal_eval(os.environ.get("IRODS_VERSION_OVERRIDE", "()"))
+        if (server_version or self.conn.server_version) < IRODS_SERVER_WITH_CLOSE_REPLICA_API:
             return False
         message_body = JSON_Message(
             {

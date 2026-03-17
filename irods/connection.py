@@ -70,7 +70,6 @@ class PlainTextPAMPasswordError(Exception):
 
 
 class Connection:
-
     DISALLOWING_PAM_PLAINTEXT = True
 
     def __init__(self, pool, account):
@@ -99,10 +98,7 @@ class Connection:
 
             import irods.client_configuration as cfg
 
-            if (
-                self.server_version >= (4, 3, 0)
-                and not cfg.legacy_auth.force_legacy_auth
-            ):
+            if self.server_version >= (4, 3, 0) and not cfg.legacy_auth.force_legacy_auth:
                 import irods.auth
 
                 auth_module = None
@@ -134,10 +130,7 @@ class Connection:
 
     @property
     def server_version(self):
-        detected = tuple(
-            int(x)
-            for x in self._server_version.relVersion.replace("rods", "").split(".")
-        )
+        detected = tuple(int(x) for x in self._server_version.relVersion.replace("rods", "").split("."))
         return safe_eval(os.environ.get("IRODS_SERVER_VERSION", "()")) or detected
 
     @property
@@ -186,12 +179,7 @@ class Connection:
             return_message[:] = [msg]
         if msg.int_info < 0:
             try:
-                err_msg = (
-                    iRODSMessage(msg=msg.error)
-                    .get_main_message(Error)
-                    .RErrMsg_PI[0]
-                    .msg
-                )
+                err_msg = iRODSMessage(msg=msg.error).get_main_message(Error).RErrMsg_PI[0].msg
             except TypeError:
                 err_msg = None
             if nominal_code(msg.int_info) not in acceptable_codes:
@@ -233,15 +221,9 @@ class Connection:
         verify_server = getattr(irods_account, "ssl_verify_server", "hostname")
         CAfile = getattr(irods_account, "ssl_ca_certificate_file", None)
         CApath = getattr(irods_account, "ssl_ca_certificate_path", None)
-        verify = (
-            ssl.CERT_NONE
-            if ((None is CAfile is CApath) or verify_server == "none")
-            else ssl.CERT_REQUIRED
-        )
+        verify = ssl.CERT_NONE if ((None is CAfile is CApath) or verify_server == "none") else ssl.CERT_REQUIRED
         # See https://stackoverflow.com/questions/30461969/disable-default-certificate-verification-in-python-2-7-9/49040695#49040695
-        ctx = ssl.create_default_context(
-            ssl.Purpose.SERVER_AUTH, cafile=CAfile, capath=CApath
-        )
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CAfile, capath=CApath)
         # Note: check_hostname must be assigned prior to verify_mode property or Python library complains!
         ctx.check_hostname = verify_server == "hostname" and verify != ssl.CERT_NONE
         ctx.verify_mode = verify
@@ -261,9 +243,7 @@ class Connection:
             self.account.ssl_context = context = self.make_ssl_context(self.account)
 
         # Wrap socket with context
-        wrapped_socket = context.wrap_socket(
-            self.socket, server_hostname=(host if context.check_hostname else None)
-        )
+        wrapped_socket = context.wrap_socket(self.socket, server_hostname=(host if context.check_hostname else None))
 
         # Initial SSL handshake
         wrapped_socket.do_handshake()
@@ -272,9 +252,7 @@ class Connection:
         key = os.urandom(self.account.encryption_key_size)
 
         # Send header-only message with client side encryption settings
-        packed_header = iRODSMessage.pack_header(
-            algo, key_size, salt_size, hash_rounds, 0
-        )
+        packed_header = iRODSMessage.pack_header(algo, key_size, salt_size, hash_rounds, 0)
         wrapped_socket.sendall(packed_header)
 
         # Send shared secret
@@ -292,10 +270,7 @@ class Connection:
             s = socket.create_connection(address, timeout)
             self._disconnected = False
         except socket.error:
-            raise NetworkException(
-                "Could not connect to specified host and port: "
-                + "{}:{}".format(*address)
-            )
+            raise NetworkException("Could not connect to specified host and port: " + "{}:{}".format(*address))
 
         self.socket = s
 
@@ -307,7 +282,6 @@ class Connection:
 
         # No client-server negotiation
         if not self.requires_cs_negotiation():
-
             if len(main_message.option) >= LONG_NAME_LEN:
                 message = "Application name too long."
                 raise ValueError(message)
@@ -341,9 +315,7 @@ class Connection:
         server_policy = response.result
 
         # Perform the negotiation
-        neg_result, status = perform_negotiation(
-            client_policy=client_policy, server_policy=server_policy
-        )
+        neg_result, status = perform_negotiation(client_policy=client_policy, server_policy=server_policy)
 
         # Send negotiation result to server
         client_neg_response = ClientServerNegotiation(
@@ -355,11 +327,7 @@ class Connection:
         # If negotiation failed we're done
         if neg_result == FAILURE:
             self.disconnect()
-            raise NetworkException(
-                "Client-Server negotiation failure: {},{}".format(
-                    client_policy, server_policy
-                )
-            )
+            raise NetworkException("Client-Server negotiation failure: {},{}".format(client_policy, server_policy))
 
         # Server responds with version
         version_msg = self.recv()
@@ -377,11 +345,7 @@ class Connection:
         # times on the same connection. The first call cleans up the resources
         # and next calls are no-ops
         try:
-            if (
-                self.socket
-                and getattr(self, "_disconnected", False) == False
-                and self.socket.fileno() != -1
-            ):
+            if self.socket and getattr(self, "_disconnected", False) == False and self.socket.fileno() != -1:
                 disconnect_msg = iRODSMessage(msg_type="RODS_DISCONNECT")
                 self.send(disconnect_msg)
                 try:
@@ -428,9 +392,7 @@ class Connection:
         server_name.canonicalize(gsi_mech)
 
         # CLIENT CONTEXT
-        self.client_ctx = gssapi.SecurityContext(
-            name=server_name, mech=gsi_mech, flags=[2, 4], usage="initiate"
-        )
+        self.client_ctx = gssapi.SecurityContext(name=server_name, mech=gsi_mech, flags=[2, 4], usage="initiate")
 
     def send_gsi_token(self, server_token=None):
 
@@ -469,7 +431,6 @@ class Connection:
         self.send_gsi_token()
 
         while not (self.client_ctx.complete):
-
             server_token = self.receive_gsi_token()
 
             self.send_gsi_token(server_token)
@@ -486,9 +447,7 @@ class Connection:
         )
         # GSI = 1201
         # https://github.com/irods/irods/blob/master/lib/api/include/apiNumber.h#L158
-        auth_req = iRODSMessage(
-            msg_type="RODS_API_REQ", msg=message_body, int_info=1201
-        )
+        auth_req = iRODSMessage(msg_type="RODS_API_REQ", msg=message_body, int_info=1201)
         self.send(auth_req)
         # Getting the challenge message
         self.recv()
@@ -535,16 +494,10 @@ class Connection:
 
         import irods.client_configuration as cfg
 
-        inline_password = (
-            self.account.authentication_scheme
-            == self.account._original_authentication_scheme
-        )
+        inline_password = self.account.authentication_scheme == self.account._original_authentication_scheme
         time_to_live_in_hours = cfg.legacy_auth.pam.time_to_live_in_hours
         new_pam_password = self.account.password
-        if (
-            not inline_password
-            and cfg.legacy_auth.pam.password_for_auto_renew is not None
-        ):
+        if not inline_password and cfg.legacy_auth.pam.password_for_auto_renew is not None:
             # Login using PAM password from .irodsA
             try:
                 self._login_native()
@@ -564,9 +517,7 @@ class Connection:
 
         # Some characters need to be escaped for the key-value format and parser.
         KVP_ESCAPED_CHARS = r"\;="
-        kvp_escape = lambda s: "".join(
-            (rf"\{c}" if c in KVP_ESCAPED_CHARS else c) for c in s
-        )
+        kvp_escape = lambda s: "".join((rf"\{c}" if c in KVP_ESCAPED_CHARS else c) for c in s)
 
         # Generate a new PAM password.
         ctx_user = "%s=%s" % (AUTH_USER_KEY, self.account.client_user)
@@ -583,9 +534,7 @@ class Connection:
         # However, it has a practical limit to the number of characters in a context_ parameter (defined in packStruct as "str[MAX_NAME_LEN]").
         # Whereas PAM_AUTH_REQUEST_AN is an older api and defines pamPassword as a "str*" entry, with apparently no length limit.
 
-        use_dedicated_pam_api = cfg.legacy_auth.pam.force_use_of_dedicated_pam_api or (
-            len(ctx) >= MAX_NAME_LEN
-        )
+        use_dedicated_pam_api = cfg.legacy_auth.pam.force_use_of_dedicated_pam_api or (len(ctx) >= MAX_NAME_LEN)
 
         if use_dedicated_pam_api:
             message_body = PamAuthRequest(
@@ -596,13 +545,9 @@ class Connection:
         else:
             message_body = PluginAuthMessage(auth_scheme_=PAM_AUTH_SCHEME, context_=ctx)
 
-        api_name = (
-            "PAM_AUTH_REQUEST_AN" if use_dedicated_pam_api else "AUTH_PLUG_REQ_AN"
-        )
+        api_name = "PAM_AUTH_REQUEST_AN" if use_dedicated_pam_api else "AUTH_PLUG_REQ_AN"
 
-        auth_req = iRODSMessage(
-            msg_type="RODS_API_REQ", msg=message_body, int_info=api_number[api_name]
-        )
+        auth_req = iRODSMessage(msg_type="RODS_API_REQ", msg=message_body, int_info=api_number[api_name])
 
         self.send(auth_req)
         # Getting the new password
@@ -613,9 +558,7 @@ class Connection:
                 "Client-configured TTL is outside server parameters (password min and max times)"
             ) from exc
 
-        Pam_Response_Class = (
-            PamAuthRequestOut if use_dedicated_pam_api else AuthPluginOut
-        )
+        Pam_Response_Class = PamAuthRequestOut if use_dedicated_pam_api else AuthPluginOut
 
         auth_out = output_message.get_main_message(Pam_Response_Class)
 
@@ -653,9 +596,7 @@ class Connection:
             bytesWritten=0,
             KeyValPair_PI=StringStringMap(),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_READ_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_READ_AN"])
 
         logger.debug(desc)
         self.send(message)
@@ -687,9 +628,7 @@ class Connection:
         self._client_signature = "".join("{:02x}".format(c) for c in challenge[:16])
 
         challenge = challenge.strip()
-        padded_pwd = struct.pack(
-            "%ds" % MAX_PASSWORD_LENGTH, password.encode("utf-8").strip()
-        )
+        padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, password.encode("utf-8").strip())
 
         m = hashlib.md5()
         m.update(challenge)
@@ -740,9 +679,7 @@ class Connection:
             bytesWritten=0,
             KeyValPair_PI=StringStringMap(),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_LSEEK_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_LSEEK_AN"])
 
         self.send(message)
         response = self.recv()
@@ -759,17 +696,13 @@ class Connection:
             bytesWritten=0,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_CLOSE_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_CLOSE_AN"])
 
         self.send(message)
         self.recv()
 
     def temp_password(self):
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=None, int_info=api_number["GET_TEMP_PASSWORD_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=None, int_info=api_number["GET_TEMP_PASSWORD_AN"])
 
         # Send and receive request
         self.send(request)

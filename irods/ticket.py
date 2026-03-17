@@ -82,9 +82,7 @@ class Ticket:
                     with contextlib.suppress(KeyError):
                         setattr(self, attr, result[value])
 
-        self._ticket = (
-            ticket if ticket else self._generate(allow_punctuation=allow_punctuation)
-        )
+        self._ticket = ticket if ticket else self._generate(allow_punctuation=allow_punctuation)
 
     @property
     def session(self):
@@ -102,9 +100,7 @@ class Ticket:
         source_characters = string.ascii_letters + string.digits
         if allow_punctuation:
             source_characters += string.punctuation
-        return "".join(
-            random.SystemRandom().choice(source_characters) for _ in range(length)
-        )
+        return "".join(random.SystemRandom().choice(source_characters) for _ in range(length))
 
     def _api_request(self, cmd_string, *args, **opts):
         with self.session.pool.get_connection() as conn:
@@ -114,9 +110,7 @@ class Ticket:
     @staticmethod
     def _lowlevel_api_request(conn_, cmd_string, ticket_string, *args, **opts):
         message_body = TicketAdminRequest(cmd_string, ticket_string, *args, **opts)
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["TICKET_ADMIN_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["TICKET_ADMIN_AN"])
         conn_.send(message)
         response = conn_.recv()
         return response

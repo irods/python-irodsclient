@@ -53,22 +53,16 @@ def _authenticate_pam_password(conn, req):
 
     _ = AuthStorage.create_temp_pw_storage(conn)
 
-    _pam_password_ClientAuthState(conn, scheme=_scheme).authenticate_client(
-        initial_request=req
-    )
+    _pam_password_ClientAuthState(conn, scheme=_scheme).authenticate_client(initial_request=req)
 
     _logger.debug("----------- %s (end)", _scheme)
 
 
-def _get_pam_password_from_stdin(
-    file_like_object=None, prompt="Enter your current PAM password: "
-):
+def _get_pam_password_from_stdin(file_like_object=None, prompt="Enter your current PAM password: "):
     try:
         if file_like_object:
             if not getattr(file_like_object, "readline", None):
-                msg = (
-                    "The file_like_object, if provided, must have a 'readline' method."
-                )
+                msg = "The file_like_object, if provided, must have a 'readline' method."
                 raise RuntimeError(msg)
             sys.stdin = file_like_object
         if sys.stdin.isatty():
@@ -84,7 +78,6 @@ ENSURE_SSL_IS_ACTIVE = "ensure_ssl_is_active"
 
 
 class _pam_password_ClientAuthState(authentication_base):
-
     # Client define
     AUTH_CLIENT_AUTH_REQUEST = "pam_password_auth_client_request"
 
@@ -100,9 +93,7 @@ class _pam_password_ClientAuthState(authentication_base):
 
         # This list reference is popped and cached for the purpose of returning the request_result value
         # to the caller upon request.
-        self._list_for_request_result_return = request.pop(
-            CLIENT_GET_REQUEST_RESULT, False
-        )
+        self._list_for_request_result_return = request.pop(CLIENT_GET_REQUEST_RESULT, False)
 
         ensure_ssl = request.pop(ENSURE_SSL_IS_ACTIVE, None)
         if ensure_ssl is not None:
@@ -121,9 +112,7 @@ class _pam_password_ClientAuthState(authentication_base):
             if isinstance(password_input_obj, (int, bool)):
                 password_input_obj = None
             # Like with the C++ plugin, we offer the user a chance to enter a password.
-            resp[AUTH_PASSWORD_KEY] = _get_pam_password_from_stdin(
-                file_like_object=password_input_obj
-            )
+            resp[AUTH_PASSWORD_KEY] = _get_pam_password_from_stdin(file_like_object=password_input_obj)
         else:
             # Password from .irodsA in environment.
             if self.conn.account._auth_file:

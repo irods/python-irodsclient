@@ -36,10 +36,7 @@ def _adjust_timeout_to_pool_default(conn):
 
 
 class Pool:
-
-    def __init__(
-        self, account, application_name="", connection_refresh_time=-1, session=None
-    ):
+    def __init__(self, account, application_name="", connection_refresh_time=-1, session=None):
         """
         Pool( account , application_name='' )
         Create an iRODS connection pool; 'account' is an irods.account.iRODSAccount instance and
@@ -53,11 +50,7 @@ class Pool:
         self.active = set()
         self.idle = set()
         self.connection_timeout = DEFAULT_CONNECTION_TIMEOUT
-        self.application_name = (
-            os.environ.get("spOption", "")
-            or application_name
-            or DEFAULT_APPLICATION_NAME
-        )
+        self.application_name = os.environ.get("spOption", "") or application_name or DEFAULT_APPLICATION_NAME
         self._need_auth = True
 
         if connection_refresh_time > 0:
@@ -98,8 +91,7 @@ class Pool:
                 # release the connection (as its stale) and create a new one
                 if (
                     self.refresh_connection
-                    and (curr_time - conn.create_time).total_seconds()
-                    > self.connection_refresh_time
+                    and (curr_time - conn.create_time).total_seconds() > self.connection_refresh_time
                 ):
                     logger.debug(
                         f"Connection with id {id(conn)} was created more than {self.connection_refresh_time} seconds ago. "
@@ -116,9 +108,7 @@ class Pool:
             except KeyError:
                 conn = Connection(self, self.account)
                 new_conn = True
-                logger.debug(
-                    f"No connection found in idle set. Created a new connection with id: {id(conn)}"
-                )
+                logger.debug(f"No connection found in idle set. Created a new connection with id: {id(conn)}")
 
             self.active.add(conn)
 

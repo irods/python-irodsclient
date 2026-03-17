@@ -5,7 +5,6 @@ from html import escape
 
 
 class MessageProperty(OrderedProperty):
-
     def __get__(self, obj, cls):
         return obj._values[self.name]
 
@@ -34,7 +33,6 @@ class MessageProperty(OrderedProperty):
 
 
 class IntegerProperty(MessageProperty):
-
     def format(self, value):
         return str(value)
 
@@ -43,7 +41,6 @@ class IntegerProperty(MessageProperty):
 
 
 class LongProperty(MessageProperty):
-
     def format(self, value):
         return str(value)
 
@@ -52,7 +49,6 @@ class LongProperty(MessageProperty):
 
 
 class BinaryProperty(MessageProperty):
-
     def __init__(self, length=None):
         self.length = length
         super(BinaryProperty, self).__init__()
@@ -69,7 +65,6 @@ class BinaryProperty(MessageProperty):
 
 
 class StringProperty(MessageProperty):
-
     def __init__(self, length=None):
         self.length = length
         super(StringProperty, self).__init__()
@@ -92,7 +87,6 @@ class StringProperty(MessageProperty):
 
 
 class ArrayProperty(MessageProperty):
-
     def __init__(self, prop):
         self.prop = prop
         super(ArrayProperty, self).__init__()
@@ -106,7 +100,6 @@ class ArrayProperty(MessageProperty):
 
 
 class SubmessageProperty(MessageProperty):
-
     def __init__(self, message_cls=None):
         self.message_cls = message_cls
         super(SubmessageProperty, self).__init__()

@@ -13,8 +13,9 @@ from irods.auth.pam_interactive import (
 from irods.test.helpers import make_session
 from irods.auth.pam_interactive import __NEXT_OPERATION__, __FLOW_COMPLETE__
 from irods.auth.pam_interactive import _auth_api_request
-class PamInteractiveTest(unittest.TestCase):
 
+
+class PamInteractiveTest(unittest.TestCase):
     def setUp(self):
         # These tests assume the irods_environment.json file is set up correctly
         # and that the iRODS user 'alice' exists in the 'tempZone' zone and has the password 'rods'.
@@ -38,7 +39,9 @@ class PamInteractiveTest(unittest.TestCase):
 
     def test_pam_interactive_login_basic(self):
         with patch("getpass.getpass", return_value=self.password):
-            self.sess = make_session(test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive")
+            self.sess = make_session(
+                test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive"
+            )
             # Creating a session does not trigger auth, so the home collection is accessed to trigger and confirm auth succeeded
             home = self.sess.collections.get(f"/{self.sess.zone}/home/{self.sess.username}")
             self.assertEqual(home.name, self.sess.username)
@@ -49,7 +52,9 @@ class PamInteractiveTest(unittest.TestCase):
             self.assertTrue(os.path.exists(self.auth_file_path), ".irodsA file was not created")
 
         with patch("getpass.getpass", return_value=self.password) as mock_getpass:
-            self.sess = make_session(test_server_version=False, env_file=self.env_file_path, authentication_scheme= "pam_interactive")
+            self.sess = make_session(
+                test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive"
+            )
             # Creating a session does not trigger auth, so the home collection is accessed to trigger and confirm auth succeeded
             home = self.sess.collections.get(f"/{self.sess.zone}/home/{self.sess.username}")
             self.assertEqual(home.name, self.sess.username)
@@ -61,7 +66,9 @@ class PamInteractiveTest(unittest.TestCase):
             self.assertTrue(os.path.exists(self.auth_file_path), ".irodsA file was not created")
 
         with patch("getpass.getpass", return_value=self.password) as mock_getpass:
-            self.sess = make_session(test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive")
+            self.sess = make_session(
+                test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive"
+            )
             self.sess.set_auth_option_for_scheme("pam_interactive", FORCE_PASSWORD_PROMPT, True)
             # Creating a session does not trigger auth, so the home collection is accessed to trigger and confirm auth succeeded
             home = self.sess.collections.get(f"/{self.sess.zone}/home/{self.sess.username}")
@@ -71,7 +78,9 @@ class PamInteractiveTest(unittest.TestCase):
     def test_failed_login_incorrect_password(self):
         with patch("getpass.getpass", return_value="wrong_password"):
             with self.assertRaises(ClientAuthError):
-                self.sess = make_session(test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive")
+                self.sess = make_session(
+                    test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive"
+                )
                 self.sess.collections.get(f"/{self.sess.zone}/home/{self.sess.username}")  # trigger auth flow
 
         with patch("getpass.getpass", return_value="wrong_password"):
@@ -93,14 +102,61 @@ class PamInteractiveTest(unittest.TestCase):
 
     def test_patch_state(self):
         test_cases = [
-            ("add_op", {"msg": {"patch": [{"op": "add", "path": "/username", "value": "alice"}]}, "pstate": {}}, {"username": "alice"}, True),
-            ("replace_op", {"msg": {"patch": [{"op": "replace", "path": "/username", "value": "rods"}]}, "pstate": {"username": "alice"}}, {"username": "rods"}, True),
-            ("remove_op", {"msg": {"patch": [{"op": "remove", "path": "/username"}]}, "pstate": {"username": "rods"}}, {}, True),
-            ("add_resp_fallback", {"msg": {"patch": [{"op": "add", "path": "/username"}]}, "pstate": {}, "resp": "alice"}, {"username": "alice"}, True),
-            ("replace_resp_fallback", {"msg": {"patch": [{"op": "replace", "path": "/username"}]}, "pstate": {"username": "rods"}, "resp": "alice"}, {"username": "alice"}, True),
-            ("nested_add_operation", {'msg': {'patch': [{'op': 'add', 'path': '/user/name', 'value': 'alice'}]}, 'pstate': {'user': {}}}, {'user': {'name': 'alice'}}, True),
-            ("resp_fallback_empty", {'msg': {'patch': [{'op': 'add', 'path': '/username'}]}, 'pstate': {}}, {'username': ''}, True),
-            ("no_patch_ops", {"msg": {}, "pstate": {"username": "alice"}, "pdirty": False}, {"username": "alice"}, False)
+            (
+                "add_op",
+                {"msg": {"patch": [{"op": "add", "path": "/username", "value": "alice"}]}, "pstate": {}},
+                {"username": "alice"},
+                True,
+            ),
+            (
+                "replace_op",
+                {
+                    "msg": {"patch": [{"op": "replace", "path": "/username", "value": "rods"}]},
+                    "pstate": {"username": "alice"},
+                },
+                {"username": "rods"},
+                True,
+            ),
+            (
+                "remove_op",
+                {"msg": {"patch": [{"op": "remove", "path": "/username"}]}, "pstate": {"username": "rods"}},
+                {},
+                True,
+            ),
+            (
+                "add_resp_fallback",
+                {"msg": {"patch": [{"op": "add", "path": "/username"}]}, "pstate": {}, "resp": "alice"},
+                {"username": "alice"},
+                True,
+            ),
+            (
+                "replace_resp_fallback",
+                {
+                    "msg": {"patch": [{"op": "replace", "path": "/username"}]},
+                    "pstate": {"username": "rods"},
+                    "resp": "alice",
+                },
+                {"username": "alice"},
+                True,
+            ),
+            (
+                "nested_add_operation",
+                {'msg': {'patch': [{'op': 'add', 'path': '/user/name', 'value': 'alice'}]}, 'pstate': {'user': {}}},
+                {'user': {'name': 'alice'}},
+                True,
+            ),
+            (
+                "resp_fallback_empty",
+                {'msg': {'patch': [{'op': 'add', 'path': '/username'}]}, 'pstate': {}},
+                {'username': ''},
+                True,
+            ),
+            (
+                "no_patch_ops",
+                {"msg": {}, "pstate": {"username": "alice"}, "pdirty": False},
+                {"username": "alice"},
+                False,
+            ),
         ]
 
         for name, request, expected_pstate, expected_pdirty in test_cases:
@@ -112,11 +168,16 @@ class PamInteractiveTest(unittest.TestCase):
     def test_retrieve_entry(self):
         test_cases = [
             ("surface_value", {"msg": {"retrieve": "/user"}, "pstate": {"user": "alice"}}, True, "alice"),
-            ("nested_value", {"msg": {"retrieve": "/user/password"}, "pstate": {"user": {"password": "rods"}}}, True, "rods"),
+            (
+                "nested_value",
+                {"msg": {"retrieve": "/user/password"}, "pstate": {"user": {"password": "rods"}}},
+                True,
+                "rods",
+            ),
             ("empty_value", {"msg": {"retrieve": "/user"}, "pstate": {"user": ""}}, True, ""),
             ("path_does_not_exist", {"msg": {"retrieve": "/missing"}, "pstate": {"user": "alice"}}, True, ""),
             ("non_string_value", {'msg': {'retrieve': '/user/id'}, 'pstate': {'user': {'id': 456}}}, True, '456'),
-            ("no_retrieve_key", {"msg": {}, "pstate": {"user": "alice"}}, False, None)
+            ("no_retrieve_key", {"msg": {}, "pstate": {"user": "alice"}}, False, None),
         ]
 
         for name, request, expected_result, expected_resp in test_cases:
@@ -130,13 +191,31 @@ class PamInteractiveTest(unittest.TestCase):
     def test_get_input(self, mock_stderr, mock_api_request):
         test_cases = [
             ("non_password_input", False, 'sys.stdin.readline', "rods\n", {"msg": {"prompt": "Prompt:"}}, "rods"),
-            ("non_password_default", False, 'sys.stdin.readline', "\n", {"msg": {"prompt": "Prompt:", "default_path": "/password"}, "pstate": {"password": "rods"}}, "rods"),
+            (
+                "non_password_default",
+                False,
+                'sys.stdin.readline',
+                "\n",
+                {"msg": {"prompt": "Prompt:", "default_path": "/password"}, "pstate": {"password": "rods"}},
+                "rods",
+            ),
             ("password_input", True, 'getpass.getpass', "rods", {"msg": {"prompt": "Password:"}}, "rods"),
-            ("password_default", True, 'getpass.getpass', "", {"msg": {"prompt": "Password:", "default_path": "/password"}, "pstate": {"password": "rods"}}, "rods")
+            (
+                "password_default",
+                True,
+                'getpass.getpass',
+                "",
+                {"msg": {"prompt": "Password:", "default_path": "/password"}, "pstate": {"password": "rods"}},
+                "rods",
+            ),
         ]
 
         for name, is_password, mock_target, user_input, request, expected_resp in test_cases:
-            with self.subTest(name=name), patch(mock_target, return_value=user_input), patch.object(self.auth_client, '_patch_state') as mock_patch:
+            with (
+                self.subTest(name=name),
+                patch(mock_target, return_value=user_input),
+                patch.object(self.auth_client, '_patch_state') as mock_patch,
+            ):
                 resp = self.auth_client._get_input(request, is_password=is_password)
                 self.assertEqual(request["resp"], expected_resp)
                 self.assertEqual(resp, {"result": "ok"})
@@ -145,7 +224,12 @@ class PamInteractiveTest(unittest.TestCase):
     def test_pass_through_states(self):
         with patch("irods.auth.pam_interactive._auth_api_request", return_value={"result": "ok"}):
             request = {"msg": {"prompt": "Prompt:"}, "pstate": {}, "pdirty": False}
-            for state in [self.auth_client.next, self.auth_client.running, self.auth_client.ready, self.auth_client.response]:
+            for state in [
+                self.auth_client.next,
+                self.auth_client.running,
+                self.auth_client.ready,
+                self.auth_client.response,
+            ]:
                 with self.subTest(state=state.__name__):
                     resp = state(request)
                     self.assertEqual(resp, {"result": "ok"})
@@ -167,7 +251,7 @@ class PamInteractiveTest(unittest.TestCase):
             # Switch from the real server to the mock server when the password step is completed
             if state["stage"] == "before_mfa":
                 resp = _auth_api_request(conn, req)
-                if req.get(__NEXT_OPERATION__) == PERFORM_NEXT: # Indicates the password step is complete
+                if req.get(__NEXT_OPERATION__) == PERFORM_NEXT:  # Indicates the password step is complete
                     state["stage"] = "mfa_mock"
                 return resp
 
@@ -199,14 +283,18 @@ class PamInteractiveTest(unittest.TestCase):
 
             state["step"] += 1
 
-        with patch("irods.auth.pam_interactive._auth_api_request", side_effect=mock_server), \
-            patch("getpass.getpass", return_value=self.password), \
-            patch("irods.auth.pam_interactive._authenticate_native") as mock_native:
-
-            self.sess = make_session(test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive")
+        with (
+            patch("irods.auth.pam_interactive._auth_api_request", side_effect=mock_server),
+            patch("getpass.getpass", return_value=self.password),
+            patch("irods.auth.pam_interactive._authenticate_native") as mock_native,
+        ):
+            self.sess = make_session(
+                test_server_version=False, env_file=self.env_file_path, authentication_scheme="pam_interactive"
+            )
             self.sess.server_version  # Trigger auth flow
 
         mock_native.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

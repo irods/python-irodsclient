@@ -61,9 +61,7 @@ class _native_ClientAuthState(authentication_base):
     def auth_client_start(self, request):
         resp = request.copy()
         # user_name and zone_name keys injected by authenticate_client() method
-        resp[__NEXT_OPERATION__] = (
-            self.AUTH_CLIENT_AUTH_REQUEST
-        )  # native_auth_client_request
+        resp[__NEXT_OPERATION__] = self.AUTH_CLIENT_AUTH_REQUEST  # native_auth_client_request
         return resp
 
     def native_auth_client_request(self, request):
@@ -76,9 +74,7 @@ class _native_ClientAuthState(authentication_base):
         return resp
 
     def native_auth_establish_context(self, request):
-        throw_if_request_message_is_missing_key(
-            request, ["user_name", "zone_name", "request_result"]
-        )
+        throw_if_request_message_is_missing_key(request, ["user_name", "zone_name", "request_result"])
         request = request.copy()
 
         password = ""
@@ -91,13 +87,9 @@ class _native_ClientAuthState(authentication_base):
             password = self.conn.account.password or ""
 
         challenge = request["request_result"].encode("utf-8")
-        self.conn._client_signature = "".join(
-            "{:02x}".format(c) for c in challenge[:16]
-        )
+        self.conn._client_signature = "".join("{:02x}".format(c) for c in challenge[:16])
 
-        padded_pwd = struct.pack(
-            "%ds" % MAX_PASSWORD_LENGTH, password.encode("utf-8").strip()
-        )
+        padded_pwd = struct.pack("%ds" % MAX_PASSWORD_LENGTH, password.encode("utf-8").strip())
 
         m = hashlib.md5()
         m.update(challenge)
@@ -113,9 +105,7 @@ class _native_ClientAuthState(authentication_base):
         return request
 
     def native_auth_client_response(self, request):
-        throw_if_request_message_is_missing_key(
-            request, ["user_name", "zone_name", "digest"]
-        )
+        throw_if_request_message_is_missing_key(request, ["user_name", "zone_name", "digest"])
 
         server_req = request.copy()
         server_req[__NEXT_OPERATION__] = self.AUTH_AGENT_AUTH_RESPONSE

@@ -42,11 +42,7 @@ def test(return_locals=True):
         L = locals()
         # By default, ses and f will be automatically exported to calling frame (with L being returned),
         # but by specifying a list/tuple of keys we can export only those specific locals by name.
-        return (
-            L
-            if not isinstance(return_locals, (tuple, list))
-            else [L[k] for k in return_locals]
-        )
+        return L if not isinstance(return_locals, (tuple, list)) else [L[k] for k in return_locals]
 
 
 if __name__ == "__main__":

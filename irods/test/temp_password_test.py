@@ -48,7 +48,6 @@ class TestTempPassword(unittest.TestCase):
             password=temp_password,
             zone=self.admin.zone,
         ) as session:
-
             # do something that connects to the server
             session.users.get(self.admin.username)
 
@@ -74,7 +73,6 @@ class TestTempPassword(unittest.TestCase):
             password=temp_password,
             zone=self.admin.zone,
         ) as session:
-
             # do something that connects to the server
             session.users.get(self.new_user)
 

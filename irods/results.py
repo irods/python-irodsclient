@@ -3,7 +3,6 @@ from irods.models import ModelBase
 
 
 class ResultSet:
-
     def __init__(self, raw):
         self.length = raw.rowCnt
         col_length = raw.attriCnt
@@ -36,15 +35,11 @@ class ResultSet:
         except (TypeError, ValueError):
             return (col, value)
 
-    _get_column_values = lambda self, index: [
-        (col, col.value[index]) for col in self.cols
-    ]
+    _get_column_values = lambda self, index: [(col, col.value[index]) for col in self.cols]
 
     def _format_row(self, index):
         values = self._get_column_values(index)
-        return dict(
-            [self._format_attribute(col.attriInx, value) for col, value in values]
-        )
+        return dict([self._format_attribute(col.attriInx, value) for col, value in values])
 
     def __getitem__(self, index):
         return self.rows.__getitem__(index)
@@ -67,7 +62,6 @@ class ResultSet:
 
 
 class SpecificQueryResultSet(ResultSet):
-
     def __init__(self, raw, columns=None):
         self._query_columns = columns
         super(SpecificQueryResultSet, self).__init__(raw)

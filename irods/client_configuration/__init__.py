@@ -36,11 +36,7 @@ def getter(category, setting):
 class iRODSConfigAliasMetaclass(type):
     def __new__(meta, name, bases, attrs):
         cls = type.__new__(meta, name, bases, attrs)
-        cls.writeable_properties = tuple(
-            k
-            for k, v in attrs.items()
-            if isinstance(v, property) and v.fset is not None
-        )
+        cls.writeable_properties = tuple(k for k, v in attrs.items() if isinstance(v, property) and v.fset is not None)
         return cls
 
 
@@ -59,11 +55,16 @@ class ConnectionsProperties(iRODSConfiguration, metaclass=iRODSConfigAliasMetacl
 
         return set_default_XML_by_name(str_value)
 
+
 connections = ConnectionsProperties()
 
 
-class ConfigurationError(BaseException): pass
-class ConfigurationValueError(ValueError,ConfigurationError): pass
+class ConfigurationError(BaseException):
+    pass
+
+
+class ConfigurationValueError(ValueError, ConfigurationError):
+    pass
 
 
 class Genquery1_Properties(iRODSConfiguration, metaclass=iRODSConfigAliasMetaclass):
@@ -72,17 +73,22 @@ class Genquery1_Properties(iRODSConfiguration, metaclass=iRODSConfigAliasMetacla
     @property
     def irods_query_limit(self):
         import irods.query
+
         return irods.query.IRODS_QUERY_LIMIT
 
     @irods_query_limit.setter
     def irods_query_limit(self, target_value):
         import irods.query
+
         requested = int(target_value)
 
         if requested <= 0:
-            raise ConfigurationValueError(f'Error setting IRODS_QUERY_LIMIT to [{requested}]. Use positive values only.')
+            raise ConfigurationValueError(
+                f'Error setting IRODS_QUERY_LIMIT to [{requested}]. Use positive values only.'
+            )
 
         irods.query.IRODS_QUERY_LIMIT = requested
+
 
 genquery1 = Genquery1_Properties()
 
@@ -94,7 +100,6 @@ genquery1 = Genquery1_Properties()
 
 
 class DataObjects(iRODSConfiguration):
-
     __slots__ = (
         "auto_close",
         "allow_redirect",
@@ -146,9 +151,7 @@ class LegacyAuth(iRODSConfiguration):
         )
 
         def __init__(self):
-            self.time_to_live_in_hours = (
-                0  # -> We default to the server's TTL preference.
-            )
+            self.time_to_live_in_hours = 0  # -> We default to the server's TTL preference.
             self.password_for_auto_renew = ""
             self.store_password_to_environment = False
             self.force_use_of_dedicated_pam_api = False
@@ -175,11 +178,7 @@ def _var_items(root, leaf_flag=False):
     else:
         flag = lambda _: ()
     if isinstance(root, types.ModuleType):
-        return [
-            ((i, v) + flag(False))
-            for i, v in vars(root).items()
-            if isinstance(v, iRODSConfiguration)
-        ]
+        return [((i, v) + flag(False)) for i, v in vars(root).items() if isinstance(v, iRODSConfiguration)]
     if isinstance(root, iRODSConfiguration):
         return [(i, getattr(root, i)) + flag(True) for i in _config_names(root)]
     return []
@@ -193,9 +192,7 @@ def _var_items_as_generator(root=sys.modules[__name__], dotted=""):
         yield dn, sub_node, is_config
         #       # TODO: (#480) When Python2 support is removed, we can instead use the simpler construction:
         #       yield from _var_items_as_generator(root = sub_node, dotted = dn)
-        for _dotted, _root, _is_config in _var_items_as_generator(
-            root=sub_node, dotted=dn
-        ):
+        for _dotted, _root, _is_config in _var_items_as_generator(root=sub_node, dotted=dn):
             yield _dotted, _root, _is_config
 
 
@@ -281,9 +278,7 @@ def loadlines(entries, common_root=sys.modules[__name__]):
             _load_config_line(eval_func=identity, **e_)
 
 
-def _load_config_line(
-    root, setting, value, return_old=None, eval_func=ast.literal_eval
-):
+def _load_config_line(root, setting, value, return_old=None, eval_func=ast.literal_eval):
     """Low-level utility function for loading a line of settings, with the option to return the old (displaced) value.
 
     The 'root' refers to the starting point in the configuration tree.  Its meaning is the same as in loadlines().
@@ -313,11 +308,7 @@ def _load_config_line(
         loadexc = e
 
     # If we get this far, there's a problem loading the configuration setting.  Raise an exception or log it.
-    error_message = (
-        "Bad setting: root = {root!r}, setting = {setting!r}, value = {value!r}".format(
-            **locals()
-        )
-    )
+    error_message = "Bad setting: root = {root!r}, setting = {setting!r}, value = {value!r}".format(**locals())
     if loadexc:
         error_message += " [{loadexc!r}]".format(**locals())
     if allow_config_load_errors:
@@ -452,11 +443,7 @@ def _load_settings_from_environment(root=None):
 
 
 def preserve_defaults():
-    default_config_dict.update(
-        (k, copy.deepcopy(v))
-        for k, v in globals().items()
-        if isinstance(v, iRODSConfiguration)
-    )
+    default_config_dict.update((k, copy.deepcopy(v)) for k, v in globals().items() if isinstance(v, iRODSConfiguration))
 
 
 def autoload(_file_to_load):
@@ -475,9 +462,7 @@ def new_default_config():
 def overriding_environment_variables():
     uppercase_and_dot_split = lambda _: _.upper().split(".")
     return {
-        _tuple.dotted: "__".join(
-            ["PYTHON_IRODSCLIENT_CONFIG"] + uppercase_and_dot_split(_tuple.dotted)
-        )
+        _tuple.dotted: "__".join(["PYTHON_IRODSCLIENT_CONFIG"] + uppercase_and_dot_split(_tuple.dotted))
         for _tuple in _var_item_tuples_as_generator()
         if _tuple.is_config
     }

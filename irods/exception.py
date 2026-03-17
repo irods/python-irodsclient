@@ -89,16 +89,12 @@ class NotImplementedInIRODSServer(PycommandsException):
 
 class iRODSExceptionMeta(type):
     codes: "Dict[int, iRODSException]" = {}
-    positive_code_error_message = (
-        "For {name}, a positive code of {attrs[code]} was declared."
-    )
+    positive_code_error_message = "For {name}, a positive code of {attrs[code]} was declared."
 
     def __init__(self, name, bases, attrs):
         if "code" in attrs:
             if attrs["code"] > 0:
-                print(
-                    self.positive_code_error_message.format(**locals()), file=sys.stderr
-                )
+                print(self.positive_code_error_message.format(**locals()), file=sys.stderr)
                 exit(1)
             iRODSExceptionMeta.codes[attrs["code"]] = self
 
@@ -117,18 +113,14 @@ class Errno:
     def __repr__(self):
         e = self.int_code
         try:
-            return self.__class__.__name__ + repr(
-                tuple([e, errno.errorcode[e], os.strerror(e)])
-            )
+            return self.__class__.__name__ + repr(tuple([e, errno.errorcode[e], os.strerror(e)]))
         except:
             # The errno code is unrecognized, so fall through to default representation.
             pass
         return self.__class__.__name__ + repr(
-            tuple(
-                [
-                    e,
-                ]
-            )
+            tuple([
+                e,
+            ])
         )
 
     def __int__(self):
@@ -175,9 +167,7 @@ def nominal_code(the_code, THRESHOLD=1000):
     nominal = []
     c = rounded_code(the_code, nominal_int_repo=nominal)
     negated = -abs(nominal[0])
-    return (
-        c if (negated <= -abs(THRESHOLD)) else negated
-    )  # produce a negative for nonzero integer input
+    return c if (negated <= -abs(THRESHOLD)) else negated  # produce a negative for nonzero integer input
 
 
 def rounded_code(the_code, nominal_int_repo=()):
@@ -192,9 +182,7 @@ def rounded_code(the_code, nominal_int_repo=()):
             nom_err = the_code
             return 1000 * ((-abs(the_code) - 1) // 1000 + 1)
         else:
-            message = "Supplied code {the_code!r} must be integer or string".format(
-                **locals()
-            )
+            message = "Supplied code {the_code!r} must be integer or string".format(**locals())
             raise RuntimeError(message)
     finally:
         if nom_err is not None and isinstance(nominal_int_repo, list):
@@ -204,11 +192,7 @@ def rounded_code(the_code, nominal_int_repo=()):
 def get_exception_class_by_code(code, name_only=False):
     rounded = rounded_code(code)  # rounded up to -1000 if code <= -1000
     cls = iRODSExceptionMeta.codes.get(rounded)
-    return (
-        cls
-        if not name_only
-        else (cls.__name__ if cls is not None else "Unknown_iRODS_error")
-    )
+    return cls if not name_only else (cls.__name__ if cls is not None else "Unknown_iRODS_error")
 
 
 def get_exception_by_code(code, message=None):

@@ -14,19 +14,12 @@ ext = ""
 keep_old = False
 
 
-def create_server_cert(
-    process_output=sys.stdout, irods_key_path="irods.key", hostname=SERVER_CERT_HOSTNAME
-):
+def create_server_cert(process_output=sys.stdout, irods_key_path="irods.key", hostname=SERVER_CERT_HOSTNAME):
     p = Popen(
         "openssl req -new -x509 -key '{irods_key_path}' -out irods.crt{ext} -days 365 <<EOF{_sep_}"
         "US{_sep_}North Carolina{_sep_}Chapel Hill{_sep_}UNC{_sep_}RENCI{_sep_}"
         "{host}{_sep_}anon@mail.com{_sep_}EOF\n"
-        "".format(
-            ext=ext,
-            host=(hostname if hostname else socket.gethostname()),
-            _sep_="\n",
-            **locals()
-        ),
+        "".format(ext=ext, host=(hostname if hostname else socket.gethostname()), _sep_="\n", **locals()),
         shell=True,
         stdout=process_output,
         stderr=process_output,
@@ -35,9 +28,7 @@ def create_server_cert(
     return p.returncode
 
 
-def create_ssl_dir(
-    irods_key_path="irods.key", ssl_dir="", use_strong_primes_for_dh_generation=True
-):
+def create_ssl_dir(irods_key_path="irods.key", ssl_dir="", use_strong_primes_for_dh_generation=True):
     ssl_dir = ssl_dir or IRODS_SSL_DIR
     save_cwd = os.getcwd()
     silent_run = {"shell": True, "stderr": PIPE, "stdout": PIPE}
@@ -47,25 +38,17 @@ def create_ssl_dir(
         os.chdir(ssl_dir)
         if not keep_old:
             Popen(
-                "openssl genrsa -out '{irods_key_path}' 2048 && chmod 600 '{irods_key_path}'".format(
-                    **locals()
-                ),
-                **silent_run
+                "openssl genrsa -out '{irods_key_path}' 2048 && chmod 600 '{irods_key_path}'".format(**locals()),
+                **silent_run,
             ).communicate()
         with open("/dev/null", "wb") as dev_null:
-            if 0 == create_server_cert(
-                process_output=dev_null, irods_key_path=irods_key_path
-            ):
+            if 0 == create_server_cert(process_output=dev_null, irods_key_path=irods_key_path):
                 if not keep_old:
                     # https://www.openssl.org/docs/man1.0.2/man1/dhparam.html#:~:text=DH%20parameter%20generation%20with%20the,that%20may%20be%20possible%20otherwise.
                     if use_strong_primes_for_dh_generation:
-                        dhparam_generation_command = (
-                            "openssl dhparam -2 -out dhparams.pem 2048"
-                        )
+                        dhparam_generation_command = "openssl dhparam -2 -out dhparams.pem 2048"
                     else:
-                        dhparam_generation_command = (
-                            "openssl dhparam -dsaparam -out dhparams.pem 4096"
-                        )
+                        dhparam_generation_command = "openssl dhparam -dsaparam -out dhparams.pem 4096"
                     print("cmd=", dhparam_generation_command)
                     Popen(dhparam_generation_command, **silent_run).communicate()
         return os.listdir(".")
@@ -83,9 +66,7 @@ def test(options, args=()):
             input_ = raw_input
         except NameError:
             input_ = input
-        affirm = input_(
-            "This will overwrite directory '{}'. Proceed(Y/N)? ".format(IRODS_SSL_DIR)
-        )
+        affirm = input_("This will overwrite directory '{}'. Proceed(Y/N)? ".format(IRODS_SSL_DIR))
     if affirm[:1].lower() == "y":
         if not keep_old:
             shutil.rmtree(IRODS_SSL_DIR, ignore_errors=True)
@@ -95,9 +76,7 @@ def test(options, args=()):
             "Generating new '{}'.{}".format(IRODS_SSL_DIR, wait_warning),
             file=sys.stderr,
         )
-        ssl_dir_files = create_ssl_dir(
-            use_strong_primes_for_dh_generation=dh_strong_primes
-        )
+        ssl_dir_files = create_ssl_dir(use_strong_primes_for_dh_generation=dh_strong_primes)
         print("ssl_dir_files=", ssl_dir_files, file=sys.stderr)
 
 
@@ -113,9 +92,7 @@ def usage(exit_code=None):
     --help  Print this help.
 
     Any invalid option prints this help.
-    """.format(
-            **globals()
-        ),
+    """.format(**globals()),
         file=sys.stderr,
     )
     if isinstance(exit_code, numbers.Integral):

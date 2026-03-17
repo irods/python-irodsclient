@@ -17,25 +17,20 @@ from irods.exception import DataObjectDoesNotExist
 import irods.keywords as kw
 from queue import Queue, Full, Empty
 
-paths_active: weakref.WeakValueDictionary[str, "AsyncNotify"] = (
-    weakref.WeakValueDictionary()
-)
-transfer_managers: weakref.WeakKeyDictionary["_Multipart_close_manager", Any] = (
-    weakref.WeakKeyDictionary()
-)
+paths_active: weakref.WeakValueDictionary[str, "AsyncNotify"] = weakref.WeakValueDictionary()
+transfer_managers: weakref.WeakKeyDictionary["_Multipart_close_manager", Any] = weakref.WeakKeyDictionary()
 
 
 class FILTER_FUNCTIONS:
     """The members of this class are free functions designed to be passed to
-       the "filter_function" parameter of the abort_parallel_transfers function.
+    the "filter_function" parameter of the abort_parallel_transfers function.
     """
+
     foreground = staticmethod(lambda item: isinstance(item[1], tuple))
     background = staticmethod(lambda item: not isinstance(item[1], tuple))
 
 
-def abort_parallel_transfers(
-    dry_run=False, filter_function=None, transform=weakref.WeakKeyDictionary
-):
+def abort_parallel_transfers(dry_run=False, filter_function=None, transform=weakref.WeakKeyDictionary):
     """
     If no explicit arguments are given, all ongoing parallel puts and gets are
     cancelled as soon as possible.  The corresponding threads are signalled to
@@ -129,14 +124,10 @@ class AsyncNotify:
     def set_transfer_done_callback(self, callback):
         if callback is not None:
             if not callable(callback):
-                raise BadCallbackTarget(
-                    '"callback" must be a callable accepting at least 1 argument'
-                )
+                raise BadCallbackTarget('"callback" must be a callable accepting at least 1 argument')
         self.done_callback = callback
 
-    def __init__(
-        self, futuresList, callback=None, progress_Queue=None, total=None, keep_=()
-    ):
+    def __init__(self, futuresList, callback=None, progress_Queue=None, total=None, keep_=()):
         """AsyncNotify initialization (used internally to the io.parallel library).
         The casual user will only be concerned with the callback parameter, called when all threads
         of the parallel PUT or GET have been terminated and the data object closed.
@@ -173,9 +164,7 @@ class AsyncNotify:
                             break
 
             self._progress_fn = _progress
-            self._progress_thread = threading.Thread(
-                target=self._progress_fn, args=(progress_Queue, self), daemon=True
-            )
+            self._progress_thread = threading.Thread(target=self._progress_fn, args=(progress_Queue, self), daemon=True)
             self._progress_thread.start()
 
     @staticmethod
@@ -208,17 +197,13 @@ class AsyncNotify:
                 sys.stderr.flush()
         return self.__done
 
-    def __call__(
-        self, future
-    ):  # Our instance is called by each future (individual file part) when done.
+    def __call__(self, future):  # Our instance is called by each future (individual file part) when done.
         # When all futures are done, we invoke the configured callback.
         with self._lock:
             self._futures_done[future] = future.result()
             if len(self._futures) == len(self._futures_done):
                 # If a future returns None rather than an integer byte count, it has aborted the transfer.
-                self.__invoke_futures_done_logic(
-                    skip_user_callback=(None in self._futures_done.values())
-                )
+                self.__invoke_futures_done_logic(skip_user_callback=(None in self._futures_done.values()))
 
     def __invoke_futures_done_logic(self, skip_user_callback=False):
         try:
@@ -396,7 +381,6 @@ class _Multipart_close_manager:
     # synchronizes all of the parallel threads just before exit, so that we know
     # exactly when to perform a finalizing close on the data object
 
-
     def remove_io(self, Io):
         is_initial = True
         with self.__lock:
@@ -441,26 +425,14 @@ def _io_part(
     if thread_debug_id == "":  # for more succinct thread identifiers while debugging.
         thread_debug_id = str(threading.currentThread().ident)
     return (
-        _copy_part(
-            file_, objHandle, length, queueObject, thread_debug_id, mgr_, updatables
-        )
+        _copy_part(file_, objHandle, length, queueObject, thread_debug_id, mgr_, updatables)
         if Operation.isPut()
-        else _copy_part(
-            objHandle, file_, length, queueObject, thread_debug_id, mgr_, updatables
-        )
+        else _copy_part(objHandle, file_, length, queueObject, thread_debug_id, mgr_, updatables)
     )
 
 
 def _io_multipart_threaded(
-    operation_,
-    dataObj_and_IO,
-    replica_token,
-    hier_str,
-    session,
-    fname,
-    total_size,
-    num_threads,
-    **extra_options
+    operation_, dataObj_and_IO, replica_token, hier_str, session, fname, total_size, num_threads, **extra_options
 ):
     """Called by _io_main.
 
@@ -479,14 +451,9 @@ def _io_multipart_threaded(
 
     bytes_per_thread = total_size // num_threads
 
-    ranges = [
-        bytes_range_for_thread(i, num_threads, total_size, bytes_per_thread)
-        for i in range(num_threads)
-    ]
+    ranges = [bytes_range_for_thread(i, num_threads, total_size, bytes_per_thread) for i in range(num_threads)]
 
-    logger.info(
-        "num_threads = %s ; bytes_per_thread = %s", num_threads, bytes_per_thread
-    )
+    logger.info("num_threads = %s ; bytes_per_thread = %s", num_threads, bytes_per_thread)
 
     queueLength = extra_options.get("queueLength", 0)
     if queueLength > 0:
@@ -499,9 +466,7 @@ def _io_multipart_threaded(
     num_threads = min(num_threads, len(ranges))
     mgr = _Multipart_close_manager(Io, Barrier(num_threads), executor)
     counter = 1
-    gen_file_handle = lambda: open(
-        fname, Operation.disk_file_mode(initial_open=(counter == 1))
-    )
+    gen_file_handle = lambda: open(fname, Operation.disk_file_mode(initial_open=(counter == 1)))
     File = gen_file_handle()
 
     thread_opts = {
@@ -527,7 +492,7 @@ def _io_multipart_threaded(
                         kw.DATA_SIZE_KW: str(total_size),
                         kw.RESC_HIER_STR_KW: hier_str,
                         kw.REPLICA_TOKEN_KW: replica_token,
-                    }
+                    },
                 )
             mgr.add_io(Io)
             logger.debug("target_host = %s", Io.raw.session.pool.account.host)
@@ -537,14 +502,7 @@ def _io_multipart_threaded(
                 f = None
                 futures.append(
                     f := executor.submit(
-                        _io_part,
-                        Io,
-                        byte_range,
-                        File,
-                        Operation,
-                        mgr,
-                        thread_debug_id=str(counter),
-                        **thread_opts
+                        _io_part, Io, byte_range, File, Operation, mgr, thread_debug_id=str(counter), **thread_opts
                     )
                 )
             except RuntimeError as error:
@@ -641,7 +599,7 @@ def io_main(session, Data, opr_, fname, R="", **kwopt):
             Operation.data_object_mode(initial_open=True),
             finalize_on_close=True,
             returned_values=output_values,
-            **open_options
+            **open_options,
         )
     else:
         if type(Io) is deferred_call:
@@ -690,7 +648,7 @@ def io_main(session, Data, opr_, fname, R="", **kwopt):
         fname,
         total_bytes,
         num_threads=num_threads,
-        **{k: v for k, v in kwopt.items() if k in pass_thru_options}
+        **{k: v for k, v in kwopt.items() if k in pass_thru_options},
     )
 
     # SessionObject.data_objects.parallel_{put,get} will return:
@@ -698,7 +656,6 @@ def io_main(session, Data, opr_, fname, R="", **kwopt):
     #   - upon completion with a boolean completion status, otherwise.
 
     if Operation.isNonBlocking():
-
         (futures, mgr, chunk_notify_queue) = retval
 
         # For convenience, this information can help determine which data object mgr is tracking.
@@ -708,9 +665,7 @@ def io_main(session, Data, opr_, fname, R="", **kwopt):
             futures,  # individual futures, one per transfer thread
             progress_Queue=chunk_notify_queue,  # for notifying the progress indicator thread
             total=total_bytes,  # total number of bytes for parallel transfer
-            keep_={
-                "mgr": mgr
-            },  # objects needing to be persisted while futures are pending
+            keep_={"mgr": mgr},  # objects needing to be persisted while futures are pending
         )
         return async_notify
     else:
@@ -719,7 +674,6 @@ def io_main(session, Data, opr_, fname, R="", **kwopt):
 
 
 if __name__ == "__main__":
-
     import getopt
     import atexit
     from irods.session import iRODSSession
@@ -739,9 +693,7 @@ if __name__ == "__main__":
         env_file = os.environ["IRODS_ENVIRONMENT_FILE"]
     except KeyError:
         env_file = os.path.expanduser("~/.irods/irods_environment.json")
-    ssl_context = ssl.create_default_context(
-        purpose=ssl.Purpose.SERVER_AUTH, cafile=None, capath=None, cadata=None
-    )
+    ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=None, capath=None, cadata=None)
     ssl_settings = {"ssl_context": ssl_context}
     sess = iRODSSession(irods_env_file=env_file, **ssl_settings)
     atexit.register(lambda: sess.cleanup())
@@ -751,9 +703,7 @@ if __name__ == "__main__":
 
     opts = dict(opt)
 
-    logFilename = opts.pop(
-        "-L", None
-    )  # '' for console, non-empty for filesystem destination
+    logFilename = opts.pop("-L", None)  # '' for console, non-empty for filesystem destination
     logLevel = logging.INFO if logFilename is None else logging.DEBUG
     logFilename = logFilename or opts.pop("-l", None)
 
@@ -780,12 +730,8 @@ if __name__ == "__main__":
     # kwarg['target_resource_name'] (overrides 'R' when called as a library)
     if isinstance(ret, AsyncNotify):
         print("waiting on completion...", file=sys.stderr)
-        ret.set_transfer_done_callback(
-            lambda r: print("Async transfer done for:", r, file=sys.stderr)
-        )
-        done = ret.wait_until_transfer_done(
-            timeout=10.0
-        )  # - or do other useful work here
+        ret.set_transfer_done_callback(lambda r: print("Async transfer done for:", r, file=sys.stderr))
+        done = ret.wait_until_transfer_done(timeout=10.0)  # - or do other useful work here
         if done:
             bytes_transferred_total = sum(ret.futures_done.values())
             print(

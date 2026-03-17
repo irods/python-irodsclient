@@ -32,7 +32,7 @@ from irods import NATIVE_AUTH_SCHEME, PAM_AUTH_SCHEMES
 from . import at_client_exit
 from . import DEFAULT_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT
 
-_fds : Optional[dict[BufferedRandom, Any]] = None
+_fds: Optional[dict[BufferedRandom, Any]] = None
 _fds_lock = threading.Lock()
 _sessions = None
 _sessions_lock = threading.Lock()
@@ -43,7 +43,7 @@ def _exclude_fds_from_auto_close(descriptors: Iterable):
     from irods.manager.data_object_manager import ManagedBufferedRandom
 
     with _fds_lock:
-        fds : dict[BufferedRandom, Any] = _fds or {}
+        fds: dict[BufferedRandom, Any] = _fds or {}
         for fd in descriptors:
             fds.pop(fd, None)
             if isinstance(fd, ManagedBufferedRandom):
@@ -61,9 +61,7 @@ def _cleanup_remaining_sessions():
 
 
 with _sessions_lock:
-    at_client_exit._register(
-        at_client_exit.LibraryCleanupStage.DURING, _cleanup_remaining_sessions
-    )
+    at_client_exit._register(at_client_exit.LibraryCleanupStage.DURING, _cleanup_remaining_sessions)
 
 
 def _weakly_reference(ses):
@@ -87,14 +85,11 @@ class NonAnonymousLoginWithoutPassword(RuntimeError):
 
 
 class iRODSSession:
-
     def library_features(self):
         irods_version_needed = (4, 3, 1)
         if self.server_version < irods_version_needed:
             raise NotImplementedInIRODSServer("library_features", irods_version_needed)
-        message = iRODSMessage(
-            "RODS_API_REQ", int_info=api_number["GET_LIBRARY_FEATURES_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", int_info=api_number["GET_LIBRARY_FEATURES_AN"])
         with self.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
@@ -116,9 +111,7 @@ class iRODSSession:
         try:
             self.__access
         except AttributeError:
-            self.__access = (
-                _iRODSAccess_pre_4_3_0 if self.server_version < (4, 3) else iRODSAccess
-            )
+            self.__access = _iRODSAccess_pre_4_3_0 if self.server_version < (4, 3) else iRODSAccess
         return self.__access
 
     def __init__(self, configure=True, auto_cleanup=True, **kwargs):
@@ -128,9 +121,7 @@ class iRODSSession:
         self._auth_file = ""
         self.do_configure = kwargs if configure else {}
         self._cached_connection_timeout = None
-        self.connection_timeout = kwargs.pop(
-            "connection_timeout", DEFAULT_CONNECTION_TIMEOUT
-        )
+        self.connection_timeout = kwargs.pop("connection_timeout", DEFAULT_CONNECTION_TIMEOUT)
         self.__configured = None
         if configure:
             self.__configured = self.configure(**kwargs)
@@ -148,11 +139,7 @@ class iRODSSession:
         # A mapping for each connection - holds whether the session's assigned ticket has been applied.
         self.ticket_applied = weakref.WeakKeyDictionary()
 
-        self.auth_options_by_scheme = {
-            "pam_password": {
-                irods.auth.CLIENT_GET_REQUEST_RESULT: (lambda sess, conn: [])
-            }
-        }
+        self.auth_options_by_scheme = {"pam_password": {irods.auth.CLIENT_GET_REQUEST_RESULT: (lambda sess, conn: [])}}
 
         if auto_cleanup:
             _weakly_reference(self)
@@ -277,11 +264,7 @@ class iRODSSession:
         if auth_scheme.lower() not in PAM_AUTH_SCHEMES:
             if not pw and creds.get("irods_user_name") != "anonymous":
                 if missing_file_path:
-                    error_args += [
-                        "Authentication file not found at {!r}".format(
-                            missing_file_path[0]
-                        )
-                    ]
+                    error_args += ["Authentication file not found at {!r}".format(missing_file_path[0])]
                 raise NonAnonymousLoginWithoutPassword(*error_args)
 
         return iRODSAccount(**creds)
@@ -293,11 +276,7 @@ class iRODSSession:
         # so that _login_pam can rewrite auth file with new password if requested:
         account._auth_file = getattr(self, "_auth_file", "")
         connection_refresh_time = self.get_connection_refresh_time(**kwargs)
-        logger.debug(
-            "In iRODSSession's configure(). connection_refresh_time set to {}".format(
-                connection_refresh_time
-            )
-        )
+        logger.debug("In iRODSSession's configure(). connection_refresh_time set to {}".format(connection_refresh_time))
         self.pool = Pool(
             account,
             application_name=kwargs.pop("application_name", ""),
@@ -354,9 +333,7 @@ class iRODSSession:
         with self.clone().pool.no_auto_authenticate() as pool:
             return Connection(pool, pool.account).server_version
 
-    GET_SERVER_VERSION_WITHOUT_AUTH = staticmethod(
-        lambda s: s.server_version_without_auth()
-    )
+    GET_SERVER_VERSION_WITHOUT_AUTH = staticmethod(lambda s: s.server_version_without_auth())
 
     def _server_version(self, version_func=None):
         """The server version can be retrieved by the usage:
@@ -401,13 +378,8 @@ class iRODSSession:
         old_setting = _dummy = object()
         try:
             self.pool.account.store_pw = box = []
-            if (
-                self.server_version_without_auth() >= (4, 3)
-                and not client_config.legacy_auth.force_legacy_auth
-            ):
-                old_setting = self.set_auth_option_for_scheme(
-                    "pam_password", irods.auth.CLIENT_GET_REQUEST_RESULT, box
-                )
+            if self.server_version_without_auth() >= (4, 3) and not client_config.legacy_auth.force_legacy_auth:
+                old_setting = self.set_auth_option_for_scheme("pam_password", irods.auth.CLIENT_GET_REQUEST_RESULT, box)
             conn = self.pool.get_connection()
             pw = getattr(self.pool.account, "store_pw", [])
             delattr(self.pool.account, "store_pw")
@@ -415,9 +387,7 @@ class iRODSSession:
             return pw
         finally:
             if old_setting is not _dummy:
-                self.set_auth_option_for_scheme(
-                    "pam_password", irods.auth.CLIENT_GET_REQUEST_RESULT, old_setting
-                )
+                self.set_auth_option_for_scheme("pam_password", irods.auth.CLIENT_GET_REQUEST_RESULT, old_setting)
 
     @property
     def default_resource(self):
@@ -434,9 +404,7 @@ class iRODSSession:
     @connection_timeout.setter
     def connection_timeout(self, seconds):
         if seconds == 0:
-            exc = ValueError(
-                "Setting an iRODS connection_timeout to 0 seconds would make it non-blocking."
-            )
+            exc = ValueError("Setting an iRODS connection_timeout to 0 seconds would make it non-blocking.")
             raise exc
         elif isinstance(seconds, Number):
             # Note: We can handle infinities because -Inf < 0 and Inf > MAXIMUM_CONNECTION_TIMEOUT.
@@ -455,9 +423,7 @@ class iRODSSession:
         elif seconds is None:
             pass
         else:
-            exc = ValueError(
-                "The iRODS connection_timeout must be assigned a positive int, positive float, or None."
-            )
+            exc = ValueError("The iRODS connection_timeout must be assigned a positive int, positive float, or None.")
             raise exc
         self._cached_connection_timeout = seconds
         if self.pool:
@@ -526,9 +492,7 @@ class iRODSSession:
 
         if env_file is not None:
             env_file_map = self.get_irods_env(env_file)
-            connection_refresh_time = int(
-                env_file_map.get("irods_connection_refresh_time", -1)
-            )
+            connection_refresh_time = int(env_file_map.get("irods_connection_refresh_time", -1))
             if connection_refresh_time < 1:
                 # Negative values are not allowed.
                 logger.debug(

@@ -16,7 +16,6 @@ import irods.keywords as kw
 
 
 class CollectionManager(Manager):
-
     def get(self, path):
         path = iRODSCollection.normalize_path(path)
         filters = [Collection.name == path]
@@ -38,12 +37,8 @@ class CollectionManager(Manager):
         if recurse:
             options[kw.RECURSIVE_OPR__KW] = ""
 
-        message_body = CollectionRequest(
-            collName=path, KeyValPair_PI=StringStringMap(options)
-        )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["COLL_CREATE_AN"]
-        )
+        message_body = CollectionRequest(collName=path, KeyValPair_PI=StringStringMap(options))
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["COLL_CREATE_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
@@ -66,9 +61,7 @@ class CollectionManager(Manager):
             oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["RM_COLL_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["RM_COLL_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
@@ -120,9 +113,7 @@ class CollectionManager(Manager):
             KeyValPair_PI=StringStringMap(),
         )
         message_body = ObjCopyRequest(srcDataObjInp_PI=src, destDataObjInp_PI=dest)
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_RENAME_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_RENAME_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -142,9 +133,7 @@ class CollectionManager(Manager):
             oprType=0,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["PHY_PATH_REG_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["PHY_PATH_REG_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)

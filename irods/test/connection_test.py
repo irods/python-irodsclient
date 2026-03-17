@@ -17,7 +17,6 @@ from irods.helpers import temporarily_assign_attribute as temp_setter
 
 
 class TestConnections(unittest.TestCase):
-
     def setUp(self):
         self.sess = helpers.make_session()
 
@@ -108,16 +107,12 @@ class TestConnections(unittest.TestCase):
             with tempfile.NamedTemporaryFile(delete=False) as local_file:
                 while local_file.tell() < size:
                     local_file.write(rand)
-            obj = sess.data_objects.put(
-                local_file.name, logical_path, return_data_object=True
-            )
+            obj = sess.data_objects.put(local_file.name, logical_path, return_data_object=True)
 
             # Set a very short socket timeout and remove all pre-existing socket connections.
             # This forces a new connection to be made for any ensuing connections to the iRODS server.
 
-            sess = (
-                obj.manager.sess
-            )  # Because of client-redirect it is possible that self.sess and
+            sess = obj.manager.sess  # Because of client-redirect it is possible that self.sess and
             # obj.manager.sess do not refer to the same object. In any case,
             # it is the latter of the two iRODSSession objects that is
             # involved in the data PUT connection.
@@ -175,17 +170,13 @@ class TestConnections(unittest.TestCase):
     def test_connection_timeout_parameter_in_session_init__issue_377(self):
         timeout = 1.0
         sess = helpers.make_session(connection_timeout=timeout)
-        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(
-            sess, timeout
-        )
+        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, timeout)
 
     def test_assigning_session_connection_timeout__issue_377(self):
         sess = helpers.make_session()
         for timeout in (999999, None):
             sess.connection_timeout = timeout
-            self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(
-                sess, timeout
-            )
+            self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, timeout)
 
     def test_assigning_session_connection_timeout_to_invalid_values__issue_569(self):
         sess = helpers.make_session()
@@ -233,21 +224,15 @@ class TestConnections(unittest.TestCase):
             with temp_setter(sess, "connection_timeout", 4):
                 server_side_sleep(sess, 2.5)
         self.assertEqual(old_timeout, sess.connection_timeout)
-        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(
-            sess, old_timeout
-        )
+        self._assert_timeout_value_is_propagated_to_all_sockets__issue_569(sess, old_timeout)
 
     def test_legacy_auth_used_with_force_legacy_auth_configuration__issue_499(self):
         import irods.client_configuration as config
 
-        with config.loadlines(
-            entries=[dict(setting="legacy_auth.force_legacy_auth", value=True)]
-        ):
+        with config.loadlines(entries=[dict(setting="legacy_auth.force_legacy_auth", value=True)]):
             stream = io.StringIO()
             logger = logging.getLogger("irods.connection")
-            with helpers.enableLogging(
-                logger, logging.StreamHandler, (stream,), level_=logging.INFO
-            ):
+            with helpers.enableLogging(logger, logging.StreamHandler, (stream,), level_=logging.INFO):
                 with temp_setter(logger, "propagate", False):
                     helpers.make_session().collections.get("/")
         regex = re.compile("^.*Native auth.*(in legacy auth).*$", re.MULTILINE)

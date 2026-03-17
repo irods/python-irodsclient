@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 from calendar import timegm
 
+
 class Column_remover:
     def __init__(self, column):
         self.column = column
 
-class QueryKey:
 
+class QueryKey:
     def __init__(self, column_type):
         self.column_type = column_type
 
@@ -30,7 +31,6 @@ class QueryKey:
 
 
 class Criterion:
-
     def __init__(self, op, query_key, value):
         self.op = op
         self.query_key = query_key
@@ -42,7 +42,6 @@ class Criterion:
 
 
 class In(Criterion):
-
     def __init__(self, query_key, value):
         super(In, self).__init__("in", query_key, value)
 
@@ -58,19 +57,16 @@ class In(Criterion):
 
 
 class Like(Criterion):
-
     def __init__(self, query_key, value):
         super(Like, self).__init__("like", query_key, value)
 
 
 class NotLike(Criterion):
-
     def __init__(self, query_key, value):
         super(NotLike, self).__init__("not like", query_key, value)
 
 
 class Between(Criterion):
-
     def __init__(self, query_key, value):
         super(Between, self).__init__("between", query_key, value)
 
@@ -84,7 +80,6 @@ class Between(Criterion):
 
 
 class Column(QueryKey):
-
     def __init__(self, column_type, icat_key, icat_id, min_version=(0, 0, 0)):
         self.icat_key = icat_key
         self.icat_id = icat_id
@@ -114,8 +109,8 @@ class Column(QueryKey):
             return self.id_tuple == other.id_tuple
         return super().__eq__(other)
 
-class Keyword(QueryKey):
 
+class Keyword(QueryKey):
     def __init__(self, column_type, icat_key):
         self.icat_key = icat_key
         super(Keyword, self).__init__(column_type)
@@ -123,7 +118,6 @@ class Keyword(QueryKey):
 
 # consider renaming columnType
 class ColumnType:
-
     @staticmethod
     def to_python(string):
         pass
@@ -134,7 +128,6 @@ class ColumnType:
 
 
 class Integer(ColumnType):
-
     @staticmethod
     def to_python(string):
         return int(string)
@@ -145,7 +138,6 @@ class Integer(ColumnType):
 
 
 class String(ColumnType):
-
     @staticmethod
     def to_python(string):
         return string
@@ -162,7 +154,6 @@ class String(ColumnType):
 
 
 class DateTime(ColumnType):
-
     @staticmethod
     def to_python(string):
         return datetime.fromtimestamp(int(string), timezone.utc)

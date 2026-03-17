@@ -17,9 +17,7 @@ import irods.test.helpers as helpers
 
 logger = logging.getLogger(__name__)
 
-UNICODE_TEST_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "unicode_sampler.xml"
-)
+UNICODE_TEST_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "unicode_sampler.xml")
 
 
 def to_unicode(data):
@@ -59,12 +57,9 @@ def parse_xml_file(path):
 
 
 class TestUnicodeNames(unittest.TestCase):
-
     def setUp(self):
         self.sess = helpers.make_session()
-        self.coll_path = "/{}/home/{}/test_dir".format(
-            self.sess.zone, self.sess.username
-        )
+        self.coll_path = "/{}/home/{}/test_dir".format(self.sess.zone, self.sess.username)
 
         # make list of unicode filenames, from file
         self.names = parse_xml_file(UNICODE_TEST_FILE)
@@ -93,9 +88,7 @@ class TestUnicodeNames(unittest.TestCase):
 
     def test_files(self):
         # Query for all files in test collection
-        query = self.sess.query(DataObject.name, Collection.name).filter(
-            Collection.name == self.coll_path
-        )
+        query = self.sess.query(DataObject.name, Collection.name).filter(Collection.name == self.coll_path)
 
         # Python2 compatibility note:  In keeping with the principle of least surprise, we now ensure
         # queries return values of 'str' type in Python2.  When and if these quantities have a possibility
@@ -106,9 +99,7 @@ class TestUnicodeNames(unittest.TestCase):
             assert result[DataObject.name] in self.names
 
             # fyi
-            logger.info(
-                "{0}/{1}".format(result[Collection.name], result[DataObject.name])
-            )
+            logger.info("{0}/{1}".format(result[Collection.name], result[DataObject.name]))
 
             # remove from set
             self.names.remove(result[DataObject.name])

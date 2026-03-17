@@ -14,7 +14,6 @@ def _first_char(*Strings):
 
 
 class iRODSCollection:
-
     class AbsolutePathRequired(Exception):
         """Exception raised by iRODSCollection.normalize_path.
 
@@ -45,31 +44,20 @@ class iRODSCollection:
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(
-                self.manager.sess.metadata, Collection, self.path
-            )
+            self._meta = iRODSMetaCollection(self.manager.sess.metadata, Collection, self.path)
         return self._meta
 
     @property
     def subcollections(self):
-        query = self.manager.sess.query(Collection).filter(
-            Collection.parent_name == self.path
-        )
-        return [
-            iRODSCollection(self.manager, row)
-            for row in query
-            if row[Collection.name] != "/"
-        ]
+        query = self.manager.sess.query(Collection).filter(Collection.parent_name == self.path)
+        return [iRODSCollection(self.manager, row) for row in query if row[Collection.name] != "/"]
 
     @property
     def data_objects(self):
         query = self.manager.sess.query(DataObject).filter(Collection.name == self.path)
         results = query.get_results()
         grouped = itertools.groupby(results, operator.itemgetter(DataObject.id))
-        return [
-            iRODSDataObject(self.manager.sess.data_objects, self, list(replicas))
-            for _, replicas in grouped
-        ]
+        return [iRODSDataObject(self.manager.sess.data_objects, self, list(replicas)) for _, replicas in grouped]
 
     def remove(self, recurse=True, force=False, **options):
         self.manager.remove(self.path, recurse, force, **options)

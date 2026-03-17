@@ -10,7 +10,6 @@ import irods.test.helpers as helpers
 
 
 class TestResource(unittest.TestCase):
-
     create_simple_resc_hierarchy = helpers.create_simple_resc_hierarchy
     create_simple_resc = helpers.create_simple_resc
 
@@ -25,9 +24,10 @@ class TestResource(unittest.TestCase):
         root_resc = ses.resources.create(root, "deferred")
         try:
             # Create two (passthru + storage) hierarchies below the root: ie. pt0;leaf0 and pt1;leaf1
-            with self.create_simple_resc_hierarchy(
-                pt + "_0", leaf + "_0"
-            ), self.create_simple_resc_hierarchy(pt + "_1", leaf + "_1"):
+            with (
+                self.create_simple_resc_hierarchy(pt + "_0", leaf + "_0"),
+                self.create_simple_resc_hierarchy(pt + "_1", leaf + "_1"),
+            ):
                 try:
                     # Adopt both passthru's as children under the main root (deferred) node.
                     ses.resources.add_child(root, pt + "_0")
@@ -42,26 +42,16 @@ class TestResource(unittest.TestCase):
                         for n, resc in enumerate(hierarchy):
                             if n > 0:
                                 hier_str += ";{}".format(resc.name)
-                            self.assertEqual(
-                                resc.parent_id, (None if n == 0 else parent_resc.id)
-                            )
-                            self.assertEqual(
-                                resc.parent_name, (None if n == 0 else parent_resc.name)
-                            )
+                            self.assertEqual(resc.parent_id, (None if n == 0 else parent_resc.id))
+                            self.assertEqual(resc.parent_name, (None if n == 0 else parent_resc.name))
                             self.assertEqual(resc.hierarchy_string, hier_str)
-                            self.assertIs(
-                                type(resc.hierarchy_string), str
-                            )  # type of hierarchy field is string.
+                            self.assertIs(type(resc.hierarchy_string), str)  # type of hierarchy field is string.
                             if resc.parent is None:
                                 self.assertIs(resc.parent_id, None)
                                 self.assertIs(resc.parent_name, None)
                             else:
-                                self.assertIs(
-                                    type(resc.parent_id), int
-                                )  # type of a non-null id field is integer.
-                                self.assertIs(
-                                    type(resc.parent_name), str
-                                )  # type of a non-null name field is string.
+                                self.assertIs(type(resc.parent_id), int)  # type of a non-null id field is integer.
+                                self.assertIs(type(resc.parent_name), str)  # type of a non-null name field is string.
                             parent_resc = resc
                 finally:
                     ses.resources.remove_child(root, pt + "_0")
@@ -86,10 +76,7 @@ class TestResource(unittest.TestCase):
                 with self.assertRaises(ex.USER_FILE_TOO_LARGE):
                     data.append(
                         self.sess.data_objects.put(
-                            small_file,
-                            "{home}/{small_file}".format(**locals()),
-                            return_data_object=True,
-                            **put_opts
+                            small_file, "{home}/{small_file}".format(**locals()), return_data_object=True, **put_opts
                         )
                     )
 
@@ -99,10 +86,7 @@ class TestResource(unittest.TestCase):
                 with self.assertRaises(ex.USER_FILE_TOO_LARGE):
                     data.append(
                         self.sess.data_objects.put(
-                            large_file,
-                            "{home}/{large_file}".format(**locals()),
-                            return_data_object=True,
-                            **put_opts
+                            large_file, "{home}/{large_file}".format(**locals()), return_data_object=True, **put_opts
                         )
                     )
             finally:

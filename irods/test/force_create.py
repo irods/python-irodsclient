@@ -9,7 +9,6 @@ import irods.test.helpers as helpers
 
 
 class TestForceCreate(unittest.TestCase):
-
     def setUp(self):
         self.sess = helpers.make_session()
 

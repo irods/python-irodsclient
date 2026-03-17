@@ -46,9 +46,7 @@ def is_localhost_ip(s):
 
 
 def is_localhost_synonym(name):
-    return localhost_with_optional_domain_pattern.match(
-        name.lower()
-    ) or is_localhost_ip(name)
+    return localhost_with_optional_domain_pattern.match(name.lower()) or is_localhost_ip(name)
 
 
 from irods.access import iRODSAccess
@@ -77,9 +75,7 @@ RODSUSER = "nonadmin"
 MEBI = 1024**2
 
 
-def make_ufs_resc_in_tmpdir(
-    session, base_name, allow_local=False, client_vault_mode=(True,)
-):
+def make_ufs_resc_in_tmpdir(session, base_name, allow_local=False, client_vault_mode=(True,)):
     # Parameters
     # ----------
     # base_name         -  The name for the resource, as well as the root directory of the Vault.  Use something random and unlikely to collide.
@@ -109,15 +105,12 @@ def make_ufs_resc_in_tmpdir(
 
 
 class TestDataObjOps(unittest.TestCase):
-
     create_simple_resc = helpers.create_simple_resc
 
     def setUp(self):
         # Create test collection
         self.sess = helpers.make_session()
-        self.coll_path = "/{}/home/{}/test_dir".format(
-            self.sess.zone, self.sess.username
-        )
+        self.coll_path = "/{}/home/{}/test_dir".format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
         with self.sess.pool.get_connection() as conn:
             self.SERVER_VERSION = conn.server_version
@@ -134,9 +127,7 @@ class TestDataObjOps(unittest.TestCase):
             y_value = (Root, Leaf)
         else:
             y_value = ";".join([Root, Leaf])
-        self.sess.resources.create(
-            Leaf, "unixfilesystem", host=self.sess.host, path="/tmp/" + Leaf
-        )
+        self.sess.resources.create(Leaf, "unixfilesystem", host=self.sess.host, path="/tmp/" + Leaf)
         self.sess.resources.create(Root, "passthru")
         self.sess.resources.add_child(Root, Leaf)
         try:
@@ -150,11 +141,7 @@ class TestDataObjOps(unittest.TestCase):
         with self.create_simple_resc() as newResc1:
             d = None
             try:
-                path = (
-                    self.coll_path
-                    + "/"
-                    + unique_name(my_function_name(), datetime.now())
-                )
+                path = self.coll_path + "/" + unique_name(my_function_name(), datetime.now())
                 d = self.sess.data_objects.create(path)
                 acls_pre = self.sess.acls.get(d)
                 d.replicate(resource=newResc1)
@@ -164,36 +151,24 @@ class TestDataObjOps(unittest.TestCase):
                 if d:
                     d.unlink(force=True)
 
-    def _helper_for_testing_that_replicate_obeys_default_resource_setting__issue_459(
-        self, get_session_function
-    ):
+    def _helper_for_testing_that_replicate_obeys_default_resource_setting__issue_459(self, get_session_function):
         with self.create_simple_resc() as newResc1:
             with self.create_simple_resc() as newResc2:
-                number_of_replicas_on_resc = lambda d, resc: len(
-                    [r for r in d.replicas if r.resource_name == resc]
-                )
+                number_of_replicas_on_resc = lambda d, resc: len([r for r in d.replicas if r.resource_name == resc])
                 session = get_session_function(default_resource=newResc2)
                 try:
-                    d = session.data_objects.create(
-                        "/tempZone/home/rods/thingie2", resource=newResc1
-                    )
+                    d = session.data_objects.create("/tempZone/home/rods/thingie2", resource=newResc1)
                     self.assertEqual(
-                        number_of_replicas_on_resc(
-                            session.data_objects.get(d.path), newResc1
-                        ),
+                        number_of_replicas_on_resc(session.data_objects.get(d.path), newResc1),
                         1,
                     )
                     self.assertEqual(
-                        number_of_replicas_on_resc(
-                            session.data_objects.get(d.path), newResc2
-                        ),
+                        number_of_replicas_on_resc(session.data_objects.get(d.path), newResc2),
                         0,
                     )
                     d.replicate()
                     self.assertEqual(
-                        number_of_replicas_on_resc(
-                            session.data_objects.get(d.path), newResc2
-                        ),
+                        number_of_replicas_on_resc(session.data_objects.get(d.path), newResc2),
                         1,
                     )
                 finally:
@@ -239,15 +214,11 @@ class TestDataObjOps(unittest.TestCase):
         test_coll = "/{0.zone}/home/{0.username}".format(self.sess)
         test_path = test_coll + "/" + test_data
         demoResc = self.sess.resources.get("demoResc").name
-        self.sess.data_objects.open(
-            test_path, "w", **{kw.DEST_RESC_NAME_KW: demoResc}
-        ).write(b"random dater")
+        self.sess.data_objects.open(test_path, "w", **{kw.DEST_RESC_NAME_KW: demoResc}).write(b"random dater")
 
         with self.create_simple_resc() as newResc:
             try:
-                with self.sess.data_objects.open(
-                    test_path, "a", **{kw.DEST_RESC_NAME_KW: newResc}
-                ) as d:
+                with self.sess.data_objects.open(test_path, "a", **{kw.DEST_RESC_NAME_KW: newResc}) as d:
                     d.seek(0, 2)
                     d.write(b"z")
                 data = self.sess.data_objects.get(test_path)
@@ -280,31 +251,25 @@ class TestDataObjOps(unittest.TestCase):
         try:
             self.sess.data_objects.create(data_object_path, resource=root_resc)
             for _ in range(seconds_to_wait_for_replicas):
-                if required_num_replicas <= len(
-                    self.sess.data_objects.get(data_object_path).replicas
-                ):
+                if required_num_replicas <= len(self.sess.data_objects.get(data_object_path).replicas):
                     break
                 time.sleep(1)
             else:
                 raise RuntimeError("Did not see %d replicas" % required_num_replicas)
-            fd1 = self.sess.data_objects.open(
-                data_object_path, "w", **{kw.DEST_RESC_NAME_KW: root_resc}
-            )
+            fd1 = self.sess.data_objects.open(data_object_path, "w", **{kw.DEST_RESC_NAME_KW: root_resc})
             (replica_token, hier_str) = fd1.raw.replica_access_info()
             fd2 = self.sess.data_objects.open(
                 data_object_path,
                 "a",
                 finalize_on_close=False,
-                **{kw.RESC_HIER_STR_KW: hier_str, kw.REPLICA_TOKEN_KW: replica_token}
+                **{kw.RESC_HIER_STR_KW: hier_str, kw.REPLICA_TOKEN_KW: replica_token},
             )
             fd2.seek(4)
             fd2.write(b"s\n")
             fd1.write(b"book")
             fd2.close()
             fd1.close()
-            with self.sess.data_objects.open(
-                data_object_path, "r", **{kw.DEST_RESC_NAME_KW: root_resc}
-            ) as f:
+            with self.sess.data_objects.open(data_object_path, "r", **{kw.DEST_RESC_NAME_KW: root_resc}) as f:
                 self.assertEqual(f.read(), b"books\n")
         except Exception as e:
             logging.debug(
@@ -329,11 +294,8 @@ class TestDataObjOps(unittest.TestCase):
         # -- Create replicas of a data object under two different root resources and test parallel write: --
 
         with self.create_simple_resc() as newResc:
-
             # - create empty data object on demoResc
-            self.sess.data_objects.open(
-                data_path, "w", **{kw.DEST_RESC_NAME_KW: "demoResc"}
-            )
+            self.sess.data_objects.open(data_path, "w", **{kw.DEST_RESC_NAME_KW: "demoResc"})
 
             # - replicate data object to newResc
             self.sess.data_objects.get(data_path).replicate(newResc)
@@ -347,9 +309,7 @@ class TestDataObjOps(unittest.TestCase):
         session = self.sess
         replication_resource = None
         ufs_resources = []
-        replication_resource = self.sess.resources.create(
-            "repl_resc_1_5848", "replication"
-        )
+        replication_resource = self.sess.resources.create("repl_resc_1_5848", "replication")
         number_of_replicas = 2
         # -- Create replicas of a data object by opening it on a replication resource; then, test parallel write --
         try:
@@ -360,14 +320,10 @@ class TestDataObjOps(unittest.TestCase):
                 resource_host = session.host
                 resource_path = "/tmp/" + resource_name
                 ufs_resources.append(
-                    session.resources.create(
-                        resource_name, resource_type, resource_host, resource_path
-                    )
+                    session.resources.create(resource_name, resource_type, resource_host, resource_path)
                 )
                 session.resources.add_child(replication_resource.name, resource_name)
-            data_path = "/{0.zone}/home/{0.username}/Replicated_5848.dat".format(
-                self.sess
-            )
+            data_path = "/{0.zone}/home/{0.username}/Replicated_5848.dat".format(self.sess)
 
             # -- Perform the check of writing by a single replica (which is unspecified, but one of the `number_of_replicas`
             #    will be selected by voting)
@@ -386,14 +342,10 @@ class TestDataObjOps(unittest.TestCase):
                 replication_resource.remove()
 
     def test_put_get_parallel_autoswitch_A__235(self):
-        if not self.sess.data_objects.should_parallelize_transfer(
-            server_version_hint=self.SERVER_VERSION
-        ):
+        if not self.sess.data_objects.should_parallelize_transfer(server_version_hint=self.SERVER_VERSION):
             self.skipTest("Skip unless detected server version is 4.2.9")
         if getattr(data_object_manager, "DEFAULT_NUMBER_OF_THREADS", None) in (1, None):
-            self.skipTest(
-                "Data object manager not configured for parallel puts and gets"
-            )
+            self.skipTest("Data object manager not configured for parallel puts and gets")
         Root = "pt235"
         Leaf = "resc235"
         files_to_delete = []
@@ -406,16 +358,10 @@ class TestDataObjOps(unittest.TestCase):
             self.assertEqual(Root, Root_)
             self.assertIsInstance(Leaf, str)
             datafile = NamedTemporaryFile(prefix="getfromhier_235_", delete=True)
-            datafile.write(
-                os.urandom(
-                    data_object_manager.MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE + 1
-                )
-            )
+            datafile.write(os.urandom(data_object_manager.MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE + 1))
             datafile.flush()
             base_name = os.path.basename(datafile.name)
-            data_obj_name = "/{0.zone}/home/{0.username}/{1}".format(
-                self.sess, base_name
-            )
+            data_obj_name = "/{0.zone}/home/{0.username}/{1}".format(self.sess, base_name)
             options = {kw.DEST_RESC_NAME_KW: Root, kw.RESC_NAME_KW: Root}
 
             PUT_LOG = io.StringIO()
@@ -424,33 +370,19 @@ class TestDataObjOps(unittest.TestCase):
 
             try:
                 logger = logging.getLogger("irods.parallel")
-                with helpers.enableLogging(
-                    logger, logging.StreamHandler, (PUT_LOG,), level_=logging.DEBUG
-                ):
-                    self.sess.data_objects.put(
-                        datafile.name, data_obj_name, num_threads=0, **options
-                    )  # - PUT
+                with helpers.enableLogging(logger, logging.StreamHandler, (PUT_LOG,), level_=logging.DEBUG):
+                    self.sess.data_objects.put(datafile.name, data_obj_name, num_threads=0, **options)  # - PUT
                     match = NumThreadsRegex.search(PUT_LOG.getvalue())
-                    self.assertTrue(
-                        match is not None and int(match.group(1)) >= 1
-                    )  # - PARALLEL code path taken?
+                    self.assertTrue(match is not None and int(match.group(1)) >= 1)  # - PARALLEL code path taken?
 
-                with helpers.enableLogging(
-                    logger, logging.StreamHandler, (GET_LOG,), level_=logging.DEBUG
-                ):
-                    self.sess.data_objects.get(
-                        data_obj_name, datafile.name + ".get", num_threads=0, **options
-                    )  # - GET
+                with helpers.enableLogging(logger, logging.StreamHandler, (GET_LOG,), level_=logging.DEBUG):
+                    self.sess.data_objects.get(data_obj_name, datafile.name + ".get", num_threads=0, **options)  # - GET
                     match = NumThreadsRegex.search(GET_LOG.getvalue())
-                    self.assertTrue(
-                        match is not None and int(match.group(1)) >= 1
-                    )  # - PARALLEL code path taken?
+                    self.assertTrue(match is not None and int(match.group(1)) >= 1)  # - PARALLEL code path taken?
 
                 files_to_delete += [datafile.name + ".get"]
 
-                with open(datafile.name, "rb") as f1, open(
-                    datafile.name + ".get", "rb"
-                ) as f2:
+                with open(datafile.name, "rb") as f1, open(datafile.name + ".get", "rb") as f2:
                     self.assertEqual(f1.read(), f2.read())
 
                 q = self.sess.query(DataObject.name, DataObject.resc_hier).filter(
@@ -458,9 +390,7 @@ class TestDataObjOps(unittest.TestCase):
                 )
                 replicas = list(q)
                 self.assertEqual(len(replicas), 1)
-                self.assertEqual(
-                    replicas[0][DataObject.resc_hier], ";".join([Root, Leaf])
-                )
+                self.assertEqual(replicas[0][DataObject.resc_hier], ";".join([Root, Leaf]))
 
             finally:
                 self.sess.data_objects.unlink(data_obj_name, force=True)
@@ -479,16 +409,12 @@ class TestDataObjOps(unittest.TestCase):
                 fname = datafile.name
                 bname = os.path.basename(fname)
                 LOGICAL = self.coll_path + "/" + bname
-                self.sess.data_objects.put(
-                    fname, LOGICAL, **{kw.DEST_RESC_NAME_KW: Root}
-                )
+                self.sess.data_objects.put(fname, LOGICAL, **{kw.DEST_RESC_NAME_KW: Root})
                 self.assertEqual(
                     [bname],
                     [
                         res[DataObject.name]
-                        for res in self.sess.query(DataObject.name).filter(
-                            DataObject.resc_hier == hier_str
-                        )
+                        for res in self.sess.query(DataObject.name).filter(DataObject.resc_hier == hier_str)
                     ],
                 )
                 obj = self.sess.data_objects.get(LOGICAL)
@@ -503,9 +429,10 @@ class TestDataObjOps(unittest.TestCase):
             svr_cfg = json.load(f)
 
         # inject a new rule base into the native rule engine
-        svr_cfg["plugin_configuration"]["rule_engines"][0][
-            "plugin_specific_configuration"
-        ]["re_rulebase_set"] = ["test", "core"]
+        svr_cfg["plugin_configuration"]["rule_engines"][0]["plugin_specific_configuration"]["re_rulebase_set"] = [
+            "test",
+            "core",
+        ]
 
         # dump to a string to repave the existing server_config.json
         return json.dumps(svr_cfg, sort_keys=True, indent=4, separators=(",", ": "))
@@ -532,9 +459,7 @@ class TestDataObjOps(unittest.TestCase):
             r_err_stk = RErrorStack()
             warning = None
             try:
-                self.sess.data_objects.chksum(
-                    dobj_path, **{"r_error": r_err_stk, kw.VERIFY_CHKSUM_KW: ""}
-                )
+                self.sess.data_objects.chksum(dobj_path, **{"r_error": r_err_stk, kw.VERIFY_CHKSUM_KW: ""})
             except Server_Checksum_Warning as exc_:
                 warning = exc_
             # There's one replica and it has a checksum, so expect no errors or hints from error stack.
@@ -548,9 +473,7 @@ class TestDataObjOps(unittest.TestCase):
         if self.sess.server_version < (4, 2, 11):
             self.skipTest("iRODS servers < 4.2.11 do not raise a checksum warning")
 
-        with self.create_simple_resc() as R, self.create_simple_resc() as R2, NamedTemporaryFile(
-            mode="wb"
-        ) as f:
+        with self.create_simple_resc() as R, self.create_simple_resc() as R2, NamedTemporaryFile(mode="wb") as f:
             f.write(b"abcxyz\n")
             f.flush()
             coll_path = "/{0.zone}/home/{0.username}".format(self.sess)
@@ -558,24 +481,18 @@ class TestDataObjOps(unittest.TestCase):
             Data = self.sess.data_objects
             r_err_stk = RErrorStack()
             try:
-                demoR = self.sess.resources.get(
-                    "demoResc"
-                ).name  # Assert presence of demoResc and
+                demoR = self.sess.resources.get("demoResc").name  # Assert presence of demoResc and
                 Data.put(f.name, dobj_path)  # Establish three replicas of data object.
                 Data.replicate(dobj_path, resource=R)
                 Data.replicate(dobj_path, resource=R2)
                 my_object = Data.get(dobj_path)
 
-                my_object.chksum(
-                    **{kw.RESC_NAME_KW: demoR}
-                )  # Make sure demoResc has the only checksummed replica of the three.
-                my_object = Data.get(
-                    dobj_path
-                )  # Refresh replica list to get checksum(s).
+                my_object.chksum(**{
+                    kw.RESC_NAME_KW: demoR
+                })  # Make sure demoResc has the only checksummed replica of the three.
+                my_object = Data.get(dobj_path)  # Refresh replica list to get checksum(s).
 
-                Baseline_repls_without_checksum = set(
-                    r.number for r in my_object.replicas if not r.checksum
-                )
+                Baseline_repls_without_checksum = set(r.number for r in my_object.replicas if not r.checksum)
 
                 warn_exception = None
                 try:
@@ -593,14 +510,7 @@ class TestDataObjOps(unittest.TestCase):
                 # -- Make sure integer codes are properly reflected for checksum warnings.
                 self.assertEqual(
                     2,
-                    len(
-                        [
-                            e
-                            for e in r_err_stk
-                            if e.status_
-                            == ex.rounded_code("CAT_NO_CHECKSUM_FOR_REPLICA")
-                        ]
-                    ),
+                    len([e for e in r_err_stk if e.status_ == ex.rounded_code("CAT_NO_CHECKSUM_FOR_REPLICA")]),
                 )
 
                 NO_CHECKSUM_MESSAGE_PATTERN = re.compile(
@@ -609,17 +519,12 @@ class TestDataObjOps(unittest.TestCase):
 
                 Reported_repls_without_checksum = set(
                     int(match.group(1))
-                    for match in [
-                        NO_CHECKSUM_MESSAGE_PATTERN.search(e.raw_msg_)
-                        for e in r_err_stk
-                    ]
+                    for match in [NO_CHECKSUM_MESSAGE_PATTERN.search(e.raw_msg_) for e in r_err_stk]
                     if match is not None
                 )
 
                 # Ensure that VERIFY_CHKSUM_KW reported all replicas lacking a checksum
-                self.assertEqual(
-                    Reported_repls_without_checksum, Baseline_repls_without_checksum
-                )
+                self.assertEqual(Reported_repls_without_checksum, Baseline_repls_without_checksum)
             finally:
                 if Data.exists(dobj_path):
                     Data.unlink(dobj_path, force=True)
@@ -644,11 +549,7 @@ class TestDataObjOps(unittest.TestCase):
                 Data.replicate(dobj_path, resource=R)
                 f.write(b"...added bytes\n")
                 f.flush()
-                Data.put(
-                    f.name,
-                    dobj_path,
-                    **{kw.DEST_RESC_NAME_KW: R, kw.FORCE_FLAG_KW: "1"}
-                )
+                Data.put(f.name, dobj_path, **{kw.DEST_RESC_NAME_KW: R, kw.FORCE_FLAG_KW: "1"})
                 # compare checksums
                 my_object = Data.get(dobj_path)
                 chk2 = my_object.chksum(**{kw.RESC_NAME_KW: R})
@@ -674,9 +575,7 @@ class TestDataObjOps(unittest.TestCase):
     def test_create_from_invalid_path__250(self):
         possible_exceptions = {
             ex.SYS_INVALID_INPUT_PARAM: (lambda serv_vsn: serv_vsn <= (4, 2, 8)),
-            ex.CAT_UNKNOWN_COLLECTION: (
-                lambda serv_vsn: (4, 2, 9) <= serv_vsn < (4, 3, 0)
-            ),
+            ex.CAT_UNKNOWN_COLLECTION: (lambda serv_vsn: (4, 2, 9) <= serv_vsn < (4, 3, 0)),
             ex.SYS_INVALID_FILE_PATH: (lambda serv_vsn: (4, 3, 0) <= serv_vsn),
         }
         raisedExc = None
@@ -852,9 +751,7 @@ class TestDataObjOps(unittest.TestCase):
             DataObject.name == filename,
             Criterion("like", Collection.name, "/dev/trash/%%"),
         ]
-        query = self.sess.query(DataObject.id, DataObject.name, Collection.name).filter(
-            *conditions
-        )
+        query = self.sess.query(DataObject.id, DataObject.name, Collection.name).filter(*conditions)
         results = query.all()
         self.assertEqual(len(results), 0)
 
@@ -897,12 +794,8 @@ class TestDataObjOps(unittest.TestCase):
     # To run these tests, we require a local iRODS connection but not one with a localhost-equivalent hostname.
     #
     def _skip_unless_connected_to_local_computer_by_other_than_localhost_synonym(self):
-        if self.sess.host != socket.gethostname() or is_localhost_synonym(
-            self.sess.host
-        ):
-            self.skipTest(
-                'This test requires being connected to a local server, but not via "localhost" or a synonym.'
-            )
+        if self.sess.host != socket.gethostname() or is_localhost_synonym(self.sess.host):
+            self.skipTest('This test requires being connected to a local server, but not via "localhost" or a synonym.')
 
     class WrongUserType(RuntimeError):
         pass
@@ -911,9 +804,7 @@ class TestDataObjOps(unittest.TestCase):
     def setUpClass(cls):
         adm = helpers.make_session()
         if adm.users.get(adm.username).type != "rodsadmin":
-            error = cls.WrongUserType(
-                "Must be an iRODS admin to run tests in class {0.__name__}".format(cls)
-            )
+            error = cls.WrongUserType("Must be an iRODS admin to run tests in class {0.__name__}".format(cls))
             raise error
         cls.logins = iRODSUserLogins(adm)
         cls.logins.create_user(RODSUSER, "abc123")
@@ -939,16 +830,12 @@ class TestDataObjOps(unittest.TestCase):
             data_path = data_name
         else:
             if not data_name:
-                data_name = helpers.unique_name(
-                    helpers.my_function_name(), datetime.now()
-                )
+                data_name = helpers.unique_name(helpers.my_function_name(), datetime.now())
             data_path = helpers.home_collection(self.sess) + "/" + data_name
 
         def create_data(open_options):
             if content is not None and not self.sess.data_objects.exists(data_path):
-                with self.sess.data_objects.open(
-                    data_path, "w", **dict(open_options)
-                ) as f:
+                with self.sess.data_objects.open(data_path, "w", **dict(open_options)) as f:
                     f.write(content)
             data[0] = data_path
 
@@ -960,13 +847,9 @@ class TestDataObjOps(unittest.TestCase):
                     create_data(open_options)
                     # Activate ticket for test session:
                     ticket_logical_path = (
-                        data_path
-                        if self.sess.data_objects.exists(data_path)
-                        else irods_dirname(data_path)
+                        data_path if self.sess.data_objects.exists(data_path) else irods_dirname(data_path)
                     )
-                    ticket[0] = Ticket(self.sess).issue(
-                        ticket_access, ticket_logical_path
-                    )
+                    ticket[0] = Ticket(self.sess).issue(ticket_access, ticket_logical_path)
                     Ticket(user_session, ticket[0].string).supply()
 
             else:
@@ -991,27 +874,19 @@ class TestDataObjOps(unittest.TestCase):
                 ticket[0].delete()
             finalize()
 
-    data_object_and_associated_ticket = contextlib.contextmanager(
-        _data_object_and_associated_ticket
-    )
+    data_object_and_associated_ticket = contextlib.contextmanager(_data_object_and_associated_ticket)
 
     def test_redirect_in_data_object_put_and_get_with_tickets__issue_452(self):
         for _, size in {"large": 40 * MEBI, "small": 1 * MEBI}.items():
             content = b"1024123" * (size // 7)
-            with self.data_object_and_associated_ticket(
-                ticket_access="write"
-            ) as data_ctx:
-                self.do_test_redirect_in_data_object_put_and_get__issue_452(
-                    content, data_ctx
-                )
+            with self.data_object_and_associated_ticket(ticket_access="write") as data_ctx:
+                self.do_test_redirect_in_data_object_put_and_get__issue_452(content, data_ctx)
 
     def test_redirect_in_data_object_put_and_get_without_tickets__issue_452(self):
         for _, size in {"large": 40 * MEBI, "small": 1 * MEBI}.items():
             content = b"1024123" * (size // 7)
             with self.data_object_and_associated_ticket(ticket_access="") as data_ctx:
-                self.do_test_redirect_in_data_object_put_and_get__issue_452(
-                    content, data_ctx
-                )
+                self.do_test_redirect_in_data_object_put_and_get__issue_452(content, data_ctx)
 
     def do_test_redirect_in_data_object_put_and_get__issue_452(self, content, data_ctx):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
@@ -1019,9 +894,7 @@ class TestDataObjOps(unittest.TestCase):
             self.skipTest("Expects iRODS server version 4.3.1")
         LOCAL_FILE = mktemp()
         filename = ""
-        with config.loadlines(
-            entries=[dict(setting="data_objects.allow_redirect", value=True)]
-        ):
+        with config.loadlines(entries=[dict(setting="data_objects.allow_redirect", value=True)]):
             try:
                 with self.create_simple_resc(hostname="localhost") as rescName:
                     with NamedTemporaryFile(delete=False) as f:
@@ -1031,20 +904,21 @@ class TestDataObjOps(unittest.TestCase):
                     sess = data_ctx["session"]
                     remote_name = data_ctx["path"]
                     PUT_LOG = io.StringIO()
-                    with helpers.enableLogging(
-                        logging.getLogger("irods.manager.data_object_manager"),
-                        logging.StreamHandler,
-                        (PUT_LOG,),
-                        level_=logging.DEBUG,
-                    ), helpers.enableLogging(
-                        logging.getLogger("irods.parallel"),
-                        logging.StreamHandler,
-                        (PUT_LOG,),
-                        level_=logging.DEBUG,
+                    with (
+                        helpers.enableLogging(
+                            logging.getLogger("irods.manager.data_object_manager"),
+                            logging.StreamHandler,
+                            (PUT_LOG,),
+                            level_=logging.DEBUG,
+                        ),
+                        helpers.enableLogging(
+                            logging.getLogger("irods.parallel"),
+                            logging.StreamHandler,
+                            (PUT_LOG,),
+                            level_=logging.DEBUG,
+                        ),
                     ):
-                        sess.data_objects.put(
-                            filename, remote_name, **{kw.DEST_RESC_NAME_KW: rescName}
-                        )
+                        sess.data_objects.put(filename, remote_name, **{kw.DEST_RESC_NAME_KW: rescName})
 
                     # Within a buffer 'BUF' (is expected to be an io.StringIO object) assert the presence of certain
                     # log text that will indicate a redirection was performed.
@@ -1065,9 +939,10 @@ class TestDataObjOps(unittest.TestCase):
                     generator = None
                     # Activate a read ticket on a new session if necessary, and attempt a GET
                     if data_ctx["ticket_access"]:
-                        for access in iRODSAccess(
-                            "own", remote_name, self.sess.username
-                        ), iRODSAccess("null", remote_name, sess.username):
+                        for access in (
+                            iRODSAccess("own", remote_name, self.sess.username),
+                            iRODSAccess("null", remote_name, sess.username),
+                        ):
                             self.sess.acls.set(access, admin=True)
                         generator = self._data_object_and_associated_ticket(
                             data_name=remote_name,
@@ -1079,16 +954,19 @@ class TestDataObjOps(unittest.TestCase):
                         data_ctx_get["initialize"]()
                         sess = data_ctx_get["session"]
                     GET_LOG = io.StringIO()
-                    with helpers.enableLogging(
-                        logging.getLogger("irods.manager.data_object_manager"),
-                        logging.StreamHandler,
-                        (GET_LOG,),
-                        level_=logging.DEBUG,
-                    ), helpers.enableLogging(
-                        logging.getLogger("irods.parallel"),
-                        logging.StreamHandler,
-                        (GET_LOG,),
-                        level_=logging.DEBUG,
+                    with (
+                        helpers.enableLogging(
+                            logging.getLogger("irods.manager.data_object_manager"),
+                            logging.StreamHandler,
+                            (GET_LOG,),
+                            level_=logging.DEBUG,
+                        ),
+                        helpers.enableLogging(
+                            logging.getLogger("irods.parallel"),
+                            logging.StreamHandler,
+                            (GET_LOG,),
+                            level_=logging.DEBUG,
+                        ),
                     ):
                         sess.data_objects.get(remote_name, LOCAL_FILE)
                     assert_expected_redirection_logging(GET_LOG)
@@ -1110,15 +988,11 @@ class TestDataObjOps(unittest.TestCase):
         sess = self.sess
         home = helpers.home_collection(sess)
 
-        with config.loadlines(
-            entries=[dict(setting="data_objects.allow_redirect", value=True)]
-        ):
+        with config.loadlines(entries=[dict(setting="data_objects.allow_redirect", value=True)]):
             with self.create_simple_resc(hostname="localhost") as rescName:
                 try:
                     test_path = home + "/data_open_452"
-                    desc = sess.data_objects.open(
-                        test_path, "w", **{kw.RESC_NAME_KW: rescName}
-                    )
+                    desc = sess.data_objects.open(test_path, "w", **{kw.RESC_NAME_KW: rescName})
                     self.assertEqual("localhost", desc.raw.session.host)
                     desc.close()
                     desc = sess.data_objects.open(test_path, "r")
@@ -1167,15 +1041,11 @@ class TestDataObjOps(unittest.TestCase):
                 filename = "checksum_test_file"
                 obj_path = "{collection}/{filename}".format(**locals())
                 contents = "blah" * 100
-                checksum = base64.b64encode(
-                    hashlib.sha256(contents.encode()).digest()
-                ).decode()
+                checksum = base64.b64encode(hashlib.sha256(contents.encode()).digest()).decode()
 
                 # make object in test collection
                 options = {kw.OPR_TYPE_KW: 1}  # PUT_OPR
-                obj = helpers.make_object(
-                    self.sess, obj_path, content=contents, **options
-                )
+                obj = helpers.make_object(self.sess, obj_path, content=contents, **options)
 
                 # verify object's checksum
                 self.assertEqual(obj.checksum, "sha2:{checksum}".format(**locals()))
@@ -1228,9 +1098,7 @@ class TestDataObjOps(unittest.TestCase):
                 # make pseudo-random test file
                 filename = "test_put_file_trigger_pep.txt"
                 test_file = os.path.join("/tmp", filename)
-                contents = "".join(
-                    random.choice(string.printable) for _ in range(1024)
-                ).encode()
+                contents = "".join(random.choice(string.printable) for _ in range(1024)).encode()
                 contents = contents[:1024]
                 with open(test_file, "wb") as f:
                     f.write(contents)
@@ -1240,14 +1108,10 @@ class TestDataObjOps(unittest.TestCase):
 
                 # put object in test collection
                 collection = self.coll.path
-                self.sess.data_objects.put(
-                    test_file, "{collection}/".format(**locals())
-                )
+                self.sess.data_objects.put(test_file, "{collection}/".format(**locals()))
 
                 # get object to confirm checksum
-                obj = self.sess.data_objects.get(
-                    "{collection}/{filename}".format(**locals())
-                )
+                obj = self.sess.data_objects.get("{collection}/{filename}".format(**locals()))
 
                 # verify object's checksum
                 self.assertEqual(obj.checksum, "sha2:{checksum}".format(**locals()))
@@ -1281,9 +1145,7 @@ class TestDataObjOps(unittest.TestCase):
         file_path = "/tmp/{filename}".format(**locals())
         obj_path = "{collection}/{filename}".format(**locals())
         contents = "blah blah " * 10000
-        checksum = base64.b64encode(
-            hashlib.sha256(contents.encode("utf-8")).digest()
-        ).decode()
+        checksum = base64.b64encode(hashlib.sha256(contents.encode("utf-8")).digest()).decode()
 
         objs = self.sess.data_objects
 
@@ -1320,9 +1182,7 @@ class TestDataObjOps(unittest.TestCase):
         resc_path = "/tmp/" + resc_name
 
         # make second resource
-        self.sess.resources.create(
-            resc_name, resc_type, resc_host, resc_path, resource_class=resc_class
-        )
+        self.sess.resources.create(resc_name, resc_type, resc_host, resc_path, resource_class=resc_class)
 
         # make test object on default resource
         collection = self.coll_path
@@ -1368,11 +1228,7 @@ class TestDataObjOps(unittest.TestCase):
             resource_type = "unixfilesystem"
             resource_host = session.host
             resource_path = "/tmp/" + resource_name
-            ufs_resources.append(
-                session.resources.create(
-                    resource_name, resource_type, resource_host, resource_path
-                )
-            )
+            ufs_resources.append(session.resources.create(resource_name, resource_type, resource_host, resource_path))
 
             # add child to replication resource
             session.resources.add_child(replication_resource.name, resource_name)
@@ -1445,9 +1301,7 @@ class TestDataObjOps(unittest.TestCase):
 
             # make test file
             obj_content = "foobar"
-            checksum = base64.b64encode(
-                hashlib.sha256(obj_content.encode("utf-8")).digest()
-            ).decode()
+            checksum = base64.b64encode(hashlib.sha256(obj_content.encode("utf-8")).digest()).decode()
             with open(test_file, "w") as f:
                 f.write(obj_content)
 
@@ -1462,9 +1316,7 @@ class TestDataObjOps(unittest.TestCase):
                 resource_host = session.host
                 resource_path = "/tmp/{}".format(resource_name)
                 ufs_resources.append(
-                    session.resources.create(
-                        resource_name, resource_type, resource_host, resource_path
-                    )
+                    session.resources.create(resource_name, resource_type, resource_host, resource_path)
                 )
 
                 session.data_objects.replicate(obj_path, resource=resource_name)
@@ -1478,9 +1330,7 @@ class TestDataObjOps(unittest.TestCase):
 
             # now repave test file
             obj_content = "bar"
-            checksum = base64.b64encode(
-                hashlib.sha256(obj_content.encode("utf-8")).digest()
-            ).decode()
+            checksum = base64.b64encode(hashlib.sha256(obj_content.encode("utf-8")).digest()).decode()
             with open(test_file, "w") as f:
                 f.write(obj_content)
 
@@ -1526,11 +1376,7 @@ class TestDataObjOps(unittest.TestCase):
             resource_type = "unixfilesystem"
             resource_host = session.host
             resource_path = "/tmp/{}".format(resource_name)
-            ufs_resources.append(
-                session.resources.create(
-                    resource_name, resource_type, resource_host, resource_path
-                )
-            )
+            ufs_resources.append(session.resources.create(resource_name, resource_type, resource_host, resource_path))
 
         # put file in test collection and replicate
         obj_path = "{collection}/{filename}".format(**locals())
@@ -1570,9 +1416,7 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_obj_put_get_large(self):
         # Test put/get with binary file that is large enough to trigger parallel transfers.
-        self._check_obj_put_get(
-            data_object_manager.MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE + 1
-        )
+        self._check_obj_put_get(data_object_manager.MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE + 1)
 
     def _check_obj_put_get(self, file_size):
         # Can't do one step open/create with older servers
@@ -1618,9 +1462,7 @@ class TestDataObjOps(unittest.TestCase):
         resource_type = "unixfilesystem"
         resource_host = session.host
         resource_path = "/tmp/" + resource_name
-        session.resources.create(
-            resource_name, resource_type, resource_host, resource_path
-        )
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
 
         # set default resource to new UFS resource
         session.default_resource = resource_name
@@ -1652,9 +1494,7 @@ class TestDataObjOps(unittest.TestCase):
         resource_type = "unixfilesystem"
         resource_host = session.host
         resource_path = "/tmp/" + resource_name
-        session.resources.create(
-            resource_name, resource_type, resource_host, resource_path
-        )
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
 
         # set default resource to new UFS resource
         session.default_resource = resource_name
@@ -1692,9 +1532,7 @@ class TestDataObjOps(unittest.TestCase):
         resource_type = "unixfilesystem"
         resource_host = session.host
         resource_path = "/tmp/" + resource_name
-        session.resources.create(
-            resource_name, resource_type, resource_host, resource_path
-        )
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
 
         # make a copy of the irods env file with 'ufs0' as the default resource
         env_file = os.path.expanduser("~/.irods/irods_environment.json")
@@ -1707,7 +1545,6 @@ class TestDataObjOps(unittest.TestCase):
 
         # now open a new session with our modified environment file
         with helpers.make_session(irods_env_file=new_env_file) as new_session:
-
             # make a local file with random text content
             content = "".join(random.choice(string.printable) for _ in range(1024))
             filename = "testfile.txt"
@@ -1746,9 +1583,7 @@ class TestDataObjOps(unittest.TestCase):
         resource_type = "unixfilesystem"
         resource_host = session.host
         resource_path = "/tmp/" + resource_name
-        session.resources.create(
-            resource_name, resource_type, resource_host, resource_path
-        )
+        session.resources.create(resource_name, resource_type, resource_host, resource_path)
 
         # set default resource to new UFS resource
         session.default_resource = resource_name
@@ -1764,15 +1599,11 @@ class TestDataObjOps(unittest.TestCase):
         collection = self.coll_path
         obj_path = "{collection}/{filename}".format(**locals())
 
-        new_file = session.data_objects.put(
-            file_path, obj_path, return_data_object=True
-        )
+        new_file = session.data_objects.put(file_path, obj_path, return_data_object=True)
 
         # get object and confirm resource
         obj = session.data_objects.get(obj_path)
-        self.assertEqual(
-            new_file.replicas[0].resource_name, obj.replicas[0].resource_name
-        )
+        self.assertEqual(new_file.replicas[0].resource_name, obj.replicas[0].resource_name)
 
         # cleanup
         os.remove(file_path)
@@ -1821,9 +1652,7 @@ class TestDataObjOps(unittest.TestCase):
         filename = "register_test_file"
         collection = self.coll.path
         obj_path = "{collection}/{filename}".format(**locals())
-        test_path = make_ufs_resc_in_tmpdir(
-            self.sess, resc_name, allow_local=loc_server
-        )
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local=loc_server)
         test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
@@ -1831,9 +1660,7 @@ class TestDataObjOps(unittest.TestCase):
             f.write(os.urandom(1024 * 4))
 
         # register file in test collection
-        self.sess.data_objects.register(
-            test_file, obj_path, **{kw.RESC_NAME_KW: resc_name}
-        )
+        self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW: resc_name})
 
         qu = self.sess.query(Collection.id).filter(Collection.name == collection)
         for res in qu:
@@ -1844,18 +1671,14 @@ class TestDataObjOps(unittest.TestCase):
         )
         for res in qu:
             self.assertEqual(int(res[DataObject.size]), 1024 * 4)
-        self.sess.data_objects.modDataObjMeta(
-            {"objPath": obj_path}, {"dataSize": 1024, "dataModify": 4096}
-        )
+        self.sess.data_objects.modDataObjMeta({"objPath": obj_path}, {"dataSize": 1024, "dataModify": 4096})
 
         qu = self.sess.query(DataObject.size, DataObject.modify_time).filter(
             DataObject.name == filename, DataObject.collection_id == collection_id
         )
         for res in qu:
             self.assertEqual(int(res[DataObject.size]), 1024)
-            self.assertEqual(
-                res[DataObject.modify_time], datetime.fromtimestamp(4096, timezone.utc)
-            )
+            self.assertEqual(res[DataObject.modify_time], datetime.fromtimestamp(4096, timezone.utc))
 
         # leave physical file on disk
         self.sess.data_objects.unregister(obj_path)
@@ -1886,11 +1709,7 @@ class TestDataObjOps(unittest.TestCase):
             resource_type = "unixfilesystem"
             resource_host = self.sess.host
             resource_path = "/tmp/{}".format(resource_name)
-            ufs_resources.append(
-                self.sess.resources.create(
-                    resource_name, resource_type, resource_host, resource_path
-                )
-            )
+            ufs_resources.append(self.sess.resources.create(resource_name, resource_type, resource_host, resource_path))
 
         # make passthru resource and add ufs1 as a child
         passthru_resource = self.sess.resources.create("pt", "passthru")
@@ -1899,9 +1718,7 @@ class TestDataObjOps(unittest.TestCase):
         # put file in test collection and replicate
         obj_path = "{collection}/{filename}".format(**locals())
         options = {kw.DEST_RESC_NAME_KW: ufs_resources[0].name}
-        self.sess.data_objects.put(
-            test_file, "{collection}/".format(**locals()), **options
-        )
+        self.sess.data_objects.put(test_file, "{collection}/".format(**locals()), **options)
         self.sess.data_objects.replicate(obj_path, passthru_resource.name)
 
         # ensure that replica info is populated
@@ -1915,18 +1732,14 @@ class TestDataObjOps(unittest.TestCase):
             self.assertEqual(obj.replicas[i].number, i)
             self.assertEqual(obj.replicas[i].status, "1")
             self.assertEqual(obj.replicas[i].path.split("/")[-1], filename)
-            self.assertEqual(
-                obj.replicas[i].resc_hier.split(";")[-1], ufs_resources[i].name
-            )
+            self.assertEqual(obj.replicas[i].resc_hier.split(";")[-1], ufs_resources[i].name)
 
         self.assertEqual(obj.replicas[0].resource_name, ufs_resources[0].name)
         if self.sess.server_version < (4, 2, 0):
             self.assertEqual(obj.replicas[i].resource_name, passthru_resource.name)
         else:
             self.assertEqual(obj.replicas[i].resource_name, ufs_resources[1].name)
-        self.assertEqual(
-            obj.replicas[1].resc_hier.split(";")[0], passthru_resource.name
-        )
+        self.assertEqual(obj.replicas[1].resc_hier.split(";")[0], passthru_resource.name)
 
         # remove object
         obj.unlink(force=True)
@@ -1943,9 +1756,7 @@ class TestDataObjOps(unittest.TestCase):
         test_dir = helpers.irods_shared_tmp_dir()
         loc_server = self.sess.host in ("localhost", socket.gethostname())
         if not (test_dir) and not (loc_server):
-            self.skipTest(
-                "data_obj register requires server has access to local or shared files"
-            )
+            self.skipTest("data_obj register requires server has access to local or shared files")
 
         # test vars
         resc_name = "testRegisterOpResc"
@@ -1953,9 +1764,7 @@ class TestDataObjOps(unittest.TestCase):
         collection = self.coll.path
         obj_path = "{collection}/{filename}".format(**locals())
 
-        test_path = make_ufs_resc_in_tmpdir(
-            self.sess, resc_name, allow_local=loc_server
-        )
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local=loc_server)
         test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
@@ -1979,9 +1788,7 @@ class TestDataObjOps(unittest.TestCase):
         test_dir = helpers.irods_shared_tmp_dir()
         loc_server = self.sess.host in ("localhost", socket.gethostname())
         if not (test_dir) and not (loc_server):
-            self.skipTest(
-                "data_obj register requires server has access to local or shared files"
-            )
+            self.skipTest("data_obj register requires server has access to local or shared files")
 
         # test vars
         resc_name = "regWithChksumResc"
@@ -1989,9 +1796,7 @@ class TestDataObjOps(unittest.TestCase):
         collection = self.coll.path
         obj_path = "{collection}/{filename}".format(**locals())
 
-        test_path = make_ufs_resc_in_tmpdir(
-            self.sess, resc_name, allow_local=loc_server
-        )
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local=loc_server)
         test_file = os.path.join(test_path, filename)
 
         # make random 4K binary file
@@ -2018,33 +1823,23 @@ class TestDataObjOps(unittest.TestCase):
 
     def test_object_names_with_nonprintable_chars(self):
         if (4, 2, 8) < self.sess.server_version < (4, 2, 11):
-            self.skipTest(
-                "4.2.9 and 4.2.10 are known to fail as apostrophes in object names are problematic"
-            )
+            self.skipTest("4.2.9 and 4.2.10 are known to fail as apostrophes in object names are problematic")
         test_dir = helpers.irods_shared_tmp_dir()
         loc_server = self.sess.host in ("localhost", socket.gethostname())
         if not (test_dir) and not (loc_server):
-            self.skipTest(
-                "data_obj register requires server has access to local or shared files"
-            )
+            self.skipTest("data_obj register requires server has access to local or shared files")
         temp_names = []
         vault = ""
         try:
             resc_name = "regWithNonPrintableNamesResc"
-            vault = make_ufs_resc_in_tmpdir(
-                self.sess, resc_name, allow_local=loc_server
-            )
+            vault = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local=loc_server)
 
             def enter_file_into_irods(session, filename, **kw_opt):
                 ET(XML_Parser_Type.QUASI_XML, session.server_version)
                 basename = os.path.basename(filename)
-                logical_path = "/{0.zone}/home/{0.username}/{basename}".format(
-                    session, **locals()
-                )
+                logical_path = "/{0.zone}/home/{0.username}/{basename}".format(session, **locals())
                 bound_method = getattr(session.data_objects, kw_opt["method"])
-                bound_method(
-                    os.path.abspath(filename), logical_path, **kw_opt["options"]
-                )
+                bound_method(os.path.abspath(filename), logical_path, **kw_opt["options"])
                 d = session.data_objects.get(logical_path)
                 Path_Good = d.path == logical_path
                 session.data_objects.unlink(logical_path, force=True)
@@ -2070,9 +1865,7 @@ class TestDataObjOps(unittest.TestCase):
                     f.write(b"hello")
                     temp_names += [f.name]
                 ses = helpers.make_session()
-                futr.append(
-                    threadpool.submit(enter_file_into_irods, ses, f.name, **opts)
-                )
+                futr.append(threadpool.submit(enter_file_into_irods, ses, f.name, **opts))
             results = [f.result() for f in futr]
             self.assertEqual(results, [True, True])
         finally:
@@ -2090,11 +1883,7 @@ class TestDataObjOps(unittest.TestCase):
         home = helpers.home_collection(self.sess)
         with self.create_resc_hierarchy(root) as (_, Leaf):
             with self.assertRaises(DIRECT_CHILD_ACCESS):
-                self.sess.data_objects.open(
-                    "{home}/disallowed_243".format(**locals()),
-                    "w",
-                    **{kw.RESC_NAME_KW: Leaf}
-                )
+                self.sess.data_objects.open("{home}/disallowed_243".format(**locals()), "w", **{kw.RESC_NAME_KW: Leaf})
 
     def test_data_open_on_named_resource__243(self):
         s = self.sess
@@ -2141,12 +1930,11 @@ class TestDataObjOps(unittest.TestCase):
         )
         try:
             s.resources.create("parent", "deferred")
-            with self.create_simple_resc("resc0_243") as r0, self.create_simple_resc(
-                "resc1_243"
-            ) as r1, self._temporary_resource_adopter(
-                s, parent="parent", child_list=(r0, r1)
+            with (
+                self.create_simple_resc("resc0_243") as r0,
+                self.create_simple_resc("resc1_243") as r1,
+                self._temporary_resource_adopter(s, parent="parent", child_list=(r0, r1)),
             ):
-
                 hiers = ["parent;{0}".format(r) for r in (r0, r1)]
 
                 # Write two different replicas. Although the writing of the second will cause the first to become
@@ -2155,9 +1943,7 @@ class TestDataObjOps(unittest.TestCase):
                     opts = {kw.RESC_HIER_STR_KW: hier}
                     with s.data_objects.open(data_path, "a", **opts) as obj_io:
                         obj_io.seek(0)
-                        obj_io.write(
-                            hier.encode("utf-8")
-                        )  # Write different content to each replica
+                        obj_io.write(hier.encode("utf-8"))  # Write different content to each replica
 
                 # Assert that we are able to read both replicas' content faithfully using the hierarchy string.
                 for hier in hiers:
@@ -2193,9 +1979,7 @@ class TestDataObjOps(unittest.TestCase):
 
         from irods.message import current_XML_parser, string_for_XML_parser
 
-        active_xml_parser_for_thread = lambda: string_for_XML_parser(
-            current_XML_parser()
-        )
+        active_xml_parser_for_thread = lambda: string_for_XML_parser(current_XML_parser())
 
         self.assertEqual(active_xml_parser_for_thread(), default_xml_parser)
 
@@ -2218,16 +2002,12 @@ class TestDataObjOps(unittest.TestCase):
     ):
         from irods.message import current_XML_parser, string_for_XML_parser
 
-        active_xml_parser_for_thread = lambda: string_for_XML_parser(
-            current_XML_parser()
-        )
+        active_xml_parser_for_thread = lambda: string_for_XML_parser(current_XML_parser())
         from concurrent.futures import ThreadPoolExecutor
         from irods.helpers import xml_mode
 
         original_xml_parser = active_xml_parser_for_thread()
-        other_xml_parser = list(
-            {"STANDARD_XML", "QUASI_XML", "SECURE_XML"} - {original_xml_parser}
-        )[0]
+        other_xml_parser = list({"STANDARD_XML", "QUASI_XML", "SECURE_XML"} - {original_xml_parser})[0]
 
         self.assertNotEqual(other_xml_parser, original_xml_parser)
 
@@ -2237,9 +2017,7 @@ class TestDataObjOps(unittest.TestCase):
             self.assertEqual(other_xml_parser, active_xml_parser_for_thread())
             self.assertEqual(
                 original_xml_parser,
-                ThreadPoolExecutor(max_workers=1)
-                .submit(active_xml_parser_for_thread)
-                .result(),
+                ThreadPoolExecutor(max_workers=1).submit(active_xml_parser_for_thread).result(),
             )
 
         self.assertEqual(active_xml_parser_for_thread(), original_xml_parser)
@@ -2248,17 +2026,13 @@ class TestDataObjOps(unittest.TestCase):
         test_dir = helpers.irods_shared_tmp_dir()
         loc_server = self.sess.host in ("localhost", socket.gethostname())
         if not (test_dir) and not (loc_server):
-            self.skipTest(
-                "data_obj register requires server has access to local or shared files"
-            )
+            self.skipTest("data_obj register requires server has access to local or shared files")
 
         # test vars
         resc_name = "regWithXmlSpecialCharsResc"
         collection = self.coll.path
         filename = """aaa'"<&test&>"'_file"""
-        test_path = make_ufs_resc_in_tmpdir(
-            self.sess, resc_name, allow_local=loc_server
-        )
+        test_path = make_ufs_resc_in_tmpdir(self.sess, resc_name, allow_local=loc_server)
         try:
             test_file = os.path.join(test_path, filename)
             obj_path = "{collection}/{filename}".format(**locals())
@@ -2268,9 +2042,7 @@ class TestDataObjOps(unittest.TestCase):
                 f.write(os.urandom(1024 * 4))
 
             # register file in test collection
-            self.sess.data_objects.register(
-                test_file, obj_path, **{kw.RESC_NAME_KW: resc_name}
-            )
+            self.sess.data_objects.register(test_file, obj_path, **{kw.RESC_NAME_KW: resc_name})
 
             # confirm object presence
             obj = self.sess.data_objects.get(obj_path)
@@ -2296,19 +2068,11 @@ class TestDataObjOps(unittest.TestCase):
         data_objects = []
         try:
             VAULT_MODE = (loc_server, 0o777 | stat.S_ISGID)
-            dir1 = make_ufs_resc_in_tmpdir(
-                self.sess, uniq1, allow_local=loc_server, client_vault_mode=VAULT_MODE
-            )
-            dir2 = make_ufs_resc_in_tmpdir(
-                self.sess, uniq2, allow_local=loc_server, client_vault_mode=VAULT_MODE
-            )
+            dir1 = make_ufs_resc_in_tmpdir(self.sess, uniq1, allow_local=loc_server, client_vault_mode=VAULT_MODE)
+            dir2 = make_ufs_resc_in_tmpdir(self.sess, uniq2, allow_local=loc_server, client_vault_mode=VAULT_MODE)
 
             def replica_number_from_resource_name(data_path, resc):
-                return [
-                    r.number
-                    for r in self.sess.data_objects.get(data_path).replicas
-                    if r.resource_name == resc
-                ][0]
+                return [r.number for r in self.sess.data_objects.get(data_path).replicas if r.resource_name == resc][0]
 
             # Use two different ways to specify unregister target:
             for keyword in (kw.RESC_NAME_KW, kw.REPL_NUM_KW):
@@ -2325,16 +2089,12 @@ class TestDataObjOps(unittest.TestCase):
                 physical_paths = [r.path for r in data.replicas]
 
                 # Assert that unregistering the specific replica decreases the number of replicas by 1.
-                data.unregister(
-                    **{
-                        keyword: (
-                            replica_number_from_resource_name(data_path, uniq2)
-                            if keyword == kw.REPL_NUM_KW
-                            else uniq2
-                        ),
-                        kw.COPIES_KW: 1,
-                    }
-                )
+                data.unregister(**{
+                    keyword: (
+                        replica_number_from_resource_name(data_path, uniq2) if keyword == kw.REPL_NUM_KW else uniq2
+                    ),
+                    kw.COPIES_KW: 1,
+                })
                 self.assertEqual(1, len(self.sess.data_objects.get(data_path).replicas))
 
                 # Assert replica files still both on disk.
@@ -2354,11 +2114,7 @@ class TestDataObjOps(unittest.TestCase):
         ses = self.sess
         with self.create_simple_resc() as newResc:
             try:
-                d = ses.data_objects.create(
-                    "/{0.zone}/home/{0.username}/data_object_for_issue_450_test".format(
-                        ses
-                    )
-                )
+                d = ses.data_objects.create("/{0.zone}/home/{0.username}/data_object_for_issue_450_test".format(ses))
                 d.replicate(**{kw.DEST_RESC_NAME_KW: newResc})
                 ses.data_objects.modDataObjMeta(
                     {
@@ -2384,9 +2140,7 @@ class TestDataObjOps(unittest.TestCase):
                 d.unlink(force=True)
 
     def test_data_objects_auto_close_on_process_exit__issue_456(self):
-        program = os.path.join(
-            test_modules.__path__[0], "test_auto_close_of_data_objects__issue_456.py"
-        )
+        program = os.path.join(test_modules.__path__[0], "test_auto_close_of_data_objects__issue_456.py")
         # Use the currently running Python interpreter binary to run the script in the child process.
         p = subprocess.Popen([sys.executable, program], stdout=subprocess.PIPE)
         data_object_path, expected_content = p.communicate()[0].decode().split()
@@ -2395,9 +2149,7 @@ class TestDataObjOps(unittest.TestCase):
     def test_data_objects_auto_close_on_function_exit__issue_456(self):
         import irods.test.modules.test_auto_close_of_data_objects__issue_456 as test_module
 
-        data_object_path, expected_content = test_module.test(
-            return_locals=("name", "expected_content")
-        )
+        data_object_path, expected_content = test_module.test(return_locals=("name", "expected_content"))
         self._auto_close_test(data_object_path, expected_content)
 
     @unittest.skipIf(
@@ -2420,7 +2172,6 @@ class TestDataObjOps(unittest.TestCase):
 
         settings_path = get_settings_path()
         with helpers.file_backed_up(settings_path, require_that_file_exists=False):
-
             RANDOM_VALUE = int(time.time())
             config.data_objects.auto_close = RANDOM_VALUE
 
@@ -2441,9 +2192,7 @@ class TestDataObjOps(unittest.TestCase):
             # Load from nonexistent settings file should change nothing.
             self.assertTrue(config.data_objects.auto_close, RANDOM_VALUE)
 
-            with helpers.environment_variable_backed_up(
-                settings_path_environment_variable
-            ):
+            with helpers.environment_variable_backed_up(settings_path_environment_variable):
                 os.environ.pop(settings_path_environment_variable, None)
                 tmp_path = os.path.join(gettempdir(), ".prc")
                 for i, test_path in enumerate([None, "", tmp_path]):
@@ -2459,9 +2208,7 @@ class TestDataObjOps(unittest.TestCase):
                     )
                     config.data_objects.auto_close = RANDOM_VALUE
                     config.load(**load_logging_options)
-                    self.assertTrue(
-                        config.data_objects.auto_close, RANDOM_VALUE - i - 1
-                    )
+                    self.assertTrue(config.data_objects.auto_close, RANDOM_VALUE - i - 1)
 
     @unittest.skipIf(
         os.environ.get("PYTHON_IRODSCLIENT_CONFIGURATION_PATH", None) is not None,
@@ -2469,15 +2216,11 @@ class TestDataObjOps(unittest.TestCase):
     )
     def test_setting_xml_parser_choice_by_environment_only__issue_584(self):
         program = os.path.join(test_modules.__path__[0], "test_xml_parser.py")
-        xml_parser_control_var = (
-            "PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT"
-        )
+        xml_parser_control_var = "PYTHON_IRODSCLIENT_CONFIG__CONNECTIONS__XML_PARSER_DEFAULT"
         with helpers.environment_variable_backed_up(xml_parser_control_var):
             for alternate_setting in ("QUASI_XML", "STANDARD_XML", "SECURE_XML"):
                 # Set xml parser for the process to be spawned.
-                os.environ[xml_parser_control_var] = "'{alternate_setting}'".format(
-                    **locals()
-                )
+                os.environ[xml_parser_control_var] = "'{alternate_setting}'".format(**locals())
                 # Run a simple script that imports PRC and prints which XML parser is the active default.
                 p = subprocess.Popen([sys.executable, program], stdout=subprocess.PIPE)
                 parser_id = p.communicate()[0].decode().strip()
@@ -2526,8 +2269,8 @@ class TestDataObjOps(unittest.TestCase):
 
             # Create a data object.
             home_collection = helpers.home_collection(user_session)
-            data_object_path = "{home_collection}/test_update_mtime_of_data_object_using_touch_operation__525.txt".format(
-                **locals()
+            data_object_path = (
+                "{home_collection}/test_update_mtime_of_data_object_using_touch_operation__525.txt".format(**locals())
             )
             self.assertFalse(user_session.data_objects.exists(data_object_path))
             user_session.data_objects.touch(data_object_path)
@@ -2539,9 +2282,7 @@ class TestDataObjOps(unittest.TestCase):
 
             # Set the mtime to an earlier time.
             new_mtime = 1400000000
-            user_session.data_objects.touch(
-                data_object_path, seconds_since_epoch=new_mtime
-            )
+            user_session.data_objects.touch(data_object_path, seconds_since_epoch=new_mtime)
 
             # Compare mtimes for correctness.
             data_object = user_session.data_objects.get(data_object_path)
@@ -2587,9 +2328,7 @@ class TestDataObjOps(unittest.TestCase):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
         # Force data object connections to redirect by enforcing a non-equivalent hostname for their resource
         total_conns = lambda session: len(session.pool.idle | session.pool.active)
-        with config.loadlines(
-            entries=[dict(setting="data_objects.allow_redirect", value=True)]
-        ):
+        with config.loadlines(entries=[dict(setting="data_objects.allow_redirect", value=True)]):
             with self.create_simple_resc(hostname="localhost") as resc_name:
                 self.assert_redirect_happens_on_open({kw.DEST_RESC_NAME_KW: resc_name})
                 # A reasonable number of data objects to create without eliciting problems.
@@ -2601,15 +2340,9 @@ class TestDataObjOps(unittest.TestCase):
                 try:
                     # Try to exhaust connections
                     for n in range(REPS_TO_REPRODUCE_CONNECT_ERROR):
-                        data_path = (
-                            "{self.coll_path}/issue_562_test_obj_{n:03d}.dat".format(
-                                **locals()
-                            )
-                        )
+                        data_path = "{self.coll_path}/issue_562_test_obj_{n:03d}.dat".format(**locals())
                         paths.append(data_path)
-                        with self.sess.data_objects.open(
-                            data_path, "w", **{kw.DEST_RESC_NAME_KW: resc_name}
-                        ) as f:
+                        with self.sess.data_objects.open(data_path, "w", **{kw.DEST_RESC_NAME_KW: resc_name}) as f:
                             pass
                         # Assert number of connections does not increase
                         current_conns = total_conns(self.sess)
@@ -2753,9 +2486,7 @@ class TestDataObjOps(unittest.TestCase):
         finally:
             unregister_update_type(tqdm.tqdm)
 
-    def _run_pbars_for_parallel_io(
-        self, file_content, list_of_progress_bars_and_update_callbacks
-    ):
+    def _run_pbars_for_parallel_io(self, file_content, list_of_progress_bars_and_update_callbacks):
         # Helper method for issue #574 tests.
         Data = self.sess.data_objects
         logical_path = ""
@@ -2803,9 +2534,7 @@ class TestDataObjOps(unittest.TestCase):
             f.write(b"_" * FILE_LENGTH)  # large file for a parallel put
             f.flush()
             logical_path = "{}/{}".format(self.coll_path, os.path.basename(f.name))
-            self.sess.data_objects.put(
-                f.name, logical_path, updatables=[thread_safe(pbar.update)]
-            )
+            self.sess.data_objects.put(f.name, logical_path, updatables=[thread_safe(pbar.update)])
 
         self.assertEqual(pbar.percent_done(), 100)
 
@@ -2818,12 +2547,9 @@ class TestDataObjOps(unittest.TestCase):
             # Set path for a new, as yet nonexisting data object.
             data_path = "{}/{}".format(
                 helpers.home_collection(sess),
-                unique_name(my_function_name(), datetime.now(), truncated_size)
-                + "issue_534_errors",
+                unique_name(my_function_name(), datetime.now(), truncated_size) + "issue_534_errors",
             )
-            self.assertFalse(
-                data_objs.exists(data_path), "Data object should not yet exist."
-            )
+            self.assertFalse(data_objs.exists(data_path), "Data object should not yet exist.")
 
             # Assert appropriate error is raised for the nonexisting object.
             with self.assertRaises(ex.OBJ_PATH_DOES_NOT_EXIST):
@@ -2852,42 +2578,22 @@ class TestDataObjOps(unittest.TestCase):
         self._skip_unless_connected_to_local_computer_by_other_than_localhost_synonym()
 
         logical_paths = [
-            "{}/issue_627_{}_{}".format(
-                self.coll_path, n, unique_name(my_function_name(), datetime.now())
-            )
+            "{}/issue_627_{}_{}".format(self.coll_path, n, unique_name(my_function_name(), datetime.now()))
             for n in range(2)
         ]
 
-        with self.create_simple_resc(
-            hostname="localhost"
-        ) as newResc1, self.create_simple_resc() as newResc2:
-
-            if (
-                self.sess.resources.get(newResc1).location
-                == self.sess.resources.get(newResc2).location
-            ):
-                self.skipTest(
-                    "test runs only if host locations differ between experimental and control resource"
-                )
+        with self.create_simple_resc(hostname="localhost") as newResc1, self.create_simple_resc() as newResc2:
+            if self.sess.resources.get(newResc1).location == self.sess.resources.get(newResc2).location:
+                self.skipTest("test runs only if host locations differ between experimental and control resource")
 
             for use_redirect in (True, False):
-
-                with config.loadlines(
-                    entries=[
-                        dict(setting="data_objects.allow_redirect", value=use_redirect)
-                    ]
-                ):
-
+                with config.loadlines(entries=[dict(setting="data_objects.allow_redirect", value=use_redirect)]):
                     try:
-                        with self.sess.data_objects.open(
-                            logical_paths[0], "w", **{kw.RESC_NAME_KW: newResc1}
-                        ) as d1, self.sess.data_objects.open(
-                            logical_paths[1], "w", **{kw.RESC_NAME_KW: newResc2}
-                        ) as d2:
-
-                            hostname_inequality_relation = (
-                                d1.raw.session.host != d2.raw.session.host
-                            )
+                        with (
+                            self.sess.data_objects.open(logical_paths[0], "w", **{kw.RESC_NAME_KW: newResc1}) as d1,
+                            self.sess.data_objects.open(logical_paths[1], "w", **{kw.RESC_NAME_KW: newResc2}) as d2,
+                        ):
+                            hostname_inequality_relation = d1.raw.session.host != d2.raw.session.host
                             self.assertEqual(use_redirect, hostname_inequality_relation)
                     finally:
                         for path in logical_paths:
@@ -2904,8 +2610,7 @@ class TestDataObjOps(unittest.TestCase):
                 try:
                     data_path = "{}/{}".format(
                         helpers.home_collection(sess),
-                        unique_name(my_function_name(), datetime.now(), truncated_size)
-                        + "_issue_534",
+                        unique_name(my_function_name(), datetime.now(), truncated_size) + "_issue_534",
                     )
 
                     # Create a data object with size original_size.
@@ -2915,9 +2620,7 @@ class TestDataObjOps(unittest.TestCase):
 
                     # Ensure there are two replicas, one on newResc as well as one on 'demoResc'
                     d.replicate(resource=newResc)
-                    response = d.replica_truncate(
-                        truncated_size, **{kw.RESC_NAME_KW: newResc}
-                    )
+                    response = d.replica_truncate(truncated_size, **{kw.RESC_NAME_KW: newResc})
 
                     # Stat data object again.
                     d = data_objs.get(data_path)
@@ -2925,11 +2628,7 @@ class TestDataObjOps(unittest.TestCase):
                     # Check that returned resource hierarchy and replica number match expectations.
                     self.assertEqual(
                         response["replica_number"],
-                        [
-                            _
-                            for _ in data_objs.get(data_path).replicas
-                            if _.resource_name == newResc
-                        ][0].number,
+                        [_ for _ in data_objs.get(data_path).replicas if _.resource_name == newResc][0].number,
                     )
                     self.assertEqual(response["resource_hierarchy"], newResc)
 
@@ -2945,9 +2644,7 @@ class TestDataObjOps(unittest.TestCase):
 
                     # Check that content of truncated replicas is as expected.
                     if truncated_size <= original_size:
-                        self.assertEqual(
-                            d.open("r").read(), original_content[:truncated_size]
-                        )
+                        self.assertEqual(d.open("r").read(), original_content[:truncated_size])
                     else:
                         self.assertEqual(
                             d.open("r").read(),
@@ -2964,9 +2661,7 @@ class TestDataObjOps(unittest.TestCase):
         from irods.helpers import get_collection, get_data_object
 
         sess = self.sess
-        logical_path = "{}/{}".format(
-            self.coll_path, unique_name(my_function_name(), datetime.now())
-        )
+        logical_path = "{}/{}".format(self.coll_path, unique_name(my_function_name(), datetime.now()))
         sess.collections.create(logical_path)
 
         self.assertIs(get_data_object(sess, logical_path), None)
@@ -2978,9 +2673,7 @@ class TestDataObjOps(unittest.TestCase):
         from irods.helpers import get_collection, get_data_object
 
         sess = self.sess
-        logical_path = "{}/{}".format(
-            self.coll_path, unique_name(my_function_name(), datetime.now())
-        )
+        logical_path = "{}/{}".format(self.coll_path, unique_name(my_function_name(), datetime.now()))
         sess.data_objects.create(logical_path)
 
         self.assertIs(get_collection(sess, logical_path), None)
@@ -2992,9 +2685,7 @@ class TestDataObjOps(unittest.TestCase):
         sess = self.sess
 
         # Generate a test path.
-        data_path = "{}/{}".format(
-            self.coll_path, unique_name(my_function_name(), datetime.now())
-        )
+        data_path = "{}/{}".format(self.coll_path, unique_name(my_function_name(), datetime.now()))
 
         # Test that neither a data object nor a collection exists at the data_path.
         self.assertIs(None, get_data_object(sess, data_path))
@@ -3035,9 +2726,7 @@ class TestDataObjOps(unittest.TestCase):
             self._use_data_create_and_put_with_force_options_on__issue_132()
 
     def _use_data_create_and_put_with_force_options_on__issue_132(self):
-        test_path = iRODSPath(
-            self.coll_path, unique_name(my_function_name(), datetime.now())
-        )
+        test_path = iRODSPath(self.coll_path, unique_name(my_function_name(), datetime.now()))
         original_contents = b"old"
         expected_contents_after_create = b""
         expected_contents_after_put = b"new"
@@ -3063,9 +2752,7 @@ class TestDataObjOps(unittest.TestCase):
         self,
     ):
         # Some definitions to help with assertions.
-        Data_Object_Properties = collections.namedtuple(
-            "repl_properties", ["modify_times", "resource_names"]
-        )
+        Data_Object_Properties = collections.namedtuple("repl_properties", ["modify_times", "resource_names"])
 
         def get_tested_properties(data_repls):
             properties_dict = {_.resource_name: _.modify_time for _ in data_repls}
@@ -3084,9 +2771,7 @@ class TestDataObjOps(unittest.TestCase):
                 self.assertEqual(f.read(), original_contents)
 
         # Use a unique name for the targeted data object path.
-        test_path = iRODSPath(
-            self.coll_path, unique_name(my_function_name(), datetime.now())
-        )
+        test_path = iRODSPath(self.coll_path, unique_name(my_function_name(), datetime.now()))
 
         # Make a new data object at this path, with known content.
         # Record a baseline state for later comparison.
@@ -3156,28 +2841,20 @@ class TestDataObjOps(unittest.TestCase):
             (negative_option, negative_default, None),
         ]
         for opts, default, expected_force_flag_value in test_vector:
-            DataObjectManager._resolve_force_put_option(
-                options := dict(opts), default_setting=default
-            )
-            with self.subTest(
-                f"Undesired result with {opts = }, {default = }, {expected_force_flag_value = }"
-            ):
+            DataObjectManager._resolve_force_put_option(options := dict(opts), default_setting=default)
+            with self.subTest(f"Undesired result with {opts = }, {default = }, {expected_force_flag_value = }"):
                 self.assertEqual(
                     options.get(forceFlag),
                     expected_force_flag_value,
                 )
 
     def _dataobj_create_given_default_and_parameter_values__issue_132(self, param):
-        test_path = iRODSPath(
-            self.coll_path, unique_name(my_function_name(), datetime.now())
-        )
+        test_path = iRODSPath(self.coll_path, unique_name(my_function_name(), datetime.now()))
         Data = self.sess.data_objects
         with self.sess.data_objects.open(test_path, "w") as f:
             f.write(b"old")
         try:
-            self.sess.data_objects.create(
-                test_path, **({} if param is None else {"force": param})
-            )
+            self.sess.data_objects.create(test_path, **({} if param is None else {"force": param}))
         except ex.DataObjectExistsAtLogicalPath:
             # no forcing of overwrite
             self.assertEqual(
@@ -3187,9 +2864,7 @@ class TestDataObjOps(unittest.TestCase):
             )
             return False
         else:
-            self.assertEqual(
-                Data.open(test_path, "r").read(), b"", "Data object is not empty"
-            )
+            self.assertEqual(Data.open(test_path, "r").read(), b"", "Data object is not empty")
             return True
 
     def test_create_and_put_forcing_based_on_truth_table__issue_132(self):
@@ -3208,9 +2883,7 @@ class TestDataObjOps(unittest.TestCase):
                 f.write(b"new")
                 f.flush()
                 try:
-                    Data.put(
-                        f.name, path, **({} if opt is None else {kw.FORCE_FLAG_KW: opt})
-                    )
+                    Data.put(f.name, path, **({} if opt is None else {kw.FORCE_FLAG_KW: opt}))
                 except ex.OVERWRITE_WITHOUT_FORCE_FLAG:
                     return False
                 else:
@@ -3229,29 +2902,24 @@ class TestDataObjOps(unittest.TestCase):
             (True, None, True),  # row 6
             # rows 7 thru 9 not needed since default settings are always False or True.
         ]:
-            with self.subTest(
-                f"{default = }; {option = }; {expect_success = }"
-            ), config.loadlines(
-                entries=[
-                    dict(setting="data_objects.force_create_by_default", value=default),
-                    dict(setting="data_objects.force_put_by_default", value=default),
-                ]
+            with (
+                self.subTest(f"{default = }; {option = }; {expect_success = }"),
+                config.loadlines(
+                    entries=[
+                        dict(setting="data_objects.force_create_by_default", value=default),
+                        dict(setting="data_objects.force_put_by_default", value=default),
+                    ]
+                ),
             ):
                 # Test put success against predicted value.
-                put_path = iRODSPath(
-                    self.coll_path, unique_name(my_function_name(), datetime.now())
-                )
+                put_path = iRODSPath(self.coll_path, unique_name(my_function_name(), datetime.now()))
                 Data.open(put_path, "w").write(b"")
                 self.assertEqual(expect_success, put_with_options(put_path, option))
 
                 # Test create success against predicted value.
-                create_path = iRODSPath(
-                    self.coll_path, unique_name(my_function_name(), datetime.now())
-                )
+                create_path = iRODSPath(self.coll_path, unique_name(my_function_name(), datetime.now()))
                 Data.open(create_path, "w").write(b"")
-                self.assertEqual(
-                    expect_success, create_with_options(create_path, option)
-                )
+                self.assertEqual(expect_success, create_with_options(create_path, option))
 
     def test_force_create_options_resolve_correctly_observing_defaults__issue_132(self):
         T = collections.namedtuple("T", ("force_default", "param"))
@@ -3270,31 +2938,21 @@ class TestDataObjOps(unittest.TestCase):
             # given "original defaults", run tests with create()
             with self.subTest(f"Original default = {forcedef}, force_param = {param}"):
                 self.assertEqual(
-                    self._dataobj_create_given_default_and_parameter_values__issue_132(
-                        param
-                    ),
+                    self._dataobj_create_given_default_and_parameter_values__issue_132(param),
                     test_vec[forcedef, param],
                 )
 
         with config.loadlines(
             entries=[
-                dict(
-                    setting="data_objects.force_create_by_default", value=not forcedef
-                ),
+                dict(setting="data_objects.force_create_by_default", value=not forcedef),
             ]
         ):
-            self.assertNotEqual(
-                forcedef, new_default := config.data_objects.force_create_by_default
-            )
+            self.assertNotEqual(forcedef, new_default := config.data_objects.force_create_by_default)
             # given "changed defaults", repeat tests with create()
             for param in (False, True, None):
-                with self.subTest(
-                    f"Negated default = {new_default}, force_param = {param}"
-                ):
+                with self.subTest(f"Negated default = {new_default}, force_param = {param}"):
                     self.assertEqual(
-                        self._dataobj_create_given_default_and_parameter_values__issue_132(
-                            param
-                        ),
+                        self._dataobj_create_given_default_and_parameter_values__issue_132(param),
                         test_vec[new_default, param],
                     )
 
@@ -3309,7 +2967,7 @@ class TestDataObjOps(unittest.TestCase):
 
         # Create a new, uniquely named test data object.
         data = self.sess.data_objects.create(
-            logical_path:=f'{helpers.home_collection(self.sess)}/{unique_name(my_function_name(), datetime.now())}'
+            logical_path := f'{helpers.home_collection(self.sess)}/{unique_name(my_function_name(), datetime.now())}'
         )
 
         with data.open('w') as f:

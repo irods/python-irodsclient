@@ -43,9 +43,7 @@ class TestAdmin(unittest.TestCase):
         # assertions
         self.assertEqual(user.name, self.new_user_name)
         self.assertEqual(user.zone, self.sess.zone)
-        self.assertEqual(
-            repr(user), "<iRODSUser {id} {name} {type} {zone}>".format(**vars(user))
-        )
+        self.assertEqual(repr(user), "<iRODSUser {id} {name} {type} {zone}>".format(**vars(user)))
 
         # delete user
         user.remove()
@@ -60,9 +58,7 @@ class TestAdmin(unittest.TestCase):
             self.sess.users.get(self.new_user_name, self.sess.zone)
 
         # create user
-        user = self.sess.users.create(
-            self.new_user_name, self.new_user_type, self.sess.zone
-        )
+        user = self.sess.users.create(self.new_user_name, self.new_user_type, self.sess.zone)
 
         # assertions
         self.assertEqual(user.name, self.new_user_name)
@@ -79,7 +75,7 @@ class TestAdmin(unittest.TestCase):
         gpadmin_user = remote_zone = None
         try:
             gpadmin_user = self.sess.users.create(self.new_user_name, "groupadmin")
-            gpadmin_user.modify("password", gpadmin_password:='my-gpadmin-passw')
+            gpadmin_user.modify("password", gpadmin_password := 'my-gpadmin-passw')
             remote_zone = self.sess.zones.create('other_zone', 'remote')
             with iRODSSession(
                 port=self.sess.port,
@@ -88,31 +84,35 @@ class TestAdmin(unittest.TestCase):
                 user=self.new_user_name,
                 password=gpadmin_password,
             ) as gpadmin:
-                for expected_exception,args,kwargs in (
-                    (None, ("newUser","newPassword"), {}), # no zone supplied
-                    (None, ("newUser","newPassword"), {"user_zone":gpadmin.zone}), # local zone supplied
-                    (ValueError, ("newUser","newPassword"), {"user_zone":remote_zone.name}), # remote zone supplied
-                    (ValueError, ("newUser","newPassword"), {"user_zone":"fictionZone"}), # nonexistent zone supplied
-                    (ValueError, ("newUser#tempZone","newPassword"), {}),
-                    (ValueError, (f"newUser#{remote_zone.name}","newPassword"), {}),
-                    (ValueError, ("newUser#fictionZone","newPassword"), {}),
-                    (ValueError, (f"newUser#{gpadmin.zone}","newPassword"), {"user_zone":gpadmin.zone}),
-                    (ValueError, (f"newUser#{gpadmin.zone}","newPassword"), {"user_zone":remote_zone.name}),
-                    (ValueError, (f"newUser#{gpadmin.zone}","newPassword"), {"user_zone":"fictionZone"}),
+                for expected_exception, args, kwargs in (
+                    (None, ("newUser", "newPassword"), {}),  # no zone supplied
+                    (None, ("newUser", "newPassword"), {"user_zone": gpadmin.zone}),  # local zone supplied
+                    (ValueError, ("newUser", "newPassword"), {"user_zone": remote_zone.name}),  # remote zone supplied
+                    (ValueError, ("newUser", "newPassword"), {"user_zone": "fictionZone"}),  # nonexistent zone supplied
+                    (ValueError, ("newUser#tempZone", "newPassword"), {}),
+                    (ValueError, (f"newUser#{remote_zone.name}", "newPassword"), {}),
+                    (ValueError, ("newUser#fictionZone", "newPassword"), {}),
+                    (ValueError, (f"newUser#{gpadmin.zone}", "newPassword"), {"user_zone": gpadmin.zone}),
+                    (ValueError, (f"newUser#{gpadmin.zone}", "newPassword"), {"user_zone": remote_zone.name}),
+                    (ValueError, (f"newUser#{gpadmin.zone}", "newPassword"), {"user_zone": "fictionZone"}),
                 ):
-                    with self.subTest(args = args, kwargs = kwargs):
+                    with self.subTest(args=args, kwargs=kwargs):
                         user = None
                         try:
-                            test_function = lambda:gpadmin.users.create_with_password(*args, **kwargs)
+                            test_function = lambda: gpadmin.users.create_with_password(*args, **kwargs)
                             if expected_exception:
                                 with self.assertRaises(expected_exception):
                                     user = test_function()
                             else:
                                 user = test_function()
-                            self.assertEqual(user is None, expected_exception is not None, "In case of error, and only then, user should not exist.")
+                            self.assertEqual(
+                                user is None,
+                                expected_exception is not None,
+                                "In case of error, and only then, user should not exist.",
+                            )
                         finally:
                             if user:
-                                self.sess.users.get(user.name,user.zone).remove()
+                                self.sess.users.get(user.name, user.zone).remove()
         finally:
             if remote_zone:
                 remote_zone.remove()
@@ -122,7 +122,7 @@ class TestAdmin(unittest.TestCase):
     def test_groupadmin_can_create_entry_for_remote_user_and_add_to_group__issue_759(self):
         gpadmin_user = remote_zone = test_group = test_user = None
         gpadmin_user = self.sess.users.create(self.new_user_name, "groupadmin")
-        gpadmin_user.modify("password", gpadmin_password:='my-gpadmin-passw')
+        gpadmin_user.modify("password", gpadmin_password := 'my-gpadmin-passw')
         try:
             remote_zone = self.sess.zones.create('other_zone', 'remote')
             with iRODSSession(
@@ -142,15 +142,18 @@ class TestAdmin(unittest.TestCase):
                 test_user = gpadmin.users.create_remote(f'remote_user_{random}', user_zone=remote_zone.name)
 
                 # Add the remote test user to the group we created, then assert membership.
-                test_group.addmember(test_user.name, user_zone = remote_zone.name)
+                test_group.addmember(test_user.name, user_zone=remote_zone.name)
                 self.assertIn(
                     (test_user.name, test_user.zone),
-                    [(_[User.name],_[User.zone]) for _ in self.sess.query(User,Group).filter(Group.name == test_group.name)]
+                    [
+                        (_[User.name], _[User.zone])
+                        for _ in self.sess.query(User, Group).filter(Group.name == test_group.name)
+                    ],
                 )
         finally:
             if test_group:
                 # Iterate through members from group (with groupadmin as the last), removing each one.
-                for member in sorted(test_group.members, key=lambda _:_.name == gpadmin_user.name):
+                for member in sorted(test_group.members, key=lambda _: _.name == gpadmin_user.name):
                     test_group.removemember(member.name, user_zone=member.zone)
                 # Use rodadmin-enabled session to remove the group
                 self.sess.groups.get(test_group.name).remove()
@@ -236,9 +239,7 @@ class TestAdmin(unittest.TestCase):
         self.assertEqual(row[User.type], self.new_user_type)
 
         # change type to rodsadmin
-        self.sess.users.modify(
-            "{}#{}".format(self.new_user_name, self.sess.zone), "type", "rodsadmin"
-        )
+        self.sess.users.modify("{}#{}".format(self.new_user_name, self.sess.zone), "type", "rodsadmin")
 
         # check type again
         row = self.sess.query(User.type).filter(User.name == self.new_user_name).one()
@@ -380,9 +381,7 @@ class TestAdmin(unittest.TestCase):
         resc_type = "s3"
         resc_host = self.sess.host
         resc_path = "/nobucket"
-        s3 = session.resources.create(
-            resc_name, resc_type, resc_host, resc_path, context
-        )
+        s3 = session.resources.create(resc_name, resc_type, resc_host, resc_path, context)
 
         # verify context fields
         self.assertEqual(context, s3.context_fields)
@@ -420,9 +419,7 @@ class TestAdmin(unittest.TestCase):
         obj_path = "{coll_path}/{obj_name}".format(**locals())
 
         # make new resource
-        self.sess.resources.create(
-            resc_name, resc_type, resc_host, resc_path, resource_class=resc_class
-        )
+        self.sess.resources.create(resc_name, resc_type, resc_host, resc_path, resource_class=resc_class)
 
         # try invalid params
         with self.assertRaises(ResourceDoesNotExist):
@@ -484,7 +481,6 @@ class TestAdmin(unittest.TestCase):
             password=new_password,
             zone=self.sess.zone,
         ) as session:
-
             # do something that connects to the server
             session.users.get(username)
 

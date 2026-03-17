@@ -4,15 +4,14 @@ from itertools import count
 
 next_counter = count().__next__
 
-class OrderedProperty:
 
+class OrderedProperty:
     def __init__(self, *args, **kws):
         self._creation_counter = next_counter()
         super(OrderedProperty, self).__init__(*args, **kws)
 
 
 class OrderedMetaclass(type):
-
     def __init__(self, name, bases, attys):
         super(OrderedMetaclass, self).__init__(name, bases, attys)
         self._creation_counter = next_counter()
@@ -21,8 +20,7 @@ class OrderedMetaclass(type):
                 (name, value)
                 for base in reversed(self.__mro__)
                 for name, value in base.__dict__.items()
-                if isinstance(value, OrderedProperty)
-                or isinstance(value, OrderedMetaclass)
+                if isinstance(value, OrderedProperty) or isinstance(value, OrderedMetaclass)
             ),
             key=lambda property: property[1]._creation_counter,
         )

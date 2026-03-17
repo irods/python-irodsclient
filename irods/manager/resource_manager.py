@@ -11,13 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceManager(Manager):
-
     @staticmethod
     def serialize(context):
         if isinstance(context, dict):
-            return ";".join(
-                "{}={}".format(key, value) for (key, value) in list(context.items())
-            )
+            return ";".join("{}={}".format(key, value) for (key, value) in list(context.items()))
         return context
 
     def get(self, name, zone=""):
@@ -88,9 +85,7 @@ class ResourceManager(Manager):
         else:
             mode = ""
         message_body = GeneralAdminRequest("rm", "resource", name, mode)
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -101,9 +96,7 @@ class ResourceManager(Manager):
 
     def modify(self, name, attribute, value):
         with self.sess.pool.get_connection() as conn:
-            message_body = GeneralAdminRequest(
-                "modify", "resource", name, attribute, self.serialize(value)
-            )
+            message_body = GeneralAdminRequest("modify", "resource", name, attribute, self.serialize(value))
 
             request = iRODSMessage(
                 "RODS_API_REQ",
@@ -124,9 +117,7 @@ class ResourceManager(Manager):
                 # No resource hierarchies before iRODS 4
                 raise OperationNotSupported
 
-            message_body = GeneralAdminRequest(
-                "add", "childtoresc", parent, child, context
-            )
+            message_body = GeneralAdminRequest("add", "childtoresc", parent, child, context)
 
             request = iRODSMessage(
                 "RODS_API_REQ",

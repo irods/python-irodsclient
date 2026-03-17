@@ -20,7 +20,6 @@ class _Access_LookupMeta(type):
 
 
 class iRODSAccess(metaclass=_Access_LookupMeta):
-
     @classmethod
     def to_int(cls, key):
         return cls.codes[key]
@@ -74,9 +73,7 @@ class iRODSAccess(metaclass=_Access_LookupMeta):
         )
     )
 
-    strings = collections.OrderedDict(
-        (number, string) for string, number in codes.items()
-    )
+    strings = collections.OrderedDict((number, string) for string, number in codes.items())
 
     def __init__(self, access_name, path, user_name="", user_zone="", user_type=None):
         self.access_name = access_name
@@ -103,9 +100,7 @@ class iRODSAccess(metaclass=_Access_LookupMeta):
         )
 
     def __hash__(self):
-        return hash(
-            (self.access_name, iRODSPath(self.path), self.user_name, self.user_zone)
-        )
+        return hash((self.access_name, iRODSPath(self.path), self.user_name, self.user_zone))
 
     def copy(self, decanonicalize=False):
         other = copy.deepcopy(self)
@@ -116,19 +111,13 @@ class iRODSAccess(metaclass=_Access_LookupMeta):
                 "modify object": "write",
                 "modify_object": "write",
             }.get(self.access_name)
-            other.access_name = (
-                replacement_string
-                if replacement_string is not None
-                else self.access_name
-            )
+            other.access_name = replacement_string if replacement_string is not None else self.access_name
         return other
 
     def __repr__(self):
         object_dict = vars(self)
         access_name = self.access_name.replace(" ", "_")
-        user_type_hint = (
-            "({user_type})" if object_dict.get("user_type") is not None else ""
-        ).format(**object_dict)
+        user_type_hint = ("({user_type})" if object_dict.get("user_type") is not None else "").format(**object_dict)
         return f"<iRODSAccess {access_name} {self.path} {self.user_name}{user_type_hint} {self.user_zone}>"
 
 
@@ -138,6 +127,4 @@ class _iRODSAccess_pre_4_3_0(iRODSAccess):
         for key, value in iRODSAccess.codes.items()
         if key in ("own", "write", "modify_object", "read", "read_object", "null")
     )
-    strings = collections.OrderedDict(
-        (number, string) for string, number in codes.items()
-    )
+    strings = collections.OrderedDict((number, string) for string, number in codes.items())

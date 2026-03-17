@@ -1,5 +1,4 @@
 class Manager:
-
     __server_version = ()
 
     @property
