@@ -3,8 +3,8 @@ from irods.column import Column, Integer, String, DateTime, Keyword
 
 
 class ModelBase(type):
-    column_items : List[Tuple[int, Column]] = []
-    column_dict : Dict[int, Column] = {}
+    column_items: List[Tuple[int, Column]] = []
+    column_dict: Dict[int, Column] = {}
 
     @classmethod
     def columns(cls):

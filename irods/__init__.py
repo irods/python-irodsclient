@@ -30,9 +30,7 @@ def derived_auth_filename(env_filename):
     if not env_filename:
         return ""
     default_irods_authentication_file = os.path.expanduser("~/.irods/.irodsA")
-    return os.environ.get(
-        "IRODS_AUTHENTICATION_FILE", default_irods_authentication_file
-    )
+    return os.environ.get("IRODS_AUTHENTICATION_FILE", default_irods_authentication_file)
 
 
 logger = logging.getLogger(__name__)
@@ -109,6 +107,4 @@ client_configuration.preserve_defaults()
 
 # If the settings path variable is not set in the environment, a value of None is passed,
 # and thus no settings file is auto-loaded.
-client_configuration.autoload(
-    _file_to_load=os.environ.get(settings_path_environment_variable)
-)
+client_configuration.autoload(_file_to_load=os.environ.get(settings_path_environment_variable))

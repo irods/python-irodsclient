@@ -66,9 +66,7 @@ def register_update_type(type_, factory_):
     #     - with the new item introduced at the start of the list but otherwise in the same order, and
     #     - preserving only pairs that do not contain 'None' as the second member.
     _update_types[:] = list(
-        (k, v)
-        for k, v in collections.OrderedDict([(type_, factory_)] + _update_types).items()
-        if v is not None
+        (k, v) for k, v in collections.OrderedDict([(type_, factory_)] + _update_types).items() if v is not None
     )
 
 
@@ -103,9 +101,7 @@ def do_progress_updates(updatables, n, logging_function=logger.warning):
                         register_update_instance(object_, update_func)
                         break
                 else:
-                    logging_function(
-                        "Could not derive an update function for: %r", object_
-                    )
+                    logging_function("Could not derive an update function for: %r", object_)
                     continue
 
         # Do the update.
@@ -124,7 +120,6 @@ def call___del__if_exists(super_):
 
 
 class ManagedBufferedRandom(io.BufferedRandom):
-
     def __init__(self, *a, **kwd):
         # Help ensure proper teardown sequence by storing a reference to the session,
         # if provided via keyword '_session'.
@@ -134,6 +129,7 @@ class ManagedBufferedRandom(io.BufferedRandom):
         self.do_close = True
 
         import irods.session
+
         with irods.session._fds_lock:
             if irods.session._fds is not None:
                 irods.session._fds[self] = None
@@ -146,9 +142,7 @@ class ManagedBufferedRandom(io.BufferedRandom):
 
 MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE = 32 * (1024**2)
 
-DEFAULT_NUMBER_OF_THREADS = (
-    0  # Defaults for reasonable number of threads -- optimized to be
-)
+DEFAULT_NUMBER_OF_THREADS = 0  # Defaults for reasonable number of threads -- optimized to be
 # performant but allow no more worker threads than available CPUs.
 
 DEFAULT_QUEUE_DEPTH = 32
@@ -166,7 +160,6 @@ class Server_Checksum_Warning(Exception):
 
 
 class DataObjectManager(Manager):
-
     READ_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
     WRITE_BUFFER_SIZE = 1024 * io.DEFAULT_BUFFER_SIZE
 
@@ -219,9 +212,7 @@ class DataObjectManager(Manager):
                 return size > MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE
             elif isinstance(obj_sz, int):
                 return obj_sz > MAXIMUM_SINGLE_THREADED_TRANSFER_SIZE
-            message = "obj_sz of {obj_sz!r} is neither an integer nor a seekable object".format(
-                **locals()
-            )
+            message = "obj_sz of {obj_sz!r} is neither an integer nor a seekable object".format(**locals())
             raise RuntimeError(message)
         finally:
             if size is not None and isinstance(open_options, dict):
@@ -242,12 +233,8 @@ class DataObjectManager(Manager):
             raise ex.OVERWRITE_WITHOUT_FORCE_FLAG
 
         data_open_returned_values_ = {}
-        with self.open(
-            obj, "r", returned_values=data_open_returned_values_, **options
-        ) as o:
-            if self.should_parallelize_transfer(
-                num_threads, o, open_options=options.items()
-            ):
+        with self.open(obj, "r", returned_values=data_open_returned_values_, **options) as o:
+            if self.should_parallelize_transfer(num_threads, o, open_options=options.items()):
                 error = RuntimeError("parallel get failed")
                 try:
                     if not self.parallel_get(
@@ -269,14 +256,7 @@ class DataObjectManager(Manager):
                         f.write(chunk)
                         do_progress_updates(updatables, len(chunk))
 
-    def get(
-        self,
-        path,
-        local_path=None,
-        num_threads=DEFAULT_NUMBER_OF_THREADS,
-        updatables=(),
-        **options
-    ):
+    def get(self, path, local_path=None, num_threads=DEFAULT_NUMBER_OF_THREADS, updatables=(), **options):
         """
         Get a reference to the data object at the specified `path'.
 
@@ -287,25 +267,18 @@ class DataObjectManager(Manager):
 
         # TODO: optimize
         if local_path:
-            self._download(
-                path,
-                local_path,
-                num_threads=num_threads,
-                updatables=updatables,
-                **options
-            )
+            self._download(path, local_path, num_threads=num_threads, updatables=updatables, **options)
 
         query = (
-            self.sess.query(DataObject)
+            self.sess
+            .query(DataObject)
             .filter(DataObject.name == irods_basename(path))
             .filter(DataObject.collection_id == parent.id)
             .add_keyword(kw.ZONE_KW, path.split("/")[1])
         )
 
         if self.sess.ticket__:
-            query = query.filter(
-                Collection.id != 0
-            )  # a no-op, but necessary because CAT_SQL_ERR results if the ticket
+            query = query.filter(Collection.id != 0)  # a no-op, but necessary because CAT_SQL_ERR results if the ticket
             # is for a DataObject and we don't explicitly join to Collection
 
         results = query.all()  # get up to max_rows replicas
@@ -338,17 +311,13 @@ class DataObjectManager(Manager):
         return_data_object=False,
         num_threads=DEFAULT_NUMBER_OF_THREADS,
         updatables=(),
-        **options
+        **options,
     ):
         # Decide if a put option should be used and modify options accordingly.
-        self._resolve_force_put_option(
-            options, default_setting=client_config.data_objects.force_put_by_default
-        )
+        self._resolve_force_put_option(options, default_setting=client_config.data_objects.force_put_by_default)
 
         if self.sess.collections.exists(irods_path):
-            obj = iRODSCollection.normalize_path(
-                irods_path, os.path.basename(local_path)
-            )
+            obj = iRODSCollection.normalize_path(irods_path, os.path.basename(local_path))
         else:
             obj = irods_path
             if kw.FORCE_FLAG_KW not in options and self.exists(obj):
@@ -357,9 +326,7 @@ class DataObjectManager(Manager):
 
         with open(local_path, "rb") as f:
             sizelist = []
-            if self.should_parallelize_transfer(
-                num_threads, f, measured_obj_size=sizelist, open_options=options
-            ):
+            if self.should_parallelize_transfer(num_threads, f, measured_obj_size=sizelist, open_options=options):
                 o = deferred_call(self.open, (obj, "w"), options)
                 f.close()
                 error = RuntimeError("parallel put failed")
@@ -369,8 +336,7 @@ class DataObjectManager(Manager):
                         (obj, o),
                         total_bytes=sizelist[0],
                         num_threads=num_threads,
-                        target_resource_name=options.get(kw.RESC_NAME_KW, "")
-                        or options.get(kw.DEST_RESC_NAME_KW, ""),
+                        target_resource_name=options.get(kw.RESC_NAME_KW, "") or options.get(kw.DEST_RESC_NAME_KW, ""),
                         open_options=options,
                         updatables=updatables,
                     ):
@@ -406,9 +372,7 @@ class DataObjectManager(Manager):
         """
         r_error_stack = options.pop("r_error", None)
         message_body = DataObjChksumRequest(path, **options)
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_CHKSUM_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_CHKSUM_AN"])
         checksum = ""
         msg_retn = []
         with self.sess.pool.get_connection() as conn:
@@ -422,9 +386,7 @@ class DataObjectManager(Manager):
                 logger.warning("Exception checksumming data object %r - %r", path, exc)
             if "response" in locals():
                 try:
-                    results = response.get_main_message(
-                        DataObjChksumResponse, r_error=r_error_stack
-                    )
+                    results = response.get_main_message(DataObjChksumResponse, r_error=r_error_stack)
                     checksum = results.myStr.strip()
                     if checksum[0] in (
                         "[",
@@ -505,11 +467,7 @@ class DataObjectManager(Manager):
         return c() if callable(c) else c
 
     def create(
-        self,
-        path,
-        resource=None,
-        force=client_config.getter("data_objects", "force_create_by_default"),
-        **options
+        self, path, resource=None, force=client_config.getter("data_objects", "force_create_by_default"), **options
     ):
         """
         Create a new data object with the given logical path.
@@ -542,9 +500,7 @@ class DataObjectManager(Manager):
             oprType=0,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_CREATE_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_CREATE_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -559,13 +515,11 @@ class DataObjectManager(Manager):
         handle = self.open(*arg, _raw_fd_holder=holder, **kw_options)
         return (handle, holder[-1])
 
-    _RESC_flags_for_open = frozenset(
-        (
-            kw.RESC_NAME_KW,
-            kw.DEST_RESC_NAME_KW,  # may be deprecated in the future
-            kw.RESC_HIER_STR_KW,
-        )
-    )
+    _RESC_flags_for_open = frozenset((
+        kw.RESC_NAME_KW,
+        kw.DEST_RESC_NAME_KW,  # may be deprecated in the future
+        kw.RESC_HIER_STR_KW,
+    ))
 
     def open(
         self,
@@ -579,7 +533,7 @@ class DataObjectManager(Manager):
         # global setting. Use True or False as an override.
         returned_values=None,  # Used to update session reference, for forging more conns to same host, in irods.parallel.io_main
         allow_redirect=client_config.getter("data_objects", "allow_redirect"),
-        **options
+        **options,
     ):
         _raw_fd_holder = options.get("_raw_fd_holder", [])
         # If no keywords are used that would influence the server as to the choice of a storage resource,
@@ -674,15 +628,11 @@ class DataObjectManager(Manager):
         message_body = make_FileOpenRequest()
 
         # Perform DATA_OBJ_OPEN call
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_OPEN_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_OPEN_AN"])
         conn.send(message)
         desc = conn.recv().int_info
 
-        raw = iRODSDataObjectFileRaw(
-            conn, desc, finalize_on_close=finalize_on_close, **options
-        )
+        raw = iRODSDataObjectFileRaw(conn, desc, finalize_on_close=finalize_on_close, **options)
         raw.session = directed_sess
 
         (_raw_fd_holder).append(raw)
@@ -707,9 +657,7 @@ class DataObjectManager(Manager):
         else:
             required_server_version = (4, 3, 3)
             if self.sess.server_version < required_server_version:
-                raise ex.NotImplementedInIRODSServer(
-                    "replica_truncate", required_server_version
-                )
+                raise ex.NotImplementedInIRODSServer("replica_truncate", required_server_version)
 
         message_body = FileOpenRequest(
             objPath=path,
@@ -721,9 +669,7 @@ class DataObjectManager(Manager):
             oprType=0,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["REPLICA_TRUNCATE_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["REPLICA_TRUNCATE_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -749,9 +695,7 @@ class DataObjectManager(Manager):
             oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_TRIM_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_TRIM_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -776,9 +720,7 @@ class DataObjectManager(Manager):
             oprType=oprType,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_UNLINK_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_UNLINK_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -831,9 +773,7 @@ class DataObjectManager(Manager):
             KeyValPair_PI=StringStringMap(),
         )
         message_body = ObjCopyRequest(srcDataObjInp_PI=src, destDataObjInp_PI=dest)
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_RENAME_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_RENAME_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -869,9 +809,7 @@ class DataObjectManager(Manager):
             KeyValPair_PI=StringStringMap(options),
         )
         message_body = ObjCopyRequest(srcDataObjInp_PI=src, destDataObjInp_PI=dest)
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_COPY_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_COPY_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -916,9 +854,7 @@ class DataObjectManager(Manager):
             oprType=6,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_REPL_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["DATA_OBJ_REPL_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
@@ -937,20 +873,14 @@ class DataObjectManager(Manager):
             oprType=0,
             KeyValPair_PI=StringStringMap(options),
         )
-        message = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["PHY_PATH_REG_AN"]
-        )
+        message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["PHY_PATH_REG_AN"])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
 
     def modDataObjMeta(self, data_obj_info, meta_dict, **options):
-        if (
-            "rescHier" not in data_obj_info
-            and "rescName" not in data_obj_info
-            and "replNum" not in data_obj_info
-        ):
+        if "rescHier" not in data_obj_info and "rescName" not in data_obj_info and "replNum" not in data_obj_info:
             meta_dict["all"] = ""
 
         fields = dict(
@@ -994,7 +924,7 @@ class DataObjectManager(Manager):
         DataObjInfo_class = DataObjInfo_for_session(self.sess)
 
         if 'dataAccessTime' in DataObjInfo_class.__dict__:
-            fields["dataAccessTime"]=""
+            fields["dataAccessTime"] = ""
 
         message_body = ModDataObjMeta_for_session(self.sess)(
             dataObjInfo=DataObjInfo_class(**fields),

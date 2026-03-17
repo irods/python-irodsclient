@@ -10,7 +10,6 @@ import irods.exception
 
 
 class TestException(unittest.TestCase):
-
     def setUp(self):
         # open the session (per-test)
         self.sess = helpers.make_session()
@@ -24,9 +23,7 @@ class TestException(unittest.TestCase):
         data = ""
         try:
             seed = helpers.my_function_name() + ":" + str(datetime.now())
-            data = (
-                helpers.home_collection(ses) + "/" + helpers.unique_name(seed, "data")
-            )
+            data = helpers.home_collection(ses) + "/" + helpers.unique_name(seed, "data")
             exc = None
             with helpers.create_simple_resc(self, vault_path="/home") as resc_name:
                 try:
@@ -42,9 +39,7 @@ class TestException(unittest.TestCase):
             errno_object = irods.exception.Errno(errno.EACCES)
             errno_repr = repr(errno_object)
             self.assertRegex(errno_repr, r"\bErrno\b")
-            self.assertRegex(
-                errno_repr, """['"]{msg}['"]""".format(msg=os.strerror(errno.EACCES))
-            )
+            self.assertRegex(errno_repr, """['"]{msg}['"]""".format(msg=os.strerror(errno.EACCES)))
             self.assertIn(errno_repr, excep_repr)
         finally:
             if ses.data_objects.exists(data):

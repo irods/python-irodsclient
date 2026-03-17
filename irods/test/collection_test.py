@@ -19,7 +19,6 @@ RODSUSER = "nonadmin"
 
 
 class TestCollection(unittest.TestCase):
-
     class WrongUserType(RuntimeError):
         pass
 
@@ -27,9 +26,7 @@ class TestCollection(unittest.TestCase):
     def setUpClass(cls):
         adm = helpers.make_session()
         if adm.users.get(adm.username).type != "rodsadmin":
-            raise cls.WrongUserType(
-                "Must be an iRODS admin to run tests in class {0.__name__}".format(cls)
-            )
+            raise cls.WrongUserType("Must be an iRODS admin to run tests in class {0.__name__}".format(cls))
         cls.logins = helpers.iRODSUserLogins(adm)
         cls.logins.create_user(RODSUSER, "abc123")
 
@@ -44,9 +41,7 @@ class TestCollection(unittest.TestCase):
     def setUp(self):
         self.sess = helpers.make_session()
 
-        self.test_coll_path = "/{}/home/{}/test_dir".format(
-            self.sess.zone, self.sess.username
-        )
+        self.test_coll_path = "/{}/home/{}/test_dir".format(self.sess.zone, self.sess.username)
         self.test_coll = self.sess.collections.create(self.test_coll_path)
 
     def tearDown(self):
@@ -293,9 +288,7 @@ class TestCollection(unittest.TestCase):
         coll = self.sess.collections.get(coll_path)
 
         # confirm object count in collection
-        query = (
-            self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
-        )
+        query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
         obj_count = next(query.get_results())[DataObject.id]
         self.assertEqual(file_count, int(obj_count))
 
@@ -328,9 +321,7 @@ class TestCollection(unittest.TestCase):
         coll = self.sess.collections.get(coll_path)
 
         # confirm object count in collection
-        query = (
-            self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
-        )
+        query = self.sess.query().count(DataObject.id).filter(Collection.name == coll_path)
         obj_count = next(query.get_results())[DataObject.id]
         self.assertEqual(file_count, int(obj_count))
 
@@ -350,9 +341,7 @@ class TestCollection(unittest.TestCase):
 
     def test_collection_with_trailing_slash__323(self):
         Home = helpers.home_collection(self.sess)
-        subcoll, dataobj = [
-            unique_name(my_function_name(), time.time()) for x in range(2)
-        ]
+        subcoll, dataobj = [unique_name(my_function_name(), time.time()) for x in range(2)]
         subcoll_fullpath = "{}/{}".format(Home, subcoll)
         subcoll_unnormalized = subcoll_fullpath + "/"
         try:
@@ -368,9 +357,7 @@ class TestCollection(unittest.TestCase):
                 f.write(b"hello")
             self.sess.data_objects.put(dataobj, subcoll_unnormalized)
             self.assertEqual(
-                self.sess.query(DataObject)
-                .filter(DataObject.name == dataobj)
-                .one()[DataObject.collection_id],
+                self.sess.query(DataObject).filter(DataObject.name == dataobj).one()[DataObject.collection_id],
                 c1.id,
             )
         finally:
@@ -417,15 +404,11 @@ class TestCollection(unittest.TestCase):
 
         # Set the mtime to an earlier time.
         new_mtime = 1400000000
-        user_session.collections.touch(
-            home_collection_path, seconds_since_epoch=new_mtime
-        )
+        user_session.collections.touch(home_collection_path, seconds_since_epoch=new_mtime)
 
         # Compare mtimes for correctness.
         collection = user_session.collections.get(home_collection_path)
-        self.assertEqual(
-            datetime.fromtimestamp(new_mtime, timezone.utc), collection.modify_time
-        )
+        self.assertEqual(datetime.fromtimestamp(new_mtime, timezone.utc), collection.modify_time)
         self.assertGreater(old_mtime, collection.modify_time)
 
     def test_touch_operation_does_not_create_new_collections__525(self):
@@ -454,8 +437,10 @@ class TestCollection(unittest.TestCase):
             home_collection = helpers.home_collection(user_session)
 
             # Create a data object.
-            data_object_path = "{home_collection}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt".format(
-                **locals()
+            data_object_path = (
+                "{home_collection}/test_touch_operation_does_not_work_when_given_a_data_object__525.txt".format(
+                    **locals()
+                )
             )
             self.assertFalse(user_session.data_objects.exists(data_object_path))
             user_session.data_objects.touch(data_object_path)
@@ -473,9 +458,7 @@ class TestCollection(unittest.TestCase):
         user_session = self.logins.session_for_user(RODSUSER)
 
         home_collection = helpers.home_collection(user_session)
-        path = "{home_collection}/test_touch_operation_ignores_unsupported_options__525".format(
-            **locals()
-        )
+        path = "{home_collection}/test_touch_operation_ignores_unsupported_options__525".format(**locals())
 
         try:
             # Capture mtime of the home collection.

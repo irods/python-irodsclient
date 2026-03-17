@@ -25,7 +25,6 @@ from irods.message.ordered import OrderedProperty
 
 
 class TestMessages(unittest.TestCase):
-
     def test_startup_pack(self):
         sup = StartupPack(("rods", "tempZone"), ("rods", "tempZone"))
         sup.irodsProt = 2
@@ -211,6 +210,7 @@ class TestMessages(unittest.TestCase):
         property1 = OrderedProperty()
         property2 = OrderedProperty()
         self.assertNotEqual(property1._creation_counter, property2._creation_counter)  # pylint: disable=protected-access
+
 
 if __name__ == "__main__":
     unittest.main()

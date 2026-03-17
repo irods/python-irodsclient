@@ -8,7 +8,6 @@ import irods.test.helpers as helpers
 
 
 class TestContinueQuery(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # once only (before all tests), set up large collection
@@ -48,9 +47,7 @@ class TestContinueQuery(unittest.TestCase):
 
     def test_files_generator(self):
         # Query for all files in test collection
-        query = self.sess.query(DataObject.name, Collection.name).filter(
-            Collection.name == self.coll_path
-        )
+        query = self.sess.query(DataObject.name, Collection.name).filter(Collection.name == self.coll_path)
 
         counter = 0
 
@@ -59,9 +56,7 @@ class TestContinueQuery(unittest.TestCase):
             object_path = self.coll_path + "/test" + str(counter).zfill(6) + ".txt"
 
             # what we see
-            result_path = "{}/{}".format(
-                result[Collection.name], result[DataObject.name]
-            )
+            result_path = "{}/{}".format(result[Collection.name], result[DataObject.name])
 
             # compare
             self.assertEqual(result_path, object_path)
@@ -76,12 +71,7 @@ class TestContinueQuery(unittest.TestCase):
         offset = 50
 
         # Query should close after getting max_rows
-        results = (
-            self.sess.query(DataObject.name, Collection.name)
-            .offset(offset)
-            .limit(max_rows)
-            .all()
-        )
+        results = self.sess.query(DataObject.name, Collection.name).offset(offset).limit(max_rows).all()
         self.assertEqual(len(results), max_rows)
 
 

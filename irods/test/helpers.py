@@ -49,9 +49,7 @@ class iRODSUserLogins:
             session_parameters["password"] = password
         return iRODSSession(**session_parameters)
 
-    def create_user(
-        self, username, password=None, usertype="rodsuser", auto_remove=True
-    ):
+    def create_user(self, username, password=None, usertype="rodsuser", auto_remove=True):
         u = self.admin.users.create(username, usertype)
         if password is not None:
             u.modify("password", password)
@@ -138,9 +136,7 @@ def get_register_resource(session):
     vault_path = irods_shared_reg_resc_vault()
     Reg_Resc_Name = ""
     if vault_path:
-        session.resources.create(
-            IRODS_REG_RESC, "unixfilesystem", session.host, vault_path
-        )
+        session.resources.create(IRODS_REG_RESC, "unixfilesystem", session.host, vault_path)
         Reg_Resc_Name = IRODS_REG_RESC
     return Reg_Resc_Name
 
@@ -154,9 +150,7 @@ def make_environment_and_auth_files(dir_, **params):
 
     config = os.path.join(dir_, "irods_environment.json")
     with open(config, "w") as f1:
-        json.dump(
-            {recast(k): v for k, v in params.items() if k != "password"}, f1, indent=4
-        )
+        json.dump({recast(k): v for k, v in params.items() if k != "password"}, f1, indent=4)
     auth = os.path.join(dir_, ".irodsA")
     with open(auth, "w") as f2:
         f2.write(encode(params["password"]))
@@ -169,9 +163,7 @@ def make_session(test_server_version=True, **kwargs):
 
 
 if _irods_helpers_make_session.__doc__ is not None:
-    make_session.__doc__ = re.sub(
-        r"(test_server_version\s*)=\s*\w+", r"\1 = True", _irods_helpers_make_session.__doc__
-    )
+    make_session.__doc__ = re.sub(r"(test_server_version\s*)=\s*\w+", r"\1 = True", _irods_helpers_make_session.__doc__)
 
 
 def make_object(session, path, content=None, **options):
@@ -216,32 +208,23 @@ def make_test_collection(session, path, obj_count):
     return coll
 
 
-def make_deep_collection(
-    session, root_path, depth=10, objects_per_level=50, object_content=None
-):
+def make_deep_collection(session, root_path, depth=10, objects_per_level=50, object_content=None):
     # start at root path
     current_coll_path = root_path
 
     # make collections recursively
     for d in range(depth):
         # make list of object names
-        obj_names = [
-            "obj" + str(i).zfill(len(str(objects_per_level)))
-            for i in range(objects_per_level)
-        ]
+        obj_names = ["obj" + str(i).zfill(len(str(objects_per_level))) for i in range(objects_per_level)]
 
         # make subcollection and objects
         if d == 0:
-            root_coll = make_collection(
-                session, current_coll_path, obj_names, object_content
-            )
+            root_coll = make_collection(session, current_coll_path, obj_names, object_content)
         else:
             make_collection(session, current_coll_path, obj_names, object_content)
 
         # next level down
-        current_coll_path = os.path.join(
-            current_coll_path, "subcoll" + str(d).zfill(len(str(d)))
-        )
+        current_coll_path = os.path.join(current_coll_path, "subcoll" + str(d).zfill(len(str(d))))
 
     return root_coll
 
@@ -265,9 +248,7 @@ def make_flat_test_dir(dir_path, file_count=10, file_size=1024):
 @contextlib.contextmanager
 def create_simple_resc(self, rescName=None, vault_path="", hostname=""):
     if not rescName:
-        rescName = "simple_resc_" + unique_name(
-            my_function_name() + "_simple_resc", datetime.datetime.now()
-        )
+        rescName = "simple_resc_" + unique_name(my_function_name() + "_simple_resc", datetime.datetime.now())
     created = False
     try:
         self.sess.resources.create(
@@ -317,9 +298,7 @@ def remove_unused_metadata(session):
     from irods.api_number import api_number
 
     message_body = GeneralAdminRequest("rm", "unusedAVUs", "", "", "", "")
-    req = iRODSMessage(
-        "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-    )
+    req = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
     with session.pool.get_connection() as conn:
         conn.send(req)
         response = conn.recv()
@@ -331,13 +310,9 @@ def remove_unused_metadata(session):
 def file_backed_up(filename, require_that_file_exists=True):
     _basename = os.path.basename(filename) if os.path.exists(filename) else None
     if _basename is None and require_that_file_exists:
-        err = RuntimeError(
-            "Attempted to back up a file which doesn't exist: %r" % (filename,)
-        )
+        err = RuntimeError("Attempted to back up a file which doesn't exist: %r" % (filename,))
         raise err
-    with tempfile.NamedTemporaryFile(
-        prefix=("tmp" if not _basename else _basename)
-    ) as f:
+    with tempfile.NamedTemporaryFile(prefix=("tmp" if not _basename else _basename)) as f:
         try:
             if _basename is not None:
                 shutil.copyfile(filename, f.name)

@@ -31,29 +31,15 @@ def users_by_ids(session, ids=()):
             ids = int(ids)
         else:
             raise
-    cond = (
-        ()
-        if not ids
-        else (
-            (In(User.id, list(map(int, ids))),)
-            if len(ids) > 1
-            else (User.id == int(ids[0]),)
-        )
-    )
-    return [
-        iRODSUser(session.users, i)
-        for i in session.query(User.id, User.name, User.type, User.zone).filter(*cond)
-    ]
+    cond = () if not ids else ((In(User.id, list(map(int, ids))),) if len(ids) > 1 else (User.id == int(ids[0]),))
+    return [iRODSUser(session.users, i) for i in session.query(User.id, User.name, User.type, User.zone).filter(*cond)]
 
 
 class AccessManager(Manager):
-
     def get(self, target, report_raw_acls=True, **kw):
 
         if report_raw_acls:
-            return self.__get_raw(
-                target, **kw
-            )  # prefer a behavior consistent  with 'ils -A`
+            return self.__get_raw(target, **kw)  # prefer a behavior consistent  with 'ils -A`
 
         # different query whether target is an object or a collection
         if type(target) == iRODSDataObject:
@@ -70,11 +56,7 @@ class AccessManager(Manager):
         else:
             raise TypeError
 
-        results = (
-            self.sess.query(user_type.name, user_type.zone, access_type.name)
-            .filter(*conditions)
-            ._all()
-        )
+        results = self.sess.query(user_type.name, user_type.zone, access_type.name).filter(*conditions)._all()
 
         def get_usertype(row):
             return self.sess.users.get(row[user_type.name], row[user_type.zone]).type
@@ -91,16 +73,12 @@ class AccessManager(Manager):
         ]
 
     def coll_access_query(self, path):
-        return self.sess.query(Collection, CollectionAccess).filter(
-            Collection.name == path
-        )
+        return self.sess.query(Collection, CollectionAccess).filter(Collection.name == path)
 
     def data_access_query(self, path):
         cn = irods_dirname(path)
         dn = irods_basename(path)
-        return self.sess.query(DataObject, DataAccess).filter(
-            Collection.name == cn, DataObject.name == dn
-        )
+        return self.sess.query(DataObject, DataAccess).filter(Collection.name == cn, DataObject.name == dn)
 
     def __get_raw(self, target, **kw):
 
@@ -131,9 +109,7 @@ class AccessManager(Manager):
         #   if for example in upcoming iRODS 4.2.12 and >=4.3.1 outdated userIDs in R_OBJT_ACCESS
         #   are guaranteed to be systematically and atomically purged.
         extant_ids = set(u[User.id] for u in self.sess.query(User))
-        rows = [
-            r for r in query_func(target.path) if r[access_column.user_id] in extant_ids
-        ]
+        rows = [r for r in query_func(target.path) if r[access_column.user_id] in extant_ids]
         userids = set(r[access_column.user_id] for r in rows)
 
         user_lookup = {j.id: j for j in users_by_ids(self.sess, userids)}
@@ -152,18 +128,16 @@ class AccessManager(Manager):
         # Instantiate as set before converting to a list, in order to remove duplicate iRODSAccess
         # objects. [#557]
 
-        acls = list(
-            {
-                iRODSAccess(
-                    r[access_column.name],
-                    target.path,
-                    user_lookup[r[access_column.user_id]].name,
-                    user_lookup[r[access_column.user_id]].zone,
-                    user_lookup[r[access_column.user_id]].type,
-                )
-                for r in rows
-            }
-        )
+        acls = list({
+            iRODSAccess(
+                r[access_column.name],
+                target.path,
+                user_lookup[r[access_column.user_id]].name,
+                user_lookup[r[access_column.user_id]].zone,
+                user_lookup[r[access_column.user_id]].type,
+            )
+            for r in rows
+        })
         return acls
 
     def set(self, acl, recursive=False, admin=False, **kw):

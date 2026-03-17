@@ -8,7 +8,6 @@ import irods.test.helpers as helpers
 
 
 class TestLibraryFeatures(unittest.TestCase):
-
     def setUp(self):
         self.sess = helpers.make_session()
 

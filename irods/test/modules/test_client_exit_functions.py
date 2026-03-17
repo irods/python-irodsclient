@@ -38,10 +38,8 @@ def projected_output_from_innate_list_order(name_list):
 # particular stage name is left untransformed.
 
 if __name__ == "__main__":
-
     function_info = [
-        [*get_stage_object_and_value_from_name(name), object_printer(name)]
-        for name in reversed(sys.argv[1:])
+        [*get_stage_object_and_value_from_name(name), object_printer(name)] for name in reversed(sys.argv[1:])
     ]
 
     # For each argument to the script that represents a cleanup stage: register a function to print the stage's value, to be run during that stage.

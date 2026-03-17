@@ -16,14 +16,11 @@ import irods.test.helpers as helpers
 
 
 class TestAccess(unittest.TestCase):
-
     def setUp(self):
         self.sess = helpers.make_session()
 
         # Create test collection
-        self.coll_path = "/{}/home/{}/test_dir".format(
-            self.sess.zone, self.sess.username
-        )
+        self.coll_path = "/{}/home/{}/test_dir".format(self.sess.zone, self.sess.username)
         self.coll = helpers.make_collection(self.sess, self.coll_path)
         VERSION_DEPENDENT_STRINGS = (
             {"MODIFY": "modify_object", "READ": "read_object"}
@@ -81,9 +78,7 @@ class TestAccess(unittest.TestCase):
         # check repr()
         self.assertEqual(
             repr(acl),
-            "<iRODSAccess own {path} {name}({type}) {zone}>".format(
-                path=path, **vars(user)
-            ),
+            "<iRODSAccess own {path} {name}({type}) {zone}>".format(path=path, **vars(user)),
         )
 
         # remove object
@@ -107,9 +102,7 @@ class TestAccess(unittest.TestCase):
         user = data = None
         try:
             user = self.sess.users.create("bob", "rodsuser")
-            data = self.sess.data_objects.create(
-                "{}/obj_422".format(helpers.home_collection(self.sess))
-            )
+            data = self.sess.data_objects.create("{}/obj_422".format(helpers.home_collection(self.sess)))
             permission_strings = self.sess.available_permissions.keys()
             for perm in permission_strings:
                 access = iRODSAccess(perm, data.path, "bob")
@@ -158,20 +151,14 @@ class TestAccess(unittest.TestCase):
 
             coll_IDs = [
                 c[Collection.id]
-                for c in self.sess.query(Collection.id).filter(
-                    Like(Collection.name, deepcoll.path + "%")
-                )
+                for c in self.sess.query(Collection.id).filter(Like(Collection.name, deepcoll.path + "%"))
             ]
 
             D_rods = list(
-                self.sess.query(Collection.name, DataObject.name).filter(
-                    In(DataObject.collection_id, coll_IDs)
-                )
+                self.sess.query(Collection.name, DataObject.name).filter(In(DataObject.collection_id, coll_IDs))
             )
 
-            self.assertEqual(
-                len(D_rods), OBJ_PER_LVL * DEPTH + 1
-            )  # counts the 'older' objects plus one new object
+            self.assertEqual(len(D_rods), OBJ_PER_LVL * DEPTH + 1)  # counts the 'older' objects plus one new object
 
             with iRODSSession(
                 port=self.sess.port,
@@ -180,12 +167,7 @@ class TestAccess(unittest.TestCase):
                 user="bob",
                 password="bpass",
             ) as bob:
-
-                D = list(
-                    bob.query(Collection.name, DataObject.name).filter(
-                        In(DataObject.collection_id, coll_IDs)
-                    )
-                )
+                D = list(bob.query(Collection.name, DataObject.name).filter(In(DataObject.collection_id, coll_IDs)))
 
                 # - bob should only see the new data object, but none existing before ACLs were applied
 
@@ -199,9 +181,7 @@ class TestAccess(unittest.TestCase):
                     self.assertGreater(len(f.read()), 0)
 
                 C = list(bob.query(Collection).filter(In(Collection.id, coll_IDs)))
-                self.assertEqual(
-                    len(C), 2
-                )  # query should return only the top-level and newly created collections
+                self.assertEqual(len(C), 2)  # query should return only the top-level and newly created collections
                 self.assertEqual(
                     sorted([c[Collection.name] for c in C]),
                     sorted([new_collection.path, deepcoll.path]),
@@ -218,16 +198,12 @@ class TestAccess(unittest.TestCase):
             deepcoll = None
             try:
                 test_coll_path = self.coll_path + "/test"
-                deepcoll = helpers.make_deep_collection(
-                    self.sess, test_coll_path, depth=DEPTH, objects_per_level=2
-                )
+                deepcoll = helpers.make_deep_collection(self.sess, test_coll_path, depth=DEPTH, objects_per_level=2)
                 acl1 = iRODSAccess("inherit", deepcoll.path)
                 self.sess.acls.set(acl1, recursive=recursionTruth)
                 test_subcolls = set(
                     iRODSCollection(self.sess.collections, _)
-                    for _ in self.sess.query(Collection).filter(
-                        Like(Collection.name, deepcoll.path + "/%")
-                    )
+                    for _ in self.sess.query(Collection).filter(Like(Collection.name, deepcoll.path + "/%"))
                 )
 
                 # assert top level collection affected
@@ -235,9 +211,7 @@ class TestAccess(unittest.TestCase):
                 self.assertTrue(test_coll.inheritance)
                 #
                 # assert lower level collections affected only for case when recursive = True
-                subcoll_truths = [
-                    (_.inheritance == recursionTruth) for _ in test_subcolls
-                ]
+                subcoll_truths = [(_.inheritance == recursionTruth) for _ in test_subcolls]
                 self.assertEqual(len(subcoll_truths), DEPTH - 1)
                 self.assertTrue(all(subcoll_truths))
             finally:
@@ -343,8 +317,7 @@ class TestAccess(unittest.TestCase):
         finally:
             ids_for_delete = [u.id for u in (fu, fg, eu, eg) if u is not None]
             for u in [
-                iRODSUser(self.sess.users, row)
-                for row in self.sess.query(User).filter(In(User.id, ids_for_delete))
+                iRODSUser(self.sess.users, row) for row in self.sess.query(User).filter(In(User.id, ids_for_delete))
             ]:
                 u.remove()
 
@@ -370,11 +343,8 @@ class TestAccess(unittest.TestCase):
             # Make assertions for both filesystem object types (collection and data):
 
             for obj in self.coll_395, self.data:
-
                 # Add ACLs
-                for access in iRODSAccess("read", obj.path, "team"), iRODSAccess(
-                    "write", obj.path, "alice"
-                ):
+                for access in iRODSAccess("read", obj.path, "team"), iRODSAccess("write", obj.path, "alice"):
                     ses.acls.set(access)
 
                 ACLs = ses.acls.get(obj)
@@ -382,14 +352,7 @@ class TestAccess(unittest.TestCase):
                 # Assert that we can detect alice's write permissions.
                 self.assertEqual(
                     1,
-                    len(
-                        [
-                            ac
-                            for ac in ACLs
-                            if (ac.access_name, ac.user_name)
-                            == (self.mapping["write"], "alice")
-                        ]
-                    ),
+                    len([ac for ac in ACLs if (ac.access_name, ac.user_name) == (self.mapping["write"], "alice")]),
                 )
 
                 # Test that the 'team' ACL is listed as a rodsgroup ...
@@ -409,9 +372,7 @@ class TestAccess(unittest.TestCase):
                 zone=ses.zone,
                 password="bpass",
             ) as bob:
-                self.assertTrue(
-                    bob.data_objects.open(self.data.path, "r").read(), b"contents-395"
-                )
+                self.assertTrue(bob.data_objects.open(self.data.path, "r").read(), b"contents-395")
 
         finally:
             self.coll_395.remove(recurse=True, force=True)
@@ -457,9 +418,7 @@ class TestAccess(unittest.TestCase):
 
     def test_iRODSAccess_can_be_constructed_using_iRODSCollection__issue_558(self):
         user_name = "testuser"
-        collection_path = "/".join(
-            [helpers.home_collection(self.sess), "give_read_access_to_this"]
-        )
+        collection_path = "/".join([helpers.home_collection(self.sess), "give_read_access_to_this"])
 
         try:
             user = self.sess.users.create(user_name, "rodsuser")
@@ -481,9 +440,7 @@ class TestAccess(unittest.TestCase):
 
     def test_iRODSAccess_can_be_constructed_using_iRODSDataObject__issue_558(self):
         user_name = "testuser"
-        data_object_path = "/".join(
-            [helpers.home_collection(self.sess), "give_read_access_to_this"]
-        )
+        data_object_path = "/".join([helpers.home_collection(self.sess), "give_read_access_to_this"])
 
         try:
             user = self.sess.users.create(user_name, "rodsuser")
@@ -505,9 +462,7 @@ class TestAccess(unittest.TestCase):
 
     def test_iRODSAccess_can_be_constructed_using_iRODSPath__issue_558(self):
         user_name = "testuser"
-        data_object_path = "/".join(
-            [helpers.home_collection(self.sess), "give_read_access_to_this"]
-        )
+        data_object_path = "/".join([helpers.home_collection(self.sess), "give_read_access_to_this"])
 
         try:
             irods_path = iRODSPath(data_object_path)

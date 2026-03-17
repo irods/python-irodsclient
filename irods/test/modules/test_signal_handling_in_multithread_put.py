@@ -22,9 +22,7 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
     session = getattr(test_case, "sess", None) or irods.helpers.make_session()
 
     for signal_name in signal_names:
-
         with test_case.subTest(f"Testing with signal {signal_name}"):
-
             try:
                 # Call into this same module as a command.  This will initiate another Python process that
                 # performs a lengthy data object "get" operation (see the main body of the script, below.)
@@ -44,11 +42,11 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
                 # Use timeout of 10 minutes for test transfer, which should be more than enough.
                 test_case.assertTrue(
                     wait_till_true(
-                        lambda: session.data_objects.exists(logical_path)
-                        and named_irods_data_object(
-                            session, logical_path, delete=False
-                        ).data.size
-                        > OBJECT_SIZE // 2,
+                        lambda: (
+                            session.data_objects.exists(logical_path)
+                            and named_irods_data_object(session, logical_path, delete=False).data.size
+                            > OBJECT_SIZE // 2
+                        ),
                     ),
                     "Parallel download from data_objects.put() probably experienced a fatal error before spawning auxiliary data transfer threads.",
                 )
@@ -63,9 +61,7 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
                 # Assert that this signal is what killed the subprocess, rather than a timed out process "wait" or a natural exit
                 # due to misproper or incomplete handling of the signal.
                 try:
-                    translated_return_code = signal_offset_return_code(
-                        process.wait(timeout=15)
-                    )
+                    translated_return_code = signal_offset_return_code(process.wait(timeout=15))
                     test_case.assertIn(
                         translated_return_code,
                         [1, signal_plus_128(sig)],
@@ -86,32 +82,20 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
 
                 # Assert that the status is left as not LOCKED.
                 test_case.assertTrue(
-                    wait_till_true(
-                        lambda: int(
-                            session.data_objects.get(logical_path).replica_status
-                        )
-                        < 2
-                    )
+                    wait_till_true(lambda: int(session.data_objects.get(logical_path).replica_status) < 2)
                 )
 
             finally:
-                if logical_path and (
-                    d := irods.helpers.get_data_object(session, logical_path)
-                ):
+                if logical_path and (d := irods.helpers.get_data_object(session, logical_path)):
                     d.unlink(force=True)
 
 
 class named_irods_data_object:
-
     def __init__(self, /, session: iRODSSession, path: str = "", delete: bool = True):
         self.sess = session
         self.delete = delete
         if not path:
-            path = (
-                irods.helpers.home_collection(session)
-                + "/"
-                + unique_name(datetime.datetime.now())
-            )
+            path = irods.helpers.home_collection(session) + "/" + unique_name(datetime.datetime.now())
         self.path = path
 
     @property

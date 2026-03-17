@@ -20,7 +20,7 @@ import io
 
 RE_Plugins_installed_run_condition_args = (
     os.environ.get("PYTHON_RULE_ENGINE_INSTALLED", "*").lower()[:1] == "y",
-    "Test depends on server having Python-REP installed (set PYTHON_RULE_ENGINE_INSTALLED=yes in environment)."
+    "Test depends on server having Python-REP installed (set PYTHON_RULE_ENGINE_INSTALLED=yes in environment).",
 )
 
 
@@ -65,9 +65,7 @@ class TestRule(unittest.TestCase):
                                     msiAssociateKeyValuePairsToObj(*attribute, *object, "-d")
                                 }}
                                 INPUT *object="{object_path}",*name="{attr_name}",*value="{attr_value}"
-                                OUTPUT ruleExecOut""".format(
-                **locals()
-            )
+                                OUTPUT ruleExecOut""".format(**locals())
         )
 
         with open(rule_file_path, "w") as rule_file:
@@ -151,7 +149,6 @@ class TestRule(unittest.TestCase):
         err_hash = {}
 
         for i in rule_instances_list:
-
             if rule_dict:
                 rule_to_call = rule_dict[i]
 
@@ -173,13 +170,7 @@ class TestRule(unittest.TestCase):
         self.assertEqual(len(err_hash), len(rule_instances_list))
         self.assertEqual(
             len(err_hash),
-            len(
-                [
-                    val
-                    for val in err_hash.values()
-                    if val[0].startswith("rule exec failed")
-                ]
-            ),
+            len([val for val in err_hash.values() if val[0].startswith("rule exec failed")]),
         )
         return err_hash
 
@@ -209,7 +200,7 @@ class TestRule(unittest.TestCase):
             session,
             body="defined_in_both",
             output="ruleExecOut",
-            **{key: val for key, val in kw.items() if key == "instance_name"}
+            **{key: val for key, val in kw.items() if key == "instance_name"},
         )
         output = rule.execute()
         buf = output.MsParam_PI[0].inOutStruct.stdoutBuf.buf
@@ -236,9 +227,7 @@ class TestRule(unittest.TestCase):
         rule_body = textwrap.dedent(
             """\
                                     writeLine("{stream_name}","*value")
-                                    """.format(
-                **locals()
-            )
+                                    """.format(**locals())
         )
 
         input_params = {"*value": output_string}
@@ -251,13 +240,7 @@ class TestRule(unittest.TestCase):
         if rule_engine_instance:
             extra_options["instance_name"] = rule_engine_instance
 
-        myrule = Rule(
-            session,
-            body=rule_body,
-            params=input_params,
-            output=output_param,
-            **extra_options
-        )
+        myrule = Rule(session, body=rule_body, params=input_params, output=output_param, **extra_options)
         output = myrule.execute()
 
         buf = None
@@ -357,9 +340,7 @@ class TestRule(unittest.TestCase):
                                     writeLine("stderr", *err_string);
                                 }}
                                 INPUT *some_string="{some_string}",*some_other_string="{some_other_string}",*err_string="{err_string}"
-                                OUTPUT ruleExecOut""".format(
-                **locals()
-            )
+                                OUTPUT ruleExecOut""".format(**locals())
         )
 
         with io_open(rule_file_path, "w", encoding="utf-8") as rule_file:

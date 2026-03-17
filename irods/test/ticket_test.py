@@ -23,23 +23,19 @@ from irods.ticket import Ticket, ticket_iterator
 
 
 def gmtime_to_timestamp(gmt_struct):
-    return (
-        "{0.tm_year:04d}-{0.tm_mon:02d}-{0.tm_mday:02d}."
-        "{0.tm_hour:02d}:{0.tm_min:02d}:{0.tm_sec:02d}".format(gmt_struct)
+    return "{0.tm_year:04d}-{0.tm_mon:02d}-{0.tm_mday:02d}.{0.tm_hour:02d}:{0.tm_min:02d}:{0.tm_sec:02d}".format(
+        gmt_struct
     )
 
 
 def delete_my_tickets(session):
     my_userid = session.users.get(session.username).id
-    my_tickets = session.query(TicketQuery.Ticket).filter(
-        TicketQuery.Ticket.user_id == my_userid
-    )
+    my_tickets = session.query(TicketQuery.Ticket).filter(TicketQuery.Ticket.user_id == my_userid)
     for res in my_tickets:
         Ticket(session, result=res).delete()
 
 
 class TestRodsUserTicketOps(unittest.TestCase):
-
     def login(self, user):
         return iRODSSession(
             port=self.port,
@@ -48,6 +44,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
             user=user.name,
             password=self.users[user.name],
         )
+
     @staticmethod
     def irods_homedir(sess, path_only=False):
         path = f"/{sess.zone}/home/{sess.username}"
@@ -58,8 +55,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
     @staticmethod
     def list_objects(sess):
         return [
-            "{}/{}".format(o[Collection.name], o[DataObject.name])
-            for o in sess.query(Collection.name, DataObject.name)
+            "{}/{}".format(o[Collection.name], o[DataObject.name]) for o in sess.query(Collection.name, DataObject.name)
         ]
 
     users = {"alice": "apass", "bob": "bpass"}
@@ -128,28 +124,21 @@ class TestRodsUserTicketOps(unittest.TestCase):
 
         with self.login(self.alice) as alice:
             alice_home_path = self.irods_homedir(alice, path_only=True)
-            ticket_strings = [
-                Ticket(alice).issue("read", alice_home_path).string
-                for _ in range(N_TICKETS)
-            ]
+            ticket_strings = [Ticket(alice).issue("read", alice_home_path).string for _ in range(N_TICKETS)]
 
         # As rodsadmin, use the ADMIN_KW flag to delete alice's tickets.
 
         with helpers.make_session() as ses:
             alices_tickets = [
                 t[TicketQuery.Ticket.string]
-                for t in ses.query(TicketQuery.Ticket).filter(
-                    TicketQuery.Owner.name == "alice"
-                )
+                for t in ses.query(TicketQuery.Ticket).filter(TicketQuery.Owner.name == "alice")
             ]
             self.assertEqual(len(alices_tickets), N_TICKETS)
             for s in alices_tickets:
                 Ticket(ses, s).delete(**{kw.ADMIN_KW: ""})
             alices_tickets = [
                 t[TicketQuery.Ticket.string]
-                for t in ses.query(TicketQuery.Ticket).filter(
-                    TicketQuery.Owner.name == "alice"
-                )
+                for t in ses.query(TicketQuery.Ticket).filter(TicketQuery.Owner.name == "alice")
             ]
             self.assertEqual(len(alices_tickets), 0)
 
@@ -175,12 +164,8 @@ class TestRodsUserTicketOps(unittest.TestCase):
                         t2,
                     )
                 ]
-                t1.modify(
-                    "expire", later_ts
-                )  # - Specify expiry with the human readable timestamp.
-                t2.modify(
-                    "expire", later_epoch
-                )  # - Specify expiry formatted as epoch seconds.
+                t1.modify("expire", later_ts)  # - Specify expiry with the human readable timestamp.
+                t2.modify("expire", later_epoch)  # - Specify expiry formatted as epoch seconds.
 
                 # Check normal access succeeds prior to expiration
                 for ticket_string in tickets:
@@ -191,11 +176,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 # Check that both time formats have effected the same expiry time (The catalog returns epoch secs.)
                 timestamps = []
                 for ticket_string in tickets:
-                    t = (
-                        ses.query(TicketQuery.Ticket)
-                        .filter(TicketQuery.Ticket.string == ticket_string)
-                        .one()
-                    )
+                    t = ses.query(TicketQuery.Ticket).filter(TicketQuery.Ticket.string == ticket_string).one()
                     timestamps.append(t[TicketQuery.Ticket.expiry_ts])
                 self.assertEqual(len(timestamps), 2)
                 self.assertEqual(timestamps[0], timestamps[1])
@@ -207,21 +188,15 @@ class TestRodsUserTicketOps(unittest.TestCase):
                     epoch = int(time.time())
 
                 Expected_Exception = (
-                    ex.CAT_TICKET_EXPIRED
-                    if ses.server_version >= (4, 2, 9)
-                    else ex.SYS_FILE_DESC_OUT_OF_RANGE
+                    ex.CAT_TICKET_EXPIRED if ses.server_version >= (4, 2, 9) else ex.SYS_FILE_DESC_OUT_OF_RANGE
                 )
 
                 # Check tickets no longer allow access.
                 for ticket_string in tickets:
-                    with self.login(
-                        self.alice
-                    ) as alice, tempfile.NamedTemporaryFile() as f:
+                    with self.login(self.alice) as alice, tempfile.NamedTemporaryFile() as f:
                         Ticket(alice, ticket_string).supply()
                         with self.assertRaises(Expected_Exception):
-                            alice.data_objects.get(
-                                dobj.path, f.name, **{kw.FORCE_FLAG_KW: ""}
-                            )
+                            alice.data_objects.get(dobj.path, f.name, **{kw.FORCE_FLAG_KW: ""})
 
             finally:
                 if t1:
@@ -244,10 +219,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
             home = self.irods_homedir(alice)
 
             # Create 'R' and 'W' in alice's home collection.
-            data_objs = [
-                helpers.make_object(alice, home.path + "/" + name, content="abcxyz")
-                for name in ("R", "W")
-            ]
+            data_objs = [helpers.make_object(alice, home.path + "/" + name, content="abcxyz") for name in ("R", "W")]
             tickets = {
                 "R": Ticket(alice).issue("read", home.path + "/R"),
                 "W": Ticket(alice).issue("write", home.path + "/W"),
@@ -274,19 +246,15 @@ class TestRodsUserTicketOps(unittest.TestCase):
                             )
 
             # Test upload was successful, by getting and confirming contents.
-            with self.login(
-                self.bob
-            ) as bob:  # This check must be in a new session or we get CollectionDoesNotExist. - Possibly a new issue [ ]
+            with (
+                self.login(self.bob) as bob
+            ):  # This check must be in a new session or we get CollectionDoesNotExist. - Possibly a new issue [ ]
                 for name in ("R", "W"):
                     bob.cleanup()  # clear out existing connections
                     Ticket(bob, tickets[name].string).supply()
-                    bob.data_objects.get(
-                        home.path + "/" + name, rw_names[name], **{kw.FORCE_FLAG_KW: ""}
-                    )
+                    bob.data_objects.get(home.path + "/" + name, rw_names[name], **{kw.FORCE_FLAG_KW: ""})
                     with open(rw_names[name], "r") as tmpread:
-                        self.assertEqual(
-                            tmpread.read(), "abcxyz" if name == "R" else "hello"
-                        )
+                        self.assertEqual(tmpread.read(), "abcxyz" if name == "R" else "hello")
         finally:
             for t in tickets.values():
                 t.delete()
@@ -308,10 +276,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
             tc.issue("read", home.path)
 
             # Create 'x' and 'y' in alice's home collection
-            data_objs = [
-                helpers.make_object(alice, home.path + "/" + name, content="abcxyz")
-                for name in ("x", "y")
-            ]
+            data_objs = [helpers.make_object(alice, home.path + "/" + name, content="abcxyz") for name in ("x", "y")]
 
             with self.login(self.bob) as bob:
                 ts = Ticket(bob, tc.string)
@@ -322,9 +287,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 for name in ("x", "y"):
                     with tempfile.NamedTemporaryFile(delete=False) as tmpf:
                         tmpfiles += [tmpf]
-                    bob.data_objects.get(
-                        home.path + "/" + name, tmpf.name, **{kw.FORCE_FLAG_KW: ""}
-                    )
+                    bob.data_objects.get(home.path + "/" + name, tmpf.name, **{kw.FORCE_FLAG_KW: ""})
                     with open(tmpf.name, "r") as tmpread:
                         self.assertEqual(tmpread.read(), "abcxyz")
 
@@ -341,9 +304,7 @@ class TestRodsUserTicketOps(unittest.TestCase):
                 # ... and fetch that object (verifying content)
                 with tempfile.NamedTemporaryFile(delete=False) as tmpf:
                     tmpfiles += [tmpf]
-                bob.data_objects.get(
-                    home.path + "/x", tmpf.name, **{kw.FORCE_FLAG_KW: ""}
-                )
+                bob.data_objects.get(home.path + "/x", tmpf.name, **{kw.FORCE_FLAG_KW: ""})
                 with open(tmpf.name, "r") as tmpread:
                     self.assertEqual(tmpread.read(), "abcxyz")
 
@@ -380,7 +341,6 @@ class TestRodsUserTicketOps(unittest.TestCase):
 
 
 class TestTicketOps(unittest.TestCase):
-
     def setUp(self):
         """Create objects for test"""
         self.sess = helpers.make_session()

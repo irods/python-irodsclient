@@ -22,16 +22,12 @@ if __name__ == "__main__":
     """
     )
 
-    vector : Dict[str, Callable] = {"pam_password": write_pam_irodsA_file, "native": write_native_irodsA_file}
+    vector: Dict[str, Callable] = {"pam_password": write_pam_irodsA_file, "native": write_native_irodsA_file}
     opts, args = getopt.getopt(sys.argv[1:], "hi:", ["ttl=", "help"])
     optD = dict(opts)
     help_selected = {*optD} & {"-h", "--help"}
     if len(args) != 1 or help_selected:
-        print(
-            "{}\nUsage: {} [-i STREAM| -h | --help | --ttl HOURS] AUTH_SCHEME".format(
-                extra_help, sys.argv[0]
-            )
-        )
+        print("{}\nUsage: {} [-i STREAM| -h | --help | --ttl HOURS] AUTH_SCHEME".format(extra_help, sys.argv[0]))
         print("  Choices for AUTH_SCHEME are:")
         for x in vector:
             print("    {}".format(x))
@@ -47,11 +43,15 @@ if __name__ == "__main__":
         if "--ttl" in optD:
             options["ttl"] = optD["--ttl"]
         if inp_stream is None or inp_stream == "-":
-            pw = get_password(sys.stdin,
-                              prompt=f"Enter current password for scheme {scheme!r}: ",)
+            pw = get_password(
+                sys.stdin,
+                prompt=f"Enter current password for scheme {scheme!r}: ",
+            )
         else:
-            pw = get_password(open(inp_stream, "r", encoding='utf-8'),
-                              prompt=f"Enter current password for scheme {scheme!r}: ",)
+            pw = get_password(
+                open(inp_stream, "r", encoding='utf-8'),
+                prompt=f"Enter current password for scheme {scheme!r}: ",
+            )
         vector[scheme](pw, **options)
     else:
         print("did not recognize authentication scheme argument", file=sys.stderr)

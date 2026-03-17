@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 class UserManager(Manager):
-
     def _get_session(self):
         return self.sess
 
@@ -36,14 +35,10 @@ class UserManager(Manager):
 
     # TODO: remove this in branch 2.x (#482)
     def set_quota(self, user_name, amount, resource="total"):
-        return _do_GeneralAdminRequest(
-            self._get_session, "set-quota", "user", user_name, resource, str(amount)
-        )
+        return _do_GeneralAdminRequest(self._get_session, "set-quota", "user", user_name, resource, str(amount))
 
     def remove_quota(self, user_name, resource="total"):
-        return _do_GeneralAdminRequest(
-            self._get_session, "set-quota", "user", user_name, resource, "0"
-        )
+        return _do_GeneralAdminRequest(self._get_session, "set-quota", "user", user_name, resource, "0")
 
     @staticmethod
     def _parse_user_and_zone(user_param, zone_param):
@@ -88,15 +83,15 @@ class UserManager(Manager):
             raise UserDoesNotExist()
         return iRODSUser(self, result)
 
-    def create_remote(self, user_name:str, user_zone:str):
+    def create_remote(self, user_name: str, user_zone: str):
         """
         Create an entry in the local catalog for a remote user.  The user_type will be 'rodsuser'.
         """
-        if user_zone in (self.sess.zone,""):
+        if user_zone in (self.sess.zone, ""):
             raise ValueError(f"Parameter [{user_zone = }] must be a remote zone.")
         return self.create_with_password(user_name, password='', user_zone=user_zone)
 
-    def create_with_password(self, user_name:str, password:str, user_zone:str=""):
+    def create_with_password(self, user_name: str, password: str, user_zone: str = ""):
         """This method can be used by a groupadmin to initialize the password field while creating the new user.
         (This is necessary since group administrators may not change the password of an existing user.)
         """
@@ -110,17 +105,9 @@ class UserManager(Manager):
         message_body = UserAdminRequest(
             "mkuser",
             user_name + ("" if not user_zone else f"#{user_zone}"),
-            (
-                ""
-                if not password
-                else obf.obfuscate_new_password_with_key(
-                    password, self.sess.pool.account.password
-                )
-            ),
+            ("" if not password else obf.obfuscate_new_password_with_key(password, self.sess.pool.account.password)),
         )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["USER_ADMIN_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["USER_ADMIN_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -131,18 +118,12 @@ class UserManager(Manager):
         message_body = GeneralAdminRequest(
             "add",
             "user",
-            (
-                user_name
-                if not user_zone or user_zone == self.sess.zone
-                else f"{user_name}#{user_zone}"
-            ),
+            (user_name if not user_zone or user_zone == self.sess.zone else f"{user_name}#{user_zone}"),
             user_type,
             user_zone,
             auth_str,
         )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -160,16 +141,10 @@ class UserManager(Manager):
 
         message_body = GeneralAdminRequest(
             "rm",
-            (
-                "user"
-                if (_object.type != "rodsgroup" or self.sess.server_version < (4, 3, 2))
-                else "group"
-            ),
+            ("user" if (_object.type != "rodsgroup" or self.sess.server_version < (4, 3, 2)) else "group"),
             *uz_args,
         )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -177,9 +152,7 @@ class UserManager(Manager):
 
     def temp_password_for_user(self, user_name):
         with self.sess.pool.get_connection() as conn:
-            message_body = GetTempPasswordForOtherRequest(
-                targetUser=user_name, unused=None
-            )
+            message_body = GetTempPasswordForOtherRequest(targetUser=user_name, unused=None)
             request = iRODSMessage(
                 "RODS_API_REQ",
                 msg=message_body,
@@ -216,9 +189,7 @@ class UserManager(Manager):
     def abspath_exists(path):
         return isinstance(path, str) and os.path.isabs(path) and os.path.exists(path)
 
-    def modify_password(
-        self, old_value, new_value, modify_irods_authentication_file=False
-    ):
+    def modify_password(self, old_value, new_value, modify_irods_authentication_file=False):
         """
         Change the password for the current user (in the manner of `ipasswd').
 
@@ -229,7 +200,6 @@ class UserManager(Manager):
                                   the absolute path of an IRODS_AUTHENTICATION_FILE to be altered.
         """
         with self.sess.pool.get_connection() as conn:
-
             if (
                 old_value != self.sess.pool.account.password
                 or not isinstance(new_value, str)
@@ -237,16 +207,10 @@ class UserManager(Manager):
             ):
                 raise Bad_password_change_parameter
 
-            hash_new_value = obf.obfuscate_new_password(
-                new_value, old_value, conn.client_signature
-            )
+            hash_new_value = obf.obfuscate_new_password(new_value, old_value, conn.client_signature)
 
-            message_body = UserAdminRequest(
-                "userpw", self.sess.username, "password", hash_new_value
-            )
-            request = iRODSMessage(
-                "RODS_API_REQ", msg=message_body, int_info=api_number["USER_ADMIN_AN"]
-            )
+            message_body = UserAdminRequest("userpw", self.sess.username, "password", hash_new_value)
+            request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["USER_ADMIN_AN"])
 
             conn.send(request)
             response = conn.recv()
@@ -282,13 +246,10 @@ class UserManager(Manager):
             user_name += "#" + user_zone
 
         with self.sess.pool.get_connection() as conn:
-
             # if modifying password, new value needs obfuscating
             if option == "password":
                 current_password = self.sess.pool.account.password
-                new_value = obf.obfuscate_new_password(
-                    new_value, current_password, conn.client_signature
-                )
+                new_value = obf.obfuscate_new_password(new_value, current_password, conn.client_signature)
 
             message_body = GeneralAdminRequest(
                 "modify",
@@ -309,15 +270,16 @@ class UserManager(Manager):
         logger.debug(response.int_info)
 
 
-CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD = (4,3,4)
+CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD = (4, 3, 4)
+
 
 def get__group_create__user_type__default(session):
     if session.server_version < CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD:
         return "rodsgroup"
     return ""
 
-class GroupManager(UserManager):
 
+class GroupManager(UserManager):
     def get(self, name, user_zone=""):
         query = self.sess.query(Group).filter(Group.name == name)
 
@@ -337,10 +299,7 @@ class GroupManager(UserManager):
         """
 
         sess = self.sess
-        if group_admin_flag or (
-            group_admin_flag is not False
-            and sess.users.get(sess.username).type == "groupadmin"
-        ):
+        if group_admin_flag or (group_admin_flag is not False and sess.users.get(sess.username).type == "groupadmin"):
             return (UserAdminRequest, "USER_ADMIN_AN")
         return (GeneralAdminRequest, "GENERAL_ADMIN_AN")
 
@@ -355,13 +314,13 @@ class GroupManager(UserManager):
     ):
         """Create and return a new iRODSGroup.
 
-           Input parameters:
-           -----------------
-               name: This is the name to be given to the new group.
-               user_type: (deprecated parameter) This parameter should remain unused and will effectively resolve as "rodsgroup".
-               user_zone: (deprecated parameter) In iRODS 4.3+, do not use this parameter as groups may not be made for a remote zone.
-               auth_type: (deprecated parameter) This parameter should be left to default to "" as groups do not need authentication.
-               group_admin: If left to its default value of None, seamlessly allows a groupadmin to create new groups.
+        Input parameters:
+        -----------------
+            name: This is the name to be given to the new group.
+            user_type: (deprecated parameter) This parameter should remain unused and will effectively resolve as "rodsgroup".
+            user_zone: (deprecated parameter) In iRODS 4.3+, do not use this parameter as groups may not be made for a remote zone.
+            auth_type: (deprecated parameter) This parameter should be left to default to "" as groups do not need authentication.
+            group_admin: If left to its default value of None, seamlessly allows a groupadmin to create new groups.
         """
 
         if callable(user_type):
@@ -382,11 +341,16 @@ class GroupManager(UserManager):
         else:
             message_body = MessageClass(
                 "add",
-                ("user" if self.sess.server_version < CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD else "group"),
+                (
+                    "user"
+                    if self.sess.server_version < CREATE_GROUP__USER_TYPE__DEFAULT__API_CHANGE__VERSION_THRESHOLD
+                    else "group"
+                ),
                 name,
                 user_type,
                 "",
-                "")
+                "",
+            )
         request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_to_use)
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
@@ -395,38 +359,24 @@ class GroupManager(UserManager):
         return self.get(name)
 
     def getmembers(self, name):
-        results = self.sess.query(User).filter(
-            User.type != "rodsgroup", Group.name == name
-        )
+        results = self.sess.query(User).filter(User.type != "rodsgroup", Group.name == name)
         return [iRODSUser(self, row) for row in results]
 
-    def addmember(
-        self, group_name, user_name, user_zone="", group_admin=None, **options
-    ):
+    def addmember(self, group_name, user_name, user_zone="", group_admin=None, **options):
         (MessageClass, api_key) = self._api_info(group_admin)
 
-        message_body = MessageClass(
-            "modify", "group", group_name, "add", user_name, user_zone
-        )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number[api_key]
-        )
+        message_body = MessageClass("modify", "group", group_name, "add", user_name, user_zone)
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number[api_key])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
 
-    def removemember(
-        self, group_name, user_name, user_zone="", group_admin=None, **options
-    ):
+    def removemember(self, group_name, user_name, user_zone="", group_admin=None, **options):
         (MessageClass, api_key) = self._api_info(group_admin)
 
-        message_body = MessageClass(
-            "modify", "group", group_name, "remove", user_name, user_zone
-        )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number[api_key]
-        )
+        message_body = MessageClass("modify", "group", group_name, "remove", user_name, user_zone)
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number[api_key])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -436,12 +386,8 @@ class GroupManager(UserManager):
         self.set_quota(group_name, amount=0, resource=resource)
 
     def set_quota(self, group_name, amount, resource="total"):
-        message_body = GeneralAdminRequest(
-            "set-quota", "group", group_name, resource, str(amount)
-        )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-        )
+        message_body = GeneralAdminRequest("set-quota", "group", group_name, resource, str(amount))
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()

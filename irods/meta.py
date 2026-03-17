@@ -3,18 +3,14 @@ import copy
 
 
 class iRODSMeta:
-
     def _to_column_triple(self):
-        return (self.name ,self.forward_translate(self.value)) + (
+        return (self.name, self.forward_translate(self.value)) + (
             ('',) if not self.units else (self.forward_translate(self.units),)
         )
 
     def _from_column_triple(self, name, value, units, **kw):
         self.__low_level_init(
-            name,
-            self.reverse_translate(value),
-            units=None if not units else self.reverse_translate(units),
-            **kw
+            name, self.reverse_translate(value), units=None if not units else self.reverse_translate(units), **kw
         )
         return self
 
@@ -23,7 +19,15 @@ class iRODSMeta:
     INIT_KW_ARGS = ['units', 'avu_id', 'create_time', 'modify_time']
 
     def __init__(
-        self, name, value, /, units=None, *, avu_id=None, create_time=None, modify_time=None,
+        self,
+        name,
+        value,
+        /,
+        units=None,
+        *,
+        avu_id=None,
+        create_time=None,
+        modify_time=None,
     ):
         # Defer initialization for iRODSMeta(attribute,value,...) if neither attribute nor value is True under
         # a 'bool' transformation.  In so doing we streamline initialization for iRODSMeta (and any subclasses)
@@ -66,7 +70,7 @@ class iRODSBinOrStringMeta(iRODSMeta):
     @staticmethod
     def forward_translate(value):
         """Translate an AVU field from the form it takes in the client, into an iRODS object-database compatible form."""
-        return b'\\' + base64.encodebytes(value).strip() if isinstance(value,(bytes,bytearray)) else value
+        return b'\\' + base64.encodebytes(value).strip() if isinstance(value, (bytes, bytearray)) else value
 
 
 class BadAVUOperationKeyword(Exception):
@@ -78,7 +82,6 @@ class BadAVUOperationValue(Exception):
 
 
 class AVUOperation(dict):
-
     @property
     def operation(self):
         return self["operation"]
@@ -99,19 +102,14 @@ class AVUOperation(dict):
 
     def _check_avu(self, avu_param):
         if not isinstance(avu_param, iRODSMeta):
-            error_msg = (
-                "Nonconforming avu {!r} of type {}; must be an iRODSMeta."
-                "".format(avu_param, type(avu_param).__name__)
+            error_msg = "Nonconforming avu {!r} of type {}; must be an iRODSMeta.".format(
+                avu_param, type(avu_param).__name__
             )
             raise BadAVUOperationValue(error_msg)
 
     def _check_operation(self, operation):
         if operation not in ("add", "remove"):
-            error_msg = (
-                "Nonconforming operation {!r}; must be 'add' or 'remove'.".format(
-                    operation
-                )
-            )
+            error_msg = "Nonconforming operation {!r}; must be 'add' or 'remove'.".format(operation)
             raise BadAVUOperationValue(error_msg)
 
     def __init__(self, operation, avu, **kw):
@@ -123,9 +121,7 @@ class AVUOperation(dict):
         self._check_operation(operation)
         self._check_avu(avu)
         if kw:
-            raise BadAVUOperationKeyword(
-                """Nonconforming keyword (s) {}.""".format(list(kw.keys()))
-            )
+            raise BadAVUOperationKeyword("""Nonconforming keyword (s) {}.""".format(list(kw.keys())))
         for atr in ("operation", "avu"):
             setattr(self, atr, locals()[atr])
 

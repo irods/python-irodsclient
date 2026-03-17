@@ -3,7 +3,6 @@ from irods.message.ordered import OrderedMetaclass, OrderedClass
 
 
 class MessageMetaclass(OrderedMetaclass):
-
     def __init__(self, name, bases, attys):
         super(MessageMetaclass, self).__init__(name, bases, attys)
         for name, prop in self._ordered_properties:
@@ -11,7 +10,6 @@ class MessageMetaclass(OrderedMetaclass):
 
 
 class Message(OrderedClass, metaclass=MessageMetaclass):
-
     def __init__(self, *args, **kwargs):
         super(Message, self).__init__()
         self._values = {}

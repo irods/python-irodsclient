@@ -18,11 +18,7 @@ def wait_till_true(callback, timeout=LARGE_TEST_TIMEOUT, msg=""):
     """
     start_time = time.clock_gettime_ns(time.CLOCK_BOOTTIME)
     while not (truth_value := callback()):
-        if (
-            timeout is not None
-            and (time.clock_gettime_ns(time.CLOCK_BOOTTIME) - start_time) * 1e-9
-            > timeout
-        ):
+        if timeout is not None and (time.clock_gettime_ns(time.CLOCK_BOOTTIME) - start_time) * 1e-9 > timeout:
             if msg:
                 raise TimeoutError(msg)
             else:

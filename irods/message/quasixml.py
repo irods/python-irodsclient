@@ -43,13 +43,9 @@ class Element:
     # For debugging convenience:
     def __str__(self):
         if type(self.body) is list:
-            return "<{}>{}</{}>".format(
-                self.name, "".join(map(str, self.body)), self.name
-            )
+            return "<{}>{}</{}>".format(self.name, "".join(map(str, self.body)), self.name)
         else:
-            return "<{}>{}</{}>".format(
-                self.name, encode_entities(self.body), self.name
-            )
+            return "<{}>{}</{}>".format(self.name, encode_entities(self.body), self.name)
 
     def __repr__(self):
         return "{}({})".format(self.name, repr(self.body))
@@ -134,9 +130,7 @@ def fromtokens(tokens):
         """Parse some tokens into one Element, and return unconsumed tokens."""
         topen, tokens = tokens[0], tokens[1:]
         if type(topen) is not TokenTagOpen:
-            raise QuasiXmlParseError(
-                "protocol error: data does not start with open tag"
-            )
+            raise QuasiXmlParseError("protocol error: data does not start with open tag")
 
         children = []
         cdata = None
@@ -151,14 +145,10 @@ def fromtokens(tokens):
             elif type(t) == TokenTagClose:
                 if t.text != topen.text:
                     raise QuasiXmlParseError(
-                        "protocol error: close tag <{}> does not match opening tag <{}>".format(
-                            t.text, topen.text
-                        )
+                        "protocol error: close tag <{}> does not match opening tag <{}>".format(t.text, topen.text)
                     )
                 elif cdata is not None and len(children):
-                    raise QuasiXmlParseError(
-                        "protocol error: mixed cdata and child elements"
-                    )
+                    raise QuasiXmlParseError("protocol error: mixed cdata and child elements")
                 return (
                     Element(
                         topen.text.decode("utf-8"),

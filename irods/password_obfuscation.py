@@ -245,9 +245,7 @@ def encode(s, uid=None, mtime=None):
             encoded_string += c
 
     # insert the seq_index (which is NOT encoded):
-    encoded_string = chr(seq_index + ord("e")).join(
-        [encoded_string[:6], encoded_string[6:]]
-    )
+    encoded_string = chr(seq_index + ord("e")).join([encoded_string[:6], encoded_string[6:]])
 
     # aaaaand, append a null character. because we want to print
     # a null character to the file. because that's a good idea.
@@ -305,9 +303,7 @@ def unscramble(
     for c in to_unscramble:
         if c in wheel:
             # the index of the target character in wheel
-            wheel_index = (
-                wheel.index(c) - encoder_ring[encoder_ring_index % 61] - chain
-            ) % len(wheel)
+            wheel_index = (wheel.index(c) - encoder_ring[encoder_ring_index % 61] - chain) % len(wheel)
             unscrambled_string += wheel[wheel_index]
             if block_chaining:
                 chain = ord(c) & 0xFF
@@ -341,9 +337,7 @@ def scramble(
     for c in to_scramble:
         if c in wheel:
             # the index of the target character in wheel
-            wheel_index = (
-                wheel.index(c) + encoder_ring[encoder_ring_index % 61] + chain
-            ) % len(wheel)
+            wheel_index = (wheel.index(c) + encoder_ring[encoder_ring_index % 61] + chain) % len(wheel)
             scrambled_string += wheel[wheel_index]
             if block_chaining:
                 chain = ord(scrambled_string[-1]) & 0xFF
@@ -357,9 +351,7 @@ def scramble(
 # port of https://github.com/irods/irods/blob/4-2-stable/lib/core/src/obf.cpp#L1113
 def scramble_v2(s, first_key, second_key):
 
-    to_scramble = (
-        random.SystemRandom().choice(string.printable) + v2_prefix[1:10] + s[:150]
-    )
+    to_scramble = random.SystemRandom().choice(string.printable) + v2_prefix[1:10] + s[:150]
 
     key = first_key[:90] + second_key[:100]
 
@@ -375,9 +367,7 @@ def scramble_v2(s, first_key, second_key):
     md5_hasher.update(key.encode("utf-8"))
     hashed_key = md5_hasher.hexdigest()
 
-    return scramble(
-        to_scramble, key=hashed_key, scramble_prefix="", block_chaining=True
-    )
+    return scramble(to_scramble, key=hashed_key, scramble_prefix="", block_chaining=True)
 
 
 def obfuscate_new_password_with_key(new_password, obfuscation_key):

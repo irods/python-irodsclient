@@ -6,23 +6,16 @@ import irods.test.helpers as helpers
 
 
 class TestGenQuery2(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # cls.sess will be available to instance (test_*) methods as self.sess
         cls.sess = helpers.make_session()
 
         if cls.sess.server_version < (4, 3, 2):
-            raise unittest.SkipTest(
-                "GenQuery2 is not available by default in iRODS before v4.3.2."
-            )
+            raise unittest.SkipTest("GenQuery2 is not available by default in iRODS before v4.3.2.")
 
-        cls.coll_path_a = "/{}/home/{}/test_query2_coll_a".format(
-            cls.sess.zone, cls.sess.username
-        )
-        cls.coll_path_b = "/{}/home/{}/test_query2_coll_b".format(
-            cls.sess.zone, cls.sess.username
-        )
+        cls.coll_path_a = "/{}/home/{}/test_query2_coll_a".format(cls.sess.zone, cls.sess.username)
+        cls.coll_path_b = "/{}/home/{}/test_query2_coll_b".format(cls.sess.zone, cls.sess.username)
         cls.sess.collections.create(cls.coll_path_a)
         cls.sess.collections.create(cls.coll_path_b)
 
@@ -64,9 +57,7 @@ class TestGenQuery2(unittest.TestCase):
         self.assertEqual(len(query_result), 1)
 
     def test_select_or(self):
-        query = "SELECT COLL_NAME WHERE COLL_NAME = '{}' OR COLL_NAME = '{}'".format(
-            self.coll_path_a, self.coll_path_b
-        )
+        query = "SELECT COLL_NAME WHERE COLL_NAME = '{}' OR COLL_NAME = '{}'".format(self.coll_path_a, self.coll_path_b)
         q = self.sess.genquery2_object()
         query_result = q.execute(query)
         self.assertIn([self.coll_path_a], query_result)
@@ -76,10 +67,8 @@ class TestGenQuery2(unittest.TestCase):
         self.assertIn("R_COLL_MAIN", q.get_sql(query).upper())
 
     def test_select_and(self):
-        query = (
-            "SELECT COLL_NAME WHERE COLL_NAME LIKE '{}' AND COLL_NAME LIKE '{}'".format(
-                "%test_query2_coll%", "%query2_coll_a%"
-            )
+        query = "SELECT COLL_NAME WHERE COLL_NAME LIKE '{}' AND COLL_NAME LIKE '{}'".format(
+            "%test_query2_coll%", "%query2_coll_a%"
         )
         q = self.sess.genquery2_object()
         query_result = q.execute(query)

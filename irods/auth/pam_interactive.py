@@ -7,7 +7,7 @@ from . import (
     throw_if_request_message_is_missing_key,
     AuthStorage,
     STORE_PASSWORD_IN_MEMORY,
-    CLIENT_GET_REQUEST_RESULT
+    CLIENT_GET_REQUEST_RESULT,
 )
 from .native import _authenticate_native
 
@@ -17,7 +17,7 @@ import jsonpointer
 import logging
 import sys
 
-# Constants defining the states and operations for the pam_interactive authentication flow 
+# Constants defining the states and operations for the pam_interactive authentication flow
 AUTH_CLIENT_AUTH_REQUEST = "pam_auth_client_request"
 AUTH_CLIENT_AUTH_RESPONSE = "pam_auth_response"
 PERFORM_RUNNING = "running"
@@ -38,6 +38,7 @@ AUTH_AGENT_AUTH_RESPONSE = "auth_agent_auth_response"
 
 _logger = logging.getLogger(__name__)
 
+
 def login(conn, **extra_opt):
     """The entry point for the pam_interactive authentication scheme."""
 
@@ -45,9 +46,8 @@ def login(conn, **extra_opt):
     depot = AuthStorage.create_temp_pw_storage(conn)
 
     auth_client_object = _pam_interactive_ClientAuthState(conn, depot, scheme=PAM_INTERACTIVE_SCHEME)
-    auth_client_object.authenticate_client(
-        initial_request=extra_opt
-    )
+    auth_client_object.authenticate_client(initial_request=extra_opt)
+
 
 class _pam_interactive_ClientAuthState(authentication_base):
     def __init__(self, conn, depot, *_, **_kw):
@@ -64,7 +64,7 @@ class _pam_interactive_ClientAuthState(authentication_base):
         # to recall previous inputs through JSON pointers. "pdirty" flags if pstate has changed and needs syncing.
         # The server side implementation can be found here: https://github.com/irods/irods_auth_plugin_pam_interactive
         # The plugin is built on the authentication framework described here:
-        # https://github.com/irods-contrib/irods_working_group_authentication/tree/e83e84df8ea4a732e5de894fb28aae281c3b3d29/development 
+        # https://github.com/irods-contrib/irods_working_group_authentication/tree/e83e84df8ea4a732e5de894fb28aae281c3b3d29/development
 
         resp["pstate"] = resp.get("pstate", {})
         resp["pdirty"] = resp.get("pdirty", False)
@@ -123,7 +123,7 @@ class _pam_interactive_ClientAuthState(authentication_base):
 
         # If the patch operation is an add or replace without a value, use the response value (following json patch RFC)
         for op in patch_ops:
-            if op.get("op") in ["add", "replace"] and "value" not in op: 
+            if op.get("op") in ["add", "replace"] and "value" not in op:
                 op["value"] = resp
 
         req["pstate"] = jsonpatch.apply_patch(req.get("pstate", {}), patch_ops)

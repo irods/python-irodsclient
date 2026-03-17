@@ -44,7 +44,6 @@ def rows_returned(query):
 
 
 class TestQuery(unittest.TestCase):
-
     Iterate_to_exhaust_statement_table = range(IRODS_STATEMENT_TABLE_SIZE + 1)
 
     More_than_one_batch = 2 * MAX_SQL_ROWS  # may need to increase if PRC default page
@@ -67,9 +66,7 @@ class TestQuery(unittest.TestCase):
                     sess.resources.get(cls.register_resc).remove()
             except Exception as e:
                 print(
-                    "Could not remove resc {!r} due to: {} ".format(
-                        cls.register_resc, e
-                    ),
+                    "Could not remove resc {!r} due to: {} ".format(cls.register_resc, e),
                     file=sys.stderr,
                 )
 
@@ -77,19 +74,13 @@ class TestQuery(unittest.TestCase):
         self.sess = helpers.make_session()
 
         # test data
-        self.coll_path = "/{}/home/{}/test_dir".format(
-            self.sess.zone, self.sess.username
-        )
+        self.coll_path = "/{}/home/{}/test_dir".format(self.sess.zone, self.sess.username)
         self.obj_name = "test1"
         self.case_sensitive_obj_name1 = "caseSENSITIVEobject"
         self.case_sensitive_obj_name2 = "CASEsensitiveOBJECT"
         self.obj_path = "{coll_path}/{obj_name}".format(**vars(self))
-        self.case_sensitive_obj_path1 = "{coll_path}/{case_sensitive_obj_name1}".format(
-            **vars(self)
-        )
-        self.case_sensitive_obj_path2 = "{coll_path}/{case_sensitive_obj_name2}".format(
-            **vars(self)
-        )
+        self.case_sensitive_obj_path1 = "{coll_path}/{case_sensitive_obj_name1}".format(**vars(self))
+        self.case_sensitive_obj_path2 = "{coll_path}/{case_sensitive_obj_name2}".format(**vars(self))
 
         # Create test collection and (empty) test object
         self.coll = self.sess.collections.create(self.coll_path)
@@ -132,25 +123,17 @@ class TestQuery(unittest.TestCase):
 
         # Exact filter tests
 
-        result1 = (
-            self.sess.query(DataObject.name)
-            .filter(DataObject.name == self.case_sensitive_obj_name1)
-            .all()
-        )
+        result1 = self.sess.query(DataObject.name).filter(DataObject.name == self.case_sensitive_obj_name1).all()
         self.assertTrue(result1.has_value(self.case_sensitive_obj_name1))
         self.assertEqual(len(result1), 1)
 
         result2 = (
-            self.sess.query(DataObject.name)
-            .filter(DataObject.name == str.lower(self.case_sensitive_obj_name1))
-            .all()
+            self.sess.query(DataObject.name).filter(DataObject.name == str.lower(self.case_sensitive_obj_name1)).all()
         )
         self.assertEqual(len(result2), 0)
 
         result3 = (
-            self.sess.query(DataObject.name)
-            .filter(DataObject.name == str.upper(self.case_sensitive_obj_name1))
-            .all()
+            self.sess.query(DataObject.name).filter(DataObject.name == str.upper(self.case_sensitive_obj_name1)).all()
         )
         self.assertEqual(len(result3), 0)
 
@@ -158,30 +141,19 @@ class TestQuery(unittest.TestCase):
 
         search_expression = "%{}%".format(self.case_sensitive_obj_name1[1:-1])
 
-        result4 = (
-            self.sess.query(DataObject.name)
-            .filter(Like(DataObject.name, search_expression))
-            .all()
-        )
+        result4 = self.sess.query(DataObject.name).filter(Like(DataObject.name, search_expression)).all()
         self.assertTrue(result4.has_value(self.case_sensitive_obj_name1))
         self.assertEqual(len(result4), 1)
 
-        result5 = (
-            self.sess.query(DataObject.name)
-            .filter(Like(DataObject.name, str.lower(search_expression)))
-            .all()
-        )
+        result5 = self.sess.query(DataObject.name).filter(Like(DataObject.name, str.lower(search_expression))).all()
         self.assertEqual(len(result5), 0)
 
-        result6 = (
-            self.sess.query(DataObject.name)
-            .filter(Like(DataObject.name, str.upper(search_expression)))
-            .all()
-        )
+        result6 = self.sess.query(DataObject.name).filter(Like(DataObject.name, str.upper(search_expression))).all()
         self.assertEqual(len(result6), 0)
 
         result7 = (
-            self.sess.query(DataObject.name)
+            self.sess
+            .query(DataObject.name)
             .filter(Collection.name == self.coll_path)
             .filter(NotLike(DataObject.name, search_expression))
             .all()
@@ -190,7 +162,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result7), 2)
 
         result8 = (
-            self.sess.query(DataObject.name)
+            self.sess
+            .query(DataObject.name)
             .filter(Collection.name == self.coll_path)
             .filter(NotLike(DataObject.name, str.lower(search_expression)))
             .all()
@@ -200,7 +173,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result8), 3)
 
         result9 = (
-            self.sess.query(DataObject.name)
+            self.sess
+            .query(DataObject.name)
             .filter(Collection.name == self.coll_path)
             .filter(NotLike(DataObject.name, str.upper(search_expression)))
             .all()
@@ -212,7 +186,8 @@ class TestQuery(unittest.TestCase):
         # IN tests
 
         result10 = (
-            self.sess.query(DataObject.name)
+            self.sess
+            .query(DataObject.name)
             .filter(Collection.name == self.coll_path)
             .filter(In(DataObject.name, [self.case_sensitive_obj_name1]))
             .all()
@@ -221,7 +196,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result10), 1)
 
         result11 = (
-            self.sess.query(DataObject.name)
+            self.sess
+            .query(DataObject.name)
             .filter(Collection.name == self.coll_path)
             .filter(In(DataObject.name, [str.lower(self.case_sensitive_obj_name1)]))
             .all()
@@ -229,7 +205,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result11), 0)
 
         result12 = (
-            self.sess.query(DataObject.name)
+            self.sess
+            .query(DataObject.name)
             .filter(Collection.name == self.coll_path)
             .filter(In(DataObject.name, [str.upper(self.case_sensitive_obj_name1)]))
             .all()
@@ -267,7 +244,8 @@ class TestQuery(unittest.TestCase):
         # Single exact filter tests
 
         result1 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(DataObject.name == self.case_sensitive_obj_name1)
             .all()
         )
@@ -276,7 +254,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result1), 2)
 
         result2 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(DataObject.name == str.lower(self.case_sensitive_obj_name1))
             .all()
         )
@@ -285,7 +264,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result2), 2)
 
         result3 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(DataObject.name == str.upper(self.case_sensitive_obj_name1))
             .all()
         )
@@ -298,7 +278,8 @@ class TestQuery(unittest.TestCase):
         search_expression = "%{}%".format(self.case_sensitive_obj_name1[1:-1])
 
         result4 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, search_expression))
             .all()
         )
@@ -307,7 +288,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result4), 2)
 
         result5 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, str.lower(search_expression)))
             .all()
         )
@@ -316,7 +298,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result5), 2)
 
         result6 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, str.upper(search_expression)))
             .all()
         )
@@ -325,7 +308,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result6), 2)
 
         result7 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(NotLike(DataObject.name, search_expression))
             .all()
@@ -335,7 +319,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result7), 1)
 
         result8 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(NotLike(DataObject.name, str.lower(search_expression)))
             .all()
@@ -345,7 +330,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result8), 1)
 
         result9 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(NotLike(DataObject.name, str.upper(search_expression)))
             .all()
@@ -357,7 +343,8 @@ class TestQuery(unittest.TestCase):
         # IN tests
 
         result10 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(In(DataObject.name, [self.case_sensitive_obj_name1]))
             .all()
@@ -367,7 +354,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result10), 2)
 
         result11 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(In(DataObject.name, [str.lower(self.case_sensitive_obj_name1)]))
             .all()
@@ -377,7 +365,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result11), 2)
 
         result12 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(In(DataObject.name, [str.upper(self.case_sensitive_obj_name1)]))
             .all()
@@ -389,7 +378,8 @@ class TestQuery(unittest.TestCase):
         # BETWEEN tests
 
         result13 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(
                 Between(
@@ -407,7 +397,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result13), 2)
 
         result14 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(
                 Between(
@@ -425,7 +416,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result14), 2)
 
         result15 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Collection.name == self.coll_path)
             .filter(
                 Between(
@@ -446,7 +438,8 @@ class TestQuery(unittest.TestCase):
         # they should all be case-insensitive.
 
         result16 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, search_expression))
             .filter(Collection.name == self.coll_path)
             .all()
@@ -456,7 +449,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result16), 2)
 
         result17 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, str.lower(search_expression)))
             .filter(Collection.name == str.lower(self.coll_path))
             .all()
@@ -466,7 +460,8 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(len(result17), 2)
 
         result18 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, str.upper(search_expression)))
             .filter(Collection.name == str.upper(self.coll_path))
             .all()
@@ -477,7 +472,8 @@ class TestQuery(unittest.TestCase):
 
         # All previous queries in this function expect a match. This query should not match.
         result19 = (
-            self.sess.query(DataObject.name, case_sensitive=False)
+            self.sess
+            .query(DataObject.name, case_sensitive=False)
             .filter(Like(DataObject.name, "THIS_SHOULD_NOT_MATCH"))
             .all()
         )
@@ -566,32 +562,20 @@ class TestQuery(unittest.TestCase):
 
     def test_query_order_by_col_not_in_result__183(self):
         test_collection_size = 8
-        test_collection_path = "/{0}/home/{1}/testcoln_for_col_not_in_result".format(
-            self.sess.zone, self.sess.username
-        )
+        test_collection_path = "/{0}/home/{1}/testcoln_for_col_not_in_result".format(self.sess.zone, self.sess.username)
         c1 = c2 = None
         try:
-            c1 = helpers.make_test_collection(
-                self.sess, test_collection_path + "1", obj_count=test_collection_size
-            )
-            c2 = helpers.make_test_collection(
-                self.sess, test_collection_path + "2", obj_count=test_collection_size
-            )
-            d12 = [
-                sorted([d.id for d in c.data_objects])
-                for c in sorted((c1, c2), key=lambda c: c.id)
-            ]
+            c1 = helpers.make_test_collection(self.sess, test_collection_path + "1", obj_count=test_collection_size)
+            c2 = helpers.make_test_collection(self.sess, test_collection_path + "2", obj_count=test_collection_size)
+            d12 = [sorted([d.id for d in c.data_objects]) for c in sorted((c1, c2), key=lambda c: c.id)]
             query = (
-                self.sess.query(DataObject)
+                self.sess
+                .query(DataObject)
                 .filter(Like(Collection.name, test_collection_path + "_"))
                 .order_by(Collection.id)
             )
             q12 = list(map(lambda res: res[DataObject.id], query))
-            self.assertTrue(
-                d12[0] + d12[1]
-                == sorted(q12[:test_collection_size])
-                + sorted(q12[test_collection_size:])
-            )
+            self.assertTrue(d12[0] + d12[1] == sorted(q12[:test_collection_size]) + sorted(q12[test_collection_size:]))
         finally:
             if c1:
                 c1.remove(recurse=True, force=True)
@@ -620,9 +604,7 @@ class TestQuery(unittest.TestCase):
         )
 
         for result in query:
-            res_str = "{} {}/{}".format(
-                result[Resource.name], result[Collection.name], result[DataObject.name]
-            )
+            res_str = "{} {}/{}".format(result[Resource.name], result[Collection.name], result[DataObject.name])
             self.assertIn(session.zone, res_str)
 
     def test_query_with_in_condition(self):
@@ -645,32 +627,27 @@ class TestQuery(unittest.TestCase):
             filename = "test_multiple_AVU_joins"
             file_path = "{collection}/{filename}".format(**locals())
             for x in range(3, 9):
-                obj = helpers.make_object(
-                    self.sess, file_path + "-{}".format(x)
-                )  # with metadata
+                obj = helpers.make_object(self.sess, file_path + "-{}".format(x))  # with metadata
                 objects.append(obj)
                 obj.metadata.add("A_meta", "1{}".format(x))
                 obj.metadata.add("B_meta", "2{}".format(x))
-                decoys.append(
-                    helpers.make_object(self.sess, file_path + "-dummy{}".format(x))
-                )  # without metadata
+                decoys.append(helpers.make_object(self.sess, file_path + "-dummy{}".format(x)))  # without metadata
             self.assertTrue(len(objects) > 0)
 
             # -- test simple repeat of same column --
             q = (
-                self.sess.query(DataObject, DataObjectMeta)
+                self.sess
+                .query(DataObject, DataObjectMeta)
                 .filter(DataObjectMeta.name == "A_meta", DataObjectMeta.value < "20")
                 .filter(DataObjectMeta.name == "B_meta", DataObjectMeta.value >= "20")
             )
             self.assertTrue(rows_returned(q) == len(objects))
 
             # -- test no-stomp of previous filter --
-            self.assertTrue(
-                ("B_meta", "28")
-                in [(x.name, x.value) for x in objects[-1].metadata.items()]
-            )
+            self.assertTrue(("B_meta", "28") in [(x.name, x.value) for x in objects[-1].metadata.items()])
             q = (
-                self.sess.query(DataObject, DataObjectMeta)
+                self.sess
+                .query(DataObject, DataObjectMeta)
                 .filter(DataObjectMeta.name == "B_meta")
                 .filter(DataObjectMeta.value < "28")
                 .filter(DataObjectMeta.name == "B_meta")
@@ -681,7 +658,8 @@ class TestQuery(unittest.TestCase):
             # -- test multiple AVU's by same attribute name --
             objects[-1].metadata.add("B_meta", "29")
             q = (
-                self.sess.query(DataObject, DataObjectMeta)
+                self.sess
+                .query(DataObject, DataObjectMeta)
                 .filter(DataObjectMeta.name == "B_meta")
                 .filter(DataObjectMeta.value == "28")
                 .filter(DataObjectMeta.name == "B_meta")
@@ -697,9 +675,7 @@ class TestQuery(unittest.TestCase):
         test_collection_path = "/{zone}/home/{user}/test_collection".format(
             zone=self.sess.zone, user=self.sess.username
         )
-        testColl = helpers.make_test_collection(
-            self.sess, test_collection_path, obj_count=1
-        )
+        testColl = helpers.make_test_collection(self.sess, test_collection_path, obj_count=1)
         testData = testColl.data_objects[0]
         testResc = self.sess.resources.get("demoResc")
         testUser = self.sess.users.get(self.sess.username)
@@ -726,16 +702,12 @@ class TestQuery(unittest.TestCase):
                 obj.metadata.add(*AVU_unique_incr(obj, suffix))
             after = datetime.now(timezone.utc)
             for suffix, tblpair in tables.items():
-                self.sess.query(*tblpair).filter(
-                    tblpair[1].modify_time <= after
-                ).filter(tblpair[1].modify_time > before).filter(
-                    tblpair[0].id == object_IDs[suffix]
-                ).one()
-                self.sess.query(*tblpair).filter(
-                    tblpair[1].create_time <= after
-                ).filter(tblpair[1].create_time > before).filter(
-                    tblpair[0].id == object_IDs[suffix]
-                ).one()
+                self.sess.query(*tblpair).filter(tblpair[1].modify_time <= after).filter(
+                    tblpair[1].modify_time > before
+                ).filter(tblpair[0].id == object_IDs[suffix]).one()
+                self.sess.query(*tblpair).filter(tblpair[1].create_time <= after).filter(
+                    tblpair[1].create_time > before
+                ).filter(tblpair[0].id == object_IDs[suffix]).one()
         finally:
             for obj in objects.values():
                 for avu in obj.metadata.items():
@@ -745,7 +717,13 @@ class TestQuery(unittest.TestCase):
 
     def test_multiple_criteria_on_one_column_name(self):
         # Remove the column skips when irods/irods #8574 is resolved.
-        skipped_columns = {DataObject.map_id, Collection.map_id, DataObject.status, DataObject.type, DataObject.collection_id}
+        skipped_columns = {
+            DataObject.map_id,
+            Collection.map_id,
+            DataObject.status,
+            DataObject.type,
+            DataObject.collection_id,
+        }
         collection = self.coll_path
         filename = "test_multiple_AVU_joins"
         file_path = "{collection}/{filename}".format(**locals())
@@ -758,14 +736,11 @@ class TestQuery(unittest.TestCase):
             objects.extend([obj1, obj2])
         self.assertTrue(nobj > 0 and len(objects) == nobj)
         q = self.sess.query(Collection, DataObject, *{-col for col in skipped_columns})
-        dummy_test = [
-            d
-            for d in q
-            if d[DataObject.name][-1:] != "8" and d[DataObject.name][-7:-1] == "-dummy"
-        ]
+        dummy_test = [d for d in q if d[DataObject.name][-1:] != "8" and d[DataObject.name][-7:-1] == "-dummy"]
         self.assertTrue(len(dummy_test) > 0)
         q = (
-            q.filter(Like(DataObject.name, "%-dummy_"))
+            q
+            .filter(Like(DataObject.name, "%-dummy_"))
             .filter(Collection.name == collection)
             .filter(DataObject.name != (filename + "-dummy8"))
         )
@@ -791,9 +766,7 @@ class TestQuery(unittest.TestCase):
     def test_query_for_data_object_with_utf8_name_python3(self):
         reg_info = self.common_dir_or_vault_info()
         if not reg_info:
-            self.skipTest(
-                "server is non-localhost and no common path exists for object registration"
-            )
+            self.skipTest("server is non-localhost and no common path exists for object registration")
         (dir_, resc_option) = reg_info
 
         def python34_unicode_mkstemp(prefix, dir=None, open_mode=0o777):
@@ -815,9 +788,7 @@ class TestQuery(unittest.TestCase):
         )  # make more visible/changeable in VIM
         self.assertEqual(self.FILENAME_PREFIX, filename_prefix)
         (fd, encoded_test_file) = (
-            tempfile.mkstemp(
-                dir=dir_.encode("utf-8"), prefix=filename_prefix.encode("utf-8")
-            )
+            tempfile.mkstemp(dir=dir_.encode("utf-8"), prefix=filename_prefix.encode("utf-8"))
             if sys.version_info >= (3, 5)
             else python34_unicode_mkstemp(dir=dir_, prefix=filename_prefix)
         )
@@ -827,16 +798,10 @@ class TestQuery(unittest.TestCase):
         results = None
         try:
             self.sess.data_objects.register(test_file, obj_path, **resc_option)
-            results = list(
-                self.sess.query(DataObject, Collection.name).filter(
-                    DataObject.path == test_file
-                )
-            )
+            results = list(self.sess.query(DataObject, Collection.name).filter(DataObject.path == test_file))
             if results:
                 results = results[0]
-                result_logical_path = os.path.join(
-                    results[Collection.name], results[DataObject.name]
-                )
+                result_logical_path = os.path.join(results[Collection.name], results[DataObject.name])
                 result_physical_path = results[DataObject.path]
                 self.assertEqual(result_logical_path, obj_path)
                 self.assertEqual(result_physical_path, test_file)
@@ -861,9 +826,7 @@ class TestQuery(unittest.TestCase):
         ):
             self.session = session
             if "/" not in coll_path:
-                coll_path = "/{}/home/{}/{}".format(
-                    self.session.zone, self.session.username, coll_path
-                )
+                coll_path = "/{}/home/{}/{}".format(self.session.zone, self.session.username, coll_path)
             self.coll_path = coll_path
             self.num_objects = num_objects
             self.test_collection = None
@@ -877,13 +840,10 @@ class TestQuery(unittest.TestCase):
             q_params = (Collection.name, DataObject.name)
 
             if self.nAVUs > 0:
-
                 # - set the AVUs on the collection's objects:
                 for data_obj_path in map(
                     lambda d: d[Collection.name] + "/" + d[DataObject.name],
-                    self.session.query(*q_params).filter(
-                        Collection.name == self.test_collection.path
-                    ),
+                    self.session.query(*q_params).filter(Collection.name == self.test_collection.path),
                 ):
                     data_obj = self.session.data_objects.get(data_obj_path)
                     for key in (str(x) for x in range(self.nAVUs)):
@@ -893,9 +853,7 @@ class TestQuery(unittest.TestCase):
                 q_params += (DataObjectMeta.name,)
 
             # - The "with" statement receives, as context variable, a zero-arg function to build the query
-            return lambda: self.session.query(*q_params).filter(
-                Collection.name == self.test_collection.path
-            )
+            return lambda: self.session.query(*q_params).filter(Collection.name == self.test_collection.path)
 
         def __exit__(self, *_):  # - clean up after context block
 
@@ -913,10 +871,7 @@ class TestQuery(unittest.TestCase):
 
     def test_query_one__166(self):
 
-        with self.Issue_166_context(
-            self.sess, num_objects=self.More_than_one_batch
-        ) as buildQuery:
-
+        with self.Issue_166_context(self.sess, num_objects=self.More_than_one_batch) as buildQuery:
             for dummy_i in self.Iterate_to_exhaust_statement_table:
                 query = buildQuery()
                 try:
@@ -926,12 +881,8 @@ class TestQuery(unittest.TestCase):
 
     def test_query_one_iter__166(self):
 
-        with self.Issue_166_context(
-            self.sess, num_objects=self.More_than_one_batch
-        ) as buildQuery:
-
+        with self.Issue_166_context(self.sess, num_objects=self.More_than_one_batch) as buildQuery:
             for dummy_i in self.Iterate_to_exhaust_statement_table:
-
                 for dummy_row in buildQuery():
                     break  # single iteration
 
@@ -940,14 +891,12 @@ class TestQuery(unittest.TestCase):
         with self.Issue_166_context(
             self.sess, num_objects=1, num_avus_per_object=2 * self.More_than_one_batch
         ) as buildQuery:
-
             pages = [b for b in buildQuery().get_batches()]
             self.assertTrue(len(pages) > 2 and len(pages[0]) < self.More_than_one_batch)
 
             to_compare = []
 
             for _ in self.Iterate_to_exhaust_statement_table:
-
                 for batch in buildQuery().get_batches():
                     to_compare.append(batch)
                     if len(to_compare) == 2:
@@ -962,15 +911,11 @@ class TestQuery(unittest.TestCase):
                 )
                 Set0 = {Compare_Key(dct) for dct in to_compare[0]}
                 Set1 = {Compare_Key(dct) for dct in to_compare[1]}
-                self.assertTrue(
-                    len(Set0 & Set1) == 0
-                )  # assert intersection is null set
+                self.assertTrue(len(Set0 & Set1) == 0)  # assert intersection is null set
 
     def test_paging_get_results__166(self):
 
-        with self.Issue_166_context(
-            self.sess, num_objects=self.More_than_one_batch
-        ) as buildQuery:
+        with self.Issue_166_context(self.sess, num_objects=self.More_than_one_batch) as buildQuery:
             batch_size = 0
             for result_set in buildQuery().get_batches():
                 batch_size = len(result_set)
@@ -1023,14 +968,22 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(3, len(list(query)))
 
     def test_negating_columns_in_genquery1_results__issue_755(self):
-        columns_to_negate = {Collection.map_id, DataObject.map_id, DataObject.status, DataObject.type, DataObject.collection_id}
+        columns_to_negate = {
+            Collection.map_id,
+            DataObject.map_id,
+            DataObject.status,
+            DataObject.type,
+            DataObject.collection_id,
+        }
         columns_to_negate_D = columns_to_negate & set(DataObject._columns)
         columns_to_negate_C = columns_to_negate & set(Collection._columns)
-        cases = { (Collection, DataObject): columns_to_negate,
-                  (Collection,): columns_to_negate_C,
-                  (DataObject,): columns_to_negate_D, }
+        cases = {
+            (Collection, DataObject): columns_to_negate,
+            (Collection,): columns_to_negate_C,
+            (DataObject,): columns_to_negate_D,
+        }
 
-        for requested,intersect in cases.items():
+        for requested, intersect in cases.items():
             q = self.sess.query(*requested, *{-col for col in columns_to_negate}).limit(1)
             row = list(q.all())[0]
 
@@ -1038,7 +991,7 @@ class TestQuery(unittest.TestCase):
             self.assertFalse(columns_to_negate & row.keys())
 
             # Remove the if/continue when irods/irods #8574 is resolved.
-            if self.sess.server_version > (5,0,0) and len(requested) > 1:
+            if self.sess.server_version > (5, 0, 0) and len(requested) > 1:
                 continue
 
             # Re-assert the positive space: that the sets of negated columns are in fact both
@@ -1060,14 +1013,16 @@ class TestQuery(unittest.TestCase):
                 data_objs.append(self.sess.data_objects.create(f'{self.coll_path}/issue_712_obj{name}'))
 
             # Test a query limit via configuration.
-            with config.loadlines(
-                entries=[dict(setting="genquery1.irods_query_limit", value=num_limited_results)]
-            ):
-                limited_results = list(self.sess.query(DataObject.id).filter(Like(DataObject.name, '%issue_712_obj%')).all())
+            with config.loadlines(entries=[dict(setting="genquery1.irods_query_limit", value=num_limited_results)]):
+                limited_results = list(
+                    self.sess.query(DataObject.id).filter(Like(DataObject.name, '%issue_712_obj%')).all()
+                )
                 self.assertEqual(num_limited_results, len(limited_results))
 
             # Test the query limit is no longer in effect.
-            non_limited_results = list(self.sess.query(DataObject.id).filter(Like(DataObject.name, '%issue_712_obj%')).all())
+            non_limited_results = list(
+                self.sess.query(DataObject.id).filter(Like(DataObject.name, '%issue_712_obj%')).all()
+            )
             self.assertEqual(num_total_objects, len(non_limited_results))
         finally:
             for d in data_objs:
@@ -1075,7 +1030,6 @@ class TestQuery(unittest.TestCase):
 
 
 class TestSpecificQuery(unittest.TestCase):
-
     def setUp(self):
         super(TestSpecificQuery, self).setUp()
         self.session = helpers.make_session()
@@ -1087,9 +1041,7 @@ class TestSpecificQuery(unittest.TestCase):
     def test_query_data_name_and_id(self):
         # make a test collection larger than MAX_SQL_ROWS (number of files)
         test_collection_size = 3 * MAX_SQL_ROWS
-        test_collection_path = "/{0}/home/{1}/test_collection".format(
-            self.session.zone, self.session.username
-        )
+        test_collection_path = "/{0}/home/{1}/test_collection".format(self.session.zone, self.session.username)
         self.test_collection = helpers.make_test_collection(
             self.session, test_collection_path, obj_count=test_collection_size
         )
@@ -1124,9 +1076,7 @@ class TestSpecificQuery(unittest.TestCase):
 
         # make a test collection larger than MAX_SQL_ROWS (number of files)
         test_collection_size = 3 * MAX_SQL_ROWS
-        test_collection_path = "/{0}/home/{1}/test_collection".format(
-            self.session.zone, self.session.username
-        )
+        test_collection_path = "/{0}/home/{1}/test_collection".format(self.session.zone, self.session.username)
         self.test_collection = helpers.make_test_collection(
             self.session, test_collection_path, obj_count=test_collection_size
         )

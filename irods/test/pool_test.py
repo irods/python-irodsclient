@@ -19,17 +19,14 @@ from irods.connection import DESTRUCTOR_MSG
 #  Regular expression to match common synonyms for localhost.
 #
 
-LOCALHOST_REGEX = re.compile(
-    r"""^(127(\.\d+){1,3}|[0:]+1|(.*-)?localhost(\.\w+)?)$""", re.IGNORECASE
-)
+LOCALHOST_REGEX = re.compile(r"""^(127(\.\d+){1,3}|[0:]+1|(.*-)?localhost(\.\w+)?)$""", re.IGNORECASE)
 USE_ONLY_LOCALHOST = False
 
 
 class TestPool(unittest.TestCase):
-
     config_extension = ".json"
     test_extension = ""
-    preferred_parameters : Dict[str, Any] = {}
+    preferred_parameters: Dict[str, Any] = {}
 
     @classmethod
     def setUpClass(
@@ -278,12 +275,8 @@ class TestPool(unittest.TestCase):
     # logged to file, to confirm the destructor is called
     def test_connection_destructor_called(self):
 
-        if self.sess.host != socket.gethostname() and not LOCALHOST_REGEX.match(
-            self.sess.host
-        ):
-            self.skipTest(
-                "local test only - client dot does not like the extra logging"
-            )
+        if self.sess.host != socket.gethostname() and not LOCALHOST_REGEX.match(self.sess.host):
+            self.skipTest("local test only - client dot does not like the extra logging")
 
         # Set 'irods_connection_refresh_time' to '3' (in seconds) in
         # ~/.irods/irods_environment.json file. This means any connection
@@ -350,9 +343,7 @@ class TestPool(unittest.TestCase):
         file_handler.close()
 
     def test_get_connection_refresh_time_no_env_file_input_param(self):
-        connection_refresh_time = self.sess.get_connection_refresh_time(
-            first_name="Magic", last_name="Johnson"
-        )
+        connection_refresh_time = self.sess.get_connection_refresh_time(first_name="Magic", last_name="Johnson")
         self.assertEqual(connection_refresh_time, -1)
 
     def test_get_connection_refresh_time_none_existant_env_file(self):
@@ -391,9 +382,7 @@ class TestPool(unittest.TestCase):
             "test-data",
             "irods_environment.json" + self.test_extension,
         )
-        connection_refresh_time = self.sess.get_connection_refresh_time(
-            irods_env_file=default_path
-        )
+        connection_refresh_time = self.sess.get_connection_refresh_time(irods_env_file=default_path)
         self.assertEqual(connection_refresh_time, 3)
 
 

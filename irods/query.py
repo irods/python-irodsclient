@@ -36,8 +36,8 @@ query_number = {
 
 IRODS_QUERY_LIMIT = 500
 
-class Query:
 
+class Query:
     def __init__(self, sess, *args, **kwargs):
         self.sess = sess
         self.columns = OrderedDict()
@@ -91,16 +91,9 @@ class Query:
                 if type(criterion.value) == str:
                     criterion.value = str.upper(criterion.value)
                 elif type(criterion.value) == list:
-                    criterion.value = [
-                        str.upper(c) if type(c) == str else c for c in criterion.value
-                    ]
+                    criterion.value = [str.upper(c) if type(c) == str else c for c in criterion.value]
                 elif type(criterion.value) == tuple:
-                    criterion.value = tuple(
-                        [
-                            str.upper(c) if type(c) == str else c
-                            for c in list(criterion.value)
-                        ]
-                    )
+                    criterion.value = tuple([str.upper(c) if type(c) == str else c for c in list(criterion.value)])
                 new_q.criteria.append(criterion)
 
         return new_q
@@ -161,37 +154,31 @@ class Query:
         return self._aggregate(query_number["SELECT_COUNT"], *args)
 
     def _select_message(self):
-        dct = OrderedDict(
-            [(column.icat_id, value) for (column, value) in self.columns.items()]
-        )
+        dct = OrderedDict([(column.icat_id, value) for (column, value) in self.columns.items()])
         return IntegerIntegerMap(dct)
 
     # todo store criterion for columns and criterion for keywords in seaparate
     # lists
     def _conds_message(self):
-        dct = _OrderedMultiMapping(
-            [
-                (
-                    criterion.query_key.icat_id,
-                    criterion.op + " " + criterion.irods_value,
-                )
-                for criterion in self.criteria
-                if isinstance(criterion.query_key, Column)
-            ]
-        )
+        dct = _OrderedMultiMapping([
+            (
+                criterion.query_key.icat_id,
+                criterion.op + " " + criterion.irods_value,
+            )
+            for criterion in self.criteria
+            if isinstance(criterion.query_key, Column)
+        ])
         return IntegerStringMap(dct)
 
     def _kw_message(self):
-        dct = dict(
-            [
-                (
-                    criterion.query_key.icat_key,
-                    criterion.op + " " + criterion.irods_value,
-                )
-                for criterion in self.criteria
-                if isinstance(criterion.query_key, Keyword)
-            ]
-        )
+        dct = dict([
+            (
+                criterion.query_key.icat_key,
+                criterion.op + " " + criterion.irods_value,
+            )
+            for criterion in self.criteria
+            if isinstance(criterion.query_key, Keyword)
+        ])
         for key in self._keywords:
             dct[key] = self._keywords[key]
         return StringStringMap(dct)
@@ -211,11 +198,8 @@ class Query:
 
     def execute(self):
         with self.sess.pool.get_connection() as conn:
-
             message_body = self._message()
-            message = iRODSMessage(
-                "RODS_API_REQ", msg=message_body, int_info=api_number["GEN_QUERY_AN"]
-            )
+            message = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GEN_QUERY_AN"])
 
             conn.send(message)
             try:
@@ -253,9 +237,7 @@ class Query:
 
             while result_set.continue_index > 0:
                 try:
-                    result_set = self.continue_index(
-                        result_set.continue_index
-                    ).execute()
+                    result_set = self.continue_index(result_set.continue_index).execute()
                     yield result_set
                 except CAT_NO_ROWS_FOUND:
                     break
@@ -297,7 +279,6 @@ class Query:
 
 
 class SpecificQuery:
-
     def __init__(self, sess, sql=None, alias=None, columns=None, args=None):
         if not sql and not alias:
             raise ValueError("A query or alias must be provided")
@@ -313,12 +294,8 @@ class SpecificQuery:
         if not self._sql:
             raise ValueError("Empty query")
 
-        message_body = GeneralAdminRequest(
-            "add", "specificQuery", self._sql, self._alias
-        )
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-        )
+        message_body = GeneralAdminRequest("add", "specificQuery", self._sql, self._alias)
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
 
         with self.session.pool.get_connection() as conn:
             conn.send(request)
@@ -329,9 +306,7 @@ class SpecificQuery:
         target = self._alias or self._sql
 
         message_body = GeneralAdminRequest("rm", "specificQuery", target)
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
 
         with self.session.pool.get_connection() as conn:
             conn.send(request)
@@ -355,12 +330,10 @@ class SpecificQuery:
             rowOffset=offset,
             options=0,
             KeyValPair_PI=conditions,
-            **sql_args
+            **sql_args,
         )
 
-        request = iRODSMessage(
-            "RODS_API_REQ", msg=message_body, int_info=api_number["SPECIFIC_QUERY_AN"]
-        )
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["SPECIFIC_QUERY_AN"])
 
         with self.session.pool.get_connection() as conn:
             conn.send(request)
@@ -392,5 +365,6 @@ class SpecificQuery:
 
 # Record a copy of the original value of IRODS_QUERY_LIMIT for possible future access.
 import irods.helpers as helpers
+
 cached_values = helpers.create_value_cache(globals())
 cached_values.make_entry('IRODS_QUERY_LIMIT')

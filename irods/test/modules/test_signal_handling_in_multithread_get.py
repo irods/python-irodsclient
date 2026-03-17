@@ -23,9 +23,7 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
     program = os.path.join(test_modules.__path__[0], os.path.basename(__file__))
 
     for signal_name in signal_names:
-
         with test_case.subTest(f"Testing with signal {signal_name}"):
-
             # Call into this same module as a command.  This will initiate another Python process that
             # performs a lengthy data object "get" operation (see the main body of the script, below.)
             process = subprocess.Popen(
@@ -42,8 +40,7 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
             # Use timeout of 10 minutes for test transfer, which should be more than enough.
             test_case.assertTrue(
                 wait_till_true(
-                    lambda: os.path.exists(localfile)
-                    and os.stat(localfile).st_size > OBJECT_SIZE // 2,
+                    lambda: os.path.exists(localfile) and os.stat(localfile).st_size > OBJECT_SIZE // 2,
                 ),
                 "Parallel download from data_objects.get() probably experienced a fatal error before spawning auxiliary data transfer threads.",
             )
@@ -59,9 +56,7 @@ def test(test_case, signal_names=("SIGTERM", "SIGINT")):
             # Assert that this signal is what killed the subprocess, rather than a timed out process "wait" or a natural exit
             # due to misproper or incomplete handling of the signal.
             try:
-                translated_return_code = signal_offset_return_code(
-                    process.wait(timeout=15)
-                )
+                translated_return_code = signal_offset_return_code(process.wait(timeout=15))
                 test_case.assertIn(
                     translated_return_code,
                     [1, signal_plus_128(sig)],
@@ -94,9 +89,7 @@ if __name__ == "__main__":
     local_path = None
     # Establish where (ie absolute path) to place the downloaded file, i.e. the  get() target.
     try:
-        with tempfile.NamedTemporaryFile(
-            prefix="local_file_issue_722.dat", delete=True
-        ) as t:
+        with tempfile.NamedTemporaryFile(prefix="local_file_issue_722.dat", delete=True) as t:
             local_path = t.name
 
         # Tell the parent process the name of the local file, ie the result of the "get" from iRODS.

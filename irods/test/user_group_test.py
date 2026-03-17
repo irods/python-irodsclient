@@ -47,7 +47,6 @@ def set_user_quota(session, user_name, bytes_total):
 
 
 class TestUserAndGroup(unittest.TestCase):
-
     def setUp(self):
         self.sess = helpers.make_session()
 
@@ -112,9 +111,7 @@ class TestUserAndGroup(unittest.TestCase):
 
         password_generator = generator()
         ENV_DIR = tempfile.mkdtemp()
-        d = dict(
-            password=OLDPASS, user="alice", host=ses.host, port=ses.port, zone=ses.zone
-        )
+        d = dict(password=OLDPASS, user="alice", host=ses.host, port=ses.port, zone=ses.zone)
         (alice_env, alice_auth) = helpers.make_environment_and_auth_files(ENV_DIR, **d)
         try:
             ses.users.create("alice", "rodsuser")
@@ -123,26 +120,19 @@ class TestUserAndGroup(unittest.TestCase):
                 (alice_auth, lambda: iRODSSession(**d)),
                 (
                     True,
-                    lambda: helpers.make_session(
-                        irods_env_file=alice_env, irods_authentication_file=alice_auth
-                    ),
+                    lambda: helpers.make_session(irods_env_file=alice_env, irods_authentication_file=alice_auth),
                 ),
             ]:
                 OLDPASS, NEWPASS = next(password_generator)
                 with sess_factory() as alice_ses:
                     alice = alice_ses.users.get(alice_ses.username)
-                    alice.modify_password(
-                        OLDPASS, NEWPASS, modify_irods_authentication_file=modify_option
-                    )
+                    alice.modify_password(OLDPASS, NEWPASS, modify_irods_authentication_file=modify_option)
             d["password"] = NEWPASS
             with iRODSSession(**d) as session:
-                self.do_something(
-                    session
-                )  # can we still do stuff with the final value of the password?
+                self.do_something(session)  # can we still do stuff with the final value of the password?
         finally:
             shutil.rmtree(ENV_DIR)
             ses.users.remove("alice")
-
 
     def test_modifying_password_at_various_lengths__issue_328(self):
         ses = self.sess
@@ -154,9 +144,7 @@ class TestUserAndGroup(unittest.TestCase):
             ]  # one greater than threshold (See irods/irods#7084)
 
             # Test different combinations of new and old password lengths
-            tuples_of_old_and_new_password = [
-                ("a" * x, "b" * y) for x in pw_lengths for y in pw_lengths
-            ]
+            tuples_of_old_and_new_password = [("a" * x, "b" * y) for x in pw_lengths for y in pw_lengths]
             ses.users.create("alice", "rodsuser")
 
             for old_pw, new_pw in tuples_of_old_and_new_password:
@@ -254,16 +242,10 @@ class TestUserAndGroup(unittest.TestCase):
                 port=ses.port,
                 zone=ses.zone,
             )
-            (alice_env, alice_auth) = helpers.make_environment_and_auth_files(
-                ENV_DIR, **d
-            )
+            (alice_env, alice_auth) = helpers.make_environment_and_auth_files(ENV_DIR, **d)
             session_factories = [
                 (lambda: iRODSSession(**d)),
-                (
-                    lambda: helpers.make_session(
-                        irods_env_file=alice_env, irods_authentication_file=alice_auth
-                    )
-                ),
+                (lambda: helpers.make_session(irods_env_file=alice_env, irods_authentication_file=alice_auth)),
             ]
             for factory in session_factories:
                 with factory() as alice_ses:
@@ -288,9 +270,7 @@ class TestUserAndGroup(unittest.TestCase):
 
         # assertions
         self.assertEqual(group.name, group_name)
-        self.assertEqual(
-            repr(group), "<iRODSGroup {0} {1}>".format(group.id, group_name)
-        )
+        self.assertEqual(repr(group), "<iRODSGroup {0} {1}>".format(group.id, group_name))
 
         # delete group
         group.remove()
@@ -392,16 +372,9 @@ class TestUserAndGroup(unittest.TestCase):
             triple = ["key", "value", "unit"]
             group.metadata[triple[0]] = iRODSMeta(*triple)
 
-            result = (
-                self.sess.query(UserMeta, Group)
-                .filter(Group.name == group_name, UserMeta.name == "key")
-                .one()
-            )
+            result = self.sess.query(UserMeta, Group).filter(Group.name == group_name, UserMeta.name == "key").one()
 
-            self.assertTrue(
-                [result[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)]
-                == triple
-            )
+            self.assertTrue([result[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)] == triple)
 
         finally:
             if group:
@@ -420,32 +393,20 @@ class TestUserAndGroup(unittest.TestCase):
 
             # add three AVUs, two having the same key
             user.metadata["key0"] = iRODSMeta("key0", "value", "units")
-            sorted_triples = sorted(
-                [["key1", "value0", "units0"], ["key1", "value1", "units1"]]
-            )
+            sorted_triples = sorted([["key1", "value0", "units0"], ["key1", "value1", "units1"]])
             for m in sorted_triples:
                 user.metadata.add(iRODSMeta(*m))
 
             # general query gives the right results?
-            result_0 = (
-                self.sess.query(UserMeta, User)
-                .filter(User.name == user_name, UserMeta.name == "key0")
-                .one()
-            )
+            result_0 = self.sess.query(UserMeta, User).filter(User.name == user_name, UserMeta.name == "key0").one()
 
             self.assertTrue(
-                [result_0[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)]
-                == ["key0", "value", "units"]
+                [result_0[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)] == ["key0", "value", "units"]
             )
 
-            results_1 = self.sess.query(UserMeta, User).filter(
-                User.name == user_name, UserMeta.name == "key1"
-            )
+            results_1 = self.sess.query(UserMeta, User).filter(User.name == user_name, UserMeta.name == "key1")
 
-            retrieved_triples = [
-                [res[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)]
-                for res in results_1
-            ]
+            retrieved_triples = [[res[k] for k in (UserMeta.name, UserMeta.value, UserMeta.units)] for res in results_1]
 
             self.assertTrue(sorted_triples == sorted(retrieved_triples))
 
@@ -518,9 +479,7 @@ class TestUserAndGroup(unittest.TestCase):
     def create_groupadmin_user_and_session(self, groupadmin_user_name):
 
         # Generate a random password.
-        ga_password = helpers.unique_name(
-            helpers.my_function_name(), datetime.datetime.now()
-        )[:MAX_PASSWORD_LENGTH]
+        ga_password = helpers.unique_name(helpers.my_function_name(), datetime.datetime.now())[:MAX_PASSWORD_LENGTH]
 
         # Create a groupadmin user with that password, and a session object for logging in as that user.
         groupadmin = self.sess.users.create(groupadmin_user_name, "groupadmin")
@@ -544,9 +503,7 @@ class TestUserAndGroup(unittest.TestCase):
             # Create a rodsuser and a groupadmin.
             alice = admin.users.create("alice", "rodsuser")
             alice.modify("password", "apass")
-            groupadmin, groupadmin_session = self.create_groupadmin_user_and_session(
-                GROUP_ADMIN
-            )
+            groupadmin, groupadmin_session = self.create_groupadmin_user_and_session(GROUP_ADMIN)
 
             # As the groupadmin:
             #    * Add two users to the group (one being the groupadmin) and assert membership.
@@ -567,10 +524,7 @@ class TestUserAndGroup(unittest.TestCase):
                 groupadmin_session.groups.removemember("lab", GROUP_ADMIN)
 
                 # Check that our members got removed.
-                self.assertFalse(
-                    set(("alice", GROUP_ADMIN))
-                    & set(member.name for member in lab.members)
-                )
+                self.assertFalse(set(("alice", GROUP_ADMIN)) & set(member.name for member in lab.members))
         finally:
             if groupadmin:
                 groupadmin.remove()
@@ -583,24 +537,18 @@ class TestUserAndGroup(unittest.TestCase):
     def test_group_admin_can_create_users__issue_428(self):
         admin = self.sess
         if admin.server_version < (4, 2, 12) or admin.server_version == (4, 3, 0):
-            self.skipTest(
-                "Password initialization is broken before iRODS 4.2.12, and in 4.3.0"
-            )
+            self.skipTest("Password initialization is broken before iRODS 4.2.12, and in 4.3.0")
         rodsuser = groupadmin = None
         rodsuser_name = "bob"
         rodsuser_password = "random_password"
         try:
             # Create a groupadmin.
-            groupadmin, groupadmin_session = self.create_groupadmin_user_and_session(
-                "groupadmin_428"
-            )
+            groupadmin, groupadmin_session = self.create_groupadmin_user_and_session("groupadmin_428")
 
             # Use the groupadmin to create a new user initialized with a known password; then, test the
             # new user/password combination by logging in and grabbing the home collection object.
             with groupadmin_session:
-                rodsuser = groupadmin_session.users.create_with_password(
-                    rodsuser_name, rodsuser_password
-                )
+                rodsuser = groupadmin_session.users.create_with_password(rodsuser_name, rodsuser_password)
                 with iRODSSession(
                     user=rodsuser_name,
                     password=rodsuser_password,
@@ -608,9 +556,7 @@ class TestUserAndGroup(unittest.TestCase):
                     port=admin.port,
                     zone=admin.zone,
                 ) as rodsuser_session:
-                    rodsuser_session.collections.get(
-                        helpers.home_collection(rodsuser_session)
-                    )
+                    rodsuser_session.collections.get(helpers.home_collection(rodsuser_session))
         finally:
             if groupadmin:
                 groupadmin.remove()
@@ -703,9 +649,7 @@ class TestUserAndGroup(unittest.TestCase):
                 port=ses.port,
                 zone=ses.zone,
             ) as user_sess:
-                test_object = user_sess.data_objects.create(
-                    "/tempZone/home/public/bob_file_testing_group_quota"
-                )
+                test_object = user_sess.data_objects.create("/tempZone/home/public/bob_file_testing_group_quota")
                 with test_object.open("w") as f:
                     f.write(b"_" * my_object_size)
             ses.groups.calculate_usage()
@@ -726,9 +670,7 @@ class TestUserAndGroup(unittest.TestCase):
     def test_set_and_query_user_quota(self):
         bob = None
         if self.sess.server_version >= (4, 3):
-            self.skipTest(
-                "iRODS servers 4.3.0 and higher have dropped user quotas in favor of group quotas."
-            )
+            self.skipTest("iRODS servers 4.3.0 and higher have dropped user quotas in favor of group quotas.")
         ses = self.sess
         test_object = None
         try:
@@ -742,9 +684,7 @@ class TestUserAndGroup(unittest.TestCase):
                 port=ses.port,
                 zone=ses.zone,
             ) as user_sess:
-                test_object = user_sess.data_objects.create(
-                    "/tempZone/home/public/bobfile"
-                )
+                test_object = user_sess.data_objects.create("/tempZone/home/public/bobfile")
                 with test_object.open("w") as f:
                     f.write(b"_" * 1000)
             ses.users.calculate_usage()
@@ -764,9 +704,7 @@ class TestUserAndGroup(unittest.TestCase):
             auth_file_contents = f.read()
 
         with self.assertRaises(client_init.irodsA_already_exists):
-            client_init.write_native_credentials_to_secrets_file(
-                "somevalue", overwrite=False
-            )
+            client_init.write_native_credentials_to_secrets_file("somevalue", overwrite=False)
 
         # Assert the auth file's contents haven't changed.
         with open(auth_file, "rb") as f:
