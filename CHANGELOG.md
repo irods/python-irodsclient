@@ -11,6 +11,41 @@ and this project **only** adheres to the following _(as defined at [Semantic Ver
 > - MINOR version when you add functionality in a backward compatible manner
 > - PATCH version when you make backward compatible bug fixes
 
+## [v3.3.0] - 2026-03-18
+
+This release includes improvements for listing tickets, clean cancellation of parallel transfers, storage of binary data in AVUs, and more.
+
+### Changed
+
+- Migrate to pyproject.toml (#774, #783).
+
+### Removed
+
+- Remove Jenkins test framework (#778).
+
+### Deprecated
+
+- Deprecate `IRODS_VERSION` (#698).
+
+### Fixed
+
+- Fix ability to store arbitrary binary data in an AVU (#707).
+- Add `__slots__` member to prevent configuration misfires (#708).
+- Preserve state when chaining calls on metadata manager (#709).
+- Fix segfault and hung threads when signals abort a parallel transfer (#722).
+- Fix handling of username in GeneralAdmin API for proper removal of remote user home collection (#763).
+- Use named loggers (#771).
+
+### Added
+
+- Add convenience functions for listing tickets (#120).
+- Add automated testing via GitHub Actions (#502, #697).
+- Add `_IRODS_VERSION` (#698).
+- Add facilities for stopping parallel transfers in a clean manner (#722).
+- Add configuration and GitHub Action workflows for code formatting and linting (#726).
+- Allow MetadataManager options to be accessible as attributes (#795).
+- Allow ticket instances to be populated using information from catalog queries (#801).
+
 ## [v3.2.0] - 2025-08-27
 
 This release makes the library compatible with iRODS 5, adds support for the PAM Interactive authentication scheme, improves support for groupadmins, and adds new features for GenQuery1.
