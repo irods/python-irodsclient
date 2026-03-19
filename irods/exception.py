@@ -1,12 +1,14 @@
 # if you're copying these from the docs, you might find the following regex helpful:
 # s/\(\w\+\)\s\+\(-\d\+\)/class \1(SystemException):\r    code = \2/g
 
-
 import errno
 import numbers
 import os
 import sys
 from typing import Dict
+
+
+# ruff: noqa: N801 D101 off
 
 
 class PycommandsException(Exception):
@@ -2124,3 +2126,6 @@ class PAM_AUTH_PASSWORD_FAILED(PAMException):
 
 class PAM_AUTH_PASSWORD_INVALID_TTL(PAMException):
     code = -994000
+
+
+# ruff: noqa: N801 D101 on

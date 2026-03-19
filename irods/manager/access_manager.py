@@ -1,24 +1,24 @@
-from os.path import basename, dirname
-
-from irods.manager import Manager
-from irods.api_number import api_number
-from irods.message import ModAclRequest, iRODSMessage
-from irods.data_object import iRODSDataObject, irods_dirname, irods_basename
-from irods.collection import iRODSCollection
-from irods.models import (
-    DataObject,
-    Collection,
-    User,
-    CollectionUser,
-    DataAccess,
-    CollectionAccess,
-)
-from irods.access import iRODSAccess
-from irods.column import In
-from irods.user import iRODSUser
+"""The access manager is a collection of methods useful for managing iRODS ACLs."""
 
 import logging
-import warnings
+from os.path import basename, dirname
+
+from irods.access import iRODSAccess
+from irods.api_number import api_number
+from irods.collection import iRODSCollection
+from irods.column import In
+from irods.data_object import irods_basename, irods_dirname, iRODSDataObject
+from irods.manager import Manager
+from irods.message import JSON_Message, ModAclRequest, iRODSMessage
+from irods.models import (
+    Collection,
+    CollectionAccess,
+    CollectionUser,
+    DataAccess,
+    DataObject,
+    User,
+)
+from irods.user import iRODSUser
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,40 @@ def users_by_ids(session, ids=()):
 
 
 class AccessManager(Manager):
+    @staticmethod
+    def _to_acl_operation_json(op_input: iRODSAccess):
+        return {
+            "acl": op_input.access_name,
+            "entity_name": op_input.user_name,
+            **({} if not (z := op_input.user_zone) else {"zone": z}),
+        }
+
+    def apply_atomic_operations(self, logical_path: str, *operations, admin=False):
+        """
+        Apply the requested operations atomically to the object at logical_path.
+
+        Args:
+            logical_path: the fully qualified logical path of the target data object or collection.
+            operations: a sequence of ACLOperation instances.
+            admin: True if the admin flag should be applied for the Atomic ACLs api call.
+        """
+        request_text = {
+            "logical_path": logical_path,
+            "admin_mode": admin,
+            "operations": [self._to_acl_operation_json(op) for op in operations],
+        }
+
+        with self.sess.pool.get_connection() as conn:
+            request_msg = iRODSMessage(
+                "RODS_API_REQ",
+                JSON_Message(request_text, conn.server_version),
+                int_info=api_number["ATOMIC_APPLY_ACL_OPERATIONS_APN"],
+            )
+            conn.send(request_msg)
+            response = conn.recv()
+        response_msg = response.get_json_encoded_struct()
+        logger.debug("in atomic ACL api, server responded with: %r", response_msg)
+
     def get(self, target, report_raw_acls=True, **kw):
 
         if report_raw_acls:
@@ -148,7 +182,7 @@ class AccessManager(Manager):
         zone_ = acl.user_zone
         if acl.access_name.endswith("inherit"):
             zone_ = userName_ = ""
-        acl = acl.copy(decanonicalize=True)
+        acl = acl.copy(decanonicalize=-1)
         message_body = ModAclRequest(
             recursiveFlag=int(recursive),
             accessLevel=f"{prefix}{acl.access_name}",

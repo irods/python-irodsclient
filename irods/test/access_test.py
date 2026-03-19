@@ -4,15 +4,15 @@ import os
 import sys
 import unittest
 
-from irods.access import iRODSAccess
+from irods.access import ACLOperation, iRODSAccess
 from irods.collection import iRODSCollection
 from irods.column import In, Like
 from irods.exception import UserDoesNotExist
-from irods.models import User, Collection, DataObject
+from irods.models import Collection, DataObject, User
 from irods.path import iRODSPath
-from irods.user import iRODSUser
 from irods.session import iRODSSession
-import irods.test.helpers as helpers
+from irods.test import helpers
+from irods.user import iRODSUser
 
 
 class TestAccess(unittest.TestCase):
@@ -496,6 +496,41 @@ class TestAccess(unittest.TestCase):
             "read",
             self.sess,
         )
+
+    def test_atomic_acls__issue_505(self):
+        ses = self.sess
+        zone = user1 = user2 = user3 = group = None
+        try:
+            zone = ses.zones.create("twilight", "remote")
+            user1 = ses.users.create("test_user_505", "rodsuser")
+            user2 = ses.users.create("rod_serling_505#twilight", "rodsuser")
+            user3 = ses.users.create("local_test_user_505", "rodsuser")
+            group = ses.groups.create("test_group_505")
+            ses.acls.apply_atomic_operations(
+                self.coll_path,
+                a1 := ACLOperation("write", user1.name, user1.zone),
+                a2 := ACLOperation("read", user2.name, user2.zone),
+                a3 := ACLOperation("read", user3.name),
+                a4 := ACLOperation("read", group.name),
+            )
+
+            # Assert that the ACLs we added are now a subset of those now listed in the catalog.
+            self.assertLessEqual(
+                {acl.normalize(ses.zone) for acl in (a1,a2,a3,a4)},
+                {acl.normalize(ses.zone) for acl in ses.acls.get(self.coll)}
+            )
+
+        finally:
+            if user1:
+                user1.remove()
+            if user2:
+                user2.remove()
+            if user3:
+                user3.remove()
+            if group:
+                group.remove()
+            if zone:
+                zone.remove()
 
 
 if __name__ == "__main__":
