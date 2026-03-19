@@ -106,12 +106,17 @@ class iRODSSession:
 
     @property
     def available_permissions(self):
-        from irods.access import iRODSAccess, _iRODSAccess_pre_4_3_0
-
         try:
             self.__access
         except AttributeError:
-            self.__access = _iRODSAccess_pre_4_3_0 if self.server_version < (4, 3) else iRODSAccess
+            if self.server_version < (4, 3):
+                from irods.access import _iRODSAccess_pre_4_3_0
+
+                self.__access = _iRODSAccess_pre_4_3_0
+            else:
+                from irods.access import iRODSAccess
+
+                self.__access = iRODSAccess
         return self.__access
 
     def __init__(self, configure=True, auto_cleanup=True, **kwargs):

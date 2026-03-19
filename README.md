@@ -2118,6 +2118,66 @@ membership, this can be achieved with another query.
 `<session>.permissions` was therefore removed in v2.0.0
 in favor of `<session>.acls`.
 
+Atomically setting permissions
+------------------------------
+
+A list of permissions may be added to an object atomically using
+the AccessManager's `apply_atomic_operations` method:
+```py
+from irods.access import ACLOperation
+from irods.helpers import home_collection
+session = irods.helpers.make_session()
+myCollection = session.collections.create(f"{home_collection(session)}/newCollection")
+
+session.acls.apply_atomic_operations(
+    myCollection.path,
+    *[
+        ACLOperation("read", "public"),
+        ACLOperation("write", "bob", "otherZone")
+    ]
+)
+```
+`ACLOperation` objects form a linear order with `iRODSAccess` objects, and
+indeed are subclassed from them as well, allowing equivalence comparisons and
+also permitting intermixed sequences to be sorted (using the `__lt__` method
+if no sort `key` parameter is given).
+
+Care should be taken however to normalize the objects before such comparisons
+and sorting, and with connected uses of the `in` operator (which leverages `__eq__`).
+
+The following code sorts the objects based on their lexical order starting with the
+normalized `access_name`, which serves to group identical permissions together:
+```py
+from irods.access import *
+import irods.helpers
+acls = [
+    iRODSAccess('read_object', '/tempZone/home/alice', 'bob', 'tempZone'),
+    ACLOperation('write', 'rods'),
+    ACLOperation('read', 'bob'),
+]
+
+session = irods.helpers.make_session()
+N = lambda acl: acl.normalize(local_zone=session.zone)
+
+print(N(acls[0]) == N(acls[2]))
+acls.sort(key=N)
+print(N(iRODSAccess('read', '', 'bob')) in map(N, acls))
+```
+
+If strict order of permissions is desired, we can use code such as the following:
+```py
+from irods.access import *
+from pprint import pp
+pp(sorted(
+    [
+        ACLOperation('read', 'bob' ),
+        ACLOperation('own', 'rods'),
+        ACLOperation('read_object', 'alice')
+    ],
+    key=lambda acl: (all_permissions[acl.access_name], acl.normalize())
+))
+```
+
 Quotas (v2.0.0)
 ---------------
 
