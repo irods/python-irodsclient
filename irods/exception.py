@@ -650,6 +650,10 @@ class SYS_INVALID_INPUT_PARAM(SystemException):
     code = -130000
 
 
+class SYS_INTERNAL_ERR(SystemException):
+    code = -154000
+
+
 class SYS_BAD_INPUT(iRODSException):
     code = -158000
 
