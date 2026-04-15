@@ -1,14 +1,24 @@
+"""
+Interface for iRODS data objects.
+
+Provides high level abstraction and POSIX-like facilities (create, open,
+read/write) allowing clients to manipulate data objects very much as if they
+were local files.
+"""
+
+import ast
+import enum
 import io
-import sys
 import logging
 import os
-import ast
+import sys
+from datetime import datetime, timezone
 
-from irods.models import DataObject
-from irods.meta import iRODSMetaCollection
 import irods.keywords as kw
 from irods.api_number import api_number
 from irods.message import JSON_Message, iRODSMessage
+from irods.meta import iRODSMetaCollection
+from irods.models import DataObject
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +51,57 @@ class iRODSReplica:
         return "<{}.{} {}>".format(self.__class__.__module__, self.__class__.__name__, self.resource_name)
 
 
+class _repl_status(enum.Enum):  # noqa: N801
+    STALE_REPLICA, GOOD_REPLICA, INTERMEDIATE_REPLICA, READ_LOCKED, WRITE_LOCKED = range(5)
+
+
+# An ordering of the various replica status values, by descending fitness for use/interface
+_REPL_STATUSES = tuple(
+    getattr(_repl_status, ident).value
+    for ident in (
+        "GOOD_REPLICA",
+        "STALE_REPLICA",
+        "INTERMEDIATE_REPLICA",
+        "READ_LOCKED",
+        "WRITE_LOCKED",
+    )
+)
+
+# An appropriate reference datetime value for gauging replica age as part of
+# the default sort key in PRC4 and onward.
+_REFERENCE_DATETIME = datetime.fromtimestamp(0, timezone.utc)
+
+# ruff: noqa: D103 off
+
+# Key functions to dictate how replica row results will be sorted within an iRODSDataObject.
+
+
+def REPLICA_NUMBER_SORT_KEY_FN(row):  # noqa: N802
+    return row[DataObject.replica_number]
+
+
+def REPLICA_FITNESS_SORT_KEY_FN(row):  # noqa: N802
+    repl_status = int(row[DataObject.replica_status])
+
+    repl_status_rank = _REPL_STATUSES.index(repl_status) if _REPL_STATUSES.count(repl_status) else sys.maxsize
+
+    return (repl_status_rank, _REFERENCE_DATETIME - row[DataObject.modify_time])
+
+
+# ruff: noqa: D103 on
+
+_DEFAULT_SORT_KEY_FN = REPLICA_NUMBER_SORT_KEY_FN
+
+
 class iRODSDataObject:
-    def __init__(self, manager, parent=None, results=None):
+    # iRODSDataObject's constructor is not usually directly accessed by iRODS client applications.  See the main README.
+    # ruff: noqa: D107 off
+
+    def __init__(self, manager, parent=None, results=None, replica_sort_function=None):
         self.manager = manager
         if parent and results:
             self.collection = parent
+            results = sorted(results, key=(replica_sort_function or _DEFAULT_SORT_KEY_FN))
             for attr, value in DataObject.__dict__.items():
                 if not attr.startswith("_"):
                     try:
@@ -54,9 +110,8 @@ class iRODSDataObject:
                         # backward compatibility with older schema versions
                         pass
             self.path = self.collection.path + "/" + self.name
-            replicas = sorted(results, key=lambda r: r[DataObject.replica_number])
 
-            # The status quo before iRODS 5
+            # Copy pre-iRODS 5 fields
 
             replica_args = [
                 (
@@ -75,17 +130,19 @@ class iRODSDataObject:
                         modify_time=r[DataObject.modify_time],
                     ),
                 )
-                for r in replicas
+                for r in results
             ]
 
             # Adjust for adding access_time in the iRODS 5 case.
 
             if self.manager.sess.server_version >= (5,):
-                for n, r in enumerate(replicas):
+                for n, r in enumerate(results):
                     replica_args[n][1]['access_time'] = r[DataObject.access_time]
             self.replicas = [iRODSReplica(*a, **k) for a, k in replica_args]
 
         self._meta = None
+
+    # ruff: noqa: D107 off
 
     def __repr__(self):
         return f"<iRODSDataObject {self.id} {self.name}>"
