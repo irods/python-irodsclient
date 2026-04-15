@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-from datetime import datetime, timezone
 import base64
 import collections
 import concurrent.futures
@@ -17,13 +16,15 @@ import re
 import socket
 import stat
 import string
-import sys
 import subprocess
+import sys
 import threading
 import time
 import unittest
 import xml.etree.ElementTree
-import irods.test.helpers as helpers
+from datetime import datetime, timedelta, timezone
+
+from irods.test import helpers
 
 try:
     import tqdm
@@ -49,26 +50,24 @@ def is_localhost_synonym(name):
     return localhost_with_optional_domain_pattern.match(name.lower()) or is_localhost_ip(name)
 
 
-from irods.access import iRODSAccess
-from irods.models import Collection, DataObject
-from irods.path import iRODSPath
-from irods.test.helpers import iRODSUserLogins
+from tempfile import NamedTemporaryFile, gettempdir, mktemp
+
+import irods.client_configuration as config
 import irods.exception as ex
-from irods.column import Criterion
-from irods.data_object import chunks, irods_dirname
+import irods.keywords as kw
+import irods.parallel
 import irods.test.helpers as helpers
 import irods.test.modules as test_modules
-import irods.keywords as kw
-import irods.client_configuration as config
+from irods.access import iRODSAccess
+from irods.column import Criterion
+from irods.data_object import REPLICA_FITNESS_SORT_KEY_FN, chunks, irods_dirname
 from irods.manager import data_object_manager
-from irods.message import RErrorStack
-from irods.message import ET, XML_Parser_Type, default_XML_parser, current_XML_parser
-from datetime import datetime, timezone, timedelta
-from tempfile import NamedTemporaryFile, gettempdir, mktemp
-from irods.test.helpers import unique_name, my_function_name
-from irods.ticket import Ticket
-import irods.parallel
 from irods.manager.data_object_manager import Server_Checksum_Warning
+from irods.message import ET, RErrorStack, XML_Parser_Type, current_XML_parser, default_XML_parser
+from irods.models import Collection, DataObject
+from irods.path import iRODSPath
+from irods.test.helpers import iRODSUserLogins, my_function_name, unique_name
+from irods.ticket import Ticket
 
 RODSUSER = "nonadmin"
 
@@ -1253,8 +1252,7 @@ class TestDataObjOps(unittest.TestCase):
 
         # assertions on replicas
         self.assertEqual(len(obj.replicas), number_of_replicas)
-        for i, replica in enumerate(obj.replicas):
-            self.assertEqual(replica.number, i)
+        self.assertEqual({repl.number for repl in obj.replicas}, {*range(len(obj.replicas))})
 
         # now trim odd-numbered replicas
         # note (see irods/irods#4861): COPIES_KW might disappear in the future
@@ -1267,10 +1265,7 @@ class TestDataObjOps(unittest.TestCase):
         obj = session.data_objects.get(obj_path)
 
         # check remaining replica numbers
-        replica_numbers = []
-        for replica in obj.replicas:
-            replica_numbers.append(replica.number)
-        self.assertEqual(replica_numbers, [0, 2, 4, 6])
+        self.assertEqual({r.number for r in obj.replicas}, {0, 2, 4, 6})
 
         # remove object
         obj.unlink(force=True)
@@ -1728,11 +1723,12 @@ class TestDataObjOps(unittest.TestCase):
             self.assertIsNotNone(obj.replicas[1].__getattribute__(i))
 
         # ensure replica info is sensible
+        replicas = sorted(obj.replicas, key=lambda repl: repl.number)
         for i in range(2):
-            self.assertEqual(obj.replicas[i].number, i)
-            self.assertEqual(obj.replicas[i].status, "1")
-            self.assertEqual(obj.replicas[i].path.split("/")[-1], filename)
-            self.assertEqual(obj.replicas[i].resc_hier.split(";")[-1], ufs_resources[i].name)
+            self.assertEqual(replicas[i].number, i)
+            self.assertEqual(replicas[i].status, "1")
+            self.assertEqual(replicas[i].path.split("/")[-1], filename)
+            self.assertEqual(replicas[i].resc_hier.split(";")[-1], ufs_resources[i].name)
 
         self.assertEqual(obj.replicas[0].resource_name, ufs_resources[0].name)
         if self.sess.server_version < (4, 2, 0):
@@ -2991,6 +2987,55 @@ class TestDataObjOps(unittest.TestCase):
         )
 
         test_put__issue_722(self)
+
+    def test_modified_sorting_of_replicas__issue_746(self):
+        basename = unique_name(my_function_name(), datetime.now()) + '_dataobj_647'  # noqa: DTZ005
+        with self.create_simple_resc() as new_resc1, self.create_simple_resc() as new_resc2:
+            data = helpers.make_object(self.sess, f'{helpers.home_collection(self.sess)}/{basename}')
+
+            # Precondition for an eventual total of 3 replicas: initial data replica is not
+            # on either of the new resources.
+            self.assertFalse({repl.resource_name for repl in data.replicas} & {new_resc1, new_resc2})
+            try:
+                data.replicate(resource=new_resc1)
+
+                # Ensure that one of the replicas is stale, to test proper sorting.
+                with data.open('a', **{kw.RESC_NAME_KW: new_resc1}) as f:
+                    f.write(b'.')
+
+                # Sleep to ensure different replica modify timestamps.
+                time.sleep(2)
+
+                data.replicate(resource=new_resc2)
+
+                # At this point, there should be exactly two good replicas among the three.
+                # Assert exactly one replica is stale, to corroborate
+                data = self.sess.data_objects.get(
+                    data.path, replica_sort_function=lambda row: int(row[DataObject.replica_status])
+                )
+                self.assertEqual([repl.status for repl in data.replicas], ['0', '1', '1'])
+
+                # Get a data object with the PRC3-default sort order. Ordering is expected to
+                # be ascending by replica number.
+                if irods.version.version_as_tuple() < (4,):
+                    data = self.sess.data_objects.get(data.path)
+                    for i, repl in enumerate(data.replicas):
+                        self.assertEqual(repl.number, i)
+
+                options = {}
+                if irods.version.version_as_tuple() < (4,):
+                    options['replica_sort_function'] = REPLICA_FITNESS_SORT_KEY_FN
+
+                # Get a data object with the PRC3-alternative/PRC4-default sort order.
+                data = self.sess.data_objects.get(data.path, **options)
+
+                # Test default replica sorting.
+                self.assertEqual(data.replicas[0].status, '1')
+                self.assertEqual(data.replicas[0].modify_time, data.modify_time)
+                self.assertGreater(data.replicas[0].modify_time, data.replicas[1].modify_time)
+            finally:
+                if data:
+                    data.unlink(force=True)
 
 
 if __name__ == "__main__":

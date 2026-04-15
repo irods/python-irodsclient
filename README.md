@@ -453,6 +453,18 @@ ensure the lifetime of the updatable instance extends beyond the time needed for
 
 See `irods/test/data_obj_test.py` for examples of these and other subtleties of progress bar usage.
 
+Replica access and sorting
+--------------------------
+
+The `replicas` member of an instance of `iRODSDataObject` allows a view into the various replicas that exist under a
+given logical path.  For an example of this, jump forward to [working with data objects](#working-with-data-objects-files).
+
+Note that a `replica_sort_function` option exists in the `iRODSDataObject` constructor and in
+`<session_object>.data_objects.get`. If `replica_sort_function` is not specified, the replicas
+list contained in the returned object will be sorted according to replica number
+(REPLICA_NUMBER_SORT_KEY_FN) in PRC < v4 or by general fitness to be considered a
+good representation of that object (REPLICA_FITNESS_SORT_KEY_FN) in PRC >= v4.  For those definitions, see `irods/data_object.py`.
+
 Working with collections (directories)
 --------------------------------------
 
