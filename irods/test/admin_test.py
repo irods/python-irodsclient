@@ -52,6 +52,16 @@ class TestAdmin(unittest.TestCase):
         with self.assertRaises(UserDoesNotExist):
             self.sess.users.get(self.new_user_name)
 
+    def test_zone_report(self):
+        # get zone report
+        report = self.sess.zones.zone_report()
+
+        # confirm it is a dict
+        self.assertTrue(isinstance(report, dict))
+
+        # confirm zone name matches
+        self.assertEqual(report["zones"][0]["servers"][0]["server_config"]["zone_name"], self.sess.zone)
+
     def test_create_delete_user_zone(self):
         # user should not be already present
         with self.assertRaises(UserDoesNotExist):

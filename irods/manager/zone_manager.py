@@ -41,3 +41,20 @@ class ZoneManager(Manager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
+
+    def zone_report(self):
+        """
+        Get zone report.
+
+        Requires rodsadmin privileges.
+
+        Returns:
+            dict: Contains zone configuration.
+        """
+        message_body = ""
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["ZONE_REPORT_AN"])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
+        return response.get_json_encoded_struct()

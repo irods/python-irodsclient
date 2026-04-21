@@ -181,4 +181,5 @@ api_number = {
     "TOUCH_APN": 20007,
     "AUTH_PLUG_REQ_AN": 1201,
     "AUTHENTICATION_APN": 110000,
+    "ZONE_REPORT_AN": 10205,
 }
