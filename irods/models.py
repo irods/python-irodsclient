@@ -49,6 +49,8 @@ class Zone(Model):
     id = Column(Integer, "ZONE_ID", 101)
     name = Column(String, "ZONE_NAME", 102)
     type = Column(String, "ZONE_TYPE", 103)
+    connection = Column(String, "ZONE_CONNECTION", 104)
+    comment = Column(String, "ZONE_COMMENT", 105)
 
 
 class User(Model):
