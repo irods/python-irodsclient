@@ -1,15 +1,15 @@
 #! /usr/bin/env python
 
-from datetime import datetime as _datetime
 import os
 import sys
 import unittest
+from datetime import datetime as _datetime
 
-from irods.models import User, Collection
 from irods.access import iRODSAccess
 from irods.collection import iRODSCollection
 from irods.exception import CollectionDoesNotExist
-import irods.test.helpers as helpers
+from irods.models import Collection, User, Zone
+from irods.test import helpers
 
 
 class TestRemoteZone(unittest.TestCase):
@@ -67,6 +67,44 @@ class TestRemoteZone(unittest.TestCase):
                 user.remove()
             if zone:
                 zone.remove()
+
+    def test_create_remote_zone_and_update_properties__issue_816(self):
+        newzone = None
+        try:
+            # create new zone
+            newzonename = "zone816"
+            newzone = self.sess.zones.create(newzonename, "remote")
+
+            # new values
+            new_connection = "apples:1247"
+            new_comment = "zone816 comment 1"
+
+            # modify by method
+            newzone.modify("connection", new_connection)
+            newzone.modify("comment", new_comment)
+
+            # confirm via get
+            refreshed_zone = self.sess.zones.get(newzonename)
+            self.assertEqual(refreshed_zone.connection, new_connection)
+            self.assertEqual(refreshed_zone.comment, new_comment)
+
+            # new values again
+            new_connection = "bananas:1247"
+            new_comment = "zone816 comment 2"
+
+            # modify by parameter
+            self.sess.zones.modify(newzonename, "connection", new_connection)
+            self.sess.zones.modify(newzonename, "conn", new_connection)
+            self.sess.zones.modify(newzonename, "comment", new_comment)
+
+            # confirm via query
+            query_zone = self.sess.query(Zone).filter(Zone.name == newzonename).one()
+            self.assertEqual(query_zone[Zone.connection], new_connection)
+            self.assertEqual(query_zone[Zone.comment], new_comment)
+
+        finally:
+            if newzone:
+                newzone.remove()
 
 
 if __name__ == "__main__":

@@ -9,9 +9,15 @@ class iRODSZone:
             self.id = result[Zone.id]
             self.name = result[Zone.name]
             self.type = result[Zone.type]
+            self.connection = result[Zone.connection]
+            self.comment = result[Zone.comment]
 
     def remove(self):
         self.manager.remove(self.name)
+
+    def modify(self, attribute, value):
+        """Modify a zone attribute."""
+        self.manager.modify(self.name, attribute, value)
 
     def __repr__(self):
         """Render a user-friendly string representation for the iRODSZone object."""

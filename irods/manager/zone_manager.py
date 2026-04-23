@@ -58,3 +58,14 @@ class ZoneManager(Manager):
             response = conn.recv()
         logger.debug(response.int_info)
         return response.get_json_encoded_struct()
+
+    def modify(self, zone_name, attribute, value):
+        """Modify a zone attribute."""
+        if attribute == "connection":
+            attribute = "conn"  # server expects this string
+        message_body = GeneralAdminRequest("modify", "zone", zone_name, attribute, value)
+        request = iRODSMessage("RODS_API_REQ", msg=message_body, int_info=api_number["GENERAL_ADMIN_AN"])
+        with self.sess.pool.get_connection() as conn:
+            conn.send(request)
+            response = conn.recv()
+        logger.debug(response.int_info)
