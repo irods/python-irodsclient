@@ -230,7 +230,7 @@ class _pam_interactive_ClientAuthState(authentication_base):
     def next(self, request):
         prompt = request.get("msg", {}).get("prompt", "")
         if prompt:
-            _logger.info("Server prompt: %s", prompt)
+            _logger.debug("Server prompt: %s", prompt)
 
         server_req = request.copy()
         self._patch_state(server_req)

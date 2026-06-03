@@ -1,0 +1,17 @@
+# This file is for testing PAM authentication with iRODS
+# using the pam_interactive authentication scheme.
+
+# Prompt for the first password, from /etc/shadow.
+auth required pam_unix.so
+
+# This is a custom PAM module that clears the success token. Without
+# this, the "auth" lines which follow are skipped.
+auth required /t012/pam_clear_token.so
+
+# Prompt for the second password, from the user database file created
+# earlier. The use of "crypt=crypt" is required for this to work. It
+# tells the module that the passwords are encrypted.
+auth required pam_userdb.so db=/t012/pam_userdb crypt=crypt
+
+# Do the normal user account stuff.
+account required pam_unix.so
