@@ -120,7 +120,7 @@ _begin_pam_environment_and_password() {
     echo "$ENV" > ~/.irods/irods_environment.json
 
     if [ -n "$1" -a -z "$SKIP_IINIT_FOR_PASSWORD" ]; then
-        iinit <<<"$1" 2>/tmp/iinit_as_alice.log
+        iinit ${IINIT_TTL:+--ttl $IINIT_TTL}<<<"$1" 2>/tmp/iinit_as_alice.log
     fi
 }
 
@@ -241,4 +241,12 @@ if relto:
   exit(0 if vars(operator)[comparison](svt,to_tuple(relto)) else 1)
 print(fm_tuple(svt))
 " $1 $2
+}
+
+irods_server_package_upgradable() {
+    apt update >& /dev/null
+    if { apt list --upgradable | grep "irods-server"; } >&/dev/null; then
+        return 0
+    fi
+    return 1
 }
