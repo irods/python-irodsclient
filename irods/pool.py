@@ -82,7 +82,7 @@ class Pool:
     def get_connection(self):
         new_conn = False
         with self._lock:
-            try:
+            if self.idle:
                 conn = self.idle.pop()
 
                 curr_time = datetime.datetime.now()
@@ -105,7 +105,7 @@ class Pool:
                     conn = Connection(self, self.account)
                     new_conn = True
                     logger.debug(f"Created new connection with id: {id(conn)}")
-            except KeyError:
+            else:
                 conn = Connection(self, self.account)
                 new_conn = True
                 logger.debug(f"No connection found in idle set. Created a new connection with id: {id(conn)}")
