@@ -836,22 +836,60 @@ of an "imeta set \...", e.g. overwriting all AVUs with a name field
 of "key2" in a single update:
 
 ```python
->>> new_meta = iRODSMeta('key2','value5','units2')
->>> obj.metadata\[new_meta.name\] = new_meta
+>>> obj.metadata['key2'] = iRODSMeta('key2','value5','units2')
 >>> print(obj.metadata.items())
 [<iRODSMeta 13182 key1 value1 units1>, <iRODSMeta 13183 key1 value2 None>,
 <iRODSMeta 13186 key2 value5 units2>]
 ```
 
-With only one AVU on the object with a name of "key2", *get_one*
-is assured of not throwing an exception:
+Alternatively, in the indexed AVU assignment, the following construction can
+be used in lieu of the direct call to the iRODSMeta constructor, thus avoiding redundant use of the
+key string on both left- and right-hand sides of the assignment:
+
+```
+>>> obj.metadata['key2'] = iRODSMeta.builder(value='value5', units='units2')
+```
+
+Lest there should be a misunderstanding, this form of assignment will also clear
+any other pre-existing AVUs with a name field of 'key2' before the requested assignment is
+actually made.
+
+Be aware that use of the indexing form on obj.metadata to retrieve AVUs
+with code such as
+
+```
+x = obj.metadata['key1']
+```
+
+can also act in ways unexpected by the unwary developer. If multiple AVUs
+exist under the given name field, one will be chosen and returned at random.
+
+For these reasons, the indexed assignment may be better considered an artifact of convenience
+rather than reliable, straightforward coding practice.  For clear and unambiguous intent, the
+canonical iRODS API endpoints should be used, with calls such as
+
+```python
+obj.metadata.set('mykey1','myvalue1')
+obj.metadata.set('mykey2','myvalue2','myunits2')
+obj.metadata.set(*iRODSMeta('mykey3','myvalue3'))
+```
+
+being preferred. (All of the same usages apply for the `add` API endpoint as well.)
+
+Enforcing a singleton AVU
+-------------------------
+*get_one()* is a way of retrieving an AVU by its name field if we want to
+assert that exactly one such AVU should exist (fewer or more than 1 will raise
+a `KeyError`).  Here, it can be used to retrieve the "key2" AVU (since the indexed
+assignment from the last section has removed all but the one):
 
 ```python
 >>> print(obj.metadata.get_one('key2'))
 <iRODSMeta 13186 key2 value5 units2>
 ```
 
-However, the same is not true of "key1":
+But for our present example, the same is not true in the case of "key1", since
+we have now left several AVUs under that name.
 
 ```python
 >>> print(obj.metadata.get_one('key1'))
@@ -861,6 +899,9 @@ Traceback (most recent call last):
     raise KeyError
 KeyError
 ```
+
+Metadata removal and clean disposal
+-----------------------------------
 
 Finally, to remove a specific AVU from an object:
 
@@ -922,20 +963,21 @@ Since v1.1.4, `set()` can be used instead:
 >>> album.metadata.set( meta )
 ```
 
-In versions of iRODS 4.2.12 and later, we can also do:
+In iRODS 4.2.12 and after, a rodsadmin can apply the ADMIN_KW
+thus allowing modification of AVUs owned by other users:
 
 ```python
->>> album.metadata.set( meta, \*\*{kw.ADMIN_KW: ''} )
+>>> album.metadata.set(meta, **{kw.ADMIN_KW: ''})
 ```
 
-or even:
+Equivalently, but with increased overhead, this does the same thing:
 
 ```python
->>> album.metadata(admin = True)\[meta.name\] = meta
+>>> album.metadata(admin=True)[meta.name] = meta
 ```
 
-Since v1.1.5, the "timestamps" keyword is provided to enable the loading
-of create and modify timestamps for every AVU returned from the server:
+A "timestamps" keyword is also provided to enable loading of the
+`create_time` and `modify_time` attributes for every AVU returned from the server:
 
 ```python
 >>> avus = album.metadata(timestamps = True).items()

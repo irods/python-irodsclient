@@ -1,8 +1,27 @@
 import base64
+import collections
 import copy
+import functools
 
+class avubuilder:
+  def __init__(self, value, units=None, *, name=None):
+      self.avu_builder = _AVU_builder(name=name, value=value, units=units)
+
+  def __call__(self):
+      return iRODSMeta(*self.avu_builder)
+
+_AVU_builder = functools.partial(
+    _AVU_type:=collections.namedtuple(
+        '_AVU_type',
+        ['name','value','units']
+    ),
+    name=None, units=None
+)
 
 class iRODSMeta:
+
+    builder = avubuilder
+
     def _to_column_triple(self):
         return (self.name, self.forward_translate(self.value)) + (
             ('',) if not self.units else (self.forward_translate(self.units),)
@@ -235,7 +254,7 @@ class iRODSMetaCollection:
     def _get_meta(self, *args):
         if not len(args):
             raise ValueError("Must specify an iRODSMeta object or key, value, units)")
-        return args[0] if len(args) == 1 else self._manager._opts['iRODSMeta_type'](*args)
+        return self._manager._opts['iRODSMeta_type'](*(args[0] if len(args)==1 else args))
 
     def apply_atomic_operations(self, *avu_ops):
         self._manager.apply_atomic_operations(self._model_cls, self._path, *avu_ops)
@@ -296,7 +315,11 @@ class iRODSMetaCollection:
         the key with a single iRODSMeta tuple
         """
         self._delete_all_values(key)
-        self.add(meta)
+        if isinstance(meta, iRODSMeta.builder):
+            meta = meta()
+            if meta.name is None:
+                meta.name = key
+        self.add(*meta)
 
     def _delete_all_values(self, key):
         for meta in self.get_all(key):
