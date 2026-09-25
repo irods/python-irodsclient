@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 import unittest
 from datetime import datetime as _datetime
 
@@ -101,6 +102,37 @@ class TestRemoteZone(unittest.TestCase):
             query_zone = self.sess.query(Zone).filter(Zone.name == newzonename).one()
             self.assertEqual(query_zone[Zone.connection], new_connection)
             self.assertEqual(query_zone[Zone.comment], new_comment)
+
+        finally:
+            if newzone:
+                newzone.remove()
+
+    def test_zone_create_and_modify_times__issue_822(self):
+        newzone = None
+        try:
+            # Create new zone
+            newzonename = "otherzone"
+            newzone = self.sess.zones.create(newzonename, "remote")
+            query_zone = self.sess.query(Zone).filter(Zone.name == newzonename).one()
+            create_time = query_zone[Zone.create_time]
+            old_modify_time = query_zone[Zone.modify_time]
+
+            # Confirm that creation/modification are datetimes
+            self.assertIsInstance(create_time, _datetime)
+            self.assertIsInstance(old_modify_time, _datetime)
+
+            # Confirm we get the same result via query vs. iRODSZone object attribute
+            self.assertEqual(create_time, self.sess.zones.get(newzonename).create_time)
+            self.assertEqual(old_modify_time, self.sess.zones.get(newzonename).modify_time)
+
+            # Confirm modify time is updated after comment change after more than one second,
+            # but create time is not changed.
+            time.sleep(1.5)
+            newzone.modify("comment", "some comment")
+            query_zone = self.sess.query(Zone).filter(Zone.name == newzonename).one()
+            self.assertEqual(query_zone[Zone.create_time], create_time)
+            self.assertGreater(query_zone[Zone.modify_time], old_modify_time)
+            self.assertGreater(self.sess.zones.get(newzonename).modify_time, old_modify_time)
 
         finally:
             if newzone:

@@ -11,6 +11,8 @@ class iRODSZone:
             self.type = result[Zone.type]
             self.connection = result[Zone.connection]
             self.comment = result[Zone.comment]
+            self.create_time = result[Zone.create_time]
+            self.modify_time = result[Zone.modify_time]
 
     def remove(self):
         self.manager.remove(self.name)
