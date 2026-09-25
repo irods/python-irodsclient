@@ -47,6 +47,8 @@ class Zone(Model):
     type = Column(String, "ZONE_TYPE", 103)
     connection = Column(String, "ZONE_CONNECTION", 104)
     comment = Column(String, "ZONE_COMMENT", 105)
+    create_time = Column(DateTime, "ZONE_CREATE_TIME", 106)
+    modify_time = Column(DateTime, "ZONE_MODIFY_TIME", 107)
 
 
 class User(Model):
