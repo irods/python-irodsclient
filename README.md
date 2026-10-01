@@ -41,7 +41,62 @@ Uninstalling
 Establishing a (secure) connection
 ----------------------------------
 
-One way of starting a session is to pass iRODS credentials as keyword
+An `iRODSSession` instance is the interface object through which iRODS server
+APIs can be invoked. One can create the object using constructor form directly,
+passing connection and authentication options within the call parameter list:
+
+```python
+>>> from irods.session import iRODSSession
+>>> with iRODSSession(host='localhost', port=1247, user='bob', password='1234', zone='tempZone') as session:
+...     # Any number of operations using the 'session' variable can go here.
+```
+
+Another way to create the session object, assuming one has already successfully
+set up a client environment via `iinit`, is by using the convenience function `make_session`:
+
+```python
+>>> from irods.helpers import make_session
+>>> session = make_session()
+```
+
+Once created, the `iRODSSession` instance can be managed from a choice between two
+possible patterns.  Firstly, one can allow references to the instance to persist as
+is natural for the application.  This allows Python interpreter's reference counting to
+let the object pass out of scope and destroy the underlying server connection(s) at the
+proper time:
+
+```python
+home_coll = session.collections.get(f'/tempZone/home/{session.username}')
+# (... Further instances of calls to the server through 'session' may follow.)
+```
+
+This casual approach usually ends up being the optimal choice in terms of efficiency, since
+connections are expensive to create and destroy, and any given connection to the iRODS
+server can be employed consecutively and for disparate purposes without incident.
+
+Alternatively a context manager may be used, thus forcing connections to be
+provisionally cleared from the session object once a given block of code has
+executed:
+
+```python
+with make_session() as session:
+  my_user = session.users.get(session.username)
+  # We can have further usage of 'session' in this code block. At the end 
+  # of it, session.cleanup() is implicitly called to remove any idle connections.
+```
+
+Either way, the instance remains available for further use afterward, until
+destructed.
+
+We should, of course, be mindful of how many still-connected `iRODSSession`
+objects we retain references to in an application, as having more of them than
+the system can support database connections for can result in the spurious failure
+of new connections.
+
+Finer points in connecting to the iRODS server
+----------------------------------------------
+
+iRODS credentials may also be passed as keyword
 arguments:
 
 ```python
