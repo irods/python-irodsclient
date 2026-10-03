@@ -36,12 +36,12 @@ class MetadataManager(Manager):
     def __init__(self, *_):
         self._opts = _MetadataManager_opts_initializer.copy()
         super().__init__(*_)
+        # For the iRODS-api keywords only (currently ADMIN_KW is the sole one used):
+        self.__kw = {}
 
     @property
     def use_timestamps(self):
         return self._opts['timestamps']
-
-    __kw: Dict[str, Any] = {}  # default (empty) keywords
 
     def _updated_keywords(self, opts):
         kw_ = self.__kw.copy()
@@ -52,18 +52,20 @@ class MetadataManager(Manager):
         return self.__kw.copy()
 
     def __call__(self, **flags):
-        # Make a new shallow copy of the manager object, but update options from parameter list.
+        # Make a new shallow copy of the manager object, but duplicate options from parameter list as well as iRODS API
+        # flags (stored in the instance's private __kw member) to be applied in each call.
         new_self = copy.copy(self)
         new_self._opts = copy.copy(self._opts)
+        new_self.__kw = copy.copy(self.__kw)
 
         # Update the flags that do bookkeeping in the returned(new) manager object.
         new_self._opts.update((key, val) for key, val in flags.items() if val is not None)
 
-        # Update the ADMIN_KW flag in the returned(new) object.
+        # For the new object, make ADMIN_KW flag or absence thereof reflect the admin option in _opts.
         if new_self._opts.get('admin'):
-            self.__kw[kw.ADMIN_KW] = ""
+            new_self.__kw[kw.ADMIN_KW] = ""
         else:
-            self.__kw.pop(kw.ADMIN_KW, None)
+            new_self.__kw.pop(kw.ADMIN_KW, None)
 
         return new_self
 

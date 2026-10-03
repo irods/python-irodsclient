@@ -798,6 +798,59 @@ class TestMeta(unittest.TestCase):
             # data.metadata(admin = True) generates a cloned object but for the one change to "admin".
             data.metadata.admin = True
 
+    def test_admin_mode_and_keyword_exhibit_no_stickyness__issue_833(self):
+        # Create a rodsuser, and a session for that roduser.
+        adm = self.sess
+        user = d = None
+        try:
+            # Create a test user.
+            user = adm.users.create("bobby", "rodsuser")
+            user.modify("password", "bpass")
+
+            # This is a convenience function to (re)instantiate the test iRODSSessions:
+            def new_session():
+                return iRODSSession(
+                    port=adm.port,
+                    zone=adm.zone,
+                    host=adm.host,
+                    user=user.name,
+                    password="bpass",
+                )
+
+            with new_session() as ses1:
+                d = ses1.data_objects.create(data_name:="/{adm.zone}/home/{user.name}/testfile".format(**locals()))
+                d.metadata(admin=True)
+
+            with new_session() as ses2:
+                # Repeat the fetch of the data object using the new session, so we are clean of old references.
+                d = ses2.data_objects.get(data_name)
+
+                # In this use of set(), we expect not to end up applying ADMIN_KW in the underlying API call.
+                # (Doing so as a rodsuser would raise INSUFFICIENT_PRIVILEGE_LEVEL and the test would fail.)
+                d.metadata.set('a','b')
+
+                # Check that the option flag for use of ADMIN_KW is not set.
+                self.assertFalse(d.metadata.admin)
+
+                # This function duplicates the way in which the client API endpoint calculates iRODS option keywords
+                # for the underlying API call:
+                get_call_keywords = lambda metacoll: metacoll._manager._updated_keywords((),)
+
+                # Applying admin=True should result in API flags containing ADMIN_KW among the lookup keys.
+                md_modified=d.metadata(admin=True)
+                self.assertIn(kw.ADMIN_KW, get_call_keywords(md_modified))
+
+                # The modified admin setting should be reflected when reading it back from the object's
+                # internal options # bookkeeping.
+                self.assertTrue(md_modified.admin)
+
+                # But the original (unmodified) source object should not reflect use of an ADMIN_KW.
+                self.assertNotIn(kw.ADMIN_KW, get_call_keywords(d.metadata)) # keyword updates not reflected in copied obj.
+        finally:
+            if d:
+                d.unlink(force=True)
+            if user:
+                user.remove()
 
 if __name__ == "__main__":
     # let the tests find the parent irods lib
