@@ -38,21 +38,65 @@ Uninstalling
 
     pip uninstall python-irodsclient
 
-Establishing a (secure) connection
-----------------------------------
+Establishing a connection
+-------------------------
 
-One way of starting a session is to pass iRODS credentials as keyword
-arguments:
+An `iRODSSession` instance is the interface object through which iRODS server
+APIs can be invoked. One can create the object using the constructor form directly,
+passing connection and authentication options within the call parameter list:
 
 ```python
 >>> from irods.session import iRODSSession
 >>> with iRODSSession(host='localhost', port=1247, user='bob', password='1234', zone='tempZone') as session:
-...      # workload
-...
->>>
+...     # Any number of operations using the 'session' variable can go here.
 ```
 
-If you're an administrator acting on behalf of another user:
+Another way to create the session object, assuming one has already successfully
+set up a client environment in `~/.irods` (typically by running `iinit`), is by
+using the convenience function `make_session`:
+
+```python
+>>> from irods.helpers import make_session
+>>> session = make_session()
+```
+
+Once created, the `iRODSSession` instance can be managed in one of two possible ways.
+
+Firstly, one could allow references to the session object to persist through a number of uses,
+and then expire, as is natural for the application.  When it goes out of scope (or, more
+accurately, when its reference count falls to zero) the Python interpreter will destroy
+the session object and any underlying server connection(s).  This casual approach often
+ends up being the most efficient one, since connections are expensive to create and destroy.
+Furthermore, any single connection to the iRODS server can freely be employed for a number
+of disparate server interactions, one after the other.
+
+Or, secondly, a context manager could be used.  This forces all connections to be
+provisionally cleared from the session object once a given block of code has
+executed:
+
+```python
+with make_session() as session:
+  my_user = session.users.get(session.username)
+  # We can have further usage of 'session' in this code block. At the end 
+  # of it, session.cleanup() is implicitly called to remove any idle connections.
+```
+
+Either way, any persisting session object remains available for further use afterward, until
+destroyed.
+
+Of course, we should be mindful of how many still-connected `iRODSSession`
+objects are allowed to proliferate in an application, since having more client connections
+than the server can support database connections for can result in the spurious failure
+of any new attempts to connect.
+
+Basic authentication and security
+---------------------------------
+
+As seen in the `iRODSSession` constructor call in the previous section, iRODS credentials may be passed
+in as keyword arguments.
+
+If you're an administrator, you can also create a session that acts on behalf of another user without 
+having to authenticate as that user:
 
 ```python
 >>> from irods.session import iRODSSession
@@ -63,9 +107,10 @@ If you're an administrator acting on behalf of another user:
 >>>
 ```
 
-If no `client_zone` is provided, the `zone` parameter is used in its place.
+Note that if the `client_zone` parameter is not provided, the `zone` parameter is used in its place.
 
-Using environment files (including any SSL settings) in `~/.irods/`:
+We can also name an environment file (including settings both SSL and non-SSL related) to be used in
+setting up the session:
 
 ```python
 >>> import os
