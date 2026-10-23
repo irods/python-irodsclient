@@ -173,10 +173,10 @@ class UserMeta(Model):
 
 class DataAccess(Model):
     type = Column(Integer, "DATA_ACCESS_TYPE", 700)
-    name = Column(String, "COL_DATA_ACCESS_NAME", 701)
-    token_namespace = Column(String, "COL_DATA_TOKEN_NAMESPACE", 702)
-    user_id = Column(Integer, "COL_DATA_ACCESS_USER_ID", 703)
-    data_id = Column(Integer, "COL_DATA_ACCESS_DATA_ID", 704)
+    name = Column(String, "DATA_ACCESS_NAME", 701)
+    token_namespace = Column(String, "DATA_TOKEN_NAMESPACE", 702)
+    user_id = Column(Integer, "DATA_ACCESS_USER_ID", 703)
+    data_id = Column(Integer, "DATA_ACCESS_DATA_ID", 704)
 
 
 class CollectionAccess(Model):
