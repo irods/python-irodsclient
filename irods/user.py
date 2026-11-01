@@ -82,6 +82,13 @@ class iRODSGroup:
     def set_quota(self, amount, resource="total"):
         self.manager.set_quota(self.name, amount, resource=resource)
 
+    @property
+    def zone(self):
+        return self.manager.sess.zone
+
+    def __eq__(self, other_group):
+        return self.name == other_group.name
+
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:
