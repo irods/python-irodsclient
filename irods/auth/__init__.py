@@ -7,7 +7,17 @@ import irods.password_obfuscation as obf
 import irods.session
 
 
-__all__ = ["pam_interactive", "pam_password", "native"]
+__all__ = ["pam_interactive", "pam_password", "native", "irods_scheme"]
+
+
+# Schemes whose plugin module is not named after the scheme
+# The `irods` scheme file (irods.py) would clash with the package name `irods`
+# when irods.py get loaded into globals at runtime.
+_PLUGIN_MODULE_FOR_SCHEME = {"irods": "irods_scheme"}
+
+
+def plugin_module_name(scheme):
+    return _PLUGIN_MODULE_FOR_SCHEME.get(scheme, scheme)
 
 
 AUTH_PLUGIN_PACKAGE = "irods.auth"

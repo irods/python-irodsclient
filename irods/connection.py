@@ -103,8 +103,9 @@ class Connection:
 
                 auth_module = None
                 # use client side "plugin" module: irods.auth.<scheme>
-                irods.auth.load_plugins(subset=[scheme])
-                auth_module = getattr(irods.auth, scheme, None)
+                module_name = irods.auth.plugin_module_name(scheme)
+                irods.auth.load_plugins(subset=[module_name])
+                auth_module = getattr(irods.auth, module_name, None)
                 if auth_module:
                     auth_module.login(self, **self.auth_options)
                     auth_type = auth_module.__name__

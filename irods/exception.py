@@ -676,6 +676,10 @@ class SYS_NOT_ALLOWED(iRODSException):
     code = -169000
 
 
+class AUTHENTICATION_ERROR(iRODSException):
+    code = -178000
+
+
 class UserInputException(iRODSException):
     pass
 
