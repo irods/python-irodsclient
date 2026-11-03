@@ -1,18 +1,21 @@
 #! /usr/bin/env python
 
+import io
 import logging
 import os
 import sys
 import textwrap
 import unittest
+import uuid
 
 import irods.access
 from irods.access import ACLOperation, iRODSAccess
 from irods.collection import iRODSCollection
 from irods.column import In, Like
-from irods.exception import UserDoesNotExist
+from irods.exception import CAT_NO_ROWS_FOUND, UserDoesNotExist
 from irods.models import Collection, DataObject, User
 from irods.path import iRODSPath
+from irods.query import SpecificQuery
 from irods.session import iRODSSession
 from irods.test import helpers
 from irods.user import iRODSUser
@@ -583,6 +586,7 @@ class TestAccess(unittest.TestCase):
         user = group = coll = None
         ses = self.sess
         my_specific_query=None
+        query_alias = None
         try:
             coll = ses.collections.create('/tempZone/home/public/folder_561')
             data = ses.data_objects.create('/tempZone/home/public/folder_561/file')
@@ -598,13 +602,21 @@ class TestAccess(unittest.TestCase):
                 ses.acls.set(iRODSAccess(USER_PERM, obj.path, user.name))
                 ses.acls.set(iRODSAccess(GROUP_PERM, obj.path, group.name))
 
+            sql_arg = {}
             try:
-                SpecificQuery(ses, alias='findQueryByAlias', args=(alias_for_get_maximum_permission_for_path,)).execute()
+                SpecificQuery(ses,
+                    alias='findQueryByAlias', 
+                    args=(query_alias:=alias_for_get_maximum_permission_for_path,)).execute()
             except CAT_NO_ROWS_FOUND:
                 query_alias = str(uuid.uuid1()),
-                my_specific_query = SpecificQuery(ses, sql=SQL, alias=query_alias)
+                sql_arg = {'sql':SQL}
+
+            my_specific_query = SpecificQuery(ses, alias=query_alias, **sql_arg)
+            if sql_arg:
+                my_specific_query.register()
 
             logger=logging.getLogger('issue_561_query_type_detection')
+            logger.setLevel(logging.DEBUG)
             for is_member in (False, True):
                 if is_member:
                     group.addmember(user.name,user.zone)
@@ -624,7 +636,7 @@ class TestAccess(unittest.TestCase):
                         for query_index in ('SPECIFIC', 'GENERAL'):
                             with self.subTest(f"Issue 561 subTest: {is_member=} {usr=} {obj=} {query_index=}"):
                                 try:
-                                    logger.addHandler(handler:=StreamHandler(stream:=io.StringIO()))
+                                    logger.addHandler(handler:=logging.StreamHandler(stream:=io.StringIO()))
                                     permission = ses.acls.get_maximum_permission_for_path(
                                         usr,
                                         **query_options[query_index],
@@ -632,7 +644,7 @@ class TestAccess(unittest.TestCase):
                                     ).as_string
                                     self.assertEqual(permission, expected_permission)
                                     # Check logging output to verify which code path was taken.
-                                    self.assertEqual(stream.getvalue(), query_index)
+                                    self.assertEqual(stream.getvalue().rstrip(), query_index)
                                 finally:
                                     logger.removeHandler(handler)
         finally:
@@ -643,8 +655,8 @@ class TestAccess(unittest.TestCase):
                 user.remove()
             if group:
                 group.remove()
-            if specific_query:
-                specific_query.remove()
+            if my_specific_query and (query_alias != alias_for_get_maximum_permission_for_path):
+                my_specific_query.remove()
 
 
 if __name__ == "__main__":
