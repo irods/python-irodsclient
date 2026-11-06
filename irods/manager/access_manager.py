@@ -56,7 +56,7 @@ class AccessManager(Manager):
         coll : [str|iRODSCollection|None]=None,
         data : [str|iRODSDataObject|None]=None,
         specific_query : [SpecificQuery|str|None]='',
-    ) -> int|str:
+    ) -> _iRODSPermission:
         """
         Return the highest permission the named user/group has with respect to the
         given data object or collection.  In calculating this result, all ACLs and
