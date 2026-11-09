@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import uuid
 
 from irods import MAX_SQL_ROWS
 from irods.models import Model
@@ -290,6 +291,11 @@ class SpecificQuery:
         self._columns = columns
         self._args = args or []
 
+    def reset_for_new_query(self, args=None):
+        self._continue_index = 0
+        if args is not None:
+            self._args = args
+
     def register(self):
         if not self._sql:
             raise ValueError("Empty query")
@@ -361,6 +367,8 @@ class SpecificQuery:
         for result_set in self.get_batches():
             for result in result_set:
                 yield result
+
+
 
 
 # Record a copy of the original value of IRODS_QUERY_LIMIT for possible future access.

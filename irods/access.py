@@ -20,7 +20,6 @@ _permissions = (
     "null",
 )
 
-
 class _Access_LookupMeta(type):
     @staticmethod
     def _codes():

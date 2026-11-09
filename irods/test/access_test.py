@@ -1,18 +1,26 @@
 #! /usr/bin/env python
 
+import io
+import logging
 import os
 import sys
+import textwrap
 import unittest
+import uuid
 
+import irods.access
 from irods.access import ACLOperation, iRODSAccess
 from irods.collection import iRODSCollection
 from irods.column import In, Like
-from irods.exception import UserDoesNotExist
+from irods.exception import CAT_NO_ROWS_FOUND, UserDoesNotExist
 from irods.models import Collection, DataObject, User
 from irods.path import iRODSPath
+from irods.query import SpecificQuery
 from irods.session import iRODSSession
 from irods.test import helpers
 from irods.user import iRODSUser
+
+from irods.manager.access_manager import alias_for_get_maximum_permission_for_path
 
 
 class TestAccess(unittest.TestCase):
@@ -531,6 +539,124 @@ class TestAccess(unittest.TestCase):
                 group.remove()
             if zone:
                 zone.remove()
+
+    def test_get_maximum_permission_for_path__issue_561(self):
+        SQL = textwrap.dedent('''
+            WITH target_user AS (
+                SELECT user_id
+                FROM r_user_main
+                WHERE user_name = ?
+                  AND zone_name = ?
+            ),
+            resolved_object AS (
+                -- The path names a collection
+                SELECT coll_id AS object_id
+                FROM r_coll_main
+                WHERE coll_name = ?
+
+                UNION
+
+                -- The path names a data object: collection path + '/' + data name
+                SELECT d.data_id AS object_id
+                FROM r_data_main AS d
+                JOIN r_coll_main AS c ON c.coll_id = d.coll_id
+                WHERE CONCAT(c.coll_name, '/', d.data_name) = ?
+            ),
+            grants AS (
+                -- Direct grants
+                SELECT a.access_type_id
+                FROM r_objt_access AS a
+                JOIN target_user AS u ON u.user_id = a.user_id
+                JOIN resolved_object AS o ON o.object_id = a.object_id
+
+                UNION ALL
+
+                -- Grants to groups the user belongs to
+                SELECT a.access_type_id
+                FROM r_user_group AS ug
+                JOIN target_user AS u ON u.user_id = ug.user_id
+                JOIN r_objt_access AS a ON a.user_id = ug.group_user_id
+                JOIN resolved_object AS o ON o.object_id = a.object_id
+            )
+            SELECT access_type_id
+            FROM grants
+            ORDER BY access_type_id DESC
+            LIMIT 1;'''
+        )
+        user = group = coll = None
+        ses = self.sess
+        my_specific_query=None
+        query_alias = None
+        try:
+            coll = ses.collections.create('/tempZone/home/public/folder_561')
+            data = ses.data_objects.create('/tempZone/home/public/folder_561/file')
+            user = ses.users.create('bob','rodsuser')
+            group = ses.groups.create('lab')
+
+            # Set up test scenario with a new user and group, the group having deliberately higher permission
+            # so as to be able to account for the effect of group membership in the query results.
+            USER_PERM = 'modify_metadata'
+            GROUP_PERM = 'modify_object'
+            test_perms = { user.name: USER_PERM, group.name: GROUP_PERM }
+            for obj in (coll, data):
+                ses.acls.set(iRODSAccess(USER_PERM, obj.path, user.name))
+                ses.acls.set(iRODSAccess(GROUP_PERM, obj.path, group.name))
+
+            sql_arg = {}
+            try:
+                SpecificQuery(ses,
+                    alias='findQueryByAlias', 
+                    args=(query_alias:=alias_for_get_maximum_permission_for_path,)).execute()
+            except CAT_NO_ROWS_FOUND:
+                query_alias = str(uuid.uuid1()),
+                sql_arg = {'sql':SQL}
+
+            my_specific_query = SpecificQuery(ses, alias=query_alias, **sql_arg)
+            if sql_arg:
+                my_specific_query.register()
+
+            logger=logging.getLogger('issue_561_query_type_detection')
+            logger.setLevel(logging.DEBUG)
+            for is_member in (False, True):
+                if is_member:
+                    group.addmember(user.name,user.zone)
+                for usr in (user, group):
+                    max_user = usr if usr not in group.members else group
+                    expected_permission = test_perms[max_user.name]
+                    for obj_type, obj in (
+                        ("collection", coll),
+                        ("collection", coll.path),
+                        ("data_object", data),
+                        ("data_object", data.path),
+                    ):
+                        query_options = {
+                            'GENERAL':{'specific_query':None},
+                            'SPECIFIC':({} if not my_specific_query else {'specific_query':my_specific_query})
+                        }
+                        for query_index in ('SPECIFIC', 'GENERAL'):
+                            with self.subTest(f"Issue 561 subTest: {is_member=} {usr=} {obj=} {query_index=}"):
+                                try:
+                                    logger.addHandler(handler:=logging.StreamHandler(stream:=io.StringIO()))
+                                    permission = ses.acls.get_maximum_permission_for_path(
+                                        usr,
+                                        **query_options[query_index],
+                                        **{obj_type: obj},
+                                    ).as_string
+                                    self.assertEqual(permission, expected_permission)
+                                    # Check logging output to verify which code path was taken.
+                                    self.assertEqual(stream.getvalue().rstrip(), query_index)
+                                finally:
+                                    logger.removeHandler(handler)
+        finally:
+            if coll:
+                # Removes test data object as well.
+                coll.remove(force=True, recurse=True)
+            if user:
+                user.remove()
+            if group:
+                group.remove()
+            if my_specific_query and (query_alias != alias_for_get_maximum_permission_for_path):
+                my_specific_query.remove()
 
 
 if __name__ == "__main__":

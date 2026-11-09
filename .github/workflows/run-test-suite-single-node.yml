@@ -14,7 +14,7 @@ jobs:
           working-directory: ./test_harness/single_node
     strategy:
       matrix:
-        python: ['3.9','3.13']
+        python: ['3.10','3.15']
         irods_server: ['4.3.5','5.0.2']
 
     steps:

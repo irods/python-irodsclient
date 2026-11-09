@@ -16,6 +16,7 @@ from irods.exception import (
     UserDoesNotExist,
     GroupDoesNotExist,
     NoResultFound,
+    MultipleResultsFound,
     CAT_SQL_ERR,
 )
 from irods.api_number import api_number
@@ -281,12 +282,19 @@ def get__group_create__user_type__default(session):
 
 class GroupManager(UserManager):
     def get(self, name, user_zone=""):
+        if user_zone not in ("", local_zone:=self.sess.zone):
+            msg = 'Specified user_zone must be local, since remote groups are not listed locally.'
+            raise GroupDoesNotExist(msg)
+
         query = self.sess.query(Group).filter(Group.name == name)
 
         try:
             result = query.one()
+        except MultipleResultsFound:
+            result = query.filter(User.name == name, User.zone == local_zone).one()
         except NoResultFound:
             raise GroupDoesNotExist()
+
         return iRODSGroup(self, result)
 
     def _api_info(self, group_admin_flag):
