@@ -624,10 +624,10 @@ class TestAccess(unittest.TestCase):
                     max_user = usr if usr not in group.members else group
                     expected_permission = test_perms[max_user.name]
                     for obj_type, obj in (
-                        ("coll", coll),
-                        ("coll", coll.path),
-                        ("data", data),
-                        ("data", data.path),
+                        ("collection", coll),
+                        ("collection", coll.path),
+                        ("data_object", data),
+                        ("data_object", data.path),
                     ):
                         query_options = {
                             'GENERAL':{'specific_query':None},

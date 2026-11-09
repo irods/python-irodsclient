@@ -53,8 +53,8 @@ class _iRODSPermission(typing.NamedTuple):
 class AccessManager(Manager):
     def get_maximum_permission_for_path(self,
         user : [iRODSUser|iRODSGroup],
-        coll : [str|iRODSCollection|None]=None,
-        data : [str|iRODSDataObject|None]=None,
+        collection : [str|iRODSCollection|None]=None,
+        data_object : [str|iRODSDataObject|None]=None,
         specific_query : [SpecificQuery|str|None]='',
     ) -> _iRODSPermission:
         """
@@ -62,12 +62,12 @@ class AccessManager(Manager):
         given data object or collection.  In calculating this result, all ACLs and
         group memberships are factored in.
 
-        Only one of 'data' or 'coll' may be specified.
+        Only one of 'data_object' or 'collection' may be specified.
 
         Args:
             user: an iRODSUser or iRODSGroup object for whom the permission is to be calculated.
-            coll: an iRODS logical path or iRODSCollection.
-            data: an iRODS logical path or iRODSDataObject.
+            collection: an iRODS logical path or iRODSCollection.
+            data_object: an iRODS logical path or iRODSDataObject.
             specific_query (default ""): a SpecificQuery object or an alias specifying
                 the specific query used for the calculation.  The default value of "" will be
                 interpreted to mean the designated specific query preconfigured for this express
@@ -107,8 +107,8 @@ class AccessManager(Manager):
                 args=[
                     user.name,
                     getattr(user,'zone',ses.zone),
-                    denullify(coll.path if isinstance(coll, iRODSCollection) else coll),
-                    denullify(data.path if isinstance(data, iRODSDataObject) else data),
+                    denullify(collection.path if isinstance(collection, iRODSCollection) else collection),
+                    denullify(data_object.path if isinstance(data_object, iRODSDataObject) else data_object),
                 ]
             )
             max_permission = self._get_maximum_permission_for_path_via_SpecificQuery(_specific_query)
@@ -119,15 +119,15 @@ class AccessManager(Manager):
             groups = {g[Group.id] for g in ses.query(Group, User).filter(Group.id != user.id, User.id == user.id)}
             groups |= {user.id}
 
-            if data:
-                if isinstance(data, str):
-                    collN = irods_dirname(data)
-                    dataN = irods_basename(data)
+            if data_object:
+                if isinstance(data_object, str):
+                    collN = irods_dirname(data_object)
+                    dataN = irods_basename(data_object)
                     join_criteria = [DataObject.name == dataN, Collection.name == collN]
-                elif isinstance(data, iRODSDataObject):
-                    join_criteria = [ DataAccess.data_id == data.id]
+                elif isinstance(data_object, iRODSDataObject):
+                    join_criteria = [ DataAccess.data_id == data_object.id]
                 else:
-                    msg="'data' parameter must be full logical path or data object"
+                    msg="'data_object' parameter must be full logical path or data object"
                     raise ValueError(msg)
 
                 q = ses.query(DataAccess.type).filter(
@@ -137,13 +137,13 @@ class AccessManager(Manager):
 
                 res = [_[DataAccess.type] for _ in q]
 
-            elif coll:
-                if isinstance(coll, str):
-                    join_criteria = [Collection.name == coll]
-                elif isinstance(coll, iRODSCollection):
-                    join_criteria = [CollectionAccess.access_id == coll.id] # TODO: access_id is not an accurate name, should be coll_id
+            elif collection:
+                if isinstance(collection, str):
+                    join_criteria = [Collection.name == collection]
+                elif isinstance(collection, iRODSCollection):
+                    join_criteria = [CollectionAccess.access_id == collection.id] # TODO: access_id is not an accurate name, should be coll_id
                 else:
-                    msg="'coll' parameter must be full logical path or collection object"
+                    msg="'collection' parameter must be full logical path or collection object"
                     raise ValueError(msg)
 
                 q=ses.query(CollectionAccess).filter(
